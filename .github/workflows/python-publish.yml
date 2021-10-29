@@ -15,7 +15,8 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
-
+    permissions:
+      contents: write
     steps:
       - name: 📥 Checkout the repository
         uses: actions/checkout@v2
