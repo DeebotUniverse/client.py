@@ -14,8 +14,7 @@ from typing import (
     TypeVar,
 )
 
-from deebotozmo.command import Command
-
+from ..command import Command
 from ..models import VacuumState
 from . import EventDto, StatusEventDto
 
@@ -137,7 +136,7 @@ class EventBus:
             return
 
         async with semaphore:
-            from deebotozmo.events.const import (  # pylint: disable=import-outside-toplevel
+            from deebot_client.events.const import (  # pylint: disable=import-outside-toplevel
                 EVENT_DTO_REFRESH_COMMANDS,
             )
 

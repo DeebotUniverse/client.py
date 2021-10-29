@@ -1,7 +1,7 @@
 """Maps commands."""
 import logging
 
-from deebotozmo.command import Command
+from ..command import Command
 
 _LOGGER = logging.getLogger(__name__)
 

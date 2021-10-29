@@ -8,10 +8,10 @@ from cachetools import TTLCache
 from gmqtt import Client, Subscription
 from gmqtt.mqtt.constants import MQTTv311
 
-from deebotozmo.authentication import Authenticator
-from deebotozmo.commands import SET_COMMAND_NAMES, SetCommand
-from deebotozmo.models import Configuration, Credentials, DeviceInfo
-from deebotozmo.vacuum_bot import VacuumBot
+from .authentication import Authenticator
+from .commands import SET_COMMAND_NAMES, SetCommand
+from .models import Configuration, Credentials, DeviceInfo
+from .vacuum_bot import VacuumBot
 
 _LOGGER = logging.getLogger(__name__)
 

@@ -7,22 +7,22 @@ from typing import Any, Dict, Final, Optional, Union
 
 import aiohttp
 
-from deebotozmo.api_client import ApiClient
-from deebotozmo.command import Command
-from deebotozmo.commands import Clean, CommandWithHandling, GetPos
-from deebotozmo.commands.clean import CleanAction
-from deebotozmo.commands.custom import CustomCommand
-from deebotozmo.events import (
+from .api_client import ApiClient
+from .command import Command
+from .commands import Clean, CommandWithHandling, GetPos
+from .commands.clean import CleanAction
+from .commands.custom import CustomCommand
+from .events import (
     CleanLogEventDto,
     LifeSpanEventDto,
     StatsEventDto,
     StatusEventDto,
     TotalStatsEventDto,
 )
-from deebotozmo.events.event_bus import EventBus
-from deebotozmo.map import Map
-from deebotozmo.messages import MESSAGES
-from deebotozmo.models import DeviceInfo, VacuumState
+from .events.event_bus import EventBus
+from .map import Map
+from .messages import MESSAGES
+from .models import DeviceInfo, VacuumState
 
 _LOGGER = logging.getLogger(__name__)
 

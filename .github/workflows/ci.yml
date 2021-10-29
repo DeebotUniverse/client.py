@@ -26,12 +26,12 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-test.txt
-      - name: Run pre-commit checks
-        run: |
-          SKIP=no-commit-to-branch pre-commit run --hook-stage manual --all-files --show-diff-on-failure
+      - name: Run mypy
+        # Cannot be run by pre-commit.ci as repo is local
+        run: pre-commit run mypy --all-files --show-diff-on-failure
       - name: Pylint review
-        run: |
-          pylint deebotozmo
+        # Cannot be run by pre-commit.ci as repo is local
+        run: pre-commit run pylint --all-files --show-diff-on-failure
 
   tests:
     runs-on: "ubuntu-latest"

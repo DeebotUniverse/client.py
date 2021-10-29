@@ -1,10 +1,10 @@
-"""Deebotozmo module."""
+"""Deebot client module."""
 from typing import Tuple
 
-from deebotozmo._api_client import _InternalApiClient
-from deebotozmo.api_client import ApiClient
-from deebotozmo.authentication import Authenticator
-from deebotozmo.models import Configuration
+from ._api_client import _InternalApiClient
+from .api_client import ApiClient
+from .authentication import Authenticator
+from .models import Configuration
 
 
 def create_instances(

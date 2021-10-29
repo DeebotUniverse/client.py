@@ -4,10 +4,9 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Any, Dict, List, Optional
 
-from deebotozmo.events.base import EventDto
-from deebotozmo.models import Room, VacuumState
-from deebotozmo.util import DisplayNameIntEnum
-
+from ..events.base import EventDto
+from ..models import Room, VacuumState
+from ..util import DisplayNameIntEnum
 from .water_info import WaterAmount, WaterInfoEventDto
 
 
