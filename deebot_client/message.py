@@ -2,7 +2,7 @@
 from abc import ABC
 from typing import Any, Dict, List, Union
 
-from deebotozmo.events.event_bus import EventBus
+from .events.event_bus import EventBus
 
 
 class Message(ABC):

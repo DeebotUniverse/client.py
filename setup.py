@@ -3,14 +3,14 @@ from setuptools import find_packages, setup
 long_description = open("README.md").read()
 
 setup(
-    name="deebotozmo",
+    name="deebot-client",
     version="0.0.0",
-    url="https://github.com/And3rsL/Deebotozmo",
+    url="https://github.com/DeebotUniverse/client.py",
     description="a library for controlling certain deebot vacuums",
     long_description=long_description,
     long_description_content_type="text/markdown",
-    author="Andrea Liosi",
-    author_email="andrea.liosi@gmail.com",
+    author="DeebotUniverse",
+    author_email="deebotuniverse@knatschig-as-hell.info",
     license="GPL-3.0",
     # See https://pypi.python.org/pypi?%3Aaction=list_classifiers
     classifiers=[
@@ -26,14 +26,8 @@ setup(
         "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
         "Programming Language :: Python :: 3.9",
     ],
-    keywords="home automation vacuum robot",
+    keywords="home automation vacuum robot deebot ecovacs",
     packages=find_packages(exclude=["contrib", "docs", "tests"]),
-    package_data={"deebotozmo": ["py.typed"]},
+    package_data={"deebot_client": ["py.typed"]},
     install_requires=list(val.strip() for val in open("requirements.txt")),
-    extras_require={"cli": list(val.strip() for val in open("requirements-cli.txt"))},
-    entry_points={
-        "console_scripts": [
-            "deebotozmo=deebotozmo.cli:cli",
-        ],
-    },
 )

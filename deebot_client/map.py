@@ -10,8 +10,8 @@ from typing import Any, Awaitable, Callable, Dict, Final, List, Optional, Union
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
-from deebotozmo.command import Command
-from deebotozmo.commands import (
+from .command import Command
+from .commands import (
     GetCachedMapInfo,
     GetMajorMap,
     GetMapSet,
@@ -20,9 +20,9 @@ from deebotozmo.commands import (
     GetMinorMap,
     GetPos,
 )
-from deebotozmo.events import MapEventDto, RoomsEventDto
-from deebotozmo.events.event_bus import EventBus
-from deebotozmo.models import Coordinate, Room
+from .events import MapEventDto, RoomsEventDto
+from .events.event_bus import EventBus
+from .models import Coordinate, Room
 
 _LOGGER = logging.getLogger(__name__)
 _TRACE_MAP = "trace_map"

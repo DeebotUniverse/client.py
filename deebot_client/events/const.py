@@ -1,8 +1,7 @@
 """Event constants."""
 from typing import List, Mapping, Type
 
-from deebotozmo.command import Command
-
+from ..command import Command
 from ..commands import (
     GetBattery,
     GetCachedMapInfo,

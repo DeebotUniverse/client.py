@@ -1,19 +1,15 @@
-![PyPI - Downloads](https://img.shields.io/pypi/dw/deebotozmo)
+![PyPI - Downloads](https://img.shields.io/pypi/dw/deebot-client)
 <a href="https://www.buymeacoffee.com/edenhaus" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-black.png" width="150px" height="35px" alt="Buy Me A Coffee" style="height: 35px !important;width: 150px !important;" ></a>
 
 =====
 
-# Library for DeebotOzmo 960/950/920
-
-A simple command-line python script to drive a robot vacuum. Currently
-known to work with the Ecovacs Deebot 960/950/920 from both North America and Europe.
+# Client Library for Deebot Vacuums
 
 ## Installation
 
 If you have a recent version of Python 3, you should be able to
-do `pip install deebotozmo` to get the most recently released version of
+do `pip install deebot-client` to get the most recently released version of
 this.
-If you want to use the cli, you need to install it with `pip install deebotozmo[cli]`
 
 ## Usage
 
@@ -29,14 +25,14 @@ import asyncio
 import logging
 import time
 
-from deebotozmo import create_instances
-from deebotozmo.commands import *
-from deebotozmo.commands.clean import CleanAction
-from deebotozmo.models import Configuration
-from deebotozmo.mqtt_client import MqttClient
-from deebotozmo.events import BatteryEvent
-from deebotozmo.util import md5
-from deebotozmo.vacuum_bot import VacuumBot
+from deebot_client import create_instances
+from deebot_client.commands import *
+from deebot_client.commands.clean import CleanAction
+from deebot_client.models import Configuration
+from deebot_client.mqtt_client import MqttClient
+from deebot_client.events import BatteryEventDto
+from deebot_client.util import md5
+from deebot_client.vacuum_bot import VacuumBot
 
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
@@ -63,7 +59,7 @@ async def main():
     await mqtt.initialize()
     await mqtt.subscribe(bot)
 
-    async def on_battery(event: BatteryEvent):
+    async def on_battery(event: BatteryEventDto):
       # Do stuff on battery event
       if event.value == 100:
         # Battery full
@@ -90,7 +86,8 @@ A more advanced example can be found [here](https://github.com/And3rsL/Deebot-fo
 
 My heartfelt thanks to:
 
-- [sucks](https://github.com/wpietri/sucks), After all, this is a sucks fork :)
+- [deebotozmo](https://https://github.com/And3rsL/Deebotozmo), After all, this is a debotozmo fork :)
+- [sucks](https://github.com/wpietri/sucks), deebotozmo was forked from it :)
 - [xmpppeek](https://www.beneaththewaves.net/Software/XMPPPeek.html), a great library for examining XMPP traffic flows (
   yes, your vacuum speaks Jabbber!),
 - [mitmproxy](https://mitmproxy.org/), a fantastic tool for analyzing HTTPS,

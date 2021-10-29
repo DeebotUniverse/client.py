@@ -7,10 +7,10 @@ from typing import Any, Callable, Dict, Mapping, Optional, Set, Union
 
 from aiohttp import hdrs
 
-from deebotozmo._api_client import _InternalApiClient
-from deebotozmo.const import REALM
-from deebotozmo.models import Configuration, Credentials
-from deebotozmo.util import md5, sanitize_data
+from ._api_client import _InternalApiClient
+from .const import REALM
+from .models import Configuration, Credentials
+from .util import md5, sanitize_data
 
 _LOGGER = logging.getLogger(__name__)
 

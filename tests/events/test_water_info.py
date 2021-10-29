@@ -1,4 +1,4 @@
-from deebotozmo.events import WaterAmount
+from deebot_client.events import WaterAmount
 from tests.helpers import verify_DisplayNameEnum_unique
 
 

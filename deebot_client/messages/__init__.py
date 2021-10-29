@@ -3,9 +3,9 @@
 
 from typing import Dict, List, Type
 
-from deebotozmo.commands import COMMANDS_WITH_HANDLING
-from deebotozmo.message import Message
-from deebotozmo.messages.stats import ReportStats
+from ..commands import COMMANDS_WITH_HANDLING
+from ..message import Message
+from ..messages.stats import ReportStats
 
 # fmt: off
 # ordered by file asc

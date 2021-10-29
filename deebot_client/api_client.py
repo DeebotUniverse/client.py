@@ -4,12 +4,11 @@ from datetime import datetime
 from typing import Any, Dict, List, Union
 from urllib.parse import urljoin
 
-from deebotozmo.command import Command
-from deebotozmo.commands import GetCleanLogs
-from deebotozmo.commands.custom import CustomCommand
-
 from ._api_client import _InternalApiClient
 from .authentication import Authenticator
+from .command import Command
+from .commands import GetCleanLogs
+from .commands.custom import CustomCommand
 from .const import (
     PATH_API_APPSVR_APP,
     PATH_API_IOT_DEVMANAGER,
