@@ -86,7 +86,7 @@ A more advanced example can be found [here](https://github.com/And3rsL/Deebot-fo
 
 My heartfelt thanks to:
 
-- [deebotozmo](https://https://github.com/And3rsL/Deebotozmo), After all, this is a debotozmo fork :)
+- [deebotozmo](https://github.com/And3rsL/Deebotozmo), After all, this is a debotozmo fork :)
 - [sucks](https://github.com/wpietri/sucks), deebotozmo was forked from it :)
 - [xmpppeek](https://www.beneaththewaves.net/Software/XMPPPeek.html), a great library for examining XMPP traffic flows (
   yes, your vacuum speaks Jabbber!),
