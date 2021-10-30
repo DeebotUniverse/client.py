@@ -44,8 +44,8 @@ country = "de"
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    config = Configuration(
-            device_id, country, continent,session, False
+    config = Configuration(session,
+            device_id=device_id, country=country, continent=continent, verify_ssl=False
         )
 
     (authenticator, api_client) = create_instances(config, account_id, password_hash)
