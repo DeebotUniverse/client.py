@@ -16,7 +16,8 @@ repos:
         args:
           - --safe
           - --quiet
-        files: ^(deebot_client/.+)?[^/]+\.py$
+        <<: &python-files-with-tests
+          files: ^((deebot_client|tests)/.+)?[^/]+\.py$
   - repo: https://github.com/codespell-project/codespell
     rev: v2.1.0
     hooks:
@@ -33,7 +34,8 @@ repos:
         additional_dependencies:
           - flake8-docstrings==1.6.0
           - pydocstyle==6.1.1
-        files: ^deebot_client/.+\.py$
+        <<: &python-files
+          files: ^(deebot_client/.+)?[^/]+\.py$
   - repo: https://github.com/PyCQA/bandit
     rev: 1.7.0
     hooks:
@@ -42,7 +44,7 @@ repos:
           - --quiet
           - --format=custom
           - --configfile=bandit.yaml
-        files: ^deebot_client/.+\.py$
+        <<: *python-files-with-tests
   - repo: https://github.com/PyCQA/isort
     rev: 5.9.3
     hooks:
@@ -75,11 +77,11 @@ repos:
         language: script
         types: [python]
         require_serial: true
-        files: ^deebot_client/.+\.py$
+        <<: *python-files
       - id: pylint
         name: Check with pylint
         entry: scripts/run-in-env.sh pylint
         language: script
         types: [python]
         require_serial: true
-        files: ^deebot_client/.+\.py$
+        <<: *python-files
