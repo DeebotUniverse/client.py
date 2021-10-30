@@ -70,15 +70,14 @@ repos:
       # committing from a GUI tool that was not launched from an activated
       # shell.
       - id: mypy
-        name: mypy
+        name: Check with mypy
         entry: scripts/run-in-env.sh mypy
         language: script
         types: [python]
         require_serial: true
         files: ^deebot_client/.+\.py$
-
       - id: pylint
-        name: pylint
+        name: Check with pylint
         entry: scripts/run-in-env.sh pylint
         language: script
         types: [python]
