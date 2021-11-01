@@ -73,13 +73,8 @@ class SetCommand(_ExecuteCommand, ABC):
     def __init__(
         self,
         args: Union[Dict, List, None],
-        remove_from_kwargs: List[str],
         **kwargs: Mapping[str, Any],
     ) -> None:
-        if remove_from_kwargs:
-            for key in remove_from_kwargs:
-                kwargs.pop(key, None)
-
         if kwargs:
             _LOGGER.debug("Following passed parameters will be ignored: %s", kwargs)
 

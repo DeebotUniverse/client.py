@@ -28,8 +28,7 @@ class SetVolume(SetCommand):
     name = "setVolume"
     get_command = GetVolume
 
-    def __init__(self, value: int, maximum: int, **kwargs: Mapping[str, Any]) -> None:
-        if value > maximum:
-            raise ValueError("value must be lower or equal to maximum!")
-
-        super().__init__({"volume": value, "total": maximum}, [], **kwargs)
+    def __init__(self, value: int, **kwargs: Mapping[str, Any]) -> None:
+        # removing "total" as we don't can set it (App includes it)
+        kwargs.pop("total", None)
+        super().__init__({"volume": value}, **kwargs)
