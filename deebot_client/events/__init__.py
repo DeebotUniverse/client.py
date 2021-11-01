@@ -140,5 +140,5 @@ class StatusEventDto(EventDto):
 class VolumeEventDto(EventDto):
     """Volume event."""
 
-    value: int
-    maximum: int
+    volume: int
+    maximum: Optional[int]

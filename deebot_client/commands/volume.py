@@ -18,7 +18,9 @@ class GetVolume(_NoArgsCommand):
         :return: True if data was valid and no error was included
         """
 
-        event_bus.notify(VolumeEventDto(value=data["volume"], maximum=data["total"]))
+        event_bus.notify(
+            VolumeEventDto(volume=data["volume"], maximum=data.get("total", None))
+        )
         return True
 
 
@@ -28,7 +30,7 @@ class SetVolume(SetCommand):
     name = "setVolume"
     get_command = GetVolume
 
-    def __init__(self, value: int, **kwargs: Mapping[str, Any]) -> None:
+    def __init__(self, volume: int, **kwargs: Mapping[str, Any]) -> None:
         # removing "total" as we don't can set it (App includes it)
         kwargs.pop("total", None)
-        super().__init__({"volume": value}, **kwargs)
+        super().__init__({"volume": volume}, **kwargs)
