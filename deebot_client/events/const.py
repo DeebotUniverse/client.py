@@ -15,6 +15,7 @@ from ..commands import (
     GetMapTrace,
     GetPos,
     GetStats,
+    GetVolume,
     GetWaterInfo,
 )
 from ..commands.stats import GetTotalStats
@@ -32,6 +33,7 @@ from . import (
     StatsEventDto,
     StatusEventDto,
     TotalStatsEventDto,
+    VolumeEventDto,
     WaterInfoEventDto,
 )
 
@@ -48,5 +50,6 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[EventDto], List[Command]] = {
     StatsEventDto: [GetStats()],
     StatusEventDto: [GetChargeState(), GetCleanInfo()],
     TotalStatsEventDto: [GetTotalStats()],
+    VolumeEventDto: [GetVolume()],
     WaterInfoEventDto: [GetWaterInfo()],
 }
