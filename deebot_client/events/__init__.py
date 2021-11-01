@@ -134,3 +134,11 @@ class StatusEventDto(EventDto):
 
     available: bool
     state: Optional[VacuumState]
+
+
+@dataclass(frozen=True)
+class VolumeEventDto(EventDto):
+    """Volume event."""
+
+    volume: int
+    maximum: Optional[int]

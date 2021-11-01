@@ -22,6 +22,7 @@ from .map import (
 from .play_sound import PlaySound
 from .relocation import SetRelocationState
 from .stats import GetStats
+from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 
 # fmt: off
@@ -51,6 +52,9 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     SetRelocationState,
 
     GetStats,
+
+    GetVolume,
+    SetVolume,
 
     GetWaterInfo,
     SetWaterInfo,

@@ -58,4 +58,4 @@ class SetFanSpeed(SetCommand):
         if isinstance(speed, FanSpeedLevel):
             speed = speed.value
 
-        super().__init__({"speed": speed}, [], **kwargs)
+        super().__init__({"speed": speed}, **kwargs)

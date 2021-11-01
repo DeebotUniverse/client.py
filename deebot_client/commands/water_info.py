@@ -45,10 +45,11 @@ class SetWaterInfo(SetCommand):
         self, amount: Union[str, int, WaterAmount], **kwargs: Mapping[str, Any]
     ) -> None:
         # removing "enable" as we don't can set it
-        remove_from_kwargs = ["enable"]
+        kwargs.pop("enable", None)
+
         if isinstance(amount, str):
             amount = WaterAmount.get(amount)
         if isinstance(amount, WaterAmount):
             amount = amount.value
 
-        super().__init__({"amount": amount, "enable": 0}, remove_from_kwargs, **kwargs)
+        super().__init__({"amount": amount}, **kwargs)
