@@ -20,7 +20,7 @@ class ReportStats(Message):
 
         :return: True if data was valid and no error was included
         """
-        status = CleanJobStatus(int(data.get("stopReason", -1)))
+        status = CleanJobStatus(int(data.get("stopReason", -2)))
 
         if data["stop"] == 0:
             status = CleanJobStatus.CLEANING

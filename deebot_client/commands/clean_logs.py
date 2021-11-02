@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from ..events import CleanLogEntry, CleanLogEventDto
+from ..events import CleanJobStatus, CleanLogEntry, CleanLogEventDto
 from .common import CommandWithHandling, EventBus
 
 _LOGGER = logging.getLogger(__name__)
@@ -34,7 +34,7 @@ class GetCleanLogs(CommandWithHandling):
                             image_url=log.get("imageUrl"),
                             type=log.get("type"),
                             area=log.get("area"),
-                            stop_reason=log.get("stopReason"),
+                            stop_reason=CleanJobStatus(int(log.get("stopReason", -2))),
                             total_time=log.get("last"),
                         )
                     )

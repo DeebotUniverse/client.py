@@ -17,6 +17,16 @@ class BatteryEventDto(EventDto):
     value: int
 
 
+class CleanJobStatus(DisplayNameIntEnum):
+    """Enum of the different clean job status."""
+
+    CLEANING = -1
+    # below the identified stop_reason values
+    FINISHED = 1
+    MANUAL_STOPPED = 2, "manual stopped"
+    FINISHED_WITH_WARNINGS = 3, "finished with warnings"
+
+
 @dataclass(frozen=True)
 class CleanLogEntry:
     """Clean log entry representation."""
@@ -25,11 +35,7 @@ class CleanLogEntry:
     image_url: Optional[str]
     type: Optional[str]
     area: Optional[int]
-    stop_reason: Optional[str]
-    # Stop reason
-    # 1 -> finished
-    # 2 -> manual stopped
-    # 3 -> finished with warnings (ex. a scheduled room was not cleaned)
+    stop_reason: Optional[CleanJobStatus]
     total_time: Optional[int]  # in seconds
 
 
@@ -99,16 +105,6 @@ class StatsEventDto(EventDto):
     area: Optional[int]
     time: Optional[int]
     type: Optional[str]
-
-
-class CleanJobStatus(DisplayNameIntEnum):
-    """Enum of the different clean job status."""
-
-    CLEANING = -1
-    # below the identified stop_reason values
-    FINISHED = 1
-    MANUAL_STOPPED = 2, "manual stopped"
-    FINISHED_WITH_WARNINGS = 3, "finished with warnings"
 
 
 @dataclass(frozen=True)
