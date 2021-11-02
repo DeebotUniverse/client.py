@@ -31,12 +31,12 @@ class CleanJobStatus(DisplayNameIntEnum):
 class CleanLogEntry:
     """Clean log entry representation."""
 
-    timestamp: Optional[int]
-    image_url: Optional[str]
-    type: Optional[str]
-    area: Optional[int]
-    stop_reason: Optional[CleanJobStatus]
-    total_time: Optional[int]  # in seconds
+    timestamp: int
+    image_url: str
+    type: str
+    area: int
+    stop_reason: CleanJobStatus
+    duration: int  # in seconds
 
 
 @dataclass(frozen=True)

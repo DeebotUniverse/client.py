@@ -30,12 +30,12 @@ class GetCleanLogs(CommandWithHandling):
                 for log in resp_logs:
                     logs.append(
                         CleanLogEntry(
-                            timestamp=log.get("ts"),
-                            image_url=log.get("imageUrl"),
-                            type=log.get("type"),
-                            area=log.get("area"),
-                            stop_reason=CleanJobStatus(int(log.get("stopReason", -2))),
-                            total_time=log.get("last"),
+                            timestamp=log["ts"],
+                            image_url=log["imageUrl"],
+                            type=log["type"],
+                            area=log["area"],
+                            stop_reason=CleanJobStatus(int(log["stopReason"])),
+                            duration=log["last"],
                         )
                     )
 
