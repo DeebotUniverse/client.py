@@ -20,11 +20,9 @@ class GetStats(_NoArgsCommand):
         :return: True if data was valid and no error was included
         """
         stats_event = StatsEventDto(
-            data.get("area"),
-            data.get("cid"),
-            data.get("time"),
-            data.get("type"),
-            data.get("start"),
+            area=data.get("area"),
+            time=data.get("time"),
+            type=data.get("type"),
         )
         event_bus.notify(stats_event)
         return True
