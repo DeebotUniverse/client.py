@@ -97,15 +97,15 @@ class StatsEventDto(EventDto):
     """Stats event representation."""
 
     area: Optional[int]
-    clean_id: Optional[str]
     time: Optional[int]
     type: Optional[str]
-    start: Optional[int]
 
 
-class CleanJobStopReason(DisplayNameIntEnum):
-    """Enum of the different clean job stop reasons."""
+class CleanJobStatus(DisplayNameIntEnum):
+    """Enum of the different clean job status."""
 
+    CLEANING = -1
+    # below the identified stop_reason values
     FINISHED = 1
     MANUAL_STOPPED = 2, "manual stopped"
     FINISHED_WITH_WARNINGS = 3, "finished with warnings"
@@ -115,8 +115,9 @@ class CleanJobStopReason(DisplayNameIntEnum):
 class ReportStatsEventDto(StatsEventDto):
     """Report stats event representation."""
 
-    stop_reason: CleanJobStopReason
-    rooms: List[int]
+    clean_id: str
+    status: CleanJobStatus
+    rooms: Optional[List[int]]
 
 
 @dataclass(frozen=True)
