@@ -29,7 +29,7 @@ class ReportStats(Message):
             area=data.get("area"),
             time=data.get("time"),
             type=data.get("type"),
-            clean_id=data["cid"],
+            cleaning_id=data["cid"],
             status=status,
             rooms=[int(x) for x in data.get("content", "").split(",")],
         )

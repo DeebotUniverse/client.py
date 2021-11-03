@@ -111,7 +111,7 @@ class StatsEventDto(EventDto):
 class ReportStatsEventDto(StatsEventDto):
     """Report stats event representation."""
 
-    clean_id: str
+    cleaning_id: str
     status: CleanJobStatus
     rooms: Optional[List[int]]
 
