@@ -9,7 +9,7 @@ import aiohttp
 
 from .api_client import ApiClient
 from .command import Command
-from .commands import Clean, CommandWithHandling, GetPos
+from .commands import Clean, CommandWithHandling
 from .commands.clean import CleanAction
 from .commands.custom import CustomCommand
 from .events import (
@@ -95,7 +95,7 @@ class VacuumBot:
                 # Responses of CustomCommands will be handled like messages got via mqtt,
                 # so build in events will be raised if this response too.
                 await self.handle_message(command.name, response)
-        elif "Map" in command.name or command.name == GetPos.name:
+        elif "Map" in command.name:
             # todo refactor map commands and remove it # pylint: disable=fixme
             await self.map._handle(  # pylint: disable=protected-access
                 command.name, response, True
@@ -142,7 +142,7 @@ class VacuumBot:
         found_command = MESSAGES.get(message_name, None)
         if found_command:
             found_command.handle(self.events, message_data)
-        elif "Map" in message_name or message_name == GetPos.name:
+        elif "Map" in message_name:
             await self.map._handle(  # pylint: disable=protected-access
                 message_name, message_data, False
             )

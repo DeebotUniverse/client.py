@@ -53,14 +53,6 @@ class DeviceInfo(dict):
 
 
 @dataclass(frozen=True)
-class Coordinate:
-    """Coordinate representation."""
-
-    x: int
-    y: int
-
-
-@dataclass(frozen=True)
 class Room:
     """Room representation."""
 

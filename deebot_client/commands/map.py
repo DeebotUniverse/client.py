@@ -64,15 +64,6 @@ class GetMapSubSet(Command):
         )
 
 
-class GetPos(Command):
-    """Get position command."""
-
-    name = "getPos"
-
-    def __init__(self) -> None:
-        super().__init__(["chargePos", "deebotPos"])
-
-
 class GetMajorMap(Command):
     """Get major map command."""
 
