@@ -12,13 +12,44 @@ from .common import CommandResult
 _LOGGER = logging.getLogger(__name__)
 
 
-class GetCachedMapInfo(Command):
+class GetCachedMapInfo(CommandWithHandling):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
 
     def __init__(self) -> None:
         super().__init__()
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        for map_status in data["info"]:
+            if map_status["using"] == 1:
+                return HandlingResult(
+                    HandlingState.SUCCESS, {"map_id": map_status["mid"]}
+                )
+
+        return HandlingResult.analyse()
+
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
+
+        :return: A message response
+        """
+        result = super().handle_requested(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            return CommandResult(
+                result.state, result.args, [GetMapSet(result.args["map_id"])]
+            )
+
+        return result
 
 
 class GetMapTrace(CommandWithHandling):

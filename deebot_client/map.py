@@ -11,13 +11,7 @@ from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
-from .commands import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapSet,
-    GetMapSubSet,
-    GetMinorMap,
-)
+from .commands import GetMajorMap, GetMapSet, GetMapSubSet, GetMinorMap
 from .events import (
     MapEventDto,
     Position,
@@ -175,9 +169,7 @@ class Map:
 
         data = body.get("data", {})
 
-        if command_name == GetCachedMapInfo.name:
-            await self._handle_cached_map_info(data, requested)
-        elif command_name == GetMapSet.name:
+        if command_name == GetMapSet.name:
             await self._handle_map_set(data, requested)
         elif command_name == GetMapSubSet.name:
             self._handle_map_sub_set(data)
@@ -191,23 +183,6 @@ class Map:
             self._handle_minor_map(data)
         else:
             _LOGGER.debug('Unknown command "%s" with %s', command_name, message)
-
-    async def _handle_cached_map_info(self, event_data: dict, requested: bool) -> None:
-        try:
-            map_id: Optional[str] = None
-            for map_status in event_data["info"]:
-                if map_status["using"] == 1:
-                    map_id = map_status["mid"]
-                    _LOGGER.debug("[_handle_cached_map] Using Map: %s", map_id)
-                    break
-
-            if requested and map_id is not None:
-                await self._execute_command(GetMapSet(map_id))
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.debug(ex, exc_info=True)
-            _LOGGER.warning(
-                "[_handle_cached_map] MapID not found -- did you finish your first auto cleaning?"
-            )
 
     async def _handle_map_set(self, event_data: dict, requested: bool) -> None:
         map_id = event_data["mid"]
