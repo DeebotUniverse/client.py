@@ -2,7 +2,6 @@
 import asyncio
 import logging
 import time
-from asyncio import TimerHandle
 from typing import Any, Callable, Dict, Mapping, Optional, Set, Union
 
 from aiohttp import hdrs
@@ -238,7 +237,7 @@ class Authenticator:
         self._lock = asyncio.Lock()
         self._on_credentials_changed: Set[Callable[[Credentials], None]] = set()
         self._credentials: Optional[Credentials] = None
-        self._refresh_task: Optional[TimerHandle] = None
+        self._refresh_task: Optional[asyncio.TimerHandle] = None
 
     async def authenticate(self, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
