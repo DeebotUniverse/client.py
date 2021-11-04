@@ -3,8 +3,8 @@ import logging
 from typing import Any, Dict, List, Union
 
 from ..events import CustomCommandEventDto
-from ..message import MessageHandling, MessageResponse
-from .common import EventBus
+from ..message import HandlingState
+from .common import CommandResult, EventBus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -30,7 +30,7 @@ class CustomCommand:
 
     def handle_requested(
         self, events: EventBus, response: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> CommandResult:
         """Handle response from a manual requested command.
 
         :return: A message response
@@ -38,7 +38,7 @@ class CustomCommand:
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             events.notify(CustomCommandEventDto(self.name, data))
-            return MessageResponse.success()
+            return CommandResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
-        return MessageResponse(MessageHandling.FAILED)
+        return CommandResult(HandlingState.FAILED)

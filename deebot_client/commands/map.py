@@ -1,7 +1,13 @@
 """Maps commands."""
 import logging
+from typing import Any, Dict
 
 from ..command import Command
+from ..events.event_bus import EventBus
+from ..events.map import MapTraceEventDto
+from ..message import HandlingResult, HandlingState
+from . import CommandWithHandling
+from .common import CommandResult
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -15,17 +21,52 @@ class GetCachedMapInfo(Command):
         super().__init__()
 
 
-class GetMapTrace(Command):
+class GetMapTrace(CommandWithHandling):
     """Get map trace command."""
 
-    TRACE_POINT_COUNT = 200
+    _TRACE_POINT_COUNT = 200
 
     name = "getMapTrace"
 
     def __init__(self, trace_start: int = 0) -> None:
         super().__init__(
-            {"pointCount": self.TRACE_POINT_COUNT, "traceStart": trace_start},
+            {"pointCount": self._TRACE_POINT_COUNT, "traceStart": trace_start},
         )
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        total = int(data["totalCount"])
+        start = int(data["traceStart"])
+
+        if "traceValue" not in data:
+            # todo verify that this is legit pylint: disable=fixme
+            return HandlingResult.analyse()
+
+        event_bus.notify(
+            MapTraceEventDto(start=start, total=total, data=data["traceValue"])
+        )
+        return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
+
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
+
+        :return: A message response
+        """
+        result = super().handle_requested(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            start = result.args["start"] + self._TRACE_POINT_COUNT
+            if start < result.args["total"]:
+                return CommandResult(result.state, result.args, [GetMapTrace(start)])
+
+        return result
 
 
 class GetMinorMap(Command):

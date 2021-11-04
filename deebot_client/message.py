@@ -11,8 +11,8 @@ from .events.event_bus import EventBus
 _LOGGER = logging.getLogger(__name__)
 
 
-class MessageHandling(IntEnum):
-    """Message handling enum."""
+class HandlingState(IntEnum):
+    """Handling state enum."""
 
     SUCCESS = auto()
     FAILED = auto()
@@ -22,41 +22,41 @@ class MessageHandling(IntEnum):
 
 
 @dataclass(frozen=True)
-class MessageResponse:
-    """Message response object."""
+class HandlingResult:
+    """Handling result object."""
 
-    handling: MessageHandling
+    state: HandlingState
     args: Optional[Dict[str, Any]] = None
 
     @classmethod
-    def success(cls) -> "MessageResponse":
-        """Create response with handling success."""
-        return MessageResponse(MessageHandling.SUCCESS)
+    def success(cls) -> "HandlingResult":
+        """Create result with handling success."""
+        return HandlingResult(HandlingState.SUCCESS)
 
     @classmethod
-    def analyse(cls) -> "MessageResponse":
-        """Create response with handling analyse."""
-        return MessageResponse(MessageHandling.ANALYSE)
+    def analyse(cls) -> "HandlingResult":
+        """Create result with handling analyse."""
+        return HandlingResult(HandlingState.ANALYSE)
 
 
 def _handle_error_or_analyse(
-    func: Callable[[Type["Message"], EventBus, Dict[str, Any]], MessageResponse]
-) -> Callable[[Type["Message"], EventBus, Dict[str, Any]], MessageResponse]:
+    func: Callable[[Type["Message"], EventBus, Dict[str, Any]], HandlingResult]
+) -> Callable[[Type["Message"], EventBus, Dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
         cls: Type["Message"], event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
-            if response.handling == MessageHandling.ANALYSE:
+            if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.name, data)
-                return MessageResponse(MessageHandling.ANALYSE_LOGGED, response.args)
+                return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             return response
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning("Could not parse %s: %s", cls.name, data, exc_info=True)
-            return MessageResponse(MessageHandling.ERROR)
+            return HandlingResult(HandlingState.ERROR)
 
     return wrapper
 
@@ -68,7 +68,7 @@ class Message(ABC):
     name = "__invalid__"
 
     @classmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> MessageResponse:
+    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -78,7 +78,7 @@ class Message(ABC):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -88,7 +88,7 @@ class Message(ABC):
     @classmethod
     def _handle_body_data(
         cls, event_bus: EventBus, data: Union[Dict[str, Any], List]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -104,11 +104,11 @@ class Message(ABC):
     @final
     def __handle_body_data(
         cls, event_bus: EventBus, data: Union[Dict[str, Any], List]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         return cls._handle_body_data(event_bus, data)
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -119,15 +119,13 @@ class Message(ABC):
     @classmethod
     @_handle_error_or_analyse
     @final
-    def __handle_body(
-        cls, event_bus: EventBus, body: Dict[str, Any]
-    ) -> MessageResponse:
+    def __handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
         return cls._handle_body(event_bus, body)
 
     @classmethod
     @_handle_error_or_analyse
     @final
-    def handle(cls, event_bus: EventBus, message: Dict[str, Any]) -> MessageResponse:
+    def handle(cls, event_bus: EventBus, message: Dict[str, Any]) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response

@@ -16,7 +16,6 @@ from .commands import (
     GetMajorMap,
     GetMapSet,
     GetMapSubSet,
-    GetMapTrace,
     GetMinorMap,
 )
 from .events import (
@@ -27,6 +26,7 @@ from .events import (
     RoomsEventDto,
 )
 from .events.event_bus import EventBus
+from .events.map import MapTraceEventDto
 from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
@@ -139,6 +139,15 @@ class Map:
 
         event_bus.subscribe(PositionsEventDto, on_position)
 
+        async def on_map_trace(event: MapTraceEventDto) -> None:
+            if event.start == 0:
+                self._trace_values = []
+
+            if self._event_bus.has_subscribers(MapEventDto):
+                self._update_trace_points(event.data)
+
+        event_bus.subscribe(MapTraceEventDto, on_map_trace)
+
     # ---------------------------- EVENT HANDLING ----------------------------
 
     async def _handle(
@@ -176,8 +185,6 @@ class Map:
             # above events must be processed always as they are needed to get room information's
             _LOGGER.debug("No Map subscribers. Skipping map events")
             return
-        elif command_name == GetMapTrace.name:
-            await self._handle_map_trace(data, requested)
         elif command_name == GetMajorMap.name:
             await self._handle_major_map(data, requested)
         elif command_name == GetMinorMap.name:
@@ -255,21 +262,6 @@ class Map:
 
         if len(self._rooms) == self._amount_rooms:
             self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
-
-    async def _handle_map_trace(self, event_data: dict, requested: bool) -> None:
-        total_count = int(event_data["totalCount"])
-        trace_start = int(event_data["traceStart"])
-
-        # No trace value available
-        if "traceValue" in event_data:
-            if trace_start == 0:
-                self._trace_values = []
-
-            self._update_trace_points(event_data["traceValue"])
-
-            trace_start += GetMapTrace.TRACE_POINT_COUNT
-            if trace_start < total_count and requested:
-                await self._execute_command(GetMapTrace(trace_start))
 
     async def _handle_major_map(self, event_data: dict, requested: bool) -> None:
         _LOGGER.debug("[_handle_major_map] begin")

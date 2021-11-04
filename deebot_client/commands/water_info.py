@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import WaterAmount, WaterInfoEventDto
-from ..message import MessageResponse
+from ..message import HandlingResult
 from .common import EventBus, SetCommand, _NoArgsCommand
 
 _LOGGER = logging.getLogger(__name__)
@@ -17,7 +17,7 @@ class GetWaterInfo(_NoArgsCommand):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -28,7 +28,7 @@ class GetWaterInfo(_NoArgsCommand):
         event_bus.notify(
             WaterInfoEventDto(mop_attached, WaterAmount(int(data["amount"])))
         )
-        return MessageResponse.success()
+        return HandlingResult.success()
 
 
 class SetWaterInfo(SetCommand):

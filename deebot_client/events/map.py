@@ -27,3 +27,12 @@ class PositionsEventDto(EventDto):
     """Position event representation."""
 
     positions: List[Position]
+
+
+@dataclass(frozen=True)
+class MapTraceEventDto(EventDto):
+    """Map trace event representation."""
+
+    start: int
+    total: int
+    data: str

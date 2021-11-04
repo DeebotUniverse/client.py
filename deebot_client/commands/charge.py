@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict
 
 from ..events import StatusEventDto
-from ..message import MessageHandling, MessageResponse
+from ..message import HandlingResult, HandlingState
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand
 
@@ -19,13 +19,13 @@ class Charge(_ExecuteCommand):
         super().__init__({"act": "go"})
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
         """
         response = super()._handle_body(event_bus, body)
-        if response.handling == MessageHandling.SUCCESS:
+        if response.state == HandlingState.SUCCESS:
             event_bus.notify(StatusEventDto(True, VacuumState.RETURNING))
 
         return response

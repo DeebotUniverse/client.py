@@ -21,6 +21,7 @@ from .events import (
 )
 from .events.event_bus import EventBus
 from .map import Map
+from .message import HandlingState
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
@@ -90,11 +91,21 @@ class VacuumBot:
 
         _LOGGER.debug("Handle command %s: %s", command.name, response)
         if isinstance(command, (CommandWithHandling, CustomCommand)):
-            command.handle_requested(self.events, response)
+            result = command.handle_requested(self.events, response)
             if isinstance(command, CustomCommand):
-                # Responses of CustomCommands will be handled like messages got via mqtt,
-                # so build in events will be raised if this response too.
+                # Custom command can be send for implemented commands too.
+                # We handle the response explicit to fire event if necessary
                 await self.handle_message(command.name, response)
+
+            if result.state == HandlingState.SUCCESS and result.requested_commands:
+                # Execute command which are requested by the handler
+                tasks = []
+                for requested_command in result.requested_commands:
+                    tasks.append(
+                        asyncio.create_task(self.execute_command(requested_command))
+                    )
+
+                await asyncio.gather(*tasks)
         elif "Map" in command.name:
             # todo refactor map commands and remove it # pylint: disable=fixme
             await self.map._handle(  # pylint: disable=protected-access

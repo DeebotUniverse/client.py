@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import FanSpeedEventDto
-from ..message import MessageResponse
+from ..message import HandlingResult
 from ..util import DisplayNameIntEnum
 from .common import EventBus, SetCommand, _NoArgsCommand
 
@@ -27,7 +27,7 @@ class GetFanSpeed(_NoArgsCommand):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -35,7 +35,7 @@ class GetFanSpeed(_NoArgsCommand):
         event_bus.notify(
             FanSpeedEventDto(FanSpeedLevel(int(data["speed"])).display_name)
         )
-        return MessageResponse.success()
+        return HandlingResult.success()
 
 
 class SetFanSpeed(SetCommand):

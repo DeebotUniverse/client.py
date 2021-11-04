@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from ..events import StatusEventDto
-from ..message import MessageResponse
+from ..message import HandlingResult
 from ..models import VacuumState
 from .common import _CODE, EventBus, _NoArgsCommand
 
@@ -18,17 +18,17 @@ class GetChargeState(_NoArgsCommand):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
         if data.get("isCharging") == 1:
             event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
-        return MessageResponse.success()
+        return HandlingResult.success()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
         if body.get(_CODE, -1) == 0:
             return super()._handle_body(event_bus, body)
 
@@ -43,6 +43,6 @@ class GetChargeState(_NoArgsCommand):
 
         if status:
             event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
-            return MessageResponse.success()
+            return HandlingResult.success()
 
-        return MessageResponse.analyse()
+        return HandlingResult.analyse()

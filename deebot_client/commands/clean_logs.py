@@ -3,8 +3,8 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEventDto
-from ..message import MessageResponse
-from .common import CommandWithHandling, EventBus
+from ..message import HandlingResult
+from .common import CommandResult, CommandWithHandling, EventBus
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -19,7 +19,7 @@ class GetCleanLogs(CommandWithHandling):
 
     def handle_requested(
         self, event_bus: EventBus, response: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> CommandResult:
         """Handle response from a manual requested command.
 
         :return: A message response
@@ -43,10 +43,10 @@ class GetCleanLogs(CommandWithHandling):
                     )
 
                 event_bus.notify(CleanLogEventDto(logs))
-                return MessageResponse.success()
+                return CommandResult.success()
 
-        return MessageResponse.analyse()
+        return CommandResult.analyse()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
         raise RuntimeError("Should never be called!")

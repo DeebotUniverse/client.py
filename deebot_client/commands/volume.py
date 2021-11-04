@@ -3,7 +3,7 @@
 from typing import Any, Dict, Mapping
 
 from ..events import VolumeEventDto
-from ..message import MessageResponse
+from ..message import HandlingResult
 from .common import EventBus, SetCommand, _NoArgsCommand
 
 
@@ -15,7 +15,7 @@ class GetVolume(_NoArgsCommand):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -24,7 +24,7 @@ class GetVolume(_NoArgsCommand):
         event_bus.notify(
             VolumeEventDto(volume=data["volume"], maximum=data.get("total", None))
         )
-        return MessageResponse.success()
+        return HandlingResult.success()
 
 
 class SetVolume(SetCommand):

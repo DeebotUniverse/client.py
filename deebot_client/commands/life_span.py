@@ -3,7 +3,7 @@ import logging
 from typing import List
 
 from ..events import LifeSpan, LifeSpanEventDto
-from ..message import MessageResponse
+from ..message import HandlingResult
 from .common import CommandWithHandling, EventBus
 
 _LOGGER = logging.getLogger(__name__)
@@ -19,7 +19,7 @@ class GetLifeSpan(CommandWithHandling):
         super().__init__(args)
 
     @classmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> MessageResponse:
+    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -34,6 +34,6 @@ class GetLifeSpan(CommandWithHandling):
 
             percent = round((left / total) * 100, 2)
             event_bus.notify(LifeSpanEventDto(component_type, percent))
-            return MessageResponse.success()
+            return HandlingResult.success()
 
-        return MessageResponse.analyse()
+        return HandlingResult.analyse()

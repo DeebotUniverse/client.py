@@ -28,6 +28,7 @@ from . import (
     FanSpeedEventDto,
     LifeSpanEventDto,
     MapEventDto,
+    PositionsEventDto,
     ReportStatsEventDto,
     RoomsEventDto,
     StatsEventDto,
@@ -36,6 +37,7 @@ from . import (
     VolumeEventDto,
     WaterInfoEventDto,
 )
+from .map import MapTraceEventDto
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[EventDto], List[Command]] = {
     BatteryEventDto: [GetBattery()],
@@ -45,6 +47,8 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[EventDto], List[Command]] = {
     FanSpeedEventDto: [GetFanSpeed()],
     LifeSpanEventDto: [GetLifeSpan()],
     MapEventDto: [GetMapTrace(), GetPos(), GetMajorMap()],
+    MapTraceEventDto: [GetMapTrace()],
+    PositionsEventDto: [GetPos()],
     ReportStatsEventDto: [],  # ReportStats cannot be pulled
     RoomsEventDto: [GetCachedMapInfo()],
     StatsEventDto: [GetStats()],

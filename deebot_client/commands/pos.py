@@ -3,7 +3,7 @@
 from typing import Any, Dict
 
 from ..events import Position, PositionsEventDto, PositionType
-from ..message import MessageResponse
+from ..message import HandlingResult
 from .common import CommandWithHandling, EventBus
 
 
@@ -18,7 +18,7 @@ class GetPos(CommandWithHandling):
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: Dict[str, Any]
-    ) -> MessageResponse:
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -46,6 +46,6 @@ class GetPos(CommandWithHandling):
 
         if positions:
             event_bus.notify(PositionsEventDto(positions=positions))
-            return MessageResponse.success()
+            return HandlingResult.success()
 
-        return MessageResponse.analyse()
+        return HandlingResult.analyse()
