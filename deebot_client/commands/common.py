@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Mapping, Type, Union
 
 from ..command import Command
 from ..events.event_bus import EventBus
-from ..message import Message
+from ..message import Message, MessageHandling, MessageResponse
 
 _LOGGER = logging.getLogger(__name__)
 
@@ -18,17 +18,19 @@ class CommandWithHandling(Command, Message, ABC):
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
 
-    def handle_requested(self, event_bus: EventBus, response: Dict[str, Any]) -> bool:
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle response from a manual requested command.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             return self.handle(event_bus, data)
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
-        return False
+        return MessageResponse(MessageHandling.FAILED)
 
 
 class _NoArgsCommand(CommandWithHandling, ABC):
@@ -48,17 +50,17 @@ class _ExecuteCommand(CommandWithHandling, ABC):
     name = "__invalid__"
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> bool:
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
         """Handle message->body and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
         # Success event looks like { "code": 0, "msg": "ok" }
         if body.get(_CODE, -1) == 0:
-            return True
+            return MessageResponse.success()
 
         _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
-        return False
+        return MessageResponse(MessageHandling.FAILED)
 
 
 class SetCommand(_ExecuteCommand, ABC):

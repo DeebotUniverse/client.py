@@ -3,6 +3,7 @@ import logging
 from typing import List
 
 from ..events import LifeSpan, LifeSpanEventDto
+from ..message import MessageResponse
 from .common import CommandWithHandling, EventBus
 
 _LOGGER = logging.getLogger(__name__)
@@ -18,31 +19,21 @@ class GetLifeSpan(CommandWithHandling):
         super().__init__(args)
 
     @classmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> bool:
+    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        handle_all_components = True
         for component in data:
-            try:
-                component_type = LifeSpan(component.get("type"))
-            except (ValueError, KeyError):
-                _LOGGER.warning(
-                    "Could not identify component type: event=%s", data, exc_info=True
-                )
-                handle_all_components = False
-                continue
+            component_type = LifeSpan(component["type"])
+            left = int(component["left"])
+            total = int(component["total"])
 
-            left = int(component.get("left", 0))
-            total = int(component.get("total", 0))
+            if total <= 0:
+                raise ValueError("total not positive!")
 
-            if component_type and total > 0:
-                percent = round((left / total) * 100, 2)
-                event_bus.notify(LifeSpanEventDto(component_type, percent))
-            else:
-                _LOGGER.warning("Could not parse life span event with %s", data)
-                handle_all_components = False
-                continue
+            percent = round((left / total) * 100, 2)
+            event_bus.notify(LifeSpanEventDto(component_type, percent))
+            return MessageResponse.success()
 
-        return handle_all_components
+        return MessageResponse.analyse()

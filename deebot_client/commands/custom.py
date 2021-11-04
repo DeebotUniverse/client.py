@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, Union
 
 from ..events import CustomCommandEventDto
+from ..message import MessageHandling, MessageResponse
 from .common import EventBus
 
 _LOGGER = logging.getLogger(__name__)
@@ -27,15 +28,17 @@ class CustomCommand:
         """Command additional arguments."""
         return self._args
 
-    def handle_requested(self, events: EventBus, response: Dict[str, Any]) -> bool:
+    def handle_requested(
+        self, events: EventBus, response: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle response from a manual requested command.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             events.notify(CustomCommandEventDto(self.name, data))
-            return True
+            return MessageResponse.success()
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
-        return False
+        return MessageResponse(MessageHandling.FAILED)

@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import FanSpeedEventDto
+from ..message import MessageResponse
 from ..util import DisplayNameIntEnum
 from .common import EventBus, SetCommand, _NoArgsCommand
 
@@ -24,24 +25,17 @@ class GetFanSpeed(_NoArgsCommand):
     name = "getSpeed"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        speed = data.get("speed", None)
-
-        if speed is not None:
-            try:
-                event_bus.notify(
-                    FanSpeedEventDto(FanSpeedLevel(int(speed)).display_name)
-                )
-                return True
-            except ValueError:
-                _LOGGER.warning("Could not parse correctly fan speed: %s", data)
-
-        _LOGGER.warning("Could not parse %s with %s", cls.name, data)
-        return False
+        event_bus.notify(
+            FanSpeedEventDto(FanSpeedLevel(int(data["speed"])).display_name)
+        )
+        return MessageResponse.success()
 
 
 class SetFanSpeed(SetCommand):

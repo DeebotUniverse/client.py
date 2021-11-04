@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import WaterAmount, WaterInfoEventDto
+from ..message import MessageResponse
 from .common import EventBus, SetCommand, _NoArgsCommand
 
 _LOGGER = logging.getLogger(__name__)
@@ -14,25 +15,20 @@ class GetWaterInfo(_NoArgsCommand):
     name = "getWaterInfo"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        amount = data.get("amount", None)
+        # todo enable can be missing pylint: disable=fixme
         mop_attached = bool(data.get("enable"))
 
-        if amount is not None:
-            try:
-                event_bus.notify(
-                    WaterInfoEventDto(mop_attached, WaterAmount(int(amount)))
-                )
-                return True
-            except ValueError:
-                _LOGGER.warning("Could not parse correctly water info amount: %s", data)
-
-        _LOGGER.warning("Could not parse %s with %s", cls.name, data)
-        return False
+        event_bus.notify(
+            WaterInfoEventDto(mop_attached, WaterAmount(int(data["amount"])))
+        )
+        return MessageResponse.success()
 
 
 class SetWaterInfo(SetCommand):

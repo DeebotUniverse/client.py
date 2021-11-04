@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, Optional
 
 from ..events import StatusEventDto
+from ..message import MessageResponse
 from ..models import VacuumState
 from .common import _CODE, EventBus, _NoArgsCommand
 
@@ -15,19 +16,21 @@ class GetChargeState(_NoArgsCommand):
     name = "getChargeState"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
         if data.get("isCharging") == 1:
             event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
-        return True
+        return MessageResponse.success()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> bool:
-        if _CODE not in body or body[_CODE] == 0:
-            return cls._handle_body_data_dict(event_bus, body.get("data", body))
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+        if body.get(_CODE, -1) == 0:
+            return super()._handle_body(event_bus, body)
 
         status: Optional[VacuumState] = None
         if body.get("msg", None) == "fail":
@@ -40,6 +43,6 @@ class GetChargeState(_NoArgsCommand):
 
         if status:
             event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
-            return True
+            return MessageResponse.success()
 
-        return False
+        return MessageResponse.analyse()

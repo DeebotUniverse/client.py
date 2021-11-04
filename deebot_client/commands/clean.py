@@ -4,6 +4,7 @@ from enum import Enum, unique
 from typing import Any, Dict, Optional
 
 from ..events import StatusEventDto
+from ..message import MessageResponse
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand, _NoArgsCommand
 
@@ -60,10 +61,12 @@ class GetCleanInfo(_NoArgsCommand):
     name = "getCleanInfo"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
 
         status: Optional[VacuumState] = None
@@ -99,5 +102,6 @@ class GetCleanInfo(_NoArgsCommand):
 
         if status:
             event_bus.notify(StatusEventDto(True, status))
+            return MessageResponse.success()
 
-        return True
+        return MessageResponse.analyse()

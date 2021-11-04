@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict, List, Optional
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEventDto
+from ..message import MessageResponse
 from .common import CommandWithHandling, EventBus
 
 _LOGGER = logging.getLogger(__name__)
@@ -16,12 +17,14 @@ class GetCleanLogs(CommandWithHandling):
     def __init__(self, count: int = 0) -> None:
         super().__init__({"count": count})
 
-    def handle_requested(self, event_bus: EventBus, response: Dict[str, Any]) -> bool:
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle response from a manual requested command.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        if response.get("ret") == "ok":
+        if response["ret"] == "ok":
             resp_logs: Optional[List[dict]] = response.get("logs")
 
             # Ecovacs API is changing their API, this request may not working properly
@@ -40,16 +43,10 @@ class GetCleanLogs(CommandWithHandling):
                     )
 
                 event_bus.notify(CleanLogEventDto(logs))
-                return True
+                return MessageResponse.success()
 
-        _LOGGER.warning("Could not parse clean logs event with %s", response)
-        return False
+        return MessageResponse.analyse()
 
     @classmethod
-    def handle(cls, event_bus: EventBus, message: Dict[str, Any]) -> bool:
-        """Handle message and notify the correct event subscribers.
-
-        :return: True if data was valid and no error was included
-        """
-        _LOGGER.error("Not supported by %s", cls.name)
-        return False
+    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> MessageResponse:
+        raise RuntimeError("Should never be called!")

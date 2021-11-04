@@ -3,6 +3,7 @@ import logging
 from typing import Any, Dict
 
 from ..events import ErrorEventDto, StatusEventDto
+from ..message import MessageResponse
 from ..models import VacuumState
 from .common import EventBus, _NoArgsCommand
 
@@ -15,10 +16,12 @@ class GetError(_NoArgsCommand):
     name = "getError"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> MessageResponse:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
         codes = data.get("code", [])
         if codes:
@@ -35,10 +38,9 @@ class GetError(_NoArgsCommand):
                     )
                     event_bus.notify(StatusEventDto(True, VacuumState.ERROR))
                 event_bus.notify(ErrorEventDto(error, description))
-                return True
+                return MessageResponse.success()
 
-        _LOGGER.warning("Could not process error message: message=%s", data)
-        return False
+        return MessageResponse.analyse()
 
 
 # from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.js
