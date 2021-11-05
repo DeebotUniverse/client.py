@@ -52,3 +52,11 @@ class MapSetEventDto(EventDto):
     """Map set event."""
 
     rooms_count: int
+
+
+@dataclass(frozen=True)
+class MinorMapEvent(EventDto):
+    """Minor map event."""
+
+    index: int
+    value: str

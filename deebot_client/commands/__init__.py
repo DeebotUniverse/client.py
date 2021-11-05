@@ -52,6 +52,7 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     GetMapSet,
     GetMapSubSet,
     GetMapTrace,
+    GetMinorMap,
 
     PlaySound,
 

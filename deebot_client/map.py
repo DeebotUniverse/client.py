@@ -5,7 +5,7 @@ import logging
 import lzma
 import struct
 from io import BytesIO
-from typing import Any, Awaitable, Callable, Dict, Final, List, Optional
+from typing import Awaitable, Callable, Dict, Final, List, Optional
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
@@ -24,6 +24,7 @@ from .events import (
     RoomsEventDto,
 )
 from .events.event_bus import EventBus
+from .events.map import MinorMapEvent
 from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
@@ -166,44 +167,11 @@ class Map:
 
         event_bus.subscribe(RoomEvent, on_room)
 
-    # ---------------------------- EVENT HANDLING ----------------------------
+        async def on_minor_map(event: MinorMapEvent) -> None:
+            if self._event_bus.has_subscribers(MapEventDto):
+                self._add_map_piece(event.index, event.value)
 
-    async def _handle(
-        self, command_name: str, message: Dict[str, Any], requested: bool = True
-    ) -> None:
-        """Handle the given map message. Do not use this method!! Use vacuum_bot methods instead.
-
-        :param command_name: the name of the event or request
-        :param message: the message
-        :param requested: True if we manual requested the data (ex. via rest). MQTT -> False
-        :return: None
-        """
-        if requested:
-            if message.get("ret") != "ok":
-                _LOGGER.warning('Event %s where ret != "ok": %s', command_name, message)
-                return
-
-            message = message.get("resp", message)
-
-        body = message.get("body", {})
-
-        if not body:
-            _LOGGER.warning("Invalid Event %s: %s", command_name, message)
-            return
-
-        data = body.get("data", {})
-
-        if not self._event_bus.has_subscribers(MapEventDto):
-            # above events must be processed always as they are needed to get room information's
-            _LOGGER.debug("No Map subscribers. Skipping map events")
-            return
-        if command_name == GetMinorMap.name:
-            self._handle_minor_map(data)
-        else:
-            _LOGGER.debug('Unknown command "%s" with %s', command_name, message)
-
-    def _handle_minor_map(self, event_data: dict) -> None:
-        self._add_map_piece(event_data["pieceIndex"], event_data["pieceValue"])
+        event_bus.subscribe(MinorMapEvent, on_minor_map)
 
     # ---------------------------- METHODS ----------------------------
 

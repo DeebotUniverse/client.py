@@ -5,7 +5,7 @@ from typing import Any, Dict, List
 from ..command import Command
 from ..events import MajorMapEventDto, MapTraceEventDto, RoomEvent
 from ..events.event_bus import EventBus
-from ..events.map import MapSetEventDto
+from ..events.map import MapSetEventDto, MinorMapEvent
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult
@@ -254,10 +254,24 @@ class GetMapTrace(CommandWithHandling):
         return result
 
 
-class GetMinorMap(Command):
+class GetMinorMap(CommandWithHandling):
     """Get minor map command."""
 
     name = "getMinorMap"
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if data["type"] == "ol":
+            event_bus.notify(MinorMapEvent(data["pieceIndex"], data["pieceValue"]))
+            return HandlingResult.success()
+
+        return HandlingResult.analyse()

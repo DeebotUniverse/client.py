@@ -106,11 +106,6 @@ class VacuumBot:
                     )
 
                 await asyncio.gather(*tasks)
-        elif "Map" in command.name:
-            # todo refactor map commands and remove it # pylint: disable=fixme
-            await self.map._handle(  # pylint: disable=protected-access
-                command.name, response, True
-            )
         else:
             _LOGGER.warning("Unsupported command! Command %s", command.name)
 
@@ -153,9 +148,5 @@ class VacuumBot:
         found_command = MESSAGES.get(message_name, None)
         if found_command:
             found_command.handle(self.events, message_data)
-        elif "Map" in message_name:
-            await self.map._handle(  # pylint: disable=protected-access
-                message_name, message_data, False
-            )
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)
