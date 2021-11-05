@@ -1,12 +1,9 @@
 """Battery commands."""
-import logging
 from typing import Any, Dict
 
 from ..events import BatteryEvent
 from ..message import HandlingResult
 from .common import EventBus, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetBattery(_NoArgsCommand):

@@ -1,7 +1,6 @@
 """Vacuum bot module."""
 import asyncio
 import inspect
-import logging
 import re
 from typing import Any, Dict, Final, Optional, Union
 
@@ -20,12 +19,13 @@ from .events import (
     TotalStatsEvent,
 )
 from .events.event_bus import EventBus
+from .logging import get_logger
 from .map import Map
 from .message import HandlingState
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 _COMMAND_REPLACE_PATTERN = "^((on)|(off)|(report))"
 _COMMAND_REPLACE_REPLACEMENT = "get"

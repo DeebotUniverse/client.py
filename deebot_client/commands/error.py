@@ -1,13 +1,10 @@
 """Error commands."""
-import logging
 from typing import Any, Dict
 
 from ..events import ErrorEvent, StatusEvent
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import EventBus, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetError(_NoArgsCommand):
@@ -31,11 +28,6 @@ class GetError(_NoArgsCommand):
             if error is not None:
                 description = _ERROR_CODES.get(error)
                 if error != 0:
-                    _LOGGER.warning(
-                        "Bot in error-state: code=%d, description=%s",
-                        error,
-                        description,
-                    )
                     event_bus.notify(StatusEvent(True, VacuumState.ERROR))
                 event_bus.notify(ErrorEvent(error, description))
                 return HandlingResult.success()

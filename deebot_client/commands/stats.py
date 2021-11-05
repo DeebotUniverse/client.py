@@ -1,12 +1,9 @@
 """Stats commands."""
-import logging
 from typing import Any, Dict
 
 from ..events import StatsEvent, TotalStatsEvent
 from ..message import HandlingResult
 from .common import EventBus, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetStats(_NoArgsCommand):

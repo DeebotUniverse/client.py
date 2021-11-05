@@ -1,6 +1,5 @@
 """Authentication module."""
 import asyncio
-import logging
 import time
 from typing import Any, Callable, Dict, Mapping, Optional, Set, Union
 
@@ -8,10 +7,11 @@ from aiohttp import hdrs
 
 from ._api_client import _InternalApiClient
 from .const import REALM
+from .logging import get_logger
 from .models import Configuration, Credentials
-from .util import md5, sanitize_data
+from .util import md5
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"
@@ -204,17 +204,12 @@ class _AuthClient:
                     )
                     continue
 
-            _LOGGER.error(
-                "call to %s failed with %s", _PATH_USERS_USER, sanitize_data(resp)
-            )
+            _LOGGER.error("call to %s failed with %s", _PATH_USERS_USER, resp)
             raise RuntimeError(
-                f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER} and "
-                f"parameters {sanitize_data(data)}"
+                f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER}"
             )
 
-        raise RuntimeError(
-            f"failure for call {_PATH_USERS_USER} with parameters {sanitize_data(data)}"
-        )
+        raise RuntimeError(f"failure for call {_PATH_USERS_USER}")
 
 
 class Authenticator:

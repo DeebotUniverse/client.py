@@ -1,13 +1,10 @@
 """(fan) speed commands."""
-import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import FanSpeedEvent
 from ..message import HandlingResult
 from ..util import DisplayNameIntEnum
 from .common import EventBus, SetCommand, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class FanSpeedLevel(DisplayNameIntEnum):

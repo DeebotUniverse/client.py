@@ -32,6 +32,10 @@ jobs:
       - name: Pylint review
         # Cannot be run by pre-commit.ci as repo is local
         run: pre-commit run pylint --all-files --show-diff-on-failure
+      - name:
+          Verify no getLogger usages
+          # Cannot be run by pre-commit.ci as repo is local
+        run: pre-commit run verifyNoGetLogger
 
   tests:
     runs-on: "ubuntu-latest"

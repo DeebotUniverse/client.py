@@ -1,12 +1,9 @@
 """Stats commands."""
-import logging
 from typing import Any, Dict
 
 from ..events import CleanJobStatus, ReportStatsEvent
 from ..events.event_bus import EventBus
 from ..message import HandlingResult, Message
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class ReportStats(Message):

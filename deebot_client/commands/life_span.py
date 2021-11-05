@@ -1,12 +1,9 @@
 """Life span commands."""
-import logging
 from typing import List
 
 from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult
 from .common import CommandWithHandling, EventBus
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetLifeSpan(CommandWithHandling):

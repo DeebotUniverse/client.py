@@ -1,13 +1,10 @@
 """Charge commands."""
-import logging
 from typing import Any, Dict
 
 from ..events import StatusEvent
 from ..message import HandlingResult, HandlingState
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class Charge(_ExecuteCommand):

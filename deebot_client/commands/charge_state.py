@@ -1,13 +1,10 @@
 """Charge state commands."""
-import logging
 from typing import Any, Dict, Optional
 
 from ..events import StatusEvent
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import _CODE, EventBus, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetChargeState(_NoArgsCommand):

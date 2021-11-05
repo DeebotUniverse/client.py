@@ -1,6 +1,5 @@
 """MQTT module."""
 import json
-import logging
 import ssl
 from typing import Dict, List, MutableMapping, Optional
 
@@ -10,10 +9,11 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import SET_COMMAND_NAMES, SetCommand
+from .logging import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 
 def _get_subscriptions(device_info: DeviceInfo) -> List[Subscription]:

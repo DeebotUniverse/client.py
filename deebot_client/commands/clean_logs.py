@@ -1,12 +1,9 @@
 """clean log commands."""
-import logging
 from typing import Any, Dict, List, Optional
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from ..message import HandlingResult
 from .common import CommandResult, CommandWithHandling, EventBus
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetCleanLogs(CommandWithHandling):
