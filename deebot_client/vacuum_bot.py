@@ -9,18 +9,19 @@ import aiohttp
 
 from .api_client import ApiClient
 from .command import Command
-from .commands import Clean, CommandWithHandling, GetPos
+from .commands import Clean, CommandWithHandling
 from .commands.clean import CleanAction
 from .commands.custom import CustomCommand
 from .events import (
-    CleanLogEventDto,
-    LifeSpanEventDto,
-    StatsEventDto,
-    StatusEventDto,
-    TotalStatsEventDto,
+    CleanLogEvent,
+    LifeSpanEvent,
+    StatsEvent,
+    StatusEvent,
+    TotalStatsEvent,
 )
 from .events.event_bus import EventBus
 from .map import Map
+from .message import HandlingState
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
@@ -44,14 +45,14 @@ class VacuumBot:
         self._api_client = api_client
 
         self._semaphore = asyncio.Semaphore(3)
-        self._status: StatusEventDto = StatusEventDto(device_info.status == 1, None)
+        self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
 
         self.fw_version: Optional[str] = None
         self.events: Final[EventBus] = EventBus(self.execute_command)
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
-        async def on_status(event: StatusEventDto) -> None:
+        async def on_status(event: StatusEvent) -> None:
             last_status = self._status
             self._status = event
             if (not last_status.available) and event.available:
@@ -62,15 +63,15 @@ class VacuumBot:
                     if name != "status":
                         obj.request_refresh()
             elif event.state == VacuumState.DOCKED:
-                self.events.request_refresh(CleanLogEventDto)
-                self.events.request_refresh(TotalStatsEventDto)
+                self.events.request_refresh(CleanLogEvent)
+                self.events.request_refresh(TotalStatsEvent)
 
-        self.events.subscribe(StatusEventDto, on_status)
+        self.events.subscribe(StatusEvent, on_status)
 
-        async def on_stats(_: StatsEventDto) -> None:
-            self.events.request_refresh(LifeSpanEventDto)
+        async def on_stats(_: StatsEvent) -> None:
+            self.events.request_refresh(LifeSpanEvent)
 
-        self.events.subscribe(StatsEventDto, on_stats)
+        self.events.subscribe(StatsEvent, on_stats)
 
     async def execute_command(self, command: Union[Command, CustomCommand]) -> None:
         """Execute given command and handle response."""
@@ -90,22 +91,27 @@ class VacuumBot:
 
         _LOGGER.debug("Handle command %s: %s", command.name, response)
         if isinstance(command, (CommandWithHandling, CustomCommand)):
-            command.handle_requested(self.events, response)
+            result = command.handle_requested(self.events, response)
             if isinstance(command, CustomCommand):
-                # Responses of CustomCommands will be handled like messages got via mqtt,
-                # so build in events will be raised if this response too.
+                # Custom command can be send for implemented commands too.
+                # We handle the response explicit to fire event if necessary
                 await self.handle_message(command.name, response)
-        elif "Map" in command.name or command.name == GetPos.name:
-            # todo refactor map commands and remove it # pylint: disable=fixme
-            await self.map._handle(  # pylint: disable=protected-access
-                command.name, response, True
-            )
+
+            if result.state == HandlingState.SUCCESS and result.requested_commands:
+                # Execute command which are requested by the handler
+                tasks = []
+                for requested_command in result.requested_commands:
+                    tasks.append(
+                        asyncio.create_task(self.execute_command(requested_command))
+                    )
+
+                await asyncio.gather(*tasks)
         else:
             _LOGGER.warning("Unsupported command! Command %s", command.name)
 
     def set_available(self, available: bool) -> None:
         """Set available."""
-        status = StatusEventDto(available, self._status.state)
+        status = StatusEvent(available, self._status.state)
         self.events.notify(status)
 
     async def handle_message(
@@ -142,9 +148,5 @@ class VacuumBot:
         found_command = MESSAGES.get(message_name, None)
         if found_command:
             found_command.handle(self.events, message_data)
-        elif "Map" in message_name or message_name == GetPos.name:
-            await self.map._handle(  # pylint: disable=protected-access
-                message_name, message_data, False
-            )
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)

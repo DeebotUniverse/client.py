@@ -5,44 +5,29 @@ import logging
 import lzma
 import struct
 from io import BytesIO
-from typing import Any, Awaitable, Callable, Dict, Final, List, Optional, Union
+from typing import Awaitable, Callable, Dict, Final, List, Optional
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
-from .commands import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapSet,
-    GetMapSubSet,
-    GetMapTrace,
-    GetMinorMap,
-    GetPos,
+from .commands import GetMinorMap
+from .events import (
+    MajorMapEvent,
+    MapSetEvent,
+    MapTraceEvent,
+    MinorMapEvent,
+    Position,
+    PositionsEvent,
+    PositionType,
+    RoomEvent,
+    RoomsEvent,
 )
-from .events import MapEventDto, RoomsEventDto
-from .events.event_bus import EventBus
-from .models import Coordinate, Room
+from .events.event_bus import EventBus, EventListener
+from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
 _TRACE_MAP = "trace_map"
-_ROOM_INT_TO_NAME = {
-    0: "Default",
-    1: "Living Room",
-    2: "Dining Room",
-    3: "Bedroom",
-    4: "Study",
-    5: "Kitchen",
-    6: "Bathroom",
-    7: "Laundry",
-    8: "Lounge",
-    9: "Storeroom",
-    10: "Kids room",
-    11: "Sunroom",
-    12: "Corridor",
-    13: "Balcony",
-    14: "Gym",
-}
 
 
 def _decompress_7z_base64_data(data: str) -> bytes:
@@ -66,18 +51,28 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _draw_position(
-    position: Coordinate, png_str: str, image: Image, pixel_width: int, offset: int
+_POSITION_PNG = {
+    PositionType.DEEBOT: "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAIAAABvrngfAAAACXBIWXMAAAsTAAALEwEAmpwYAAAF0WlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMC0wNS0yNFQxMjowMzoxNiswMjowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo0YWM4NWY5MC1hNWMwLTE2NDktYTQ0MC0xMWM0NWY5OGQ1MDYiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDo3Zjk3MTZjMi1kZDM1LWJiNDItYjMzZS1hYjYwY2Y4ZTZlZDYiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIHN0RXZ0OndoZW49IjIwMjAtMDUtMjRUMTI6MDM6MTYrMDI6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NGFjODVmOTAtYTVjMC0xNjQ5LWE0NDAtMTFjNDVmOThkNTA2IiBzdEV2dDp3aGVuPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+AP7+NwAAAFpJREFUCJllzEEKgzAQhtFvMkSsEKj30oUXrYserELA1obhd+nCd4BnksZ53X4Cnr193ov59Iq+o2SA2vz4p/iKkgkRouTYlbhJ/jBqww03avPBTNI4rdtx9ScfWyYCg52e0gAAAABJRU5ErkJggg==",  # nopep8
+    PositionType.CHARGER: "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAOCAYAAAAWo42rAAAAdUlEQVQoU2NkQAP/nzD8BwkxyjAwIkuhcEASRCmEKYKZhGwq3ER0ReiKSVOIyzRkU8EmwhUyKzAwSNyHyL9QZGD4+wDMBLmVEasimFHIiuEKpcHBhwmeQryBMJFohcjuw2s1SBKHZ8BWo/gauyshvobJEYoZAEOSPXnhzwZnAAAAAElFTkSuQmCC",  # nopep8
+}
+
+
+def _draw_positions(
+    positions: List[Position],
+    image: Image,
+    pixel_width: int,
+    offset: int,
 ) -> None:
-    icon = Image.open(BytesIO(base64.b64decode(png_str)))
-    image.paste(
-        icon,
-        (
-            int((position.x / pixel_width) + offset),
-            int((position.y / pixel_width) + offset),
-        ),
-        icon.convert("RGBA"),
-    )
+    for position in positions:
+        icon = Image.open(BytesIO(base64.b64decode(_POSITION_PNG[position.type])))
+        image.paste(
+            icon,
+            (
+                int((position.x / pixel_width) + offset),
+                int((position.y / pixel_width) + offset),
+            ),
+            icon.convert("RGBA"),
+        )
 
 
 def _calc_coordinate(value: Optional[str], pixel_width: int, offset: int) -> float:
@@ -100,9 +95,6 @@ class Map:
         _TRACE_MAP: "#FFFFFF",
     }
 
-    ROBOT_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAIAAABvrngfAAAACXBIWXMAAAsTAAALEwEAmpwYAAAF0WlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMC0wNS0yNFQxMjowMzoxNiswMjowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo0YWM4NWY5MC1hNWMwLTE2NDktYTQ0MC0xMWM0NWY5OGQ1MDYiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDo3Zjk3MTZjMi1kZDM1LWJiNDItYjMzZS1hYjYwY2Y4ZTZlZDYiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIHN0RXZ0OndoZW49IjIwMjAtMDUtMjRUMTI6MDM6MTYrMDI6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NGFjODVmOTAtYTVjMC0xNjQ5LWE0NDAtMTFjNDVmOThkNTA2IiBzdEV2dDp3aGVuPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+AP7+NwAAAFpJREFUCJllzEEKgzAQhtFvMkSsEKj30oUXrYserELA1obhd+nCd4BnksZ53X4Cnr193ov59Iq+o2SA2vz4p/iKkgkRouTYlbhJ/jBqww03avPBTNI4rdtx9ScfWyYCg52e0gAAAABJRU5ErkJggg=="  # nopep8
-    CHARGER_PNG = "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAOCAYAAAAWo42rAAAAdUlEQVQoU2NkQAP/nzD8BwkxyjAwIkuhcEASRCmEKYKZhGwq3ER0ReiKSVOIyzRkU8EmwhUyKzAwSNyHyL9QZGD4+wDMBLmVEasimFHIiuEKpcHBhwmeQryBMJFohcjuw2s1SBKHZ8BWo/gauyshvobJEYoZAEOSPXnhzwZnAAAAAElFTkSuQmCC"  # nopep8
-
     RESIZE_FACTOR = 3
     PIXEL_WIDTH = 50
     OFFSET = 400
@@ -113,8 +105,7 @@ class Map:
         self._execute_command = execute_command
         self._event_bus = event_bus
 
-        self._robot_position: Optional[Coordinate] = None
-        self._charger_position: Optional[Coordinate] = None
+        self._positions: List[Position] = []
         self._rooms: Final[Dict[int, Room]] = {}
         self._amount_rooms: int = 0
         self._trace_values: List[int] = []
@@ -122,172 +113,22 @@ class Map:
         self._is_map_up_to_date: bool = False
         self._base64_image: Optional[bytes] = None
         self._last_requested_width: Optional[int] = None
+        self._listeners: List[EventListener] = []
 
-    # ---------------------------- EVENT HANDLING ----------------------------
+        async def on_map_set(event: MapSetEvent) -> None:
+            self._rooms.clear()
+            self._amount_rooms = event.rooms_count
 
-    async def _handle(
-        self, command_name: str, message: Dict[str, Any], requested: bool = True
-    ) -> None:
-        """Handle the given map message. Do not use this method!! Use vacuum_bot methods instead.
+        self._event_bus.subscribe(MapSetEvent, on_map_set)
 
-        :param command_name: the name of the event or request
-        :param message: the message
-        :param requested: True if we manual requested the data (ex. via rest). MQTT -> False
-        :return: None
-        """
-        if requested:
-            if message.get("ret") != "ok":
-                _LOGGER.warning('Event %s where ret != "ok": %s', command_name, message)
-                return
+        async def on_room(event: RoomEvent) -> None:
+            if self._rooms.get(event.id, None) != event:
+                self._rooms[event.id] = event
 
-            message = message.get("resp", message)
+                if len(self._rooms) == self._amount_rooms:
+                    self._event_bus.notify(RoomsEvent(list(self._rooms.values())))
 
-        body = message.get("body", {})
-
-        if not body:
-            _LOGGER.warning("Invalid Event %s: %s", command_name, message)
-            return
-
-        data = body.get("data", {})
-
-        if command_name == GetCachedMapInfo.name:
-            await self._handle_cached_map_info(data, requested)
-        elif command_name == GetMapSet.name:
-            await self._handle_map_set(data, requested)
-        elif command_name == GetMapSubSet.name:
-            self._handle_map_sub_set(data)
-        elif not self._event_bus.has_subscribers(MapEventDto):
-            # above events must be processed always as they are needed to get room information's
-            _LOGGER.debug("No Map subscribers. Skipping map events")
-            return
-        elif command_name == GetPos.name:
-            self._handle_position(data)
-        elif command_name == GetMapTrace.name:
-            await self._handle_map_trace(data, requested)
-        elif command_name == GetMajorMap.name:
-            await self._handle_major_map(data, requested)
-        elif command_name == GetMinorMap.name:
-            self._handle_minor_map(data)
-        else:
-            _LOGGER.debug('Unknown command "%s" with %s', command_name, message)
-
-    async def _handle_cached_map_info(self, event_data: dict, requested: bool) -> None:
-        try:
-            map_id: Optional[str] = None
-            for map_status in event_data["info"]:
-                if map_status["using"] == 1:
-                    map_id = map_status["mid"]
-                    _LOGGER.debug("[_handle_cached_map] Using Map: %s", map_id)
-                    break
-
-            if requested and map_id is not None:
-                await self._execute_command(GetMapSet(map_id))
-        except Exception as ex:  # pylint: disable=broad-except
-            _LOGGER.debug(ex, exc_info=True)
-            _LOGGER.warning(
-                "[_handle_cached_map] MapID not found -- did you finish your first auto cleaning?"
-            )
-
-    async def _handle_map_set(self, event_data: dict, requested: bool) -> None:
-        map_id = event_data["mid"]
-        map_set_id = event_data["msid"]
-        map_type = event_data["type"]
-        subsets = event_data["subsets"]
-
-        self._rooms.clear()
-        self._amount_rooms = len(subsets) if subsets else 0
-
-        if requested:
-            tasks = []
-            for subset in subsets:
-                tasks.append(
-                    asyncio.create_task(
-                        self._execute_command(
-                            GetMapSubSet(
-                                map_id=map_id,
-                                map_set_id=map_set_id,
-                                map_type=map_type,
-                                map_subset_id=subset["mssid"],
-                            )
-                        )
-                    )
-                )
-
-            if tasks:
-                await asyncio.gather(*tasks)
-
-    def _handle_map_sub_set(self, event_data: dict) -> None:
-        if event_data.get("type", None) != "ar":
-            _LOGGER.debug('Currently supporting only type="ar": event=%s', event_data)
-            return
-
-        subtype = event_data.get("subtype", event_data.get("subType", None))
-        if subtype is None:
-            _LOGGER.warning(
-                "[_handle_map_sub_set] SubType missing in message %s", event_data
-            )
-            return
-
-        subtype = int(subtype)
-        room = Room(
-            subtype=_ROOM_INT_TO_NAME[subtype],
-            id=int(event_data["mssid"]),
-            coordinates=event_data["value"],
-        )
-        if self._rooms.get(subtype, None) == room:
-            return
-
-        self._rooms[subtype] = room
-
-        if len(self._rooms) == self._amount_rooms:
-            self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
-
-    def _handle_position(self, event_data: dict) -> None:
-        if "chargePos" in event_data:
-            self._update_position(event_data["chargePos"], True)
-
-        if "deebotPos" in event_data:
-            self._update_position(event_data["deebotPos"], False)
-
-    async def _handle_map_trace(self, event_data: dict, requested: bool) -> None:
-        total_count = int(event_data["totalCount"])
-        trace_start = int(event_data["traceStart"])
-
-        # No trace value available
-        if "traceValue" in event_data:
-            if trace_start == 0:
-                self._trace_values = []
-
-            self._update_trace_points(event_data["traceValue"])
-
-            trace_start += GetMapTrace.TRACE_POINT_COUNT
-            if trace_start < total_count and requested:
-                await self._execute_command(GetMapTrace(trace_start))
-
-    async def _handle_major_map(self, event_data: dict, requested: bool) -> None:
-        _LOGGER.debug("[_handle_major_map] begin")
-        values = event_data["value"].split(",")
-
-        if requested:
-            tasks = []
-            for i in range(64):
-                if self._map_pieces[i].is_update(values[i]):
-                    _LOGGER.debug(
-                        "[_handle_major_map] MapPiece %d needs to be updated", i
-                    )
-                    self._is_map_up_to_date = False
-                    tasks.append(
-                        asyncio.create_task(
-                            self._execute_command(
-                                GetMinorMap(map_id=event_data["mid"], piece_index=i)
-                            )
-                        )
-                    )
-            if tasks:
-                await asyncio.gather(*tasks)
-
-    def _handle_minor_map(self, event_data: dict) -> None:
-        self._add_map_piece(event_data["pieceIndex"], event_data["pieceValue"])
+        self._event_bus.subscribe(RoomEvent, on_room)
 
     # ---------------------------- METHODS ----------------------------
 
@@ -299,34 +140,6 @@ class Map:
 
         self._map_pieces[map_piece].points = points_array
         _LOGGER.debug("[AddMapPiece] Done")
-
-    def _update_position(
-        self, new_values: Union[Dict[str, Any], List[Dict[str, Any]]], is_charger: bool
-    ) -> None:
-        current_value: Optional[Coordinate] = (
-            self._charger_position if is_charger else self._robot_position
-        )
-        name = "charger" if is_charger else "robot"
-        if isinstance(new_values, list):
-            new_values = new_values[0]
-
-        x = new_values.get("x")
-        y = new_values.get("y")
-
-        if x is None or y is None:
-            _LOGGER.warning("Could not parse position event for %s", name)
-            return
-
-        new_value = Coordinate(x=x, y=y)
-
-        if current_value != new_value:
-            _LOGGER.debug("Updating %s position: %d, %d", name, x, y)
-            if is_charger:
-                self._charger_position = new_value
-            else:
-                self._robot_position = new_value
-
-            self._is_map_up_to_date = False
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
@@ -376,8 +189,69 @@ class Map:
                         if pixel_type in [0x01, 0x02, 0x03]:
                             draw.point((point_x, point_y), fill=Map.COLORS[pixel_type])
 
+    def enable(self) -> None:
+        """Enable map."""
+        if self._listeners:
+            return
+
+        async def on_position(event: PositionsEvent) -> None:
+            self._positions = event.positions
+
+        self._listeners.append(self._event_bus.subscribe(PositionsEvent, on_position))
+
+        async def on_map_trace(event: MapTraceEvent) -> None:
+            if event.start == 0:
+                self._trace_values = []
+                self._update_trace_points(event.data)
+
+        self._listeners.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+
+        async def on_major_map(event: MajorMapEvent) -> None:
+            tasks = []
+            for idx, value in enumerate(event.values):
+                if self._map_pieces[idx].is_update(value):
+                    self._is_map_up_to_date = False
+                    if self._map_pieces[idx].in_use and event.requested:
+                        tasks.append(
+                            asyncio.create_task(
+                                self._execute_command(
+                                    GetMinorMap(map_id=event.map_id, piece_index=idx)
+                                )
+                            )
+                        )
+
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        self._listeners.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
+
+        async def on_minor_map(event: MinorMapEvent) -> None:
+            self._add_map_piece(event.index, event.value)
+
+        self._listeners.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
+
+    def disable(self) -> None:
+        """Disable map."""
+        listeners = self._listeners
+        self._listeners.clear()
+        for listener in listeners:
+            listener.unsubscribe()
+
+    def refresh(self) -> None:
+        """Manually refresh map."""
+        if not self._listeners:
+            raise RuntimeError("Please enable the map first")
+
+        # todo make it nice pylint: disable=fixme
+        self._event_bus.request_refresh(PositionsEvent)
+        self._event_bus.request_refresh(MapTraceEvent)
+        self._event_bus.request_refresh(MajorMapEvent)
+
     def get_base64_map(self, width: Optional[int] = None) -> bytes:
         """Return map as base64 image string."""
+        if not self._listeners:
+            raise RuntimeError("Please enable the map first")
+
         if (
             self._is_map_up_to_date
             and width == self._last_requested_width
@@ -399,21 +273,7 @@ class Map:
 
         del draw
 
-        if self._robot_position is not None:
-            _LOGGER.debug("[get_base64_map] Draw robot")
-            _draw_position(
-                self._robot_position, Map.ROBOT_PNG, image, Map.PIXEL_WIDTH, Map.OFFSET
-            )
-
-        if self._charger_position is not None:
-            _LOGGER.debug("[get_base64_map] Draw charge station")
-            _draw_position(
-                self._charger_position,
-                Map.CHARGER_PNG,
-                image,
-                Map.PIXEL_WIDTH,
-                Map.OFFSET,
-            )
+        _draw_positions(self._positions, image, Map.PIXEL_WIDTH, Map.OFFSET)
 
         _LOGGER.debug("[get_base64_map] Crop Image")
         image_box = image.getbbox()
@@ -482,11 +342,8 @@ class MapPiece:
         piece = map_piece
         if self._piece != piece:
             self._piece = piece
-
-            if piece == MapPiece.NOT_INUSE:
-                self._in_use = False
-                return False
-            self._in_use = True
+            self._points = None
+            self._in_use = piece != MapPiece.NOT_INUSE
             return True
 
         _LOGGER.debug("No update needed for piece idx %d", self._index)

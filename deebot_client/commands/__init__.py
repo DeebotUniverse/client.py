@@ -17,9 +17,9 @@ from .map import (
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
-    GetPos,
 )
 from .play_sound import PlaySound
+from .pos import GetPos
 from .relocation import SetRelocationState
 from .stats import GetStats
 from .volume import GetVolume, SetVolume
@@ -47,7 +47,16 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
     GetLifeSpan,
 
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapSubSet,
+    GetMapTrace,
+    GetMinorMap,
+
     PlaySound,
+
+    GetPos,
 
     SetRelocationState,
 

@@ -2,7 +2,8 @@
 import logging
 from typing import Any, Dict
 
-from ..events import StatsEventDto, TotalStatsEventDto
+from ..events import StatsEvent, TotalStatsEvent
+from ..message import HandlingResult
 from .common import EventBus, _NoArgsCommand
 
 _LOGGER = logging.getLogger(__name__)
@@ -14,18 +15,20 @@ class GetStats(_NoArgsCommand):
     name = "getStats"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        stats_event = StatsEventDto(
+        stats_event = StatsEvent(
             area=data.get("area"),
             time=data.get("time"),
             type=data.get("type"),
         )
         event_bus.notify(stats_event)
-        return True
+        return HandlingResult.success()
 
 
 class GetTotalStats(_NoArgsCommand):
@@ -34,11 +37,13 @@ class GetTotalStats(_NoArgsCommand):
     name = "getTotalStats"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: Dict[str, Any]) -> bool:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
-        :return: True if data was valid and no error was included
+        :return: A message response
         """
-        stats_event = TotalStatsEventDto(data["area"], data["time"], data["count"])
+        stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
         event_bus.notify(stats_event)
-        return True
+        return HandlingResult.success()

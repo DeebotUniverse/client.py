@@ -30,7 +30,7 @@ from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
 from deebot_client.models import Configuration
 from deebot_client.mqtt_client import MqttClient
-from deebot_client.events import BatteryEventDto
+from deebot_client.events import BatteryEvent
 from deebot_client.util import md5
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -45,11 +45,11 @@ async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
     config = Configuration(session,
-            device_id=device_id, country=country, continent=continent, verify_ssl=False
-        )
+                           device_id=device_id, country=country, continent=continent,
+                           verify_ssl=False
+                           )
 
     (authenticator, api_client) = create_instances(config, account_id, password_hash)
-
 
     devices_ = await api_client.get_devices()
 
@@ -59,14 +59,14 @@ async def main():
     await mqtt.initialize()
     await mqtt.subscribe(bot)
 
-    async def on_battery(event: BatteryEventDto):
+    async def on_battery(event: BatteryEvent):
       # Do stuff on battery event
       if event.value == 100:
         # Battery full
         pass
 
     # Subscribe for events (more events available)
-    bot.events.battery.subscribe(on_battery)
+    bot.events.subscribe(BatteryEvent, on_battery)
 
     # Execute commands
     await bot.execute_command(Clean(CleanAction.START))

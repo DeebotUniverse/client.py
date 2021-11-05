@@ -2,7 +2,7 @@
 from dataclasses import dataclass
 
 from ..util import DisplayNameIntEnum
-from .base import EventDto
+from .base import Event
 
 
 class WaterAmount(DisplayNameIntEnum):
@@ -15,7 +15,7 @@ class WaterAmount(DisplayNameIntEnum):
 
 
 @dataclass(frozen=True)
-class WaterInfoEventDto(EventDto):
+class WaterInfoEvent(Event):
     """Water info event representation."""
 
     mop_attached: bool

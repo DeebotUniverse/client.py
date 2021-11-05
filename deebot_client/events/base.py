@@ -1,5 +1,5 @@
 """Base event module."""
 
 
-class EventDto:
+class Event:
     """Event base class."""
