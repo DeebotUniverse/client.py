@@ -95,11 +95,6 @@ class LifeSpanEvent(Event):
 
 
 @dataclass(frozen=True)
-class MapEvent(Event):
-    """Map event representation."""
-
-
-@dataclass(frozen=True)
 class RoomEvent(Room, Event):
     """Room event."""
 

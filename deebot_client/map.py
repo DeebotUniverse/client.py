@@ -14,7 +14,6 @@ from .command import Command
 from .commands import GetMinorMap
 from .events import (
     MajorMapEvent,
-    MapEvent,
     MapSetEvent,
     MapTraceEvent,
     Position,
@@ -23,7 +22,7 @@ from .events import (
     RoomEvent,
     RoomsEvent,
 )
-from .events.event_bus import EventBus
+from .events.event_bus import EventBus, EventListener
 from .events.map import MinorMapEvent
 from .models import Room
 
@@ -114,49 +113,13 @@ class Map:
         self._is_map_up_to_date: bool = False
         self._base64_image: Optional[bytes] = None
         self._last_requested_width: Optional[int] = None
-
-        async def on_position(event: PositionsEvent) -> None:
-            self._positions = event.positions
-
-        event_bus.subscribe(PositionsEvent, on_position)
-
-        async def on_map_trace(event: MapTraceEvent) -> None:
-            if event.start == 0:
-                self._trace_values = []
-
-            if self._event_bus.has_subscribers(MapEvent):
-                self._update_trace_points(event.data)
-
-        event_bus.subscribe(MapTraceEvent, on_map_trace)
-
-        async def on_major_map(event: MajorMapEvent) -> None:
-            tasks = []
-            for idx, value in enumerate(event.values):
-                if self._map_pieces[idx].is_update(value):
-                    self._is_map_up_to_date = False
-                    if (
-                        self._event_bus.has_subscribers(MapEvent)
-                        and self._map_pieces[idx].in_use
-                        and event.requested
-                    ):
-                        tasks.append(
-                            asyncio.create_task(
-                                self._execute_command(
-                                    GetMinorMap(map_id=event.map_id, piece_index=idx)
-                                )
-                            )
-                        )
-
-            if tasks:
-                await asyncio.gather(*tasks)
-
-        event_bus.subscribe(MajorMapEvent, on_major_map)
+        self._listeners: List[EventListener] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
             self._rooms.clear()
             self._amount_rooms = event.rooms_count
 
-        event_bus.subscribe(MapSetEvent, on_map_set)
+        self._event_bus.subscribe(MapSetEvent, on_map_set)
 
         async def on_room(event: RoomEvent) -> None:
             if self._rooms.get(event.id, None) != event:
@@ -165,13 +128,7 @@ class Map:
                 if len(self._rooms) == self._amount_rooms:
                     self._event_bus.notify(RoomsEvent(list(self._rooms.values())))
 
-        event_bus.subscribe(RoomEvent, on_room)
-
-        async def on_minor_map(event: MinorMapEvent) -> None:
-            if self._event_bus.has_subscribers(MapEvent):
-                self._add_map_piece(event.index, event.value)
-
-        event_bus.subscribe(MinorMapEvent, on_minor_map)
+        self._event_bus.subscribe(RoomEvent, on_room)
 
     # ---------------------------- METHODS ----------------------------
 
@@ -232,8 +189,59 @@ class Map:
                         if pixel_type in [0x01, 0x02, 0x03]:
                             draw.point((point_x, point_y), fill=Map.COLORS[pixel_type])
 
+    def enable(self) -> None:
+        """Enable map."""
+        if self._listeners:
+            return
+
+        async def on_position(event: PositionsEvent) -> None:
+            self._positions = event.positions
+
+        self._listeners.append(self._event_bus.subscribe(PositionsEvent, on_position))
+
+        async def on_map_trace(event: MapTraceEvent) -> None:
+            if event.start == 0:
+                self._trace_values = []
+                self._update_trace_points(event.data)
+
+        self._listeners.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+
+        async def on_major_map(event: MajorMapEvent) -> None:
+            tasks = []
+            for idx, value in enumerate(event.values):
+                if self._map_pieces[idx].is_update(value):
+                    self._is_map_up_to_date = False
+                    if self._map_pieces[idx].in_use and event.requested:
+                        tasks.append(
+                            asyncio.create_task(
+                                self._execute_command(
+                                    GetMinorMap(map_id=event.map_id, piece_index=idx)
+                                )
+                            )
+                        )
+
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        self._listeners.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
+
+        async def on_minor_map(event: MinorMapEvent) -> None:
+            self._add_map_piece(event.index, event.value)
+
+        self._listeners.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
+
+    def disabled(self) -> None:
+        """Disable map."""
+        listeners = self._listeners
+        self._listeners.clear()
+        for listener in listeners:
+            listener.unsubscribe()
+
     def get_base64_map(self, width: Optional[int] = None) -> bytes:
         """Return map as base64 image string."""
+        if not self._listeners:
+            raise RuntimeError("Please enable the map first")
+
         if (
             self._is_map_up_to_date
             and width == self._last_requested_width
