@@ -28,14 +28,14 @@ jobs:
           pip install -r requirements-test.txt
       - name: Run mypy
         # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run mypy --all-files --show-diff-on-failure
+        run: pre-commit run --all-files --show-diff-on-failure mypy
       - name: Pylint review
         # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run pylint --all-files --show-diff-on-failure
+        run: pre-commit run --all-files --show-diff-on-failure pylint
       - name:
           Verify no getLogger usages
           # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run verifyNoGetLogger
+        run: pre-commit run --all-files --show-diff-on-failure verifyNoGetLogger
 
   tests:
     runs-on: "ubuntu-latest"
