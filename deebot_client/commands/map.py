@@ -194,7 +194,7 @@ class GetMapSubSet(CommandWithHandling):
             if subtype is not None:
                 event_bus.notify(
                     RoomEvent(
-                        subtype=cls._ROOM_INT_TO_NAME[subtype],
+                        subtype=cls._ROOM_INT_TO_NAME[int(subtype)],
                         id=int(data["mssid"]),
                         coordinates=data["value"],
                     )
