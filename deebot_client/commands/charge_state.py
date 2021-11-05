@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, Optional
 
-from ..events import StatusEventDto
+from ..events import StatusEvent
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import _CODE, EventBus, _NoArgsCommand
@@ -24,7 +24,7 @@ class GetChargeState(_NoArgsCommand):
         :return: A message response
         """
         if data.get("isCharging") == 1:
-            event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
+            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
         return HandlingResult.success()
 
     @classmethod
@@ -42,7 +42,7 @@ class GetChargeState(_NoArgsCommand):
                 status = VacuumState.ERROR
 
         if status:
-            event_bus.notify(StatusEventDto(True, VacuumState.DOCKED))
+            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

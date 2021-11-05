@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, List, Union
 
-from ..events import CustomCommandEventDto
+from ..events import CustomCommandEvent
 from ..message import HandlingState
 from .common import CommandResult, EventBus
 
@@ -37,7 +37,7 @@ class CustomCommand:
         """
         if response.get("ret") == "ok":
             data = response.get("resp", response)
-            events.notify(CustomCommandEventDto(self.name, data))
+            events.notify(CustomCommandEvent(self.name, data))
             return CommandResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)

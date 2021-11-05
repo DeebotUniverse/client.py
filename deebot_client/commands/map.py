@@ -3,9 +3,9 @@ import logging
 from typing import Any, Dict, List
 
 from ..command import Command
-from ..events import MajorMapEventDto, MapTraceEventDto, RoomEvent
+from ..events import MajorMapEvent, MapTraceEvent, RoomEvent
 from ..events.event_bus import EventBus
-from ..events.map import MapSetEventDto, MinorMapEvent
+from ..events.map import MapSetEvent, MinorMapEvent
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult
@@ -86,7 +86,7 @@ class GetMajorMap(CommandWithHandling):
         """
         result = super().handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEventDto(True, **result.args))
+            event_bus.notify(MajorMapEvent(True, **result.args))
             return CommandResult.success()
 
         return result
@@ -119,7 +119,7 @@ class GetMapSet(CommandWithHandling):
             cls._ARGS_TYPE: data["type"],
             cls._ARGS_SUBSETS: data["subsets"],
         }
-        event_bus.notify(MapSetEventDto(len(args["subsets"])))
+        event_bus.notify(MapSetEvent(len(args["subsets"])))
         return HandlingResult(HandlingState.SUCCESS, args)
 
     def handle_requested(
@@ -234,7 +234,7 @@ class GetMapTrace(CommandWithHandling):
             return HandlingResult.analyse()
 
         event_bus.notify(
-            MapTraceEventDto(start=start, total=total, data=data["traceValue"])
+            MapTraceEvent(start=start, total=total, data=data["traceValue"])
         )
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 

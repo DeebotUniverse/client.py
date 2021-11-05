@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, Mapping, Union
 
-from ..events import FanSpeedEventDto
+from ..events import FanSpeedEvent
 from ..message import HandlingResult
 from ..util import DisplayNameIntEnum
 from .common import EventBus, SetCommand, _NoArgsCommand
@@ -32,9 +32,7 @@ class GetFanSpeed(_NoArgsCommand):
 
         :return: A message response
         """
-        event_bus.notify(
-            FanSpeedEventDto(FanSpeedLevel(int(data["speed"])).display_name)
-        )
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(data["speed"])).display_name))
         return HandlingResult.success()
 
 

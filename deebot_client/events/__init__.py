@@ -4,22 +4,22 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Any, Dict, List, Optional
 
-from ..events.base import EventDto
+from ..events.base import Event
 from ..models import Room, VacuumState
 from ..util import DisplayNameIntEnum
 from .map import (
-    MajorMapEventDto,
-    MapSetEventDto,
-    MapTraceEventDto,
+    MajorMapEvent,
+    MapSetEvent,
+    MapTraceEvent,
     Position,
-    PositionsEventDto,
+    PositionsEvent,
     PositionType,
 )
-from .water_info import WaterAmount, WaterInfoEventDto
+from .water_info import WaterAmount, WaterInfoEvent
 
 
 @dataclass(frozen=True)
-class BatteryEventDto(EventDto):
+class BatteryEvent(Event):
     """Battery event representation."""
 
     value: int
@@ -48,14 +48,14 @@ class CleanLogEntry:
 
 
 @dataclass(frozen=True)
-class CleanLogEventDto(EventDto):
+class CleanLogEvent(Event):
     """Clean log event representation."""
 
     logs: List[CleanLogEntry]
 
 
 @dataclass(frozen=True)
-class CustomCommandEventDto(EventDto):
+class CustomCommandEvent(Event):
     """Custom command event representation."""
 
     name: str
@@ -63,7 +63,7 @@ class CustomCommandEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class ErrorEventDto(EventDto):
+class ErrorEvent(Event):
     """Error event representation."""
 
     code: int
@@ -71,7 +71,7 @@ class ErrorEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class FanSpeedEventDto(EventDto):
+class FanSpeedEvent(Event):
     """Fan speed event representation."""
 
     speed: str
@@ -87,7 +87,7 @@ class LifeSpan(str, Enum):
 
 
 @dataclass(frozen=True)
-class LifeSpanEventDto(EventDto):
+class LifeSpanEvent(Event):
     """Life span event representation."""
 
     type: LifeSpan
@@ -95,24 +95,24 @@ class LifeSpanEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class MapEventDto(EventDto):
+class MapEvent(Event):
     """Map event representation."""
 
 
 @dataclass(frozen=True)
-class RoomEvent(Room, EventDto):
+class RoomEvent(Room, Event):
     """Room event."""
 
 
 @dataclass(frozen=True)
-class RoomsEventDto(EventDto):
+class RoomsEvent(Event):
     """Room event representation."""
 
     rooms: List[Room]
 
 
 @dataclass(frozen=True)
-class StatsEventDto(EventDto):
+class StatsEvent(Event):
     """Stats event representation."""
 
     area: Optional[int]
@@ -121,7 +121,7 @@ class StatsEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class ReportStatsEventDto(StatsEventDto):
+class ReportStatsEvent(StatsEvent):
     """Report stats event representation."""
 
     cleaning_id: str
@@ -130,7 +130,7 @@ class ReportStatsEventDto(StatsEventDto):
 
 
 @dataclass(frozen=True)
-class TotalStatsEventDto(EventDto):
+class TotalStatsEvent(Event):
     """Total stats event representation."""
 
     area: int
@@ -139,7 +139,7 @@ class TotalStatsEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class StatusEventDto(EventDto):
+class StatusEvent(Event):
     """Status event representation."""
 
     available: bool
@@ -147,7 +147,7 @@ class StatusEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class VolumeEventDto(EventDto):
+class VolumeEvent(Event):
     """Volume event."""
 
     volume: int

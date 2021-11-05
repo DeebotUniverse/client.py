@@ -2,7 +2,7 @@
 
 from typing import Any, Dict, Mapping
 
-from ..events import VolumeEventDto
+from ..events import VolumeEvent
 from ..message import HandlingResult
 from .common import EventBus, SetCommand, _NoArgsCommand
 
@@ -22,7 +22,7 @@ class GetVolume(_NoArgsCommand):
         """
 
         event_bus.notify(
-            VolumeEventDto(volume=data["volume"], maximum=data.get("total", None))
+            VolumeEvent(volume=data["volume"], maximum=data.get("total", None))
         )
         return HandlingResult.success()
 

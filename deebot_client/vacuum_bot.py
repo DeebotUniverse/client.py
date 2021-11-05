@@ -13,11 +13,11 @@ from .commands import Clean, CommandWithHandling
 from .commands.clean import CleanAction
 from .commands.custom import CustomCommand
 from .events import (
-    CleanLogEventDto,
-    LifeSpanEventDto,
-    StatsEventDto,
-    StatusEventDto,
-    TotalStatsEventDto,
+    CleanLogEvent,
+    LifeSpanEvent,
+    StatsEvent,
+    StatusEvent,
+    TotalStatsEvent,
 )
 from .events.event_bus import EventBus
 from .map import Map
@@ -45,14 +45,14 @@ class VacuumBot:
         self._api_client = api_client
 
         self._semaphore = asyncio.Semaphore(3)
-        self._status: StatusEventDto = StatusEventDto(device_info.status == 1, None)
+        self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
 
         self.fw_version: Optional[str] = None
         self.events: Final[EventBus] = EventBus(self.execute_command)
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
-        async def on_status(event: StatusEventDto) -> None:
+        async def on_status(event: StatusEvent) -> None:
             last_status = self._status
             self._status = event
             if (not last_status.available) and event.available:
@@ -63,15 +63,15 @@ class VacuumBot:
                     if name != "status":
                         obj.request_refresh()
             elif event.state == VacuumState.DOCKED:
-                self.events.request_refresh(CleanLogEventDto)
-                self.events.request_refresh(TotalStatsEventDto)
+                self.events.request_refresh(CleanLogEvent)
+                self.events.request_refresh(TotalStatsEvent)
 
-        self.events.subscribe(StatusEventDto, on_status)
+        self.events.subscribe(StatusEvent, on_status)
 
-        async def on_stats(_: StatsEventDto) -> None:
-            self.events.request_refresh(LifeSpanEventDto)
+        async def on_stats(_: StatsEvent) -> None:
+            self.events.request_refresh(LifeSpanEvent)
 
-        self.events.subscribe(StatsEventDto, on_stats)
+        self.events.subscribe(StatsEvent, on_stats)
 
     async def execute_command(self, command: Union[Command, CustomCommand]) -> None:
         """Execute given command and handle response."""
@@ -111,7 +111,7 @@ class VacuumBot:
 
     def set_available(self, available: bool) -> None:
         """Set available."""
-        status = StatusEventDto(available, self._status.state)
+        status = StatusEvent(available, self._status.state)
         self.events.notify(status)
 
     async def handle_message(

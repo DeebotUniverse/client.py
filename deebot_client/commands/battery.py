@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from ..events import BatteryEventDto
+from ..events import BatteryEvent
 from ..message import HandlingResult
 from .common import EventBus, _NoArgsCommand
 
@@ -22,5 +22,5 @@ class GetBattery(_NoArgsCommand):
 
         :return: A message response
         """
-        event_bus.notify(BatteryEventDto(data["value"]))
+        event_bus.notify(BatteryEvent(data["value"]))
         return HandlingResult.success()

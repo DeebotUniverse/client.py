@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, List, Optional
 
-from ..events import CleanJobStatus, CleanLogEntry, CleanLogEventDto
+from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from ..message import HandlingResult
 from .common import CommandResult, CommandWithHandling, EventBus
 
@@ -42,7 +42,7 @@ class GetCleanLogs(CommandWithHandling):
                         )
                     )
 
-                event_bus.notify(CleanLogEventDto(logs))
+                event_bus.notify(CleanLogEvent(logs))
                 return CommandResult.success()
 
         return CommandResult.analyse()

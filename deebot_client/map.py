@@ -13,15 +13,15 @@ from PIL import Image, ImageDraw, ImageOps
 from .command import Command
 from .commands import GetMinorMap
 from .events import (
-    MajorMapEventDto,
-    MapEventDto,
-    MapSetEventDto,
-    MapTraceEventDto,
+    MajorMapEvent,
+    MapEvent,
+    MapSetEvent,
+    MapTraceEvent,
     Position,
-    PositionsEventDto,
+    PositionsEvent,
     PositionType,
     RoomEvent,
-    RoomsEventDto,
+    RoomsEvent,
 )
 from .events.event_bus import EventBus
 from .events.map import MinorMapEvent
@@ -115,27 +115,27 @@ class Map:
         self._base64_image: Optional[bytes] = None
         self._last_requested_width: Optional[int] = None
 
-        async def on_position(event: PositionsEventDto) -> None:
+        async def on_position(event: PositionsEvent) -> None:
             self._positions = event.positions
 
-        event_bus.subscribe(PositionsEventDto, on_position)
+        event_bus.subscribe(PositionsEvent, on_position)
 
-        async def on_map_trace(event: MapTraceEventDto) -> None:
+        async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
                 self._trace_values = []
 
-            if self._event_bus.has_subscribers(MapEventDto):
+            if self._event_bus.has_subscribers(MapEvent):
                 self._update_trace_points(event.data)
 
-        event_bus.subscribe(MapTraceEventDto, on_map_trace)
+        event_bus.subscribe(MapTraceEvent, on_map_trace)
 
-        async def on_major_map(event: MajorMapEventDto) -> None:
+        async def on_major_map(event: MajorMapEvent) -> None:
             tasks = []
             for idx, value in enumerate(event.values):
                 if self._map_pieces[idx].is_update(value):
                     self._is_map_up_to_date = False
                     if (
-                        self._event_bus.has_subscribers(MapEventDto)
+                        self._event_bus.has_subscribers(MapEvent)
                         and self._map_pieces[idx].in_use
                         and event.requested
                     ):
@@ -150,25 +150,25 @@ class Map:
             if tasks:
                 await asyncio.gather(*tasks)
 
-        event_bus.subscribe(MajorMapEventDto, on_major_map)
+        event_bus.subscribe(MajorMapEvent, on_major_map)
 
-        async def on_map_set(event: MapSetEventDto) -> None:
+        async def on_map_set(event: MapSetEvent) -> None:
             self._rooms.clear()
             self._amount_rooms = event.rooms_count
 
-        event_bus.subscribe(MapSetEventDto, on_map_set)
+        event_bus.subscribe(MapSetEvent, on_map_set)
 
         async def on_room(event: RoomEvent) -> None:
             if self._rooms.get(event.id, None) != event:
                 self._rooms[event.id] = event
 
                 if len(self._rooms) == self._amount_rooms:
-                    self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
+                    self._event_bus.notify(RoomsEvent(list(self._rooms.values())))
 
         event_bus.subscribe(RoomEvent, on_room)
 
         async def on_minor_map(event: MinorMapEvent) -> None:
-            if self._event_bus.has_subscribers(MapEventDto):
+            if self._event_bus.has_subscribers(MapEvent):
                 self._add_map_piece(event.index, event.value)
 
         event_bus.subscribe(MinorMapEvent, on_minor_map)

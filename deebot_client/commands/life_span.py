@@ -2,7 +2,7 @@
 import logging
 from typing import List
 
-from ..events import LifeSpan, LifeSpanEventDto
+from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult
 from .common import CommandWithHandling, EventBus
 
@@ -33,7 +33,7 @@ class GetLifeSpan(CommandWithHandling):
                 raise ValueError("total not positive!")
 
             percent = round((left / total) * 100, 2)
-            event_bus.notify(LifeSpanEventDto(component_type, percent))
+            event_bus.notify(LifeSpanEvent(component_type, percent))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

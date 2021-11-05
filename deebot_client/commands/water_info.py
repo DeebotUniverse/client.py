@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict, Mapping, Union
 
-from ..events import WaterAmount, WaterInfoEventDto
+from ..events import WaterAmount, WaterInfoEvent
 from ..message import HandlingResult
 from .common import EventBus, SetCommand, _NoArgsCommand
 
@@ -25,9 +25,7 @@ class GetWaterInfo(_NoArgsCommand):
         # todo enable can be missing pylint: disable=fixme
         mop_attached = bool(data.get("enable"))
 
-        event_bus.notify(
-            WaterInfoEventDto(mop_attached, WaterAmount(int(data["amount"])))
-        )
+        event_bus.notify(WaterInfoEvent(mop_attached, WaterAmount(int(data["amount"]))))
         return HandlingResult.success()
 
 

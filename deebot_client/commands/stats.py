@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from ..events import StatsEventDto, TotalStatsEventDto
+from ..events import StatsEvent, TotalStatsEvent
 from ..message import HandlingResult
 from .common import EventBus, _NoArgsCommand
 
@@ -22,7 +22,7 @@ class GetStats(_NoArgsCommand):
 
         :return: A message response
         """
-        stats_event = StatsEventDto(
+        stats_event = StatsEvent(
             area=data.get("area"),
             time=data.get("time"),
             type=data.get("type"),
@@ -44,6 +44,6 @@ class GetTotalStats(_NoArgsCommand):
 
         :return: A message response
         """
-        stats_event = TotalStatsEventDto(data["area"], data["time"], data["count"])
+        stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
         event_bus.notify(stats_event)
         return HandlingResult.success()

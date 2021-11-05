@@ -2,7 +2,7 @@
 import logging
 from typing import Any, Dict
 
-from ..events import CleanJobStatus, ReportStatsEventDto
+from ..events import CleanJobStatus, ReportStatsEvent
 from ..events.event_bus import EventBus
 from ..message import HandlingResult, Message
 
@@ -27,7 +27,7 @@ class ReportStats(Message):
         if data["stop"] != 0:
             status = CleanJobStatus(int(data["stopReason"]))
 
-        stats_event = ReportStatsEventDto(
+        stats_event = ReportStatsEvent(
             area=data.get("area"),
             time=data.get("time"),
             type=data.get("type"),

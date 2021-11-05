@@ -3,7 +3,7 @@ from dataclasses import dataclass
 from enum import Enum
 from typing import List
 
-from ..events import EventDto
+from ..events import Event
 
 
 class PositionType(str, Enum):
@@ -23,14 +23,14 @@ class Position:
 
 
 @dataclass(frozen=True)
-class PositionsEventDto(EventDto):
+class PositionsEvent(Event):
     """Position event representation."""
 
     positions: List[Position]
 
 
 @dataclass(frozen=True)
-class MapTraceEventDto(EventDto):
+class MapTraceEvent(Event):
     """Map trace event representation."""
 
     start: int
@@ -39,7 +39,7 @@ class MapTraceEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class MajorMapEventDto(EventDto):
+class MajorMapEvent(Event):
     """Major map event."""
 
     requested: bool
@@ -48,14 +48,14 @@ class MajorMapEventDto(EventDto):
 
 
 @dataclass(frozen=True)
-class MapSetEventDto(EventDto):
+class MapSetEvent(Event):
     """Map set event."""
 
     rooms_count: int
 
 
 @dataclass(frozen=True)
-class MinorMapEvent(EventDto):
+class MinorMapEvent(Event):
     """Minor map event."""
 
     index: int

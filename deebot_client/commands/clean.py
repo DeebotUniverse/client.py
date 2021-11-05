@@ -3,7 +3,7 @@ import logging
 from enum import Enum, unique
 from typing import Any, Dict, Optional
 
-from ..events import StatusEventDto
+from ..events import StatusEvent
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand, _NoArgsCommand
@@ -101,7 +101,7 @@ class GetCleanInfo(_NoArgsCommand):
             status = VacuumState.IDLE
 
         if status:
-            event_bus.notify(StatusEventDto(True, status))
+            event_bus.notify(StatusEvent(True, status))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

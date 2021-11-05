@@ -2,7 +2,7 @@
 
 from typing import Any, Dict
 
-from ..events import Position, PositionsEventDto, PositionType
+from ..events import Position, PositionsEvent, PositionType
 from ..message import HandlingResult
 from .common import CommandWithHandling, EventBus
 
@@ -45,7 +45,7 @@ class GetPos(CommandWithHandling):
                     )
 
         if positions:
-            event_bus.notify(PositionsEventDto(positions=positions))
+            event_bus.notify(PositionsEvent(positions=positions))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

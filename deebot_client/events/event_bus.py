@@ -16,11 +16,11 @@ from typing import (
 
 from ..command import Command
 from ..models import VacuumState
-from . import EventDto, StatusEventDto
+from . import Event, StatusEvent
 
 _LOGGER = logging.getLogger(__name__)
 
-T = TypeVar("T", bound=EventDto)
+T = TypeVar("T", bound=Event)
 
 
 class EventListener(Generic[T]):
@@ -64,7 +64,7 @@ class EventBus:
     """A very simple event bus system."""
 
     def __init__(self, execute_command: Callable[[Command], Awaitable[None]]):
-        self._event_processing_dict: Dict[Type[EventDto], _EventProcessingData] = {}
+        self._event_processing_dict: Dict[Type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
         self._execute_command: Final = execute_command
 
@@ -101,14 +101,14 @@ class EventBus:
         event_processing_data = self._get_or_create_event_processing_data(type(event))
 
         if (
-            isinstance(event, StatusEventDto)
+            isinstance(event, StatusEvent)
             and event.state == VacuumState.IDLE
             and event_processing_data.last_event
             and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore
         ):
             # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
             # Problem getCleanInfo will return state=idle, when bot is charging
-            event = StatusEventDto(event.available, VacuumState.DOCKED)  # type: ignore
+            event = StatusEvent(event.available, VacuumState.DOCKED)  # type: ignore
 
         if event == event_processing_data.last_event:
             _LOGGER.debug("Event is the same! Skipping (%s)", event)
