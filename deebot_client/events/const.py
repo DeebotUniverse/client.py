@@ -37,7 +37,7 @@ from . import (
     VolumeEvent,
     WaterInfoEvent,
 )
-from .map import MajorMapEvent, MapSetEvent, MapTraceEvent
+from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     BatteryEvent: [GetBattery()],
@@ -49,6 +49,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     MajorMapEvent: [GetMajorMap()],
     MapSetEvent: [],
     MapTraceEvent: [GetMapTrace()],
+    MinorMapEvent: [],
     PositionsEvent: [GetPos()],
     ReportStatsEvent: [],  # ReportStats cannot be pulled
     RoomEvent: [],

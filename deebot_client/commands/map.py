@@ -3,9 +3,8 @@ import logging
 from typing import Any, Dict, List
 
 from ..command import Command
-from ..events import MajorMapEvent, MapTraceEvent, RoomEvent
+from ..events import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent, RoomEvent
 from ..events.event_bus import EventBus
-from ..events.map import MapSetEvent, MinorMapEvent
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult

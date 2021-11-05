@@ -16,6 +16,7 @@ from .events import (
     MajorMapEvent,
     MapSetEvent,
     MapTraceEvent,
+    MinorMapEvent,
     Position,
     PositionsEvent,
     PositionType,
@@ -23,7 +24,6 @@ from .events import (
     RoomsEvent,
 )
 from .events.event_bus import EventBus, EventListener
-from .events.map import MinorMapEvent
 from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
@@ -236,6 +236,16 @@ class Map:
         self._listeners.clear()
         for listener in listeners:
             listener.unsubscribe()
+
+    def refresh(self) -> None:
+        """Manually refresh map."""
+        if not self._listeners:
+            raise RuntimeError("Please enable the map first")
+
+        # todo make it nice pylint: disable=fixme
+        self._event_bus.request_refresh(PositionsEvent)
+        self._event_bus.request_refresh(MapTraceEvent)
+        self._event_bus.request_refresh(MajorMapEvent)
 
     def get_base64_map(self, width: Optional[int] = None) -> bytes:
         """Return map as base64 image string."""

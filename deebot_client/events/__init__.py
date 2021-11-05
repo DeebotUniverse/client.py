@@ -11,6 +11,7 @@ from .map import (
     MajorMapEvent,
     MapSetEvent,
     MapTraceEvent,
+    MinorMapEvent,
     Position,
     PositionsEvent,
     PositionType,
