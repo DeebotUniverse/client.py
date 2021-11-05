@@ -2,7 +2,7 @@
 
 import copy
 from logging import Filter, Logger, LogRecord, getLogger
-from typing import Set
+from typing import Any, Set
 
 
 class SanitizeFilter(Filter):
@@ -21,25 +21,32 @@ class SanitizeFilter(Filter):
 
     def filter(self, record: LogRecord) -> bool:
         """Filter log record."""
-        # The call signature matches string interpolation: args can be a tuple or a lone dict
+        # The call signature matches string interpolation: args can be a tuple or a dict
         if isinstance(record.args, dict):
-            record.args = self._sanitize_dict(record.args)
+            record.args = self._sanitize_data(record.args)
         else:
-            record.args = tuple(
-                self._sanitize_dict(value) if isinstance(value, dict) else value
-                for value in record.args
-            )
+            record.args = tuple(self._sanitize_data(value) for value in record.args)
 
         return True
 
-    def _sanitize_dict(self, data: dict) -> dict:
+    def _sanitize_data(self, data: Any) -> Any:
         """Sanitize data (remove personal data)."""
+        if isinstance(data, (set, list)):
+            return [self._sanitize_data(entry) for entry in data]
+
+        if not isinstance(data, dict):
+            return data
+
         sanitized_data = None
-        for key in data.keys():
+        for key, value in data.items():
             if any(substring in key.lower() for substring in self._SANITIZE_LOG_KEYS):
                 if sanitized_data is None:
                     sanitized_data = copy.deepcopy(data)
                 sanitized_data[key] = "[REMOVED]"
+            elif isinstance(value, (set, list, dict)):
+                if sanitized_data is None:
+                    sanitized_data = copy.deepcopy(data)
+                sanitized_data[key] = self._sanitize_data(value)
 
         return sanitized_data if sanitized_data else data
 
