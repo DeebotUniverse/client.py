@@ -100,6 +100,11 @@ class MapEventDto(EventDto):
 
 
 @dataclass(frozen=True)
+class RoomEvent(Room, EventDto):
+    """Room event."""
+
+
+@dataclass(frozen=True)
 class RoomsEventDto(EventDto):
     """Room event representation."""
 

@@ -5,7 +5,7 @@ from distutils.util import strtobool
 from enum import IntEnum, unique
 from typing import Optional, Union
 
-import aiohttp
+from aiohttp import ClientSession
 
 
 class DeviceInfo(dict):
@@ -107,7 +107,7 @@ class Configuration:
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
+        session: ClientSession,
         *,
         device_id: str,
         country: str,
@@ -121,7 +121,7 @@ class Configuration:
         self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
 
     @property
-    def session(self) -> aiohttp.ClientSession:
+    def session(self) -> ClientSession:
         """Client session."""
         return self._session
 

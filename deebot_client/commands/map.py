@@ -3,7 +3,7 @@ import logging
 from typing import Any, Dict, List
 
 from ..command import Command
-from ..events import MajorMapEventDto, MapTraceEventDto
+from ..events import MajorMapEventDto, MapTraceEventDto, RoomEvent
 from ..events.event_bus import EventBus
 from ..events.map import MapSetEventDto
 from ..message import HandlingResult, HandlingState
@@ -146,6 +146,66 @@ class GetMapSet(CommandWithHandling):
         return result
 
 
+class GetMapSubSet(CommandWithHandling):
+    """Get map subset command."""
+
+    _ROOM_INT_TO_NAME = {
+        0: "Default",
+        1: "Living Room",
+        2: "Dining Room",
+        3: "Bedroom",
+        4: "Study",
+        5: "Kitchen",
+        6: "Bathroom",
+        7: "Laundry",
+        8: "Lounge",
+        9: "Storeroom",
+        10: "Kids room",
+        11: "Sunroom",
+        12: "Corridor",
+        13: "Balcony",
+        14: "Gym",
+    }
+
+    name = "getMapSubSet"
+
+    def __init__(
+        self, *, map_id: str, map_set_id: str, map_type: str, map_subset_id: str
+    ) -> None:
+        super().__init__(
+            {
+                "mid": map_id,
+                "msid": map_set_id,
+                "type": map_type,
+                "mssid": map_subset_id,
+            },
+        )
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if data["type"] == "ar":
+            subtype = data.get("subtype", data.get("subType", None))
+
+            if subtype is not None:
+                event_bus.notify(
+                    RoomEvent(
+                        subtype=cls._ROOM_INT_TO_NAME[subtype],
+                        id=int(data["mssid"]),
+                        coordinates=data["value"],
+                    )
+                )
+
+                return HandlingResult.success()
+
+        return HandlingResult.analyse()
+
+
 class GetMapTrace(CommandWithHandling):
     """Get map trace command."""
 
@@ -201,21 +261,3 @@ class GetMinorMap(Command):
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
-
-
-class GetMapSubSet(Command):
-    """Get map subset command."""
-
-    name = "getMapSubSet"
-
-    def __init__(
-        self, *, map_id: str, map_set_id: str, map_type: str, map_subset_id: str
-    ) -> None:
-        super().__init__(
-            {
-                "mid": map_id,
-                "msid": map_set_id,
-                "type": map_type,
-                "mssid": map_subset_id,
-            },
-        )

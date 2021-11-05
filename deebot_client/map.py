@@ -11,7 +11,7 @@ from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
-from .commands import GetMapSubSet, GetMinorMap
+from .commands import GetMinorMap
 from .events import (
     MajorMapEventDto,
     MapEventDto,
@@ -20,6 +20,7 @@ from .events import (
     Position,
     PositionsEventDto,
     PositionType,
+    RoomEvent,
     RoomsEventDto,
 )
 from .events.event_bus import EventBus
@@ -27,23 +28,6 @@ from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
 _TRACE_MAP = "trace_map"
-_ROOM_INT_TO_NAME = {
-    0: "Default",
-    1: "Living Room",
-    2: "Dining Room",
-    3: "Bedroom",
-    4: "Study",
-    5: "Kitchen",
-    6: "Bathroom",
-    7: "Laundry",
-    8: "Lounge",
-    9: "Storeroom",
-    10: "Kids room",
-    11: "Sunroom",
-    12: "Corridor",
-    13: "Balcony",
-    14: "Gym",
-}
 
 
 def _decompress_7z_base64_data(data: str) -> bytes:
@@ -173,6 +157,15 @@ class Map:
 
         event_bus.subscribe(MapSetEventDto, on_map_set)
 
+        async def on_room(event: RoomEvent) -> None:
+            if self._rooms.get(event.id, None) != event:
+                self._rooms[event.id] = event
+
+                if len(self._rooms) == self._amount_rooms:
+                    self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
+
+        event_bus.subscribe(RoomEvent, on_room)
+
     # ---------------------------- EVENT HANDLING ----------------------------
 
     async def _handle(
@@ -200,42 +193,14 @@ class Map:
 
         data = body.get("data", {})
 
-        if command_name == GetMapSubSet.name:
-            self._handle_map_sub_set(data)
-        elif not self._event_bus.has_subscribers(MapEventDto):
+        if not self._event_bus.has_subscribers(MapEventDto):
             # above events must be processed always as they are needed to get room information's
             _LOGGER.debug("No Map subscribers. Skipping map events")
             return
-        elif command_name == GetMinorMap.name:
+        if command_name == GetMinorMap.name:
             self._handle_minor_map(data)
         else:
             _LOGGER.debug('Unknown command "%s" with %s', command_name, message)
-
-    def _handle_map_sub_set(self, event_data: dict) -> None:
-        if event_data.get("type", None) != "ar":
-            _LOGGER.debug('Currently supporting only type="ar": event=%s', event_data)
-            return
-
-        subtype = event_data.get("subtype", event_data.get("subType", None))
-        if subtype is None:
-            _LOGGER.warning(
-                "[_handle_map_sub_set] SubType missing in message %s", event_data
-            )
-            return
-
-        subtype = int(subtype)
-        room = Room(
-            subtype=_ROOM_INT_TO_NAME[subtype],
-            id=int(event_data["mssid"]),
-            coordinates=event_data["value"],
-        )
-        if self._rooms.get(subtype, None) == room:
-            return
-
-        self._rooms[subtype] = room
-
-        if len(self._rooms) == self._amount_rooms:
-            self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
 
     def _handle_minor_map(self, event_data: dict) -> None:
         self._add_map_piece(event_data["pieceIndex"], event_data["pieceValue"])

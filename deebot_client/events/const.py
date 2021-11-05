@@ -30,6 +30,7 @@ from . import (
     MapEventDto,
     PositionsEventDto,
     ReportStatsEventDto,
+    RoomEvent,
     RoomsEventDto,
     StatsEventDto,
     StatusEventDto,
@@ -52,6 +53,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[EventDto], List[Command]] = {
     MapTraceEventDto: [GetMapTrace()],
     PositionsEventDto: [GetPos()],
     ReportStatsEventDto: [],  # ReportStats cannot be pulled
+    RoomEvent: [],
     RoomsEventDto: [GetCachedMapInfo()],
     StatsEventDto: [GetStats()],
     StatusEventDto: [GetChargeState(), GetCleanInfo()],
