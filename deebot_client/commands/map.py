@@ -3,8 +3,8 @@ import logging
 from typing import Any, Dict
 
 from ..command import Command
+from ..events import MajorMapEventDto, MapTraceEventDto
 from ..events.event_bus import EventBus
-from ..events.map import MapTraceEventDto
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult
@@ -48,6 +48,48 @@ class GetCachedMapInfo(CommandWithHandling):
             return CommandResult(
                 result.state, result.args, [GetMapSet(result.args["map_id"])]
             )
+
+        return result
+
+
+class GetMajorMap(CommandWithHandling):
+    """Get major map command."""
+
+    _ARGS_DATA = "data"
+
+    name = "getMajorMap"
+
+    def __init__(self) -> None:
+        super().__init__()
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        values = data["value"].split(",")
+        map_id = data["mid"]
+
+        event_bus.notify(MajorMapEventDto(False, map_id, values))
+        return HandlingResult(
+            HandlingState.SUCCESS,
+            {cls._ARGS_DATA: {"map_id": map_id, "values": values}},
+        )
+
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
+
+        :return: A message response
+        """
+        result = super().handle_requested(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            event_bus.notify(MajorMapEventDto(True, **result.args[self._ARGS_DATA]))
+            return CommandResult.success()
 
         return result
 
@@ -105,7 +147,7 @@ class GetMinorMap(Command):
 
     name = "getMinorMap"
 
-    def __init__(self, *, map_id: int, piece_index: int) -> None:
+    def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
 
 
@@ -134,12 +176,3 @@ class GetMapSubSet(Command):
                 "mssid": map_subset_id,
             },
         )
-
-
-class GetMajorMap(Command):
-    """Get major map command."""
-
-    name = "getMajorMap"
-
-    def __init__(self) -> None:
-        super().__init__()

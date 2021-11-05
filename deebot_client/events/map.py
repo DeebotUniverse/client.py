@@ -36,3 +36,12 @@ class MapTraceEventDto(EventDto):
     start: int
     total: int
     data: str
+
+
+@dataclass(frozen=True)
+class MajorMapEventDto(EventDto):
+    """Major map event."""
+
+    requested: bool
+    map_id: str
+    values: List[str]

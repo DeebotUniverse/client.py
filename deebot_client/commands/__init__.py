@@ -47,6 +47,10 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
     GetLifeSpan,
 
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapTrace,
+
     PlaySound,
 
     GetPos,

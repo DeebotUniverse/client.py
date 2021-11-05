@@ -7,7 +7,13 @@ from typing import Any, Dict, List, Optional
 from ..events.base import EventDto
 from ..models import Room, VacuumState
 from ..util import DisplayNameIntEnum
-from .map import Position, PositionsEventDto, PositionType
+from .map import (
+    MajorMapEventDto,
+    MapTraceEventDto,
+    Position,
+    PositionsEventDto,
+    PositionType,
+)
 from .water_info import WaterAmount, WaterInfoEventDto
 
 

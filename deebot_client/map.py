@@ -11,16 +11,17 @@ from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
-from .commands import GetMajorMap, GetMapSet, GetMapSubSet, GetMinorMap
+from .commands import GetMapSet, GetMapSubSet, GetMinorMap
 from .events import (
+    MajorMapEventDto,
     MapEventDto,
+    MapTraceEventDto,
     Position,
     PositionsEventDto,
     PositionType,
     RoomsEventDto,
 )
 from .events.event_bus import EventBus
-from .events.map import MapTraceEventDto
 from .models import Room
 
 _LOGGER = logging.getLogger(__name__)
@@ -142,6 +143,29 @@ class Map:
 
         event_bus.subscribe(MapTraceEventDto, on_map_trace)
 
+        async def on_major_map(event: MajorMapEventDto) -> None:
+            tasks = []
+            for idx, value in enumerate(event.values):
+                if self._map_pieces[idx].is_update(value):
+                    self._is_map_up_to_date = False
+                    if (
+                        self._event_bus.has_subscribers(MapEventDto)
+                        and self._map_pieces[idx].in_use
+                        and event.requested
+                    ):
+                        tasks.append(
+                            asyncio.create_task(
+                                self._execute_command(
+                                    GetMinorMap(map_id=event.map_id, piece_index=idx)
+                                )
+                            )
+                        )
+
+            if tasks:
+                await asyncio.gather(*tasks)
+
+        event_bus.subscribe(MajorMapEventDto, on_major_map)
+
     # ---------------------------- EVENT HANDLING ----------------------------
 
     async def _handle(
@@ -177,8 +201,6 @@ class Map:
             # above events must be processed always as they are needed to get room information's
             _LOGGER.debug("No Map subscribers. Skipping map events")
             return
-        elif command_name == GetMajorMap.name:
-            await self._handle_major_map(data, requested)
         elif command_name == GetMinorMap.name:
             self._handle_minor_map(data)
         else:
@@ -237,28 +259,6 @@ class Map:
 
         if len(self._rooms) == self._amount_rooms:
             self._event_bus.notify(RoomsEventDto(list(self._rooms.values())))
-
-    async def _handle_major_map(self, event_data: dict, requested: bool) -> None:
-        _LOGGER.debug("[_handle_major_map] begin")
-        values = event_data["value"].split(",")
-
-        if requested:
-            tasks = []
-            for i in range(64):
-                if self._map_pieces[i].is_update(values[i]):
-                    _LOGGER.debug(
-                        "[_handle_major_map] MapPiece %d needs to be updated", i
-                    )
-                    self._is_map_up_to_date = False
-                    tasks.append(
-                        asyncio.create_task(
-                            self._execute_command(
-                                GetMinorMap(map_id=event_data["mid"], piece_index=i)
-                            )
-                        )
-                    )
-            if tasks:
-                await asyncio.gather(*tasks)
 
     def _handle_minor_map(self, event_data: dict) -> None:
         self._add_map_piece(event_data["pieceIndex"], event_data["pieceValue"])
@@ -414,11 +414,8 @@ class MapPiece:
         piece = map_piece
         if self._piece != piece:
             self._piece = piece
-
-            if piece == MapPiece.NOT_INUSE:
-                self._in_use = False
-                return False
-            self._in_use = True
+            self._points = None
+            self._in_use = piece != MapPiece.NOT_INUSE
             return True
 
         _LOGGER.debug("No update needed for piece idx %d", self._index)
