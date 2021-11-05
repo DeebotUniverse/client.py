@@ -1,10 +1,11 @@
 """Maps commands."""
 import logging
-from typing import Any, Dict
+from typing import Any, Dict, List
 
 from ..command import Command
 from ..events import MajorMapEventDto, MapTraceEventDto
 from ..events.event_bus import EventBus
+from ..events.map import MapSetEventDto
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult
@@ -55,8 +56,6 @@ class GetCachedMapInfo(CommandWithHandling):
 class GetMajorMap(CommandWithHandling):
     """Get major map command."""
 
-    _ARGS_DATA = "data"
-
     name = "getMajorMap"
 
     def __init__(self) -> None:
@@ -73,10 +72,9 @@ class GetMajorMap(CommandWithHandling):
         values = data["value"].split(",")
         map_id = data["mid"]
 
-        event_bus.notify(MajorMapEventDto(False, map_id, values))
         return HandlingResult(
             HandlingState.SUCCESS,
-            {cls._ARGS_DATA: {"map_id": map_id, "values": values}},
+            {"map_id": map_id, "values": values},
         )
 
     def handle_requested(
@@ -88,8 +86,62 @@ class GetMajorMap(CommandWithHandling):
         """
         result = super().handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEventDto(True, **result.args[self._ARGS_DATA]))
+            event_bus.notify(MajorMapEventDto(True, **result.args))
             return CommandResult.success()
+
+        return result
+
+
+class GetMapSet(CommandWithHandling):
+    """Get map set command."""
+
+    _ARGS_ID = "id"
+    _ARGS_SET_ID = "set_id"
+    _ARGS_TYPE = "type"
+    _ARGS_SUBSETS = "subsets"
+
+    name = "getMapSet"
+
+    def __init__(self, map_id: str) -> None:
+        super().__init__({"mid": map_id, "type": "ar"})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        args = {
+            cls._ARGS_ID: data["mid"],
+            cls._ARGS_SET_ID: data["msid"],
+            cls._ARGS_TYPE: data["type"],
+            cls._ARGS_SUBSETS: data["subsets"],
+        }
+        event_bus.notify(MapSetEventDto(len(args["subsets"])))
+        return HandlingResult(HandlingState.SUCCESS, args)
+
+    def handle_requested(
+        self, event_bus: EventBus, response: Dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
+
+        :return: A message response
+        """
+        result = super().handle_requested(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            commands: List[Command] = []
+            for subset in result.args[self._ARGS_SUBSETS]:
+                commands.append(
+                    GetMapSubSet(
+                        map_id=result.args[self._ARGS_ID],
+                        map_set_id=result.args[self._ARGS_SET_ID],
+                        map_type=result.args[self._ARGS_TYPE],
+                        map_subset_id=subset["mssid"],
+                    )
+                )
+            return CommandResult(result.state, result.args, commands)
 
         return result
 
@@ -149,15 +201,6 @@ class GetMinorMap(Command):
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
-
-
-class GetMapSet(Command):
-    """Get map set command."""
-
-    name = "getMapSet"
-
-    def __init__(self, map_id: str) -> None:
-        super().__init__({"mid": map_id, "type": "ar"})
 
 
 class GetMapSubSet(Command):

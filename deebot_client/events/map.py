@@ -45,3 +45,10 @@ class MajorMapEventDto(EventDto):
     requested: bool
     map_id: str
     values: List[str]
+
+
+@dataclass(frozen=True)
+class MapSetEventDto(EventDto):
+    """Map set event."""
+
+    rooms_count: int

@@ -11,10 +11,11 @@ from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
-from .commands import GetMapSet, GetMapSubSet, GetMinorMap
+from .commands import GetMapSubSet, GetMinorMap
 from .events import (
     MajorMapEventDto,
     MapEventDto,
+    MapSetEventDto,
     MapTraceEventDto,
     Position,
     PositionsEventDto,
@@ -166,6 +167,12 @@ class Map:
 
         event_bus.subscribe(MajorMapEventDto, on_major_map)
 
+        async def on_map_set(event: MapSetEventDto) -> None:
+            self._rooms.clear()
+            self._amount_rooms = event.rooms_count
+
+        event_bus.subscribe(MapSetEventDto, on_map_set)
+
     # ---------------------------- EVENT HANDLING ----------------------------
 
     async def _handle(
@@ -193,9 +200,7 @@ class Map:
 
         data = body.get("data", {})
 
-        if command_name == GetMapSet.name:
-            await self._handle_map_set(data, requested)
-        elif command_name == GetMapSubSet.name:
+        if command_name == GetMapSubSet.name:
             self._handle_map_sub_set(data)
         elif not self._event_bus.has_subscribers(MapEventDto):
             # above events must be processed always as they are needed to get room information's
@@ -205,34 +210,6 @@ class Map:
             self._handle_minor_map(data)
         else:
             _LOGGER.debug('Unknown command "%s" with %s', command_name, message)
-
-    async def _handle_map_set(self, event_data: dict, requested: bool) -> None:
-        map_id = event_data["mid"]
-        map_set_id = event_data["msid"]
-        map_type = event_data["type"]
-        subsets = event_data["subsets"]
-
-        self._rooms.clear()
-        self._amount_rooms = len(subsets) if subsets else 0
-
-        if requested:
-            tasks = []
-            for subset in subsets:
-                tasks.append(
-                    asyncio.create_task(
-                        self._execute_command(
-                            GetMapSubSet(
-                                map_id=map_id,
-                                map_set_id=map_set_id,
-                                map_type=map_type,
-                                map_subset_id=subset["mssid"],
-                            )
-                        )
-                    )
-                )
-
-            if tasks:
-                await asyncio.gather(*tasks)
 
     def _handle_map_sub_set(self, event_data: dict) -> None:
         if event_data.get("type", None) != "ar":

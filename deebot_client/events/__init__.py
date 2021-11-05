@@ -9,6 +9,7 @@ from ..models import Room, VacuumState
 from ..util import DisplayNameIntEnum
 from .map import (
     MajorMapEventDto,
+    MapSetEventDto,
     MapTraceEventDto,
     Position,
     PositionsEventDto,
