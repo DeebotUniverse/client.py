@@ -230,7 +230,7 @@ class Map:
 
         self._listeners.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
 
-    def disabled(self) -> None:
+    def disable(self) -> None:
         """Disable map."""
         listeners = self._listeners
         self._listeners.clear()
