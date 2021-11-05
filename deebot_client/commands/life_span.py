@@ -34,6 +34,5 @@ class GetLifeSpan(CommandWithHandling):
 
             percent = round((left / total) * 100, 2)
             event_bus.notify(LifeSpanEvent(component_type, percent))
-            return HandlingResult.success()
 
-        return HandlingResult.analyse()
+        return HandlingResult.success()
