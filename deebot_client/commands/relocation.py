@@ -1,9 +1,5 @@
 """Relocate commands."""
-import logging
-
 from .common import _ExecuteCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class SetRelocationState(_ExecuteCommand):

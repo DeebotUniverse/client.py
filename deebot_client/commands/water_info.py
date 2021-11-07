@@ -1,12 +1,9 @@
 """Water info commands."""
-import logging
 from typing import Any, Dict, Mapping, Union
 
 from ..events import WaterAmount, WaterInfoEvent
 from ..message import HandlingResult
 from .common import EventBus, SetCommand, _NoArgsCommand
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetWaterInfo(_NoArgsCommand):

@@ -1,7 +1,6 @@
 """Map module."""
 import asyncio
 import base64
-import logging
 import lzma
 import struct
 from io import BytesIO
@@ -24,9 +23,10 @@ from .events import (
     RoomsEvent,
 )
 from .events.event_bus import EventBus, EventListener
+from .logging_filter import get_logger
 from .models import Room
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 _TRACE_MAP = "trace_map"
 
 

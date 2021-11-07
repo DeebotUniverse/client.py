@@ -1,14 +1,14 @@
 """Base commands."""
-import logging
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from ..command import Command
 from ..events.event_bus import EventBus
+from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 _CODE = "code"
 

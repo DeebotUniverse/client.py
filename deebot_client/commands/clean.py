@@ -1,14 +1,14 @@
 """Clean commands."""
-import logging
 from enum import Enum, unique
 from typing import Any, Dict, Optional
 
 from ..events import StatusEvent
+from ..logging_filter import get_logger
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand, _NoArgsCommand
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 
 @unique

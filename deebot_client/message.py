@@ -1,14 +1,14 @@
 """Base messages."""
 import functools
-import logging
 from abc import ABC
 from dataclasses import dataclass
 from enum import IntEnum, auto
 from typing import Any, Callable, Dict, List, Optional, Type, Union, final
 
 from .events.event_bus import EventBus
+from .logging_filter import get_logger
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 
 class HandlingState(IntEnum):

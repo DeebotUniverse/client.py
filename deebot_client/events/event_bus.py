@@ -1,6 +1,5 @@
 """Event emitter module."""
 import asyncio
-import logging
 import threading
 from typing import (
     Awaitable,
@@ -15,10 +14,11 @@ from typing import (
 )
 
 from ..command import Command
+from ..logging_filter import get_logger
 from ..models import VacuumState
 from . import Event, StatusEvent
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 T = TypeVar("T", bound=Event)
 

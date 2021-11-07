@@ -1,5 +1,4 @@
 """Maps commands."""
-import logging
 from typing import Any, Dict, List
 
 from ..command import Command
@@ -8,8 +7,6 @@ from ..events.event_bus import EventBus
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
 from .common import CommandResult
-
-_LOGGER = logging.getLogger(__name__)
 
 
 class GetCachedMapInfo(CommandWithHandling):

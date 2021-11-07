@@ -1,5 +1,4 @@
 """Api client module."""
-import logging
 from datetime import datetime
 from typing import Any, Dict, List, Union
 from urllib.parse import urljoin
@@ -15,9 +14,10 @@ from .const import (
     PATH_API_LG_LOG,
     PATH_API_PIM_PRODUCT_IOT_MAP,
 )
+from .logging_filter import get_logger
 from .models import Configuration, DeviceInfo
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 _REQUEST_HEADERS = {
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; A5010 Build/LMY48Z)",
 }

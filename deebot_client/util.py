@@ -1,35 +1,12 @@
 """Util module."""
-import copy
 import hashlib
 from enum import IntEnum, unique
-from typing import Mapping, Optional, Set, Tuple
+from typing import Mapping, Optional, Tuple
 
 
 def md5(text: str) -> str:
     """Hash text using md5."""
     return hashlib.md5(bytes(str(text), "utf8")).hexdigest()
-
-
-# all lowercase
-_SANITIZE_LOG_KEYS: Set[str] = {
-    "auth",
-    "token",
-    "id",
-    "login",
-    "mobile",
-    "user",
-    "email",
-}
-
-
-def sanitize_data(data: dict) -> dict:
-    """Sanitize data (remove personal data)."""
-    sanitized_data = copy.deepcopy(data)
-    for key in sanitized_data.keys():
-        if any(substring in key.lower() for substring in _SANITIZE_LOG_KEYS):
-            sanitized_data[key] = "[REMOVED]"
-
-    return sanitized_data
 
 
 @unique
