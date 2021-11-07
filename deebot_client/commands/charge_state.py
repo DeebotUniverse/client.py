@@ -26,7 +26,8 @@ class GetChargeState(_NoArgsCommand):
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
-        if body.get(_CODE, -1) == 0:
+        if body.get(_CODE, 0) == 0:
+            # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
         status: Optional[VacuumState] = None
