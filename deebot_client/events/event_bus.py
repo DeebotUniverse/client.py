@@ -14,7 +14,7 @@ from typing import (
 )
 
 from ..command import Command
-from ..logging import get_logger
+from ..logging_filter import get_logger
 from ..models import VacuumState
 from . import Event, StatusEvent
 

@@ -2,7 +2,7 @@
 from typing import Any, Dict, List, Union
 
 from ..events import CustomCommandEvent
-from ..logging import get_logger
+from ..logging_filter import get_logger
 from ..message import HandlingState
 from .common import CommandResult, EventBus
 

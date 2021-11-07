@@ -1,13 +1,12 @@
 """Internal api client module."""
 import asyncio
-import logging
 from typing import Any, Dict, Optional
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError
 
 from .const import REALM
-from .logging import get_logger
+from .logging_filter import get_logger
 from .models import Configuration, Credentials
 
 _LOGGER = get_logger(__name__)
@@ -39,8 +38,7 @@ class _InternalApiClient:
         """Perform a post request."""
         url = _get_portal_url(self._config, path)
 
-        if _LOGGER.isEnabledFor(logging.DEBUG):
-            _LOGGER.debug("calling api %s with %s", path, json)
+        _LOGGER.debug("calling api %s with %s", path, json)
 
         if credentials is not None:
             json.update(
@@ -70,8 +68,7 @@ class _InternalApiClient:
                     return {}
 
                 response_data: Dict[str, Any] = await res.json()
-                if _LOGGER.isEnabledFor(logging.DEBUG):
-                    _LOGGER.debug("got %s", response_data)
+                _LOGGER.debug("got %s", response_data)
                 return response_data
         except asyncio.TimeoutError:
             command = ""

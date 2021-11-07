@@ -9,7 +9,7 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import SET_COMMAND_NAMES, SetCommand
-from .logging import get_logger
+from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
 

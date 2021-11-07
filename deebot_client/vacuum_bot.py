@@ -19,7 +19,7 @@ from .events import (
     TotalStatsEvent,
 )
 from .events.event_bus import EventBus
-from .logging import get_logger
+from .logging_filter import get_logger
 from .map import Map
 from .message import HandlingState
 from .messages import MESSAGES

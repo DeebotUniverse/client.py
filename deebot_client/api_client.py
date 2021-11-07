@@ -14,7 +14,7 @@ from .const import (
     PATH_API_LG_LOG,
     PATH_API_PIM_PRODUCT_IOT_MAP,
 )
-from .logging import get_logger
+from .logging_filter import get_logger
 from .models import Configuration, DeviceInfo
 
 _LOGGER = get_logger(__name__)

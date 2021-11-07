@@ -23,7 +23,7 @@ from .events import (
     RoomsEvent,
 )
 from .events.event_bus import EventBus, EventListener
-from .logging import get_logger
+from .logging_filter import get_logger
 from .models import Room
 
 _LOGGER = get_logger(__name__)

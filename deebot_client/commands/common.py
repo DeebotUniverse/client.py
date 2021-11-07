@@ -5,7 +5,7 @@ from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from ..command import Command
 from ..events.event_bus import EventBus
-from ..logging import get_logger
+from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message
 
 _LOGGER = get_logger(__name__)

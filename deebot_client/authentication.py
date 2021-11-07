@@ -7,7 +7,7 @@ from aiohttp import hdrs
 
 from ._api_client import _InternalApiClient
 from .const import REALM
-from .logging import get_logger
+from .logging_filter import get_logger
 from .models import Configuration, Credentials
 from .util import md5
 

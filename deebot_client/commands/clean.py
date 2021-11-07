@@ -3,7 +3,7 @@ from enum import Enum, unique
 from typing import Any, Dict, Optional
 
 from ..events import StatusEvent
-from ..logging import get_logger
+from ..logging_filter import get_logger
 from ..message import HandlingResult
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand, _NoArgsCommand
