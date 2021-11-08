@@ -266,7 +266,8 @@ class GetMinorMap(CommandWithHandling):
 
         :return: A message response
         """
-        if data["type"] == "ol":
+        if data.get("type", "ol") == "ol":
+            # onMinorMap sends no type, so fallback to "ol"
             event_bus.notify(MinorMapEvent(data["pieceIndex"], data["pieceValue"]))
             return HandlingResult.success()
 

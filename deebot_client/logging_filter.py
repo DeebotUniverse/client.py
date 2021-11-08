@@ -11,12 +11,13 @@ class SanitizeFilter(Filter):
     # all lowercase
     _SANITIZE_LOG_KEYS: Set[str] = {
         "auth",
-        "token",
-        "id",
+        "did",
+        "email",
         "login",
         "mobile",
+        "token",
+        "uid",
         "user",
-        "email",
     }
 
     def filter(self, record: LogRecord) -> bool:
