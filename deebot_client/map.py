@@ -202,7 +202,8 @@ class Map:
         async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
                 self._trace_values = []
-                self._update_trace_points(event.data)
+
+            self._update_trace_points(event.data)
 
         self._listeners.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
