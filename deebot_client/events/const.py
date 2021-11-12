@@ -20,10 +20,12 @@ from ..commands import (
     GetWaterInfo,
 )
 from ..commands.break_point import GetBreakPoint
+from ..commands.carpet_pressure import GetCarpetPressure
 from ..commands.stats import GetTotalStats
 from . import (
     AdvancedModeEvent,
     BatteryEvent,
+    CarpetPressureEvent,
     CleanLogEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
@@ -46,6 +48,7 @@ from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
+    CarpetPressureEvent: [GetCarpetPressure()],
     CleanLogEvent: [GetCleanLogs()],
     ContinuousCleaningEvent: [GetBreakPoint()],
     CustomCommandEvent: [],

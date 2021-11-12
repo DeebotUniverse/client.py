@@ -165,3 +165,8 @@ class AdvancedModeEvent(EnabledEvent):
 @dataclass(frozen=True)
 class ContinuousCleaningEvent(EnabledEvent):
     """Continuous cleaning event."""
+
+
+@dataclass(frozen=True)
+class CarpetPressureEvent(EnabledEvent):
+    """Carpet pressure event."""
