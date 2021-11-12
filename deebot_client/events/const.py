@@ -25,9 +25,9 @@ from ..commands.stats import GetTotalStats
 from . import (
     AdvancedModeEvent,
     BatteryEvent,
+    BreakPointEvent,
     CarpetPressureEvent,
     CleanLogEvent,
-    ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
     Event,
@@ -48,9 +48,9 @@ from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
+    BreakPointEvent: [GetBreakPoint()],
     CarpetPressureEvent: [GetCarpetPressure()],
     CleanLogEvent: [GetCleanLogs()],
-    ContinuousCleaningEvent: [GetBreakPoint()],
     CustomCommandEvent: [],
     ErrorEvent: [GetError()],
     FanSpeedEvent: [GetFanSpeed()],

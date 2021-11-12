@@ -3,6 +3,8 @@ from typing import Dict, List, Type
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
+from .break_point import GetBreakPoint, SetBreakPoint
+from .carpet_pressure import GetCarpetPressure, SetCarpetPressure
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
@@ -33,6 +35,12 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     SetAdvancedMode,
 
     GetBattery,
+
+    GetBreakPoint,
+    SetBreakPoint,
+
+    GetCarpetPressure,
+    SetCarpetPressure,
 
     Charge,
 

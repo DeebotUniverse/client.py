@@ -1,4 +1,4 @@
-"""Advanced mode command module."""
+"""Carpet pressure command module."""
 
 from ..events import CarpetPressureEvent
 from .common import _GetEnabledCommand, _SetEnabledCommand

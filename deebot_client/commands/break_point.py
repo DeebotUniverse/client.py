@@ -1,6 +1,6 @@
-"""Advanced mode command module."""
+"""Break point (continuous cleaning) command module."""
 
-from ..events import ContinuousCleaningEvent
+from ..events import BreakPointEvent
 from .common import _GetEnabledCommand, _SetEnabledCommand
 
 
@@ -8,7 +8,7 @@ class GetBreakPoint(_GetEnabledCommand):
     """Get break point (continuous cleaning) command."""
 
     name = "getBreakPoint"
-    event_type = ContinuousCleaningEvent
+    event_type = BreakPointEvent
 
 
 class SetBreakPoint(_SetEnabledCommand):
