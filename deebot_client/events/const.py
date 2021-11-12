@@ -3,6 +3,7 @@ from typing import List, Mapping, Type
 
 from ..command import Command
 from ..commands import (
+    GetAdvancedMode,
     GetBattery,
     GetCachedMapInfo,
     GetChargeState,
@@ -20,6 +21,7 @@ from ..commands import (
 )
 from ..commands.stats import GetTotalStats
 from . import (
+    AdvancedModeEvent,
     BatteryEvent,
     CleanLogEvent,
     CustomCommandEvent,
@@ -40,6 +42,7 @@ from . import (
 from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
+    AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CleanLogEvent: [GetCleanLogs()],
     CustomCommandEvent: [],
