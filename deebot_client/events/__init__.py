@@ -148,3 +148,10 @@ class VolumeEvent(Event):
 
     volume: int
     maximum: Optional[int]
+
+
+@dataclass(frozen=True)
+class AdvancedModeEvent(Event):
+    """Advanced mode event."""
+
+    enable: bool

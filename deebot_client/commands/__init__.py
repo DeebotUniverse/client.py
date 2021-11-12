@@ -1,6 +1,7 @@
 """Commands module."""
 from typing import Dict, List, Type
 
+from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .charge import Charge
 from .charge_state import GetChargeState
@@ -28,6 +29,9 @@ from .water_info import GetWaterInfo, SetWaterInfo
 # fmt: off
 # ordered by file asc
 _COMMANDS: List[Type[CommandWithHandling]] = [
+    GetAdvancedMode,
+    SetAdvancedMode,
+
     GetBattery,
 
     Charge,
