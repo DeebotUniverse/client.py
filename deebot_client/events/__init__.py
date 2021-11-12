@@ -160,3 +160,8 @@ class EnabledEvent(Event):
 @dataclass(frozen=True)
 class AdvancedModeEvent(EnabledEvent):
     """Advanced mode event."""
+
+
+@dataclass(frozen=True)
+class ContinuousCleaningEvent(EnabledEvent):
+    """Continuous cleaning event."""

@@ -19,11 +19,13 @@ from ..commands import (
     GetVolume,
     GetWaterInfo,
 )
+from ..commands.break_point import GetBreakPoint
 from ..commands.stats import GetTotalStats
 from . import (
     AdvancedModeEvent,
     BatteryEvent,
     CleanLogEvent,
+    ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
     Event,
@@ -45,6 +47,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CleanLogEvent: [GetCleanLogs()],
+    ContinuousCleaningEvent: [GetBreakPoint()],
     CustomCommandEvent: [],
     ErrorEvent: [GetError()],
     FanSpeedEvent: [GetFanSpeed()],
