@@ -4,6 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from ..command import Command
+from ..events import EnabledEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message
@@ -106,3 +107,41 @@ class SetCommand(_ExecuteCommand, ABC):
     def get_command(self) -> Type[CommandWithHandling]:
         """Return the corresponding "get" command."""
         raise NotImplementedError
+
+
+class _GetEnabledCommand(_NoArgsCommand):
+    """Abstract get enabled command."""
+
+    # required as name is class variable, will be overwritten in subclasses
+    name = "__invalid__"
+
+    @classmethod
+    @property
+    @abstractmethod
+    def event_type(cls) -> Type[EnabledEvent]:
+        """Event type."""
+        raise NotImplementedError
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: Dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        event: EnabledEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event_bus.notify(event)
+        return HandlingResult.success()
+
+
+class _SetEnabledCommand(SetCommand):
+    """Abstract set enabled command."""
+
+    # required as name is class variable, will be overwritten in subclasses
+    name = "__invalid__"
+
+    def __init__(self, enable: Union[int, bool], **kwargs: Mapping[str, Any]) -> None:
+        if isinstance(enable, bool):
+            enable = 1 if enable else 0
+        super().__init__({"enable": enable}, **kwargs)

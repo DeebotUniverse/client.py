@@ -151,7 +151,12 @@ class VolumeEvent(Event):
 
 
 @dataclass(frozen=True)
-class AdvancedModeEvent(Event):
-    """Advanced mode event."""
+class EnabledEvent(Event):
+    """Enabled event."""
 
     enable: bool
+
+
+@dataclass(frozen=True)
+class AdvancedModeEvent(EnabledEvent):
+    """Advanced mode event."""
