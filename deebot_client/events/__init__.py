@@ -168,5 +168,5 @@ class ContinuousCleaningEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
-class CarpetPressureEvent(EnableEvent):
+class CarpetAutoFanBoostEvent(EnableEvent):
     """Carpet pressure event."""

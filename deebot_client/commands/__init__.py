@@ -3,7 +3,7 @@ from typing import Dict, List, Type
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
-from .carpet_pressure import GetCarpetPressure, SetCarpetPressure
+from .carpet_pressure import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
@@ -36,8 +36,8 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
     GetBattery,
 
-    GetCarpetPressure,
-    SetCarpetPressure,
+    GetCarpetAutoFanBoost,
+    SetCarpetAutoFanBoost,
 
     Charge,
 

@@ -1,18 +1,18 @@
 """Carpet pressure command module."""
 
-from ..events import CarpetPressureEvent
+from ..events import CarpetAutoFanBoostEvent
 from .common import SetEnableCommand, _GetEnableCommand
 
 
-class GetCarpetPressure(_GetEnableCommand):
-    """Get carpet pressure command."""
+class GetCarpetAutoFanBoost(_GetEnableCommand):
+    """Get carpet auto fan boost command."""
 
     name = "getCarpertPressure"
-    event_type = CarpetPressureEvent
+    event_type = CarpetAutoFanBoostEvent
 
 
-class SetCarpetPressure(SetEnableCommand):
-    """Set carpet pressure command."""
+class SetCarpetAutoFanBoost(SetEnableCommand):
+    """Set carpet auto fan boost command."""
 
     name = "setCarpertPressure"
-    get_command = GetCarpetPressure
+    get_command = GetCarpetAutoFanBoost

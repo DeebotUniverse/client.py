@@ -6,7 +6,7 @@ from ..commands import (
     GetAdvancedMode,
     GetBattery,
     GetCachedMapInfo,
-    GetCarpetPressure,
+    GetCarpetAutoFanBoost,
     GetChargeState,
     GetCleanInfo,
     GetCleanLogs,
@@ -25,7 +25,7 @@ from ..commands import (
 from . import (
     AdvancedModeEvent,
     BatteryEvent,
-    CarpetPressureEvent,
+    CarpetAutoFanBoostEvent,
     CleanLogEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
@@ -48,7 +48,7 @@ from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
-    CarpetPressureEvent: [GetCarpetPressure()],
+    CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
     CleanLogEvent: [GetCleanLogs()],
     ContinuousCleaningEvent: [GetContinuousCleaning()],
     CustomCommandEvent: [],
