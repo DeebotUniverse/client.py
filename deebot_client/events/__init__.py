@@ -163,8 +163,8 @@ class AdvancedModeEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
-class BreakPointEvent(EnableEvent):
-    """Break point (continuous cleaning) event."""
+class ContinuousCleaningEvent(EnableEvent):
+    """Continuous cleaning event."""
 
 
 @dataclass(frozen=True)

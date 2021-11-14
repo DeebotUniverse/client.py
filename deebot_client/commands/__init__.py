@@ -3,13 +3,13 @@ from typing import Dict, List, Type
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
-from .break_point import GetBreakPoint, SetBreakPoint
 from .carpet_pressure import GetCarpetPressure, SetCarpetPressure
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_logs import GetCleanLogs
 from .common import CommandWithHandling, SetCommand
+from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan
@@ -36,9 +36,6 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
     GetBattery,
 
-    GetBreakPoint,
-    SetBreakPoint,
-
     GetCarpetPressure,
     SetCarpetPressure,
 
@@ -51,6 +48,9 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     GetCleanInfo,
 
     GetCleanLogs,
+
+    GetContinuousCleaning,
+    SetContinuousCleaning,
 
     GetError,
 
