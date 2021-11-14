@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import Any, Dict, List, Mapping, Optional, Type, Union
 
 from ..command import Command
-from ..events import EnabledEvent
+from ..events import EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message
@@ -109,8 +109,8 @@ class SetCommand(_ExecuteCommand, ABC):
         raise NotImplementedError
 
 
-class _GetEnabledCommand(_NoArgsCommand):
-    """Abstract get enabled command."""
+class _GetEnableCommand(_NoArgsCommand):
+    """Abstract get enable command."""
 
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
@@ -118,7 +118,7 @@ class _GetEnabledCommand(_NoArgsCommand):
     @classmethod
     @property
     @abstractmethod
-    def event_type(cls) -> Type[EnabledEvent]:
+    def event_type(cls) -> Type[EnableEvent]:
         """Event type."""
         raise NotImplementedError
 
@@ -130,13 +130,13 @@ class _GetEnabledCommand(_NoArgsCommand):
 
         :return: A message response
         """
-        event: EnabledEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
         event_bus.notify(event)
         return HandlingResult.success()
 
 
-class _SetEnabledCommand(SetCommand):
-    """Abstract set enabled command."""
+class SetEnableCommand(SetCommand):
+    """Abstract set enable command."""
 
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"

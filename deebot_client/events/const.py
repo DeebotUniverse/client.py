@@ -5,7 +5,9 @@ from ..command import Command
 from ..commands import (
     GetAdvancedMode,
     GetBattery,
+    GetBreakPoint,
     GetCachedMapInfo,
+    GetCarpetPressure,
     GetChargeState,
     GetCleanInfo,
     GetCleanLogs,
@@ -16,12 +18,10 @@ from ..commands import (
     GetMapTrace,
     GetPos,
     GetStats,
+    GetTotalStats,
     GetVolume,
     GetWaterInfo,
 )
-from ..commands.break_point import GetBreakPoint
-from ..commands.carpet_pressure import GetCarpetPressure
-from ..commands.stats import GetTotalStats
 from . import (
     AdvancedModeEvent,
     BatteryEvent,

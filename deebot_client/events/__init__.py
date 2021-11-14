@@ -151,22 +151,22 @@ class VolumeEvent(Event):
 
 
 @dataclass(frozen=True)
-class EnabledEvent(Event):
+class EnableEvent(Event):
     """Enabled event."""
 
     enable: bool
 
 
 @dataclass(frozen=True)
-class AdvancedModeEvent(EnabledEvent):
+class AdvancedModeEvent(EnableEvent):
     """Advanced mode event."""
 
 
 @dataclass(frozen=True)
-class BreakPointEvent(EnabledEvent):
+class BreakPointEvent(EnableEvent):
     """Break point (continuous cleaning) event."""
 
 
 @dataclass(frozen=True)
-class CarpetPressureEvent(EnabledEvent):
+class CarpetPressureEvent(EnableEvent):
     """Carpet pressure event."""

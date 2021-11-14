@@ -1,17 +1,17 @@
 """Break point (continuous cleaning) command module."""
 
 from ..events import BreakPointEvent
-from .common import _GetEnabledCommand, _SetEnabledCommand
+from .common import SetEnableCommand, _GetEnableCommand
 
 
-class GetBreakPoint(_GetEnabledCommand):
+class GetBreakPoint(_GetEnableCommand):
     """Get break point (continuous cleaning) command."""
 
     name = "getBreakPoint"
     event_type = BreakPointEvent
 
 
-class SetBreakPoint(_SetEnabledCommand):
+class SetBreakPoint(SetEnableCommand):
     """Set break point (continuous cleaning) command."""
 
     name = "setBreakPoint"
