@@ -148,3 +148,25 @@ class VolumeEvent(Event):
 
     volume: int
     maximum: Optional[int]
+
+
+@dataclass(frozen=True)
+class EnableEvent(Event):
+    """Enabled event."""
+
+    enable: bool
+
+
+@dataclass(frozen=True)
+class AdvancedModeEvent(EnableEvent):
+    """Advanced mode event."""
+
+
+@dataclass(frozen=True)
+class ContinuousCleaningEvent(EnableEvent):
+    """Continuous cleaning event."""
+
+
+@dataclass(frozen=True)
+class CarpetAutoFanBoostEvent(EnableEvent):
+    """Carpet pressure event."""

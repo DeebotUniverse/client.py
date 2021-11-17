@@ -3,11 +3,14 @@ from typing import List, Mapping, Type
 
 from ..command import Command
 from ..commands import (
+    GetAdvancedMode,
     GetBattery,
     GetCachedMapInfo,
+    GetCarpetAutoFanBoost,
     GetChargeState,
     GetCleanInfo,
     GetCleanLogs,
+    GetContinuousCleaning,
     GetError,
     GetFanSpeed,
     GetLifeSpan,
@@ -15,13 +18,16 @@ from ..commands import (
     GetMapTrace,
     GetPos,
     GetStats,
+    GetTotalStats,
     GetVolume,
     GetWaterInfo,
 )
-from ..commands.stats import GetTotalStats
 from . import (
+    AdvancedModeEvent,
     BatteryEvent,
+    CarpetAutoFanBoostEvent,
     CleanLogEvent,
+    ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
     Event,
@@ -40,8 +46,11 @@ from . import (
 from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
+    AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
+    CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
     CleanLogEvent: [GetCleanLogs()],
+    ContinuousCleaningEvent: [GetContinuousCleaning()],
     CustomCommandEvent: [],
     ErrorEvent: [GetError()],
     FanSpeedEvent: [GetFanSpeed()],
