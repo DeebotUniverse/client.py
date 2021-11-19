@@ -1,5 +1,6 @@
 ci:
   skip:
+    # This steps run in the ci workflow. Keep in sync
     - mypy
     - pylint
     - verifyNoGetLogger

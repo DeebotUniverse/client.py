@@ -28,16 +28,13 @@ jobs:
         run: |
           pip install -r requirements.txt
           pip install -r requirements-test.txt
+      # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run --all-files --show-diff-on-failure mypy
+        run: mypy deebot_client/
       - name: Pylint review
-        # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run --all-files --show-diff-on-failure pylint
-      - name:
-          Verify no getLogger usages
-          # Cannot be run by pre-commit.ci as repo is local
-        run: pre-commit run --all-files --show-diff-on-failure verifyNoGetLogger
+        run: pylint deebot_client/
+      - name: Verify no getLogger usages
+        run: scripts/check_getLogger.sh
 
   tests:
     runs-on: "ubuntu-latest"
