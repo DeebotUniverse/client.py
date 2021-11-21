@@ -93,6 +93,7 @@ class LifeSpanEvent(Event):
 
     type: LifeSpan
     percent: float
+    remaining: int  # in minutes
 
 
 @dataclass(frozen=True)
