@@ -53,4 +53,4 @@ class ResetLifeSpan(_ExecuteCommand):
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS:
-            event_bus.notify(LifeSpanEvent(LifeSpan(self._type), 100.0))
+            event_bus.request_refresh(LifeSpanEvent)
