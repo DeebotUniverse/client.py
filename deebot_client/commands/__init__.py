@@ -12,7 +12,7 @@ from .common import CommandWithHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
-from .life_span import GetLifeSpan
+from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -58,6 +58,7 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     SetFanSpeed,
 
     GetLifeSpan,
+    ResetLifeSpan,
 
     GetCachedMapInfo,
     GetMajorMap,
