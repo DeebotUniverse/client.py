@@ -6,7 +6,7 @@ import lzma
 import math
 import struct
 from io import BytesIO
-from typing import Awaitable, Callable, Dict, Final, List, Optional, Tuple
+from typing import Awaitable, Callable, Dict, Final, List, Optional, Tuple, Union
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
@@ -37,6 +37,14 @@ _POSITION_PNG = {
 }
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
+_COLORS = {
+    0x01: "#badaff",  # floor
+    0x02: "#4e96e2",  # wall
+    0x03: "#1a81ed",  # carpet
+    _TRACE_MAP: "#FFFFFF",
+    MapSetType.VIRTUAL_WALLS: "#FF0000",
+    MapSetType.NO_MOP_ZONES: "#FFA500",
+}
 
 
 def _decompress_7z_base64_data(data: str) -> bytes:
@@ -95,9 +103,11 @@ def _draw_positions(
 
 
 def _draw_subset(
-    coordinates: str, draw: "DashedImageDraw", image_box: Tuple[int, int, int, int]
+    subset: MapSubsetEvent,
+    draw: "DashedImageDraw",
+    image_box: Tuple[int, int, int, int],
 ) -> None:
-    coordinates_ = ast.literal_eval(coordinates)
+    coordinates_ = ast.literal_eval(subset.coordinates)
     points: List[Tuple[int, int]] = []
     for i in range(0, len(coordinates_), 2):
         points.append(_calc_point(coordinates_[i], coordinates_[i + 1], image_box))
@@ -106,18 +116,11 @@ def _draw_subset(
         # close rectangle
         points.append(points[0])
 
-    draw.dashed_line(points, fill=(255, 0, 0), width=1)
+    draw.dashed_line(points, dash=(3, 2), fill=_COLORS[subset.type], width=1)
 
 
 class Map:
     """Map representation."""
-
-    COLORS = {
-        0x01: "#badaff",  # floor
-        0x02: "#4e96e2",  # wall
-        0x03: "#1a81ed",  # carpet
-        _TRACE_MAP: "#FFFFFF",
-    }
 
     RESIZE_FACTOR = 3
 
@@ -216,7 +219,7 @@ class Map:
                             )
                             raise RuntimeError("Map Limit reached!")
                         if pixel_type in [0x01, 0x02, 0x03]:
-                            draw.point((point_x, point_y), fill=Map.COLORS[pixel_type])
+                            draw.point((point_x, point_y), fill=_COLORS[pixel_type])
 
     def enable(self) -> None:
         """Enable map."""
@@ -279,9 +282,7 @@ class Map:
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
 
-    def get_base64_map(
-        self, width: Optional[int] = None, draw_subsets: bool = False
-    ) -> bytes:
+    def get_base64_map(self, width: Optional[int] = None) -> bytes:
         """Return map as base64 image string."""
         if not self._listeners:
             raise RuntimeError("Please enable the map first")
@@ -303,12 +304,11 @@ class Map:
         # Draw Trace Route
         if len(self._trace_values) > 0:
             _LOGGER.debug("[get_base64_map] Draw Trace")
-            draw.line(self._trace_values, fill=Map.COLORS[_TRACE_MAP], width=1)
+            draw.line(self._trace_values, fill=_COLORS[_TRACE_MAP], width=1)
 
         image_box = image.getbbox()
-        if draw_subsets:
-            for subset in self._map_subsets.values():
-                _draw_subset(subset.coordinates, draw, image_box)
+        for subset in self._map_subsets.values():
+            _draw_subset(subset, draw, image_box)
 
         del draw
 
@@ -415,7 +415,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
         self,
         xy: List[Tuple[int, int]],
         direction: List[Tuple[int, int]],
-        fill: Optional[Tuple] = None,
+        fill: Optional[Union[Tuple, str]] = None,
         width: int = 0,
     ) -> None:
         if xy[0] != xy[1]:
@@ -453,7 +453,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
         self,
         xy: List[Tuple[int, int]],
         dash: Tuple = (2, 2),
-        fill: Optional[Tuple] = None,
+        fill: Optional[Union[Tuple, str]] = None,
         width: int = 0,
     ) -> None:
         """Draw a dashed line, or a connected sequence of line segments."""
