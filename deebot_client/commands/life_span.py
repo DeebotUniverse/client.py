@@ -30,6 +30,6 @@ class GetLifeSpan(CommandWithHandling):
                 raise ValueError("total not positive!")
 
             percent = round((left / total) * 100, 2)
-            event_bus.notify(LifeSpanEvent(component_type, percent))
+            event_bus.notify(LifeSpanEvent(component_type, percent, left))
 
         return HandlingResult.success()
