@@ -52,6 +52,10 @@ class CommandWithHandling(Command, Message, ABC):
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
         return CommandResult(HandlingState.FAILED)
 
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        # Does nothing. Command will override this method.
+
 
 class _NoArgsCommand(CommandWithHandling, ABC):
     """Command without args."""
@@ -107,6 +111,12 @@ class SetCommand(_ExecuteCommand, ABC):
     def get_command(self) -> Type[CommandWithHandling]:
         """Return the corresponding "get" command."""
         raise NotImplementedError
+
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        result = self.handle(event_bus, response)
+        if result.state == HandlingState.SUCCESS and isinstance(self.args, dict):
+            self.get_command.handle(event_bus, self.args)
 
 
 class _GetEnableCommand(_NoArgsCommand):
