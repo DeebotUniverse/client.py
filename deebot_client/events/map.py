@@ -49,13 +49,6 @@ class MajorMapEvent(Event):
 
 
 @dataclass(frozen=True)
-class MapSetEvent(Event):
-    """Map set event."""
-
-    rooms_count: int
-
-
-@dataclass(frozen=True)
 class MinorMapEvent(Event):
     """Minor map event."""
 
@@ -76,6 +69,14 @@ class MapSetType(str, Enum):
         """Check if value exists."""
 
         return value in cls._value2member_map_  # pylint: disable=no-member
+
+
+@dataclass(frozen=True)
+class MapSetEvent(Event):
+    """Map set event."""
+
+    type: MapSetType
+    subsets: List[int]
 
 
 @dataclass(frozen=True)

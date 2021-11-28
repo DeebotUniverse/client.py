@@ -142,9 +142,15 @@ class Map:
         self._listeners: List[EventListener] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
-            self._map_subsets.clear()
-            self._rooms.clear()
-            self._amount_rooms = event.rooms_count
+            if event.type == MapSetType.ROOMS:
+                self._amount_rooms = len(event.subsets)
+                for room_id, _ in self._rooms.copy().items():
+                    if room_id not in event.subsets:
+                        self._rooms.pop(room_id, None)
+            else:
+                for subset_id, subset in self._map_subsets.copy().items():
+                    if subset.type == event.type and subset_id not in event.subsets:
+                        self._map_subsets.pop(subset_id, None)
 
         self._event_bus.subscribe(MapSetEvent, on_map_set)
 

@@ -121,13 +121,15 @@ class GetMapSet(CommandWithHandling):
 
         :return: A message response
         """
+        subsets = [subset["mssid"] for subset in data["subsets"]]
         args = {
             cls._ARGS_ID: data["mid"],
             cls._ARGS_SET_ID: data.get("msid", None),
             cls._ARGS_TYPE: data["type"],
-            cls._ARGS_SUBSETS: data["subsets"],
+            cls._ARGS_SUBSETS: subsets,
         }
-        event_bus.notify(MapSetEvent(len(args["subsets"])))
+
+        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
         return HandlingResult(HandlingState.SUCCESS, args)
 
     def handle_requested(
@@ -146,7 +148,7 @@ class GetMapSet(CommandWithHandling):
                         mid=result.args[self._ARGS_ID],
                         msid=result.args[self._ARGS_SET_ID],
                         type=result.args[self._ARGS_TYPE],
-                        mssid=subset["mssid"],
+                        mssid=subset,
                     )
                 )
             return CommandResult(result.state, result.args, commands)
