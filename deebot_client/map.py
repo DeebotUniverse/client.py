@@ -405,6 +405,12 @@ class MapPiece:
         """Calculate hash on index and crc32."""
         return hash(self._index) + hash(self._crc32)
 
+    def __eq__(self, obj: object) -> bool:
+        if not isinstance(obj, MapPiece):
+            return False
+
+        return self._crc32 == obj._crc32 and self._index == obj._index
+
 
 class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
     """Class extend ImageDraw by dashed line."""
