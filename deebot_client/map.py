@@ -2,9 +2,11 @@
 import ast
 import asyncio
 import base64
+import dataclasses
 import lzma
 import math
 import struct
+import zlib
 from io import BytesIO
 from typing import Awaitable, Callable, Dict, Final, List, Optional, Tuple, Union
 
@@ -130,54 +132,41 @@ class Map:
         self._execute_command = execute_command
         self._event_bus = event_bus
 
-        self._positions: List[Position] = []
-        self._map_subsets: Final[Dict[int, MapSubsetEvent]] = {}
-        self._rooms: Final[Dict[int, Room]] = {}
+        self._map_data: Final[MapData] = MapData()
         self._amount_rooms: int = 0
-        self._trace_values: List[int] = []
-        self._map_pieces: List[MapPiece] = [MapPiece(i) for i in range(64)]
-        self._is_map_up_to_date: bool = False
-        self._base64_image: Optional[bytes] = None
-        self._last_requested_width: Optional[int] = None
+        self._last_image: Optional[LastImage] = None
         self._listeners: List[EventListener] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
                 self._amount_rooms = len(event.subsets)
-                for room_id, _ in self._rooms.copy().items():
+                for room_id, _ in self._map_data.rooms.copy().items():
                     if room_id not in event.subsets:
-                        self._rooms.pop(room_id, None)
+                        self._map_data.rooms.pop(room_id, None)
             else:
-                for subset_id, subset in self._map_subsets.copy().items():
+                for subset_id, subset in self._map_data.map_subsets.copy().items():
                     if subset.type == event.type and subset_id not in event.subsets:
-                        self._map_subsets.pop(subset_id, None)
+                        self._map_data.map_subsets.pop(subset_id, None)
 
         self._event_bus.subscribe(MapSetEvent, on_map_set)
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
             if event.type == MapSetType.ROOMS and event.subtype:
                 room = Room(event.subtype, event.id, event.coordinates)
-                if self._rooms.get(event.id, None) != room:
-                    self._rooms[room.id] = room
+                if self._map_data.rooms.get(event.id, None) != room:
+                    self._map_data.rooms[room.id] = room
 
-                    if len(self._rooms) == self._amount_rooms:
-                        self._event_bus.notify(RoomsEvent(list(self._rooms.values())))
+                    if len(self._map_data.rooms) == self._amount_rooms:
+                        self._event_bus.notify(
+                            RoomsEvent(list(self._map_data.rooms.values()))
+                        )
 
-            elif self._map_subsets.get(event.id, None) != event:
-                self._map_subsets[event.id] = event
+            elif self._map_data.map_subsets.get(event.id, None) != event:
+                self._map_data.map_subsets[event.id] = event
 
         self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
 
     # ---------------------------- METHODS ----------------------------
-
-    def _add_map_piece(self, map_piece: int, b64: str) -> None:
-        _LOGGER.debug("[AddMapPiece] %d %s", map_piece, b64)
-
-        decoded = _decompress_7z_base64_data(b64)
-        points_array = reshape(list(decoded), (100, 100))
-
-        self._map_pieces[map_piece].points = points_array
-        _LOGGER.debug("[AddMapPiece] Done")
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
@@ -191,13 +180,13 @@ class Map:
             position_x = (int(byte_position_x[0] / 5)) + 400
             position_y = (int(byte_position_y[0] / 5)) + 400
 
-            self._trace_values.append(position_x)
-            self._trace_values.append(position_y)
+            self._map_data.trace_values.append(position_x)
+            self._map_data.trace_values.append(position_y)
 
         _LOGGER.debug("[_update_trace_points] finish")
 
-    def _draw_map_pices(self, draw: ImageDraw.Draw) -> None:
-        _LOGGER.debug("[_draw_map_pices] Draw")
+    def _draw_map_pieces(self, draw: ImageDraw.Draw) -> None:
+        _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
         image_y = 0
 
@@ -209,7 +198,7 @@ class Map:
                     image_x += 100
                     image_y = 0
 
-            current_piece = self._map_pieces[i]
+            current_piece = self._map_data.map_pieces[i]
             if current_piece.in_use:
                 for x in range(100):
                     current_column = current_piece.points[x]
@@ -235,13 +224,13 @@ class Map:
         asyncio.create_task(self._execute_command(GetCachedMapInfo()))
 
         async def on_position(event: PositionsEvent) -> None:
-            self._positions = event.positions
+            self._map_data.positions = event.positions
 
         self._listeners.append(self._event_bus.subscribe(PositionsEvent, on_position))
 
         async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
-                self._trace_values = []
+                self._map_data.trace_values.clear()
 
             self._update_trace_points(event.data)
 
@@ -250,16 +239,17 @@ class Map:
         async def on_major_map(event: MajorMapEvent) -> None:
             tasks = []
             for idx, value in enumerate(event.values):
-                if self._map_pieces[idx].is_update(value):
-                    self._is_map_up_to_date = False
-                    if self._map_pieces[idx].in_use and event.requested:
-                        tasks.append(
-                            asyncio.create_task(
-                                self._execute_command(
-                                    GetMinorMap(map_id=event.map_id, piece_index=idx)
-                                )
+                if (
+                    self._map_data.map_pieces[idx].crc32_indicates_update(value)
+                    and event.requested
+                ):
+                    tasks.append(
+                        asyncio.create_task(
+                            self._execute_command(
+                                GetMinorMap(map_id=event.map_id, piece_index=idx)
                             )
                         )
+                    )
 
             if tasks:
                 await asyncio.gather(*tasks)
@@ -267,7 +257,7 @@ class Map:
         self._listeners.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
 
         async def on_minor_map(event: MinorMapEvent) -> None:
-            self._add_map_piece(event.index, event.value)
+            self._map_data.map_pieces[event.index].update_points(event.value)
 
         self._listeners.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
 
@@ -293,32 +283,33 @@ class Map:
         if not self._listeners:
             raise RuntimeError("Please enable the map first")
 
+        data_hash = hash(self._map_data)
         if (
-            self._is_map_up_to_date
-            and width == self._last_requested_width
-            and self._base64_image is not None
+            self._last_image is not None
+            and width == self._last_image.width
+            and data_hash == self._last_image.data_hash
         ):
             _LOGGER.debug("[get_base64_map] No need to update")
-            return self._base64_image
+            return self._last_image.base64_image
 
         _LOGGER.debug("[get_base64_map] Begin")
         image = Image.new("RGBA", (6400, 6400))
         draw = DashedImageDraw(image)
 
-        self._draw_map_pices(draw)
+        self._draw_map_pieces(draw)
 
         # Draw Trace Route
-        if len(self._trace_values) > 0:
+        if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_base64_map] Draw Trace")
-            draw.line(self._trace_values, fill=_COLORS[_TRACE_MAP], width=1)
+            draw.line(self._map_data.trace_values, fill=_COLORS[_TRACE_MAP], width=1)
 
         image_box = image.getbbox()
-        for subset in self._map_subsets.values():
+        for subset in self._map_data.map_subsets.values():
             _draw_subset(subset, draw, image_box)
 
         del draw
 
-        _draw_positions(self._positions, image, image_box)
+        _draw_positions(self._map_data.positions, image, image_box)
 
         _LOGGER.debug("[get_base64_map] Crop Image")
         cropped = image.crop(image_box)
@@ -362,53 +353,57 @@ class Map:
         cropped.save(buffered, format="PNG")
         del cropped
 
-        self._is_map_up_to_date = True
-        self._last_requested_width = width
-        self._base64_image = base64.b64encode(buffered.getvalue())
+        base64_image = base64.b64encode(buffered.getvalue())
+        self._last_image = LastImage(base64_image, width, data_hash)
         _LOGGER.debug("[GetBase64Map] Finish")
 
-        return self._base64_image
+        return base64_image
 
 
 class MapPiece:
     """Map piece representation."""
 
-    NOT_INUSE: str = "1295764014"
+    _NOT_INUSE_CRC32: int = 1295764014
 
     def __init__(self, index: int) -> None:
         self._index = index
         self._points: Optional[ndarray] = None
-        self._in_use: bool = False
-        self._piece: str = MapPiece.NOT_INUSE
+        self._crc32: int = MapPiece._NOT_INUSE_CRC32
 
-    def is_update(self, map_piece: str) -> bool:
+    def crc32_indicates_update(self, crc32: str) -> bool:
         """Return True if update is required."""
-        piece = map_piece
-        if self._piece != piece:
-            self._piece = piece
+        crc32_int = int(crc32)
+        if crc32_int == MapPiece._NOT_INUSE_CRC32:
+            self._crc32 = crc32_int
             self._points = None
-            self._in_use = piece != MapPiece.NOT_INUSE
-            return True
+            return False
 
-        _LOGGER.debug("No update needed for piece idx %d", self._index)
-        return False
+        return self._crc32 != crc32_int
 
     @property
     def in_use(self) -> bool:
         """Return True if piece is in use."""
-        return self._in_use
+        return self._crc32 != MapPiece._NOT_INUSE_CRC32
 
     @property
     def points(self) -> ndarray:
         """I'm the 'x' property."""
-        if not self._in_use or self._points is None:
+        if not self.in_use or self._points is None:
             return zeros((100, 100))
         return self._points
 
-    @points.setter
-    def points(self, points: ndarray) -> None:
-        self._in_use = True
-        self._points = points
+    def update_points(self, base64_data: str) -> None:
+        """Add map piece points."""
+        decoded = _decompress_7z_base64_data(base64_data)
+        self._crc32 = zlib.crc32(decoded)
+        if self.in_use:
+            self._points = reshape(list(decoded), (100, 100))
+        else:
+            self._points = None
+
+    def __hash__(self) -> int:
+        """Calculate hash on index and crc32."""
+        return hash(self._index) + hash(self._crc32)
 
 
 class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
@@ -494,3 +489,23 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
                         )
                     dash_enabled = not dash_enabled
                     position += dash_step
+
+
+@dataclasses.dataclass(frozen=True)
+class LastImage:
+    """Last created image."""
+
+    base64_image: bytes
+    width: Optional[int]
+    data_hash: int
+
+
+class MapData:
+    """Map data."""
+
+    def __init__(self) -> None:
+        self.positions: List[Position] = []
+        self.map_subsets: Final[Dict[int, MapSubsetEvent]] = {}
+        self.rooms: Final[Dict[int, Room]] = {}
+        self.trace_values: Final[List[int]] = []
+        self.map_pieces: Final[List[MapPiece]] = [MapPiece(i) for i in range(64)]
