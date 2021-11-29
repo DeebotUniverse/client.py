@@ -35,7 +35,6 @@ from . import (
     LifeSpanEvent,
     PositionsEvent,
     ReportStatsEvent,
-    RoomEvent,
     RoomsEvent,
     StatsEvent,
     StatusEvent,
@@ -43,7 +42,13 @@ from . import (
     VolumeEvent,
     WaterInfoEvent,
 )
-from .map import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent
+from .map import (
+    MajorMapEvent,
+    MapSetEvent,
+    MapSubsetEvent,
+    MapTraceEvent,
+    MinorMapEvent,
+)
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
@@ -57,11 +62,11 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
     LifeSpanEvent: [GetLifeSpan()],
     MajorMapEvent: [GetMajorMap()],
     MapSetEvent: [],
+    MapSubsetEvent: [],
     MapTraceEvent: [GetMapTrace()],
     MinorMapEvent: [],
     PositionsEvent: [GetPos()],
     ReportStatsEvent: [],  # ReportStats cannot be pulled
-    RoomEvent: [],
     RoomsEvent: [GetCachedMapInfo()],
     StatsEvent: [GetStats()],
     StatusEvent: [GetChargeState(), GetCleanInfo()],

@@ -1,11 +1,12 @@
 """Map event module."""
 from dataclasses import dataclass
-from enum import Enum
-from typing import List
+from enum import Enum, unique
+from typing import Any, List, Optional
 
 from ..events import Event
 
 
+@unique
 class PositionType(str, Enum):
     """Position type enum."""
 
@@ -48,15 +49,41 @@ class MajorMapEvent(Event):
 
 
 @dataclass(frozen=True)
-class MapSetEvent(Event):
-    """Map set event."""
-
-    rooms_count: int
-
-
-@dataclass(frozen=True)
 class MinorMapEvent(Event):
     """Minor map event."""
 
     index: int
     value: str
+
+
+@unique
+class MapSetType(str, Enum):
+    """Map set type enum."""
+
+    ROOMS = "ar"
+    VIRTUAL_WALLS = "vw"
+    NO_MOP_ZONES = "mw"
+
+    @classmethod
+    def has_value(cls, value: Any) -> bool:
+        """Check if value exists."""
+
+        return value in cls._value2member_map_  # pylint: disable=no-member
+
+
+@dataclass(frozen=True)
+class MapSetEvent(Event):
+    """Map set event."""
+
+    type: MapSetType
+    subsets: List[int]
+
+
+@dataclass(frozen=True)
+class MapSubsetEvent(Event):
+    """Map subset event."""
+
+    id: int
+    type: MapSetType
+    coordinates: str
+    subtype: Optional[str] = None

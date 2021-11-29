@@ -1,8 +1,15 @@
 """Maps commands."""
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional, Union
 
 from ..command import Command
-from ..events import MajorMapEvent, MapSetEvent, MapTraceEvent, MinorMapEvent, RoomEvent
+from ..events import (
+    MajorMapEvent,
+    MapSetEvent,
+    MapSetType,
+    MapSubsetEvent,
+    MapTraceEvent,
+    MinorMapEvent,
+)
 from ..events.event_bus import EventBus
 from ..message import HandlingResult, HandlingState
 from . import CommandWithHandling
@@ -13,9 +20,6 @@ class GetCachedMapInfo(CommandWithHandling):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
-
-    def __init__(self) -> None:
-        super().__init__()
 
     @classmethod
     def _handle_body_data_dict(
@@ -43,7 +47,9 @@ class GetCachedMapInfo(CommandWithHandling):
         result = super().handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             return CommandResult(
-                result.state, result.args, [GetMapSet(result.args["map_id"])]
+                result.state,
+                result.args,
+                [GetMapSet(result.args["map_id"], entry) for entry in MapSetType],
             )
 
         return result
@@ -53,9 +59,6 @@ class GetMajorMap(CommandWithHandling):
     """Get major map command."""
 
     name = "getMajorMap"
-
-    def __init__(self) -> None:
-        super().__init__()
 
     @classmethod
     def _handle_body_data_dict(
@@ -98,8 +101,17 @@ class GetMapSet(CommandWithHandling):
 
     name = "getMapSet"
 
-    def __init__(self, map_id: str) -> None:
-        super().__init__({"mid": map_id, "type": "ar"})
+    def __init__(
+        self,
+        mid: str,
+        type: Union[  # pylint: disable=redefined-builtin
+            MapSetType, str
+        ] = MapSetType.ROOMS,
+    ) -> None:
+        if isinstance(type, MapSetType):
+            type = type.value
+
+        super().__init__({"mid": mid, "type": type})
 
     @classmethod
     def _handle_body_data_dict(
@@ -109,13 +121,15 @@ class GetMapSet(CommandWithHandling):
 
         :return: A message response
         """
+        subsets = [subset["mssid"] for subset in data["subsets"]]
         args = {
             cls._ARGS_ID: data["mid"],
-            cls._ARGS_SET_ID: data["msid"],
+            cls._ARGS_SET_ID: data.get("msid", None),
             cls._ARGS_TYPE: data["type"],
-            cls._ARGS_SUBSETS: data["subsets"],
+            cls._ARGS_SUBSETS: subsets,
         }
-        event_bus.notify(MapSetEvent(len(args["subsets"])))
+
+        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
         return HandlingResult(HandlingState.SUCCESS, args)
 
     def handle_requested(
@@ -131,10 +145,10 @@ class GetMapSet(CommandWithHandling):
             for subset in result.args[self._ARGS_SUBSETS]:
                 commands.append(
                     GetMapSubSet(
-                        map_id=result.args[self._ARGS_ID],
-                        map_set_id=result.args[self._ARGS_SET_ID],
-                        map_type=result.args[self._ARGS_TYPE],
-                        map_subset_id=subset["mssid"],
+                        mid=result.args[self._ARGS_ID],
+                        msid=result.args[self._ARGS_SET_ID],
+                        type=result.args[self._ARGS_TYPE],
+                        mssid=subset,
                     )
                 )
             return CommandResult(result.state, result.args, commands)
@@ -145,35 +159,48 @@ class GetMapSet(CommandWithHandling):
 class GetMapSubSet(CommandWithHandling):
     """Get map subset command."""
 
-    _ROOM_INT_TO_NAME = {
-        0: "Default",
-        1: "Living Room",
-        2: "Dining Room",
-        3: "Bedroom",
-        4: "Study",
-        5: "Kitchen",
-        6: "Bathroom",
-        7: "Laundry",
-        8: "Lounge",
-        9: "Storeroom",
-        10: "Kids room",
-        11: "Sunroom",
-        12: "Corridor",
-        13: "Balcony",
-        14: "Gym",
+    _ROOM_NUM_TO_NAME = {
+        "0": "Default",
+        "1": "Living Room",
+        "2": "Dining Room",
+        "3": "Bedroom",
+        "4": "Study",
+        "5": "Kitchen",
+        "6": "Bathroom",
+        "7": "Laundry",
+        "8": "Lounge",
+        "9": "Storeroom",
+        "10": "Kids room",
+        "11": "Sunroom",
+        "12": "Corridor",
+        "13": "Balcony",
+        "14": "Gym",
     }
 
     name = "getMapSubSet"
 
     def __init__(
-        self, *, map_id: str, map_set_id: str, map_type: str, map_subset_id: str
+        self,
+        *,
+        mid: Union[str, int],
+        mssid: Union[str, int],
+        msid: Optional[Union[str, int]] = None,
+        type: Union[  # pylint: disable=redefined-builtin
+            MapSetType, str
+        ] = MapSetType.ROOMS
     ) -> None:
+        if isinstance(type, MapSetType):
+            type = type.value
+
+        if msid is None and type == MapSetType.ROOMS.value:
+            raise ValueError("msid is required when type='vw'")
+
         super().__init__(
             {
-                "mid": map_id,
-                "msid": map_set_id,
-                "type": map_type,
-                "mssid": map_subset_id,
+                "mid": str(mid),
+                "msid": str(msid),
+                "type": type,
+                "mssid": str(mssid),
             },
         )
 
@@ -185,19 +212,19 @@ class GetMapSubSet(CommandWithHandling):
 
         :return: A message response
         """
-        if data["type"] == "ar":
+        if MapSetType.has_value(data["type"]):
             subtype = data.get("subtype", data.get("subType", None))
 
-            if subtype is not None:
-                event_bus.notify(
-                    RoomEvent(
-                        subtype=cls._ROOM_INT_TO_NAME[int(subtype)],
-                        id=int(data["mssid"]),
-                        coordinates=data["value"],
-                    )
+            event_bus.notify(
+                MapSubsetEvent(
+                    id=int(data["mssid"]),
+                    type=MapSetType(data["type"]),
+                    coordinates=data["value"],
+                    subtype=cls._ROOM_NUM_TO_NAME[subtype] if subtype else None,
                 )
+            )
 
-                return HandlingResult.success()
+            return HandlingResult.success()
 
         return HandlingResult.analyse()
 

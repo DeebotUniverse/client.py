@@ -10,6 +10,8 @@ from ..util import DisplayNameIntEnum
 from .map import (
     MajorMapEvent,
     MapSetEvent,
+    MapSetType,
+    MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
     Position,
@@ -94,11 +96,6 @@ class LifeSpanEvent(Event):
     type: LifeSpan
     percent: float
     remaining: int  # in minutes
-
-
-@dataclass(frozen=True)
-class RoomEvent(Room, Event):
-    """Room event."""
 
 
 @dataclass(frozen=True)
