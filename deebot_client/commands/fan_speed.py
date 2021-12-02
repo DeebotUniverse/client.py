@@ -10,10 +10,11 @@ from .common import EventBus, SetCommand, _NoArgsCommand
 class FanSpeedLevel(DisplayNameIntEnum):
     """Enum class for all possible fan speed levels."""
 
+    # Values should be sort from low to high on their meanings
+    QUIET = 1000
     NORMAL = 0
     MAX = 1
     MAX_PLUS = 2, "max+"
-    QUIET = 1000
 
 
 class GetFanSpeed(_NoArgsCommand):
