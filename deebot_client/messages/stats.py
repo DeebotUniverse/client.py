@@ -30,7 +30,7 @@ class ReportStats(Message):
             type=data.get("type"),
             cleaning_id=data["cid"],
             status=status,
-            rooms=[int(x) for x in data.get("content", "").split(",") if x],
+            content=[int(float(x)) for x in data.get("content", "").split(",") if x],
         )
         event_bus.notify(stats_event)
         return HandlingResult.success()
