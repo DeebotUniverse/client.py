@@ -8,7 +8,7 @@ from gmqtt import Client, Subscription
 from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
-from .commands import SET_COMMAND_NAMES, SetCommand
+from .commands import COMMANDS_WITH_HANDLING, CommandWithHandling
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
@@ -51,7 +51,7 @@ class MqttClient:
             self._hostname = "mq.ecouser.net"
 
         self._client: Optional[Client] = None
-        self._received_set_commands: MutableMapping[str, SetCommand] = TTLCache(
+        self._received_commands: MutableMapping[str, CommandWithHandling] = TTLCache(
             maxsize=60 * 60, ttl=60
         )
 
@@ -133,9 +133,9 @@ class MqttClient:
     def _handle_p2p(self, topic_split: List[str], payload: bytes) -> None:
         try:
             command_name = topic_split[2]
-            command_type = SET_COMMAND_NAMES.get(command_name, None)
+            command_type = COMMANDS_WITH_HANDLING.get(command_name, None)
             if command_type is None:
-                # command doesn't need special treatment or is not supported yet
+                # command is not supported yet
                 return
 
             is_request = topic_split[9] == "q"
@@ -153,12 +153,12 @@ class MqttClient:
                     )
                     return
 
-                self._received_set_commands[request_id] = command_type(**data)
+                self._received_commands[request_id] = command_type(**data)
             else:
-                command = self._received_set_commands.get(request_id, None)
+                command = self._received_commands.get(request_id, None)
                 if not command:
                     _LOGGER.debug(
-                        "Response to setCommand came in probably to late. requestId=%s, commandName=%s",
+                        "Response to command came in probably to late. requestId=%s, commandName=%s",
                         request_id,
                         command_name,
                     )
@@ -167,10 +167,7 @@ class MqttClient:
                 bot = self._subscribers.get(topic_split[3])
                 if bot:
                     data = json.loads(payload)
-                    if command.handle(bot.events, data) and isinstance(
-                        command.args, dict
-                    ):
-                        command.get_command.handle(bot.events, command.args)
+                    command.handle_mqtt_p2p(bot.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling p2p message", exc_info=True

@@ -1,9 +1,9 @@
 """Life span commands."""
-from typing import List
+from typing import Any, Dict, List, Union
 
 from ..events import LifeSpan, LifeSpanEvent
-from ..message import HandlingResult
-from .common import CommandWithHandling, EventBus
+from ..message import HandlingResult, HandlingState
+from .common import CommandWithHandling, EventBus, _ExecuteCommand
 
 
 class GetLifeSpan(CommandWithHandling):
@@ -33,3 +33,24 @@ class GetLifeSpan(CommandWithHandling):
             event_bus.notify(LifeSpanEvent(component_type, percent, left))
 
         return HandlingResult.success()
+
+
+class ResetLifeSpan(_ExecuteCommand):
+    """Reset life span command."""
+
+    name = "resetLifeSpan"
+
+    def __init__(
+        self, type: Union[str, LifeSpan]  # pylint: disable=redefined-builtin
+    ) -> None:
+        if isinstance(type, LifeSpan):
+            type = type.value
+
+        self._type = type
+        super().__init__({"type": type})
+
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        result = self.handle(event_bus, response)
+        if result.state == HandlingState.SUCCESS:
+            event_bus.request_refresh(LifeSpanEvent)

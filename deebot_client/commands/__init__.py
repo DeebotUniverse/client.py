@@ -12,7 +12,7 @@ from .common import CommandWithHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
-from .life_span import GetLifeSpan
+from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -58,6 +58,7 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
     SetFanSpeed,
 
     GetLifeSpan,
+    ResetLifeSpan,
 
     GetCachedMapInfo,
     GetMajorMap,
@@ -85,10 +86,4 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
 COMMANDS_WITH_HANDLING: Dict[str, Type[CommandWithHandling]] = {
     cmd.name: cmd for cmd in _COMMANDS
-}
-
-SET_COMMAND_NAMES: Dict[str, Type[SetCommand]] = {
-    cmd_name: cmd
-    for (cmd_name, cmd) in COMMANDS_WITH_HANDLING.items()
-    if issubclass(cmd, SetCommand)
 }
