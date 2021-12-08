@@ -22,3 +22,12 @@ class Command(ABC):
     def args(self) -> Union[Dict[str, Any], List]:
         """Command additional arguments."""
         return self._args
+
+    def __eq__(self, obj: object) -> bool:
+        if isinstance(obj, Command):
+            return self.name == obj.name and self.args == obj.args
+
+        return False
+
+    def __hash__(self) -> int:
+        return hash(self.name) + hash(self.args)
