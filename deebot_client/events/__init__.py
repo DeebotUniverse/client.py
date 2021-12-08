@@ -120,7 +120,7 @@ class ReportStatsEvent(StatsEvent):
 
     cleaning_id: str
     status: CleanJobStatus
-    rooms: Optional[List[int]]
+    content: Optional[List[int]]
 
 
 @dataclass(frozen=True)
