@@ -52,9 +52,16 @@ class CommandWithHandling(Command, Message, ABC):
         _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
         return CommandResult(HandlingState.FAILED)
 
+
+class CommandWithMqttP2PHandling(CommandWithHandling, ABC):
+    """Command which handles also mqtt p2p messages."""
+
+    # required as name is class variable, will be overwritten in subclasses
+    name = "__invalid__"
+
     def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
-        # Does nothing. Command will override this method.
+        raise NotImplementedError
 
 
 class _NoArgsCommand(CommandWithHandling, ABC):
@@ -87,7 +94,7 @@ class _ExecuteCommand(CommandWithHandling, ABC):
         return HandlingResult(HandlingState.FAILED)
 
 
-class SetCommand(_ExecuteCommand, ABC):
+class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
     """Base set command.
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.

@@ -8,7 +8,7 @@ from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_logs import GetCleanLogs
-from .common import CommandWithHandling, SetCommand
+from .common import CommandWithHandling, CommandWithMqttP2PHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
@@ -86,4 +86,10 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 
 COMMANDS_WITH_HANDLING: Dict[str, Type[CommandWithHandling]] = {
     cmd.name: cmd for cmd in _COMMANDS
+}
+
+COMMANDS_WITH_MQTT_P2P_HANDLING: Dict[str, Type[CommandWithMqttP2PHandling]] = {
+    cmd_name: cmd
+    for (cmd_name, cmd) in COMMANDS_WITH_HANDLING.items()
+    if issubclass(cmd, CommandWithMqttP2PHandling)
 }

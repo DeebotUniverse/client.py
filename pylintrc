@@ -79,3 +79,6 @@ expected-line-ending-format=LF
 # "BaseException, Exception".
 overgeneral-exceptions=BaseException,
                        Exception
+
+[DESIGN]
+max-parents=8
