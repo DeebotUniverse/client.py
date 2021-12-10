@@ -81,7 +81,7 @@ class MqttClient:
     async def initialize(self) -> None:
         """Initialize MQTT."""
         if self._client:
-            self.disconnect()
+            await self.disconnect()
 
         credentials = await self._authenticator.authenticate()
         client_id = f"{credentials.user_id}@ecouser/{self._config.device_id}"
@@ -113,10 +113,10 @@ class MqttClient:
             for subscription in _get_subscriptions(device_info):
                 self._client.unsubscribe(subscription.topic)
 
-    def disconnect(self) -> None:
+    async def disconnect(self) -> None:
         """Disconnect from MQTT."""
         if self._client:
-            self._client.disconnect()
+            await self._client.disconnect()
         self._subscribers.clear()
 
     async def _handle_atr(self, topic_split: List[str], payload: bytes) -> None:
