@@ -8,10 +8,9 @@ from ..events import EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message
+from .const import CODE
 
 _LOGGER = get_logger(__name__)
-
-_CODE = "code"
 
 
 @dataclass(frozen=True)
@@ -87,7 +86,7 @@ class _ExecuteCommand(CommandWithHandling, ABC):
         :return: A message response
         """
         # Success event looks like { "code": 0, "msg": "ok" }
-        if body.get(_CODE, -1) == 0:
+        if body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)

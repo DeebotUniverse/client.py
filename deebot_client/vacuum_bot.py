@@ -14,6 +14,8 @@ from .commands.custom import CustomCommand
 from .events import (
     CleanLogEvent,
     LifeSpanEvent,
+    PositionsEvent,
+    PositionType,
     StatsEvent,
     StatusEvent,
     TotalStatsEvent,
@@ -51,6 +53,25 @@ class VacuumBot:
         self.events: Final[EventBus] = EventBus(self.execute_command)
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
+
+        async def on_pos(event: PositionsEvent) -> None:
+            if self._status == StatusEvent(True, VacuumState.DOCKED):
+                return
+
+            deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
+
+            if deebot:
+                on_charger = filter(
+                    lambda p: p.type == PositionType.CHARGER
+                    and p.x == deebot.x
+                    and p.y == deebot.y,
+                    event.positions,
+                )
+                if on_charger:
+                    # deebot on charger so the status should be docked... Checking
+                    self.events.request_refresh(StatusEvent)
+
+        self.events.subscribe(PositionsEvent, on_pos)
 
         async def on_status(event: StatusEvent) -> None:
             last_status = self._status
