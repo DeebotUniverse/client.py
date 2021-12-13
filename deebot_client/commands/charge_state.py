@@ -4,7 +4,8 @@ from typing import Any, Dict, Optional
 from ..events import StatusEvent
 from ..message import HandlingResult
 from ..models import VacuumState
-from .common import _CODE, EventBus, _NoArgsCommand
+from .common import EventBus, _NoArgsCommand
+from .const import CODE
 
 
 class GetChargeState(_NoArgsCommand):
@@ -26,7 +27,7 @@ class GetChargeState(_NoArgsCommand):
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
-        if body.get(_CODE, 0) == 0:
+        if body.get(CODE, 0) == 0:
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 

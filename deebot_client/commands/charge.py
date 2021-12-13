@@ -2,9 +2,13 @@
 from typing import Any, Dict
 
 from ..events import StatusEvent
-from ..message import HandlingResult, HandlingState
+from ..logging_filter import get_logger
+from ..message import HandlingResult
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand
+from .const import CODE
+
+_LOGGER = get_logger(__name__)
 
 
 class Charge(_ExecuteCommand):
@@ -21,8 +25,14 @@ class Charge(_ExecuteCommand):
 
         :return: A message response
         """
-        response = super()._handle_body(event_bus, body)
-        if response.state == HandlingState.SUCCESS:
+        code = int(body.get(CODE, -1))
+        if code == 0:
             event_bus.notify(StatusEvent(True, VacuumState.RETURNING))
+            return HandlingResult.success()
 
-        return response
+        if code == 30007:
+            # bot is already charging
+            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
+            return HandlingResult.success()
+
+        return super()._handle_body(event_bus, body)
