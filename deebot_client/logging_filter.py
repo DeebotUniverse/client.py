@@ -2,14 +2,14 @@
 
 import copy
 from logging import Filter, Logger, LogRecord, getLogger
-from typing import Any, Set
+from typing import Any
 
 
 class SanitizeFilter(Filter):
     """Filter to sensitive data."""
 
     # all lowercase
-    _SANITIZE_LOG_KEYS: Set[str] = {
+    _SANITIZE_LOG_KEYS: set[str] = {
         "auth",
         "did",
         "email",

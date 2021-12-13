@@ -1,7 +1,7 @@
 """MQTT module."""
 import json
 import ssl
-from typing import Dict, List, MutableMapping, Optional
+from typing import MutableMapping, Optional
 
 from cachetools import TTLCache
 from gmqtt import Client, Subscription
@@ -16,7 +16,7 @@ from .vacuum_bot import VacuumBot
 _LOGGER = get_logger(__name__)
 
 
-def _get_subscriptions(device_info: DeviceInfo) -> List[Subscription]:
+def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
     return [
         # iot/atr/[command]]/[did]]/[class]]/[resource]/j
         Subscription(
@@ -57,7 +57,7 @@ class MqttClient:
 
         # pylint: disable=unused-argument
         async def _on_message(
-            client: Client, topic: str, payload: bytes, qos: int, properties: Dict
+            client: Client, topic: str, payload: bytes, qos: int, properties: dict
         ) -> None:
             _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload.decode())
             topic_split = topic.split("/")
@@ -119,7 +119,7 @@ class MqttClient:
             await self._client.disconnect()
         self._subscribers.clear()
 
-    async def _handle_atr(self, topic_split: List[str], payload: bytes) -> None:
+    async def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
         try:
             bot = self._subscribers.get(topic_split[3])
             if bot:
@@ -130,7 +130,7 @@ class MqttClient:
                 "An exception occurred during handling atr message", exc_info=True
             )
 
-    def _handle_p2p(self, topic_split: List[str], payload: bytes) -> None:
+    def _handle_p2p(self, topic_split: list[str], payload: bytes) -> None:
         try:
             command_name = topic_split[2]
             command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(command_name, None)

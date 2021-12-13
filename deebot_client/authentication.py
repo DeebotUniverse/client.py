@@ -1,7 +1,7 @@
 """Authentication module."""
 import asyncio
 import time
-from typing import Any, Callable, Dict, Mapping, Optional, Set, Union
+from typing import Any, Callable, Mapping, Optional, Union
 
 from aiohttp import hdrs
 
@@ -50,7 +50,7 @@ class _AuthClient:
         self._password_hash = password_hash
         self._tld = "com" if self._config.country != "cn" else "cn"
 
-        self._meta: Dict[str, str] = {
+        self._meta: dict[str, str] = {
             **_META,
             "country": self._config.country,
             "deviceId": self._config.device_id,
@@ -89,8 +89,8 @@ class _AuthClient:
         )
 
     async def __do_auth_response(
-        self, url: str, params: Dict[str, Any]
-    ) -> Dict[str, Any]:
+        self, url: str, params: dict[str, Any]
+    ) -> dict[str, Any]:
         async with self._config.session.get(
             url, params=params, timeout=60, ssl=self._config.verify_ssl
         ) as res:
@@ -102,7 +102,7 @@ class _AuthClient:
             _LOGGER.debug("got %s", json)
             # todo better error handling # pylint: disable=fixme
             if json["code"] == "0000":
-                data: Dict[str, Any] = json["data"]
+                data: dict[str, Any] = json["data"]
                 return data
             if json["code"] in ["1005", "1010"]:
                 _LOGGER.warning("incorrect email or password")
@@ -115,9 +115,9 @@ class _AuthClient:
 
     async def __call_login_api(
         self, account_id: str, password_hash: str
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         _LOGGER.debug("calling login api")
-        params: Dict[str, Union[str, int]] = {
+        params: dict[str, Union[str, int]] = {
             "account": account_id,
             "password": password_hash,
             "requestId": md5(str(time.time())),
@@ -136,12 +136,12 @@ class _AuthClient:
 
     @staticmethod
     def __sign(
-        params: Dict[str, Union[str, int]],
+        params: dict[str, Union[str, int]],
         additional_sign_params: Mapping[str, Union[str, int]],
         key: str,
         secret: str,
-    ) -> Dict[str, Union[str, int]]:
-        sign_data: Dict[str, Union[str, int]] = {**additional_sign_params, **params}
+    ) -> dict[str, Union[str, int]]:
+        sign_data: dict[str, Union[str, int]] = {**additional_sign_params, **params}
         sign_on_text = (
             key
             + "".join([k + "=" + str(sign_data[k]) for k in sorted(sign_data.keys())])
@@ -153,7 +153,7 @@ class _AuthClient:
 
     async def __call_auth_api(self, access_token: str, user_id: str) -> str:
         _LOGGER.debug("calling auth api")
-        params: Dict[str, Union[str, int]] = {
+        params: dict[str, Union[str, int]] = {
             "uid": user_id,
             "accessToken": access_token,
             "bizType": "ECOVACS_IOT",
@@ -173,7 +173,7 @@ class _AuthClient:
 
     async def __call_login_by_it_token(
         self, user_id: str, auth_code: str
-    ) -> Dict[str, str]:
+    ) -> dict[str, str]:
         data = {
             "edition": "ECOGLOBLE",
             "userId": user_id,
@@ -230,7 +230,7 @@ class Authenticator:
         )
 
         self._lock = asyncio.Lock()
-        self._on_credentials_changed: Set[Callable[[Credentials], None]] = set()
+        self._on_credentials_changed: set[Callable[[Credentials], None]] = set()
         self._credentials: Optional[Credentials] = None
         self._refresh_task: Optional[asyncio.TimerHandle] = None
 

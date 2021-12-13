@@ -1,7 +1,7 @@
 """Messages module."""
 
 
-from typing import Dict, List, Type
+from typing import Dict, Type
 
 from ..commands import COMMANDS_WITH_HANDLING
 from ..message import Message
@@ -9,12 +9,12 @@ from ..messages.stats import ReportStats
 
 # fmt: off
 # ordered by file asc
-_MESSAGES: List[Type[Message]] = [
+_MESSAGES: list[type[Message]] = [
     ReportStats
 ]
 # fmt: on
 
-MESSAGES: Dict[str, Type[Message]] = {
+MESSAGES: dict[str, type[Message]] = {
     message.name: message
     for message in (
         _MESSAGES

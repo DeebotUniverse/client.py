@@ -1,6 +1,6 @@
 """Api client module."""
 from datetime import datetime
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 from urllib.parse import urljoin
 
 from ._api_client import _InternalApiClient
@@ -37,7 +37,7 @@ class ApiClient:
         self._api_client = internal_api_client
         self._authenticator = authenticator
 
-    async def get_devices(self) -> List[DeviceInfo]:
+    async def get_devices(self) -> list[DeviceInfo]:
         """Get compatible devices."""
         credentials = await self._authenticator.authenticate()
         json = {
@@ -49,7 +49,7 @@ class ApiClient:
         )
 
         if resp.get("code", None) == 0:
-            devices: List[DeviceInfo] = []
+            devices: list[DeviceInfo] = []
             for device in resp["devices"]:
                 if device.get("company") == "eco-ng":
                     devices.append(DeviceInfo(device))
@@ -61,7 +61,7 @@ class ApiClient:
             f"failure {resp['error']} ({resp['errno']}) on getting devices"
         )
 
-    async def get_product_iot_map(self) -> Dict[str, Any]:
+    async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""
         resp = await self._api_client.post(
             PATH_API_PIM_PRODUCT_IOT_MAP,
@@ -70,7 +70,7 @@ class ApiClient:
         )
 
         if resp.get("code", None) in [0, "0000"]:
-            result: Dict[str, Any] = {}
+            result: dict[str, Any] = {}
             for entry in resp["data"]:
                 result[entry["classid"]] = entry["product"]
             return result
@@ -83,10 +83,10 @@ class ApiClient:
         self,
         command: Union[Command, CustomCommand],
         device_info: DeviceInfo,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Send json command for given vacuum to the api."""
         query_params = {}
-        json: Dict[str, Any]
+        json: dict[str, Any]
 
         if command.name == GetCleanLogs.name:
             json = {

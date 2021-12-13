@@ -1,5 +1,5 @@
 """Custom command module."""
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 from ..events import CustomCommandEvent
 from ..logging_filter import get_logger
@@ -12,7 +12,7 @@ _LOGGER = get_logger(__name__)
 class CustomCommand:
     """Custom command, used when user wants to execute a command, which is not part of this library."""
 
-    def __init__(self, name: str, args: Union[Dict, List, None] = None) -> None:
+    def __init__(self, name: str, args: Union[dict, list, None] = None) -> None:
         self._name = name
         if args is None:
             args = {}
@@ -24,12 +24,12 @@ class CustomCommand:
         return self._name
 
     @property
-    def args(self) -> Union[Dict[str, Any], List]:
+    def args(self) -> Union[dict[str, Any], list]:
         """Command additional arguments."""
         return self._args
 
     def handle_requested(
-        self, events: EventBus, response: Dict[str, Any]
+        self, events: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 

@@ -1,5 +1,5 @@
 """Maps commands."""
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Optional, Union
 
 from ..command import Command
 from ..events import (
@@ -23,7 +23,7 @@ class GetCachedMapInfo(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -38,7 +38,7 @@ class GetCachedMapInfo(CommandWithHandling):
         return HandlingResult.analyse()
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
@@ -62,7 +62,7 @@ class GetMajorMap(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -77,7 +77,7 @@ class GetMajorMap(CommandWithHandling):
         )
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
@@ -115,7 +115,7 @@ class GetMapSet(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -133,7 +133,7 @@ class GetMapSet(CommandWithHandling):
         return HandlingResult(HandlingState.SUCCESS, args)
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
@@ -141,7 +141,7 @@ class GetMapSet(CommandWithHandling):
         """
         result = super().handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: List[Command] = []
+            commands: list[Command] = []
             for subset in result.args[self._ARGS_SUBSETS]:
                 commands.append(
                     GetMapSubSet(
@@ -206,7 +206,7 @@ class GetMapSubSet(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -243,7 +243,7 @@ class GetMapTrace(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -262,7 +262,7 @@ class GetMapTrace(CommandWithHandling):
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
@@ -287,7 +287,7 @@ class GetMinorMap(CommandWithHandling):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

@@ -1,6 +1,6 @@
 """Clean commands."""
 from enum import Enum, unique
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..events import StatusEvent
 from ..logging_filter import get_logger
@@ -62,7 +62,7 @@ class GetCleanInfo(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

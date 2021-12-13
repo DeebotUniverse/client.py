@@ -1,7 +1,7 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Dict, List, Mapping, Optional, Type, Union
+from typing import Any, Mapping, Optional, Union
 
 from ..command import Command
 from ..events import EnableEvent
@@ -17,7 +17,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: Optional[List[Command]] = None
+    requested_commands: Optional[list[Command]] = None
 
     @classmethod
     def success(cls) -> "CommandResult":
@@ -37,7 +37,7 @@ class CommandWithHandling(Command, Message, ABC):
     name = "__invalid__"
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
@@ -58,7 +58,7 @@ class CommandWithMqttP2PHandling(CommandWithHandling, ABC):
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
         raise NotImplementedError
 
@@ -80,7 +80,7 @@ class _ExecuteCommand(CommandWithHandling, ABC):
     name = "__invalid__"
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -104,7 +104,7 @@ class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
 
     def __init__(
         self,
-        args: Union[Dict, List, None],
+        args: Union[dict, list, None],
         **kwargs: Mapping[str, Any],
     ) -> None:
         if kwargs:
@@ -114,11 +114,11 @@ class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
 
     @property
     @abstractmethod
-    def get_command(self) -> Type[CommandWithHandling]:
+    def get_command(self) -> type[CommandWithHandling]:
         """Return the corresponding "get" command."""
         raise NotImplementedError
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: Dict[str, Any]) -> None:
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS and isinstance(self.args, dict):
@@ -134,13 +134,13 @@ class _GetEnableCommand(_NoArgsCommand):
     @classmethod
     @property
     @abstractmethod
-    def event_type(cls) -> Type[EnableEvent]:
+    def event_type(cls) -> type[EnableEvent]:
         """Event type."""
         raise NotImplementedError
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

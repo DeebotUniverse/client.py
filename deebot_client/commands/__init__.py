@@ -1,5 +1,5 @@
 """Commands module."""
-from typing import Dict, List, Type
+from typing import Dict, Type
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
@@ -30,7 +30,7 @@ from .water_info import GetWaterInfo, SetWaterInfo
 
 # fmt: off
 # ordered by file asc
-_COMMANDS: List[Type[CommandWithHandling]] = [
+_COMMANDS: list[type[CommandWithHandling]] = [
     GetAdvancedMode,
     SetAdvancedMode,
 
@@ -84,11 +84,11 @@ _COMMANDS: List[Type[CommandWithHandling]] = [
 ]
 # fmt: on
 
-COMMANDS_WITH_HANDLING: Dict[str, Type[CommandWithHandling]] = {
+COMMANDS_WITH_HANDLING: dict[str, type[CommandWithHandling]] = {
     cmd.name: cmd for cmd in _COMMANDS
 }
 
-COMMANDS_WITH_MQTT_P2P_HANDLING: Dict[str, Type[CommandWithMqttP2PHandling]] = {
+COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandWithMqttP2PHandling]] = {
     cmd_name: cmd
     for (cmd_name, cmd) in COMMANDS_WITH_HANDLING.items()
     if issubclass(cmd, CommandWithMqttP2PHandling)

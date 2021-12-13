@@ -1,17 +1,7 @@
 """Event emitter module."""
 import asyncio
 import threading
-from typing import (
-    Awaitable,
-    Callable,
-    Dict,
-    Final,
-    Generic,
-    List,
-    Optional,
-    Type,
-    TypeVar,
-)
+from typing import Awaitable, Callable, Final, Generic, Optional, TypeVar
 
 from ..command import Command
 from ..logging_filter import get_logger
@@ -45,12 +35,12 @@ class _EventProcessingData(Generic[T]):
     def __init__(self) -> None:
         super().__init__()
 
-        self._subscribers: Final[List[EventListener[T]]] = []
+        self._subscribers: Final[list[EventListener[T]]] = []
         self._semaphore: Final = asyncio.Semaphore(1)
         self.last_event: Optional[T] = None
 
     @property
-    def subscribers(self) -> List[EventListener[T]]:
+    def subscribers(self) -> list[EventListener[T]]:
         """Return subscribers."""
         return self._subscribers
 
@@ -64,11 +54,11 @@ class EventBus:
     """A very simple event bus system."""
 
     def __init__(self, execute_command: Callable[[Command], Awaitable[None]]):
-        self._event_processing_dict: Dict[Type[Event], _EventProcessingData] = {}
+        self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
         self._execute_command: Final = execute_command
 
-    def has_subscribers(self, event: Type[T]) -> bool:
+    def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
         return (
             len(self._event_processing_dict[event].subscribers) > 0
@@ -78,7 +68,7 @@ class EventBus:
 
     def subscribe(
         self,
-        event_type: Type[T],
+        event_type: type[T],
         callback: Callable[[T], Awaitable[None]],
     ) -> EventListener[T]:
         """Subscribe to event."""
@@ -124,12 +114,12 @@ class EventBus:
         _LOGGER.debug("No subscribers... Discharging %s", event)
         return False
 
-    def request_refresh(self, event_class: Type[T]) -> None:
+    def request_refresh(self, event_class: type[T]) -> None:
         """Request manual refresh."""
         if self.has_subscribers(event_class):
             asyncio.create_task(self._call_refresh_function(event_class))
 
-    async def _call_refresh_function(self, event_class: Type[T]) -> None:
+    async def _call_refresh_function(self, event_class: type[T]) -> None:
         semaphore = self._event_processing_dict[event_class].semaphore
         if semaphore.locked():
             _LOGGER.debug("Already refresh function running. Skipping...")
@@ -154,7 +144,7 @@ class EventBus:
                 await asyncio.gather(*tasks)
 
     def _get_or_create_event_processing_data(
-        self, event_class: Type[T]
+        self, event_class: type[T]
     ) -> _EventProcessingData[T]:
         with self._lock:
             event_processing_data = self._event_processing_dict.get(event_class, None)

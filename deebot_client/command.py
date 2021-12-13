@@ -1,12 +1,12 @@
 """Base command."""
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Union
+from typing import Any, Union
 
 
 class Command(ABC):
     """Abstract command object."""
 
-    def __init__(self, args: Union[Dict, List, None] = None) -> None:
+    def __init__(self, args: Union[dict, list, None] = None) -> None:
         if args is None:
             args = {}
         self._args = args
@@ -19,7 +19,7 @@ class Command(ABC):
         raise NotImplementedError
 
     @property
-    def args(self) -> Union[Dict[str, Any], List]:
+    def args(self) -> Union[dict[str, Any], list]:
         """Command additional arguments."""
         return self._args
 

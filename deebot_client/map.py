@@ -8,7 +8,7 @@ import math
 import struct
 import zlib
 from io import BytesIO
-from typing import Awaitable, Callable, Dict, Final, List, Optional, Tuple, Union
+from typing import Awaitable, Callable, Final, Optional, Union
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
@@ -84,8 +84,8 @@ def _calc_value(value: int, min_value: int, max_value: int) -> int:
 
 
 def _calc_point(
-    x: int, y: int, image_box: Tuple[int, int, int, int]
-) -> Tuple[int, int]:
+    x: int, y: int, image_box: tuple[int, int, int, int]
+) -> tuple[int, int]:
     return (
         _calc_value(x, image_box[0], image_box[2]),
         _calc_value(y, image_box[1], image_box[3]),
@@ -93,7 +93,7 @@ def _calc_point(
 
 
 def _draw_positions(
-    positions: List[Position], image: Image, image_box: Tuple[int, int, int, int]
+    positions: list[Position], image: Image, image_box: tuple[int, int, int, int]
 ) -> None:
     for position in positions:
         icon = Image.open(BytesIO(base64.b64decode(_POSITION_PNG[position.type])))
@@ -107,10 +107,10 @@ def _draw_positions(
 def _draw_subset(
     subset: MapSubsetEvent,
     draw: "DashedImageDraw",
-    image_box: Tuple[int, int, int, int],
+    image_box: tuple[int, int, int, int],
 ) -> None:
     coordinates_ = ast.literal_eval(subset.coordinates)
-    points: List[Tuple[int, int]] = []
+    points: list[tuple[int, int]] = []
     for i in range(0, len(coordinates_), 2):
         points.append(_calc_point(coordinates_[i], coordinates_[i + 1], image_box))
 
@@ -135,7 +135,7 @@ class Map:
         self._map_data: Final[MapData] = MapData()
         self._amount_rooms: int = 0
         self._last_image: Optional[LastImage] = None
-        self._listeners: List[EventListener] = []
+        self._listeners: list[EventListener] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
@@ -420,9 +420,9 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
 
     def _thick_line(
         self,
-        xy: List[Tuple[int, int]],
-        direction: List[Tuple[int, int]],
-        fill: Optional[Union[Tuple, str]] = None,
+        xy: list[tuple[int, int]],
+        direction: list[tuple[int, int]],
+        fill: Optional[Union[tuple, str]] = None,
         width: int = 0,
     ) -> None:
         if xy[0] != xy[1]:
@@ -458,9 +458,9 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
 
     def dashed_line(
         self,
-        xy: List[Tuple[int, int]],
-        dash: Tuple = (2, 2),
-        fill: Optional[Union[Tuple, str]] = None,
+        xy: list[tuple[int, int]],
+        dash: tuple = (2, 2),
+        fill: Optional[Union[tuple, str]] = None,
         width: int = 0,
     ) -> None:
         """Draw a dashed line, or a connected sequence of line segments."""
@@ -510,8 +510,8 @@ class MapData:
     """Map data."""
 
     def __init__(self) -> None:
-        self.positions: List[Position] = []
-        self.map_subsets: Final[Dict[int, MapSubsetEvent]] = {}
-        self.rooms: Final[Dict[int, Room]] = {}
-        self.trace_values: Final[List[int]] = []
-        self.map_pieces: Final[List[MapPiece]] = [MapPiece(i) for i in range(64)]
+        self.positions: list[Position] = []
+        self.map_subsets: Final[dict[int, MapSubsetEvent]] = {}
+        self.rooms: Final[dict[int, Room]] = {}
+        self.trace_values: Final[list[int]] = []
+        self.map_pieces: Final[list[MapPiece]] = [MapPiece(i) for i in range(64)]

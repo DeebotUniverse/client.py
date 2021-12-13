@@ -1,5 +1,5 @@
 """Stats commands."""
-from typing import Any, Dict
+from typing import Any
 
 from ..events import StatsEvent, TotalStatsEvent
 from ..message import HandlingResult
@@ -13,7 +13,7 @@ class GetStats(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -35,7 +35,7 @@ class GetTotalStats(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

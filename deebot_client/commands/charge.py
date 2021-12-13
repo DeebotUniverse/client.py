@@ -1,5 +1,5 @@
 """Charge commands."""
-from typing import Any, Dict
+from typing import Any
 
 from ..events import StatusEvent
 from ..logging_filter import get_logger
@@ -20,7 +20,7 @@ class Charge(_ExecuteCommand):
         super().__init__({"act": "go"})
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
