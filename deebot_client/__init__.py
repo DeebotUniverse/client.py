@@ -9,7 +9,7 @@ from .models import Configuration
 
 def create_instances(
     config: Configuration, account_id: str, password_hash: str
-) -> Tuple[Authenticator, ApiClient]:
+) -> tuple[Authenticator, ApiClient]:
     """Create a authenticator and api client instance."""
     internal_api_client = _InternalApiClient(config)
     authenticator = Authenticator(

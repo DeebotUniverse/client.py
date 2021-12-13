@@ -3,7 +3,7 @@ import functools
 from abc import ABC
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import Any, Callable, Dict, List, Optional, Type, Union, final
+from typing import Any, Callable, Optional, Union, final
 
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
@@ -26,7 +26,7 @@ class HandlingResult:
     """Handling result object."""
 
     state: HandlingState
-    args: Optional[Dict[str, Any]] = None
+    args: Optional[dict[str, Any]] = None
 
     @classmethod
     def success(cls) -> "HandlingResult":
@@ -40,13 +40,13 @@ class HandlingResult:
 
 
 def _handle_error_or_analyse(
-    func: Callable[[Type["Message"], EventBus, Dict[str, Any]], HandlingResult]
-) -> Callable[[Type["Message"], EventBus, Dict[str, Any]], HandlingResult]:
+    func: Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]
+) -> Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
-        cls: Type["Message"], event_bus: EventBus, data: Dict[str, Any]
+        cls: type["Message"], event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
@@ -68,7 +68,7 @@ class Message(ABC):
     name = "__invalid__"
 
     @classmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: List) -> HandlingResult:
+    def _handle_body_data_list(cls, event_bus: EventBus, data: list) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -77,7 +77,7 @@ class Message(ABC):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -87,7 +87,7 @@ class Message(ABC):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: Union[Dict[str, Any], List]
+        cls, event_bus: EventBus, data: Union[dict[str, Any], list]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -103,12 +103,12 @@ class Message(ABC):
     @_handle_error_or_analyse
     @final
     def __handle_body_data(
-        cls, event_bus: EventBus, data: Union[Dict[str, Any], List]
+        cls, event_bus: EventBus, data: Union[dict[str, Any], list]
     ) -> HandlingResult:
         return cls._handle_body_data(event_bus, data)
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -119,13 +119,13 @@ class Message(ABC):
     @classmethod
     @_handle_error_or_analyse
     @final
-    def __handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def __handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         return cls._handle_body(event_bus, body)
 
     @classmethod
     @_handle_error_or_analyse
     @final
-    def handle(cls, event_bus: EventBus, message: Dict[str, Any]) -> HandlingResult:
+    def handle(cls, event_bus: EventBus, message: dict[str, Any]) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response

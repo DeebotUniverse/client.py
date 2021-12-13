@@ -1,7 +1,7 @@
 """Util module."""
 import hashlib
 from enum import IntEnum, unique
-from typing import Mapping, Optional, Tuple
+from typing import Mapping, Optional
 
 
 def md5(text: str) -> str:
@@ -13,7 +13,7 @@ def md5(text: str) -> str:
 class DisplayNameIntEnum(IntEnum):
     """Int enum with a property "display_name"."""
 
-    def __new__(cls, *args: Tuple, **_: Mapping) -> "DisplayNameIntEnum":
+    def __new__(cls, *args: tuple, **_: Mapping) -> "DisplayNameIntEnum":
         """Create new DisplayNameIntEnum."""
         obj = int.__new__(cls)
         obj._value_ = args[0]

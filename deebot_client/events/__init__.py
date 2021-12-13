@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ..events.base import Event
 from ..models import Room, VacuumState
@@ -54,7 +54,7 @@ class CleanLogEntry:
 class CleanLogEvent(Event):
     """Clean log event representation."""
 
-    logs: List[CleanLogEntry]
+    logs: list[CleanLogEntry]
 
 
 @dataclass(frozen=True)
@@ -62,7 +62,7 @@ class CustomCommandEvent(Event):
     """Custom command event representation."""
 
     name: str
-    response: Dict[str, Any]
+    response: dict[str, Any]
 
 
 @dataclass(frozen=True)
@@ -102,7 +102,7 @@ class LifeSpanEvent(Event):
 class RoomsEvent(Event):
     """Room event representation."""
 
-    rooms: List[Room]
+    rooms: list[Room]
 
 
 @dataclass(frozen=True)
@@ -120,7 +120,7 @@ class ReportStatsEvent(StatsEvent):
 
     cleaning_id: str
     status: CleanJobStatus
-    content: Optional[List[int]]
+    content: Optional[list[int]]
 
 
 @dataclass(frozen=True)

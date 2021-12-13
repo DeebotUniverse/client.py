@@ -2,7 +2,7 @@
 import asyncio
 import inspect
 import re
-from typing import Any, Dict, Final, Optional, Union
+from typing import Any, Final, Optional, Union
 
 import aiohttp
 
@@ -136,7 +136,7 @@ class VacuumBot:
         self.events.notify(status)
 
     async def handle_message(
-        self, message_name: str, message_data: Dict[str, Any]
+        self, message_name: str, message_data: dict[str, Any]
     ) -> None:
         """Handle the given message.
 

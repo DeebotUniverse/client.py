@@ -1,6 +1,6 @@
 """Internal api client module."""
 import asyncio
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError
@@ -29,12 +29,12 @@ class _InternalApiClient:
     async def post(
         self,
         path: str,
-        json: Dict[str, Any],
+        json: dict[str, Any],
         *,
-        query_params: Optional[Dict[str, Any]] = None,
-        headers: Optional[Dict[str, Any]] = None,
+        query_params: Optional[dict[str, Any]] = None,
+        headers: Optional[dict[str, Any]] = None,
         credentials: Optional[Credentials] = None,
-    ) -> Dict[str, Any]:
+    ) -> dict[str, Any]:
         """Perform a post request."""
         url = _get_portal_url(self._config, path)
 
@@ -67,7 +67,7 @@ class _InternalApiClient:
                     _LOGGER.warning("Error calling API (%d): %s", res.status, path)
                     return {}
 
-                response_data: Dict[str, Any] = await res.json()
+                response_data: dict[str, Any] = await res.json()
                 _LOGGER.debug("got %s", response_data)
                 return response_data
         except asyncio.TimeoutError:

@@ -1,5 +1,5 @@
 """clean log commands."""
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from ..message import HandlingResult
@@ -15,18 +15,18 @@ class GetCleanLogs(CommandWithHandling):
         super().__init__({"count": count})
 
     def handle_requested(
-        self, event_bus: EventBus, response: Dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
 
         :return: A message response
         """
         if response["ret"] == "ok":
-            resp_logs: Optional[List[dict]] = response.get("logs")
+            resp_logs: Optional[list[dict]] = response.get("logs")
 
             # Ecovacs API is changing their API, this request may not working properly
             if resp_logs is not None and len(resp_logs) >= 0:
-                logs: List[CleanLogEntry] = []
+                logs: list[CleanLogEntry] = []
                 for log in resp_logs:
                     logs.append(
                         CleanLogEntry(
@@ -45,5 +45,5 @@ class GetCleanLogs(CommandWithHandling):
         return CommandResult.analyse()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         raise RuntimeError("Should never be called!")

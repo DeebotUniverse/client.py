@@ -1,7 +1,7 @@
 """Map event module."""
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, List, Optional
+from typing import Any, Optional
 
 from ..events import Event
 
@@ -27,7 +27,7 @@ class Position:
 class PositionsEvent(Event):
     """Position event representation."""
 
-    positions: List[Position]
+    positions: list[Position]
 
 
 @dataclass(frozen=True)
@@ -45,7 +45,7 @@ class MajorMapEvent(Event):
 
     requested: bool
     map_id: str
-    values: List[str]
+    values: list[str]
 
 
 @dataclass(frozen=True)
@@ -76,7 +76,7 @@ class MapSetEvent(Event):
     """Map set event."""
 
     type: MapSetType
-    subsets: List[int]
+    subsets: list[int]
 
 
 @dataclass(frozen=True)

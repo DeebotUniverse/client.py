@@ -1,5 +1,5 @@
 """Event constants."""
-from typing import List, Mapping, Type
+from typing import Mapping
 
 from ..command import Command
 from ..commands import (
@@ -50,7 +50,7 @@ from .map import (
     MinorMapEvent,
 )
 
-EVENT_DTO_REFRESH_COMMANDS: Mapping[Type[Event], List[Command]] = {
+EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],

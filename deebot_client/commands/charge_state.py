@@ -1,5 +1,5 @@
 """Charge state commands."""
-from typing import Any, Dict, Optional
+from typing import Any, Optional
 
 from ..events import StatusEvent
 from ..message import HandlingResult
@@ -15,7 +15,7 @@ class GetChargeState(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -26,7 +26,7 @@ class GetChargeState(_NoArgsCommand):
         return HandlingResult.success()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: Dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         if body.get(CODE, 0) == 0:
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)

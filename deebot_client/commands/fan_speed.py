@@ -1,5 +1,5 @@
 """(fan) speed commands."""
-from typing import Any, Dict, Mapping, Union
+from typing import Any, Mapping, Union
 
 from ..events import FanSpeedEvent
 from ..message import HandlingResult
@@ -24,7 +24,7 @@ class GetFanSpeed(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

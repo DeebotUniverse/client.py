@@ -1,6 +1,6 @@
 """Volume command module."""
 
-from typing import Any, Dict, Mapping
+from typing import Any, Mapping
 
 from ..events import VolumeEvent
 from ..message import HandlingResult
@@ -14,7 +14,7 @@ class GetVolume(_NoArgsCommand):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: Dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
