@@ -25,7 +25,7 @@ class SanitizeFilter(Filter):
         # The call signature matches string interpolation: args can be a tuple or a dict
         if isinstance(record.args, dict):
             record.args = self._sanitize_data(record.args)
-        else:
+        elif isinstance(record.args, tuple):
             record.args = tuple(self._sanitize_data(value) for value in record.args)
 
         return True
