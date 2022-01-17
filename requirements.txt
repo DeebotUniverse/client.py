@@ -1,5 +1,5 @@
 aiohttp>=3.7.4.post0,<3.9
 cachetools~=5.0.0
 gmqtt~=0.6.11
-numpy~=1.22.0
+numpy~=1.22.1
 Pillow~=9.0.0
