@@ -30,6 +30,7 @@ from .events import (
 from .events.event_bus import EventBus, EventListener
 from .logging_filter import get_logger
 from .models import Room
+from .util import OnChangedDict, OnChangedList
 
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
@@ -283,11 +284,10 @@ class Map:
         if not self._listeners:
             raise RuntimeError("Please enable the map first")
 
-        data_hash = hash(self._map_data)
         if (
             self._last_image is not None
             and width == self._last_image.width
-            and data_hash == self._last_image.data_hash
+            and not self._map_data.changed
         ):
             _LOGGER.debug("[get_base64_map] No need to update")
             return self._last_image.base64_image
@@ -354,7 +354,8 @@ class Map:
         del cropped
 
         base64_image = base64.b64encode(buffered.getvalue())
-        self._last_image = LastImage(base64_image, width, data_hash)
+        self._map_data.reset_changed()
+        self._last_image = LastImage(base64_image, width)
         _LOGGER.debug("[GetBase64Map] Finish")
 
         return base64_image
@@ -365,7 +366,8 @@ class MapPiece:
 
     _NOT_INUSE_CRC32: int = 1295764014
 
-    def __init__(self, index: int) -> None:
+    def __init__(self, on_change: Callable[[], None], index: int) -> None:
+        self._on_change = on_change
         self._index = index
         self._points: Optional[ndarray] = None
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
@@ -395,7 +397,12 @@ class MapPiece:
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
         decoded = _decompress_7z_base64_data(base64_data)
+        old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
+
+        if self._crc32 != old_crc32:
+            self._on_change()
+
         if self.in_use:
             self._points = reshape(list(decoded), (100, 100))
         else:
@@ -503,15 +510,63 @@ class LastImage:
 
     base64_image: bytes
     width: Optional[int]
-    data_hash: int
 
 
 class MapData:
     """Map data."""
 
     def __init__(self) -> None:
-        self.positions: list[Position] = []
-        self.map_subsets: Final[dict[int, MapSubsetEvent]] = {}
-        self.rooms: Final[dict[int, Room]] = {}
-        self.trace_values: Final[list[int]] = []
-        self.map_pieces: Final[list[MapPiece]] = [MapPiece(i) for i in range(64)]
+        self._changed: bool = False
+
+        def on_change() -> None:
+            self._changed = True
+
+        self._on_change = on_change
+        self._map_pieces: OnChangedList[MapPiece] = OnChangedList(
+            on_change, [MapPiece(on_change, i) for i in range(64)]
+        )
+        self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
+        self._positions: OnChangedList[Position] = OnChangedList(on_change)
+        self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
+        self._trace_values: OnChangedList[int] = OnChangedList(on_change)
+
+    @property
+    def changed(self) -> bool:
+        """Indicate if data was changed."""
+        return self._changed
+
+    @property
+    def map_pieces(self) -> OnChangedList[MapPiece]:
+        """Return map pieces."""
+        return self._map_pieces
+
+    @property
+    def map_subsets(self) -> dict[int, MapSubsetEvent]:
+        """Return map subsets."""
+        return self._map_subsets
+
+    @property
+    def positions(self) -> list[Position]:
+        """Return positions."""
+        return self._positions
+
+    @positions.setter
+    def positions(self, value: list[Position]) -> None:
+        if not isinstance(value, OnChangedList):
+            value = OnChangedList(self._on_change, value)
+        self._positions = value
+        self._changed = True
+
+    @property
+    def rooms(self) -> dict[int, Room]:
+        """Return rooms."""
+        return self._rooms
+
+    @property
+    def trace_values(self) -> OnChangedList[int]:
+        """Return trace values."""
+        return self._trace_values
+
+    def reset_changed(self) -> None:
+        """Reset changed value."""
+        self._changed = False
