@@ -46,7 +46,6 @@ async def main():
     logging.basicConfig(level=logging.DEBUG)
     config = Configuration(session,
                            device_id=device_id, country=country, continent=continent,
-                           verify_ssl=False
                            )
 
     (authenticator, api_client) = create_instances(config, account_id, password_hash)

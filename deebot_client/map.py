@@ -356,7 +356,7 @@ class Map:
         base64_image = base64.b64encode(buffered.getvalue())
         self._map_data.reset_changed()
         self._last_image = LastImage(base64_image, width)
-        _LOGGER.debug("[GetBase64Map] Finish")
+        _LOGGER.debug("[get_base64_map] Finish")
 
         return base64_image
 
