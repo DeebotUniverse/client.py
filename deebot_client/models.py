@@ -1,7 +1,6 @@
 """Models module."""
 import os
 from dataclasses import dataclass
-from distutils.util import strtobool
 from enum import IntEnum, unique
 from typing import Optional, Union
 
@@ -87,12 +86,12 @@ def _str_to_bool_or_cert(value: Union[bool, str]) -> Union[bool, str]:
     if isinstance(value, bool):
         return value
 
-    try:
-        return bool(strtobool(value))
-    except ValueError:
-        pass
-
     if value is not None:
+        value = value.lower()
+        if value in ("y", "yes", "t", "true", "on", "1"):
+            return True
+        if value in ("n", "no", "f", "false", "off", "0"):
+            return False
         if os.path.exists(str(value)):
             # User could provide a path to a CA Cert as well, which is useful for Bumper
             if os.path.isfile(str(value)):
