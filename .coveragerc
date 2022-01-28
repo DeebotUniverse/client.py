@@ -1,0 +1,6 @@
+[run]
+branch = True
+source = deebot_client
+
+omit =
+    tests/*
