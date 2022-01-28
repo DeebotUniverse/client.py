@@ -4,11 +4,9 @@ import inspect
 import re
 from typing import Any, Final, Optional, Union
 
-import aiohttp
-
 from .api_client import ApiClient
 from .command import Command
-from .commands import Clean, CommandWithHandling
+from .commands import COMMANDS_WITH_HANDLING, Clean, CommandWithHandling
 from .commands.clean import CleanAction
 from .commands.custom import CustomCommand
 from .events import (
@@ -38,11 +36,9 @@ class VacuumBot:
 
     def __init__(
         self,
-        session: aiohttp.ClientSession,
         device_info: DeviceInfo,
         api_client: ApiClient,
     ):
-        self._session = session
         self.device_info: Final[DeviceInfo] = device_info
         self._api_client = api_client
 
@@ -154,7 +150,7 @@ class VacuumBot:
             message_type.handle(self.events, message_data)
             return
 
-        _LOGGER.debug("Falling back to old handling way...")
+        _LOGGER.debug("Falling back to old handling way for %s", message_name)
         # Handle message starting with "on","off","report" the same as "get" commands
         message_name = re.sub(
             _COMMAND_REPLACE_PATTERN,
@@ -166,7 +162,9 @@ class VacuumBot:
         if message_name.endswith("_V2"):
             message_name = message_name[:-3]
 
-        found_command = MESSAGES.get(message_name, None)
+        found_command = MESSAGES.get(
+            message_name, COMMANDS_WITH_HANDLING.get(message_name, None)
+        )
         if found_command:
             found_command.handle(self.events, message_data)
         else:
