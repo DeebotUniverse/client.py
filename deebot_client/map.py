@@ -448,7 +448,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
             if delta_y != 0:
                 if delta_x != 0:
                     k = -delta_x / delta_y
-                    a = 1 / math.sqrt(1 + k ** 2)
+                    a = 1 / math.sqrt(1 + k**2)
                     b = (width * a - 1) / 2
                 else:
                     k = 0
@@ -477,7 +477,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
             x2, y2 = xy[i + 1]
             x_length = x2 - x1
             y_length = y2 - y1
-            length = math.sqrt(x_length ** 2 + y_length ** 2)
+            length = math.sqrt(x_length**2 + y_length**2)
             dash_enabled = True
             position = 0
             while position <= length:
