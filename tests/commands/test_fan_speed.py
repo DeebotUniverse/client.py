@@ -5,7 +5,7 @@ import pytest
 from deebot_client.commands import FanSpeedLevel, GetFanSpeed, SetFanSpeed
 from deebot_client.events import FanSpeedEvent
 from tests.commands import assert_command_requested
-from tests.helpers import verify_DisplayNameEnum_unique
+from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
 
 
 def test_FanSpeedLevel_unique():
@@ -13,23 +13,8 @@ def test_FanSpeedLevel_unique():
 
 
 def test_GetFanSpeed_requested():
-    data = {
-        "id": "WiQO",
-        "ret": "ok",
-        "resp": {
-            "header": {
-                "pri": 1,
-                "tzm": 480,
-                "ts": "1305336289055",
-                "ver": "0.0.1",
-                "fwVer": "1.8.2",
-                "hwVer": "0.1.1",
-            },
-            "body": {"code": 0, "msg": "ok", "data": {"speed": 2}},
-        },
-    }
-
-    assert_command_requested(GetFanSpeed(), data, FanSpeedEvent("max+"))
+    json = get_request_json({"speed": 2})
+    assert_command_requested(GetFanSpeed(), json, FanSpeedEvent("max+"))
 
 
 @pytest.mark.parametrize(
