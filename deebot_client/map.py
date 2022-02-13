@@ -85,8 +85,11 @@ def _calc_value(value: int, min_value: int, max_value: int) -> int:
 
 
 def _calc_point(
-    x: int, y: int, image_box: tuple[int, int, int, int]
+    x: int, y: int, image_box: Optional[tuple[int, int, int, int]]
 ) -> tuple[int, int]:
+    if image_box is None:
+        image_box = (0, 0, x, y)
+
     return (
         _calc_value(x, image_box[0], image_box[2]),
         _calc_value(y, image_box[1], image_box[3]),
