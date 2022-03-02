@@ -52,7 +52,7 @@ async def main():
 
     devices_ = await api_client.get_devices()
 
-    bot = VacuumBot(session, devices_[0], api_client)
+    bot = VacuumBot(devices_[0], api_client)
 
     mqtt = MqttClient(config, authenticator)
     await mqtt.initialize()
