@@ -94,11 +94,12 @@ class EventBus:
             isinstance(event, StatusEvent)
             and event.state == VacuumState.IDLE
             and event_processing_data.last_event
-            and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore
+            and event_processing_data.last_event.available == event.available  # type: ignore[attr-defined]
+            and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore[attr-defined]
         ):
             # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
             # Problem getCleanInfo will return state=idle, when bot is charging
-            event = StatusEvent(event.available, VacuumState.DOCKED)  # type: ignore
+            event = StatusEvent(event.available, VacuumState.DOCKED)  # type: ignore[assignment]
 
         if event == event_processing_data.last_event:
             _LOGGER.debug("Event is the same! Skipping (%s)", event)
