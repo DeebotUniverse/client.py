@@ -9,7 +9,7 @@ from tests.helpers import get_message_json
 
 
 def assert_command_requested(
-    command: CommandWithHandling, json: dict[str, Any], expected_event: Event
+    command: CommandWithHandling, json: dict[str, Any], expected_event: Optional[Event]
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
@@ -18,7 +18,10 @@ def assert_command_requested(
     result = command.handle_requested(event_bus, json)
 
     assert result.state == HandlingState.SUCCESS
-    event_bus.notify.assert_called_once_with(expected_event)
+    if expected_event:
+        event_bus.notify.assert_called_once_with(expected_event)
+    else:
+        event_bus.notify.assert_not_called()
 
 
 def assert_set_command(
