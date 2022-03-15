@@ -1,9 +1,14 @@
 """Util module."""
+from __future__ import annotations
+
 import hashlib
 from enum import IntEnum, unique
-from typing import Callable, Iterable, Mapping, Optional, TypeVar, Union, overload
+from typing import TYPE_CHECKING, Callable, Iterable, Mapping, TypeVar, overload
 
 from typing_extensions import SupportsIndex
+
+if TYPE_CHECKING:
+    from _typeshed import SupportsKeysAndGetItem
 
 
 def md5(text: str) -> str:
@@ -15,13 +20,13 @@ def md5(text: str) -> str:
 class DisplayNameIntEnum(IntEnum):
     """Int enum with a property "display_name"."""
 
-    def __new__(cls, *args: tuple, **_: Mapping) -> "DisplayNameIntEnum":
+    def __new__(cls, *args: int, **_: Mapping) -> DisplayNameIntEnum:
         """Create new DisplayNameIntEnum."""
         obj = int.__new__(cls)
         obj._value_ = args[0]
         return obj
 
-    def __init__(self, value: int, display_name: Optional[str] = None):
+    def __init__(self, value: int, display_name: str | None = None):
         super().__init__()
         self._value_ = value
         self._display_name = display_name
@@ -35,7 +40,7 @@ class DisplayNameIntEnum(IntEnum):
         return self.name.lower()
 
     @classmethod
-    def get(cls, value: str) -> "DisplayNameIntEnum":
+    def get(cls, value: str) -> DisplayNameIntEnum:
         """Get enum member from name or display_name."""
         value = str(value).upper()
         if value in cls.__members__:
@@ -125,7 +130,7 @@ class OnChangedList(list[_T]):
         self._on_change()
         super().__setitem__(i, o)
 
-    def __delitem__(self, i: Union[SupportsIndex, slice]) -> None:
+    def __delitem__(self, i: SupportsIndex | slice) -> None:
         self._on_change()
         super().__delitem__(i)
 
@@ -158,7 +163,7 @@ class OnChangedDict(dict[_KT, _VT]):
         ...
 
     @overload
-    def pop(self, key: _KT, default: Union[_VT, _T] = ...) -> Union[_VT, _T]:
+    def pop(self, key: _KT, default: _VT | _T = ...) -> _VT | _T:
         ...
 
     def pop(self, key, default=...):  # type: ignore
@@ -183,7 +188,7 @@ class OnChangedDict(dict[_KT, _VT]):
         return super().popitem()
 
     @overload
-    def update(self, __m: Mapping[_KT, _VT], **kwargs: _VT) -> None:
+    def update(self, __m: SupportsKeysAndGetItem[_KT, _VT], **kwargs: _VT) -> None:
         ...
 
     @overload
