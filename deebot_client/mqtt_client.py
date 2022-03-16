@@ -9,6 +9,7 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandWithMqttP2PHandling
+from .exceptions import NotInitializedError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
@@ -32,10 +33,6 @@ def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
             f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j"
         ),
     ]
-
-
-class NotInitializedError(Exception):
-    """Thrown when not class was not initialized correctly."""
 
 
 class MqttClient:

@@ -7,6 +7,7 @@ from aiohttp import hdrs
 
 from ._api_client import _InternalApiClient
 from .const import REALM
+from .exceptions import AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
 from .util import md5
@@ -105,11 +106,10 @@ class _AuthClient:
                 data: dict[str, Any] = json["data"]
                 return data
             if json["code"] in ["1005", "1010"]:
-                _LOGGER.warning("incorrect email or password")
-                raise ValueError("incorrect email or password")
+                raise InvalidAuthenticationError
 
             _LOGGER.error("call to %s failed with %s", url, json)
-            raise RuntimeError(
+            raise AuthenticationError(
                 f"failure code {json['code']} ({json['msg']}) for call {url}"
             )
 
@@ -192,24 +192,17 @@ class _AuthClient:
             resp = await self._api_client.post(_PATH_USERS_USER, data)
             if resp["result"] == "ok":
                 return resp
-            if resp["result"] == "fail":
-                if i == 2:
-                    _LOGGER.warning(
-                        "loginByItToken set token error, failed after 3 attempts"
-                    )
-                elif resp["error"] == "set token error.":
-                    # If it is a set token error try again
-                    _LOGGER.warning(
-                        "loginByItToken set token error, trying again (%d/3)", i + 2
-                    )
-                    continue
+            if resp["result"] == "fail" and resp["error"] == "set token error.":
+                # If it is a set token error try again
+                _LOGGER.warning("loginByItToken set token error, attempt %d/3", i + 2)
+                continue
 
             _LOGGER.error("call to %s failed with %s", _PATH_USERS_USER, resp)
-            raise RuntimeError(
+            raise AuthenticationError(
                 f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER}"
             )
 
-        raise RuntimeError(f"failure for call {_PATH_USERS_USER}")
+        raise AuthenticationError("failed to login with token")
 
 
 class Authenticator:

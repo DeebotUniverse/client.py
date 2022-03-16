@@ -1,4 +1,4 @@
-"""Stats commands."""
+"""Stats messages."""
 from typing import Any
 
 from ..events import CleanJobStatus, ReportStatsEvent

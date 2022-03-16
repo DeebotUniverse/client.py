@@ -28,6 +28,7 @@ from .events import (
     RoomsEvent,
 )
 from .events.event_bus import EventBus, EventListener
+from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
 from .util import OnChangedDict, OnChangedList
@@ -216,7 +217,7 @@ class Map:
                                 point_x,
                                 point_y,
                             )
-                            raise RuntimeError("Map Limit reached!")
+                            raise MapError("Map Limit reached!")
                         if pixel_type in [0x01, 0x02, 0x03]:
                             draw.point((point_x, point_y), fill=_COLORS[pixel_type])
 
@@ -275,7 +276,7 @@ class Map:
     def refresh(self) -> None:
         """Manually refresh map."""
         if not self._listeners:
-            raise RuntimeError("Please enable the map first")
+            raise MapError("Please enable the map first")
 
         # todo make it nice pylint: disable=fixme
         self._event_bus.request_refresh(PositionsEvent)
@@ -285,7 +286,7 @@ class Map:
     def get_base64_map(self, width: Optional[int] = None) -> bytes:
         """Return map as base64 image string."""
         if not self._listeners:
-            raise RuntimeError("Please enable the map first")
+            raise MapError("Please enable the map first")
 
         if (
             self._last_image is not None

@@ -14,6 +14,7 @@ from .const import (
     PATH_API_LG_LOG,
     PATH_API_PIM_PRODUCT_IOT_MAP,
 )
+from .exceptions import ApiError
 from .logging_filter import get_logger
 from .models import Configuration, DeviceInfo
 
@@ -57,9 +58,7 @@ class ApiClient:
                     _LOGGER.debug("Skipping device as it is not supported: %s", device)
             return devices
         _LOGGER.error("Failed to get devices")
-        raise RuntimeError(
-            f"failure {resp['error']} ({resp['errno']}) on getting devices"
-        )
+        raise ApiError(f"failure {resp['error']} ({resp['errno']}) on getting devices")
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""
@@ -75,7 +74,7 @@ class ApiClient:
                 result[entry["classid"]] = entry["product"]
             return result
         _LOGGER.error("Failed to get product iot map")
-        raise RuntimeError(
+        raise ApiError(
             f"failure {resp['error']} ({resp['errno']}) on getting product iot map"
         )
 
