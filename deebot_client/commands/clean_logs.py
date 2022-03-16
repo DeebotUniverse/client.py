@@ -2,6 +2,7 @@
 from typing import Any, Optional
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent
+from ..exceptions import DeebotError
 from ..message import HandlingResult
 from .common import CommandResult, CommandWithHandling, EventBus
 
@@ -46,4 +47,4 @@ class GetCleanLogs(CommandWithHandling):
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
-        raise RuntimeError("Should never be called!")
+        raise DeebotError("Should never be called!")
