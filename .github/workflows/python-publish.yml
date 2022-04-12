@@ -28,7 +28,7 @@ jobs:
           sed -i '/version=/c\    version="${{ steps.version.outputs.version }}",' "${{ github.workspace }}/setup.py"
 
       - name: Set up Python
-        uses: actions/setup-python@v3.1.1
+        uses: actions/setup-python@v3.1.2
         with:
           python-version: "3.9"
 
