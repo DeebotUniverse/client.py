@@ -156,8 +156,8 @@ class Map:
         self._event_bus.subscribe(MapSetEvent, on_map_set)
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
-            if event.type == MapSetType.ROOMS and event.subtype:
-                room = Room(event.subtype, event.id, event.coordinates)
+            if event.type == MapSetType.ROOMS and event.name:
+                room = Room(event.name, event.id, event.coordinates)
                 if self._map_data.rooms.get(event.id, None) != room:
                     self._map_data.rooms[room.id] = room
 
