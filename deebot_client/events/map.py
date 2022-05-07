@@ -86,4 +86,4 @@ class MapSubsetEvent(Event):
     id: int
     type: MapSetType
     coordinates: str
-    subtype: Optional[str] = None
+    name: Optional[str] = None

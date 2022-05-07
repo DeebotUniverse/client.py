@@ -175,6 +175,7 @@ class GetMapSubSet(CommandWithHandling):
         "12": "Corridor",
         "13": "Balcony",
         "14": "Gym",
+        # 15 custom; get name from name attribute
     }
 
     name = "getMapSubSet"
@@ -214,13 +215,18 @@ class GetMapSubSet(CommandWithHandling):
         """
         if MapSetType.has_value(data["type"]):
             subtype = data.get("subtype", data.get("subType", None))
+            name = None
+            if subtype == "15":
+                name = data.get("name", None)
+            elif subtype:
+                name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
                     type=MapSetType(data["type"]),
                     coordinates=data["value"],
-                    subtype=cls._ROOM_NUM_TO_NAME[subtype] if subtype else None,
+                    name=name,
                 )
             )
 

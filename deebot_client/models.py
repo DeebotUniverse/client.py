@@ -55,7 +55,7 @@ class DeviceInfo(dict):
 class Room:
     """Room representation."""
 
-    subtype: str
+    name: str
     id: int
     coordinates: str
 
