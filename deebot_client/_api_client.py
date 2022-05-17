@@ -5,14 +5,15 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError
 
+from .configuration import AuthenticationConfig
 from .const import REALM
 from .logging_filter import get_logger
-from .models import Configuration, Credentials
+from .models import Credentials
 
 _LOGGER = get_logger(__name__)
 
 
-def _get_portal_url(config: Configuration, path: str) -> str:
+def _get_portal_url(config: AuthenticationConfig, path: str) -> str:
     subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
     return urljoin(f"https://{subdomain}.ecouser.net/api/", path)
 
@@ -23,7 +24,7 @@ class _InternalApiClient:
     Only required for AuthClient and ApiClient. For all other usecases use APIClient instead.
     """
 
-    def __init__(self, config: Configuration):
+    def __init__(self, config: AuthenticationConfig):
         self._config = config
 
     async def post(

@@ -6,10 +6,11 @@ from typing import Any, Callable, Mapping, Optional, Union
 from aiohttp import hdrs
 
 from ._api_client import _InternalApiClient
+from .configuration import AuthenticationConfig
 from .const import REALM
 from .exceptions import AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
-from .models import Configuration, Credentials
+from .models import Credentials
 from .util import md5
 
 _LOGGER = get_logger(__name__)
@@ -40,7 +41,7 @@ class _AuthClient:
 
     def __init__(
         self,
-        config: Configuration,
+        config: AuthenticationConfig,
         internal_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,
@@ -210,7 +211,7 @@ class Authenticator:
 
     def __init__(
         self,
-        config: Configuration,
+        config: AuthenticationConfig,
         ecovacs_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,

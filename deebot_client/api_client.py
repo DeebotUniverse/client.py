@@ -1,7 +1,6 @@
 """Api client module."""
 from datetime import datetime
 from typing import Any, Union
-from urllib.parse import urljoin
 
 from ._api_client import _InternalApiClient
 from .authentication import Authenticator
@@ -16,17 +15,12 @@ from .const import (
 )
 from .exceptions import ApiError
 from .logging_filter import get_logger
-from .models import Configuration, DeviceInfo
+from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
 _REQUEST_HEADERS = {
     "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; A5010 Build/LMY48Z)",
 }
-
-
-def _get_portal_url(config: Configuration, path: str) -> str:
-    subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
-    return urljoin(f"https://{subdomain}.ecouser.net/api/", path)
 
 
 class ApiClient:

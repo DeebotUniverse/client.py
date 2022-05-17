@@ -5,6 +5,8 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dw/deebot-client?style=for-the-badge)](https://pypi.org/project/deebot-client)
 <a href="https://www.buymeacoffee.com/edenhaus" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-black.png" width="150px" height="35px" alt="Buy Me A Coffee" style="height: 35px !important;width: 150px !important;" ></a>
 
+This library is mainly used by the Deebot integration for Home Assistant, but it is also possible to use it for other things.
+
 ## Installation
 
 If you have a recent version of Python 3, you should be able to
@@ -28,7 +30,7 @@ import time
 from deebot_client import create_instances
 from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
-from deebot_client.models import Configuration
+from deebot_client.configuration import Configuration,ConfigOptions
 from deebot_client.mqtt_client import MqttClient
 from deebot_client.events import BatteryEvent
 from deebot_client.util import md5
@@ -46,6 +48,7 @@ async def main():
     logging.basicConfig(level=logging.DEBUG)
     config = Configuration(session,
                            device_id=device_id, country=country, continent=continent,
+                           options=ConfigOptions()
                            )
 
     (authenticator, api_client) = create_instances(config, account_id, password_hash)

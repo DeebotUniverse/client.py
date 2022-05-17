@@ -9,9 +9,10 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandWithMqttP2PHandling
+from .configuration import AuthenticationConfig
 from .exceptions import NotInitializedError
 from .logging_filter import get_logger
-from .models import Configuration, Credentials, DeviceInfo
+from .models import Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
 
 _LOGGER = get_logger(__name__)
@@ -38,7 +39,7 @@ def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
 class MqttClient:
     """MQTT client."""
 
-    def __init__(self, config: Configuration, authenticator: Authenticator):
+    def __init__(self, config: AuthenticationConfig, authenticator: Authenticator):
         self._config = config
         self._authenticator = authenticator
         self._subscribers: MutableMapping[str, VacuumBot] = {}

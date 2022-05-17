@@ -2,11 +2,11 @@
 import ast
 import asyncio
 import base64
-import dataclasses
 import lzma
 import math
 import struct
 import zlib
+from dataclasses import dataclass
 from io import BytesIO
 from typing import Awaitable, Callable, Final, Optional, Union
 
@@ -15,6 +15,7 @@ from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
 from .commands import GetCachedMapInfo, GetMinorMap
+from .configuration import MapConfig
 from .events import (
     MajorMapEvent,
     MapSetEvent,
@@ -85,26 +86,14 @@ def _calc_value(value: int, min_value: int, max_value: int) -> int:
     return min_value or 0
 
 
-def _calc_point(
-    x: int, y: int, image_box: Optional[tuple[int, int, int, int]]
-) -> tuple[int, int]:
-    if image_box is None:
-        image_box = (0, 0, x, y)
-
-    return (
-        _calc_value(x, image_box[0], image_box[2]),
-        _calc_value(y, image_box[1], image_box[3]),
-    )
-
-
 def _draw_positions(
-    positions: list[Position], image: Image, image_box: tuple[int, int, int, int]
+    positions: list[Position], image: Image, image_box: "ImageBox"
 ) -> None:
     for position in positions:
         icon = Image.open(BytesIO(base64.b64decode(_POSITION_PNG[position.type])))
         image.paste(
             icon,
-            _calc_point(position.x, position.y, image_box),
+            image_box.calc_point(position.x, position.y),
             icon.convert("RGBA"),
         )
 
@@ -112,12 +101,12 @@ def _draw_positions(
 def _draw_subset(
     subset: MapSubsetEvent,
     draw: "DashedImageDraw",
-    image_box: tuple[int, int, int, int],
+    image_box: "ImageBox",
 ) -> None:
     coordinates_ = ast.literal_eval(subset.coordinates)
     points: list[tuple[int, int]] = []
     for i in range(0, len(coordinates_), 2):
-        points.append(_calc_point(coordinates_[i], coordinates_[i + 1], image_box))
+        points.append(image_box.calc_point(coordinates_[i], coordinates_[i + 1]))
 
     if len(points) == 4:
         # close rectangle
@@ -132,10 +121,16 @@ class Map:
     RESIZE_FACTOR = 3
 
     def __init__(
-        self, execute_command: Callable[[Command], Awaitable[None]], event_bus: EventBus
+        self,
+        execute_command: Callable[[Command], Awaitable[None]],
+        event_bus: EventBus,
+        config: MapConfig,
     ):
-        self._execute_command = execute_command
-        self._event_bus = event_bus
+        self._execute_command: Final[
+            Callable[[Command], Awaitable[None]]
+        ] = execute_command
+        self._event_bus: Final[EventBus] = event_bus
+        self._config: Final[MapConfig] = config
 
         self._map_data: Final[MapData] = MapData()
         self._amount_rooms: int = 0
@@ -170,8 +165,6 @@ class Map:
                 self._map_data.map_subsets[event.id] = event
 
         self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
-
-    # ---------------------------- METHODS ----------------------------
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
@@ -307,7 +300,7 @@ class Map:
             _LOGGER.debug("[get_base64_map] Draw Trace")
             draw.line(self._map_data.trace_values, fill=_COLORS[_TRACE_MAP], width=1)
 
-        image_box = image.getbbox()
+        image_box = ImageBox(image.getbbox(), self._config.crop_on_outermost_subsets)
         for subset in self._map_data.map_subsets.values():
             _draw_subset(subset, draw, image_box)
 
@@ -315,8 +308,15 @@ class Map:
 
         _draw_positions(self._map_data.positions, image, image_box)
 
+        # todo make it better
+        if self._config.crop_on_outermost_subsets:
+            for _, room in self._map_data.rooms.items():
+                for point in room.coordinates.split(";"):
+                    coordinates_ = ast.literal_eval(point)
+                    image_box.calc_point(coordinates_[0], coordinates_[1])
+
         _LOGGER.debug("[get_base64_map] Crop Image")
-        cropped = image.crop(image_box)
+        cropped = image.crop(image_box.image_box)
         del image
 
         _LOGGER.debug("[get_base64_map] Flipping Image")
@@ -508,7 +508,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
                     position += dash_step
 
 
-@dataclasses.dataclass(frozen=True)
+@dataclass(frozen=True)
 class LastImage:
     """Last created image."""
 
@@ -574,3 +574,77 @@ class MapData:
     def reset_changed(self) -> None:
         """Reset changed value."""
         self._changed = False
+
+
+class ImageBox:
+    """Image box, which calculates the point within the passed image box and crops, if wanted on rooms."""
+
+    _OFFSET = 5
+
+    def __init__(
+        self,
+        image_box: Optional[tuple[int, int, int, int]],
+        crop_on_outermost_subsets: bool,
+    ):
+        self._image_box = image_box  # (left, upper, right, lower)
+        self._outermost_subset_points: Optional[list[int]] = None
+        self._crop_on_outermost_subsets = crop_on_outermost_subsets
+
+    def calc_point(
+        self,
+        x: int,
+        y: int,
+    ) -> tuple[int, int]:
+        """Calculate point within the image box."""
+        image_box = self._image_box
+        if image_box is None:
+            image_box = (0, 0, x, y)
+        elif self._crop_on_outermost_subsets and self._outermost_subset_points is None:
+            # center of image_box
+            image_box_x = round((image_box[2] - image_box[0]) / 2 + image_box[0])
+            image_box_y = round((image_box[3] - image_box[1]) / 2 + image_box[1])
+            self._outermost_subset_points = [
+                image_box_x,
+                image_box_y,
+                image_box_x,
+                image_box_y,
+            ]
+
+        result = (
+            _calc_value(x, image_box[0], image_box[2]),
+            _calc_value(y, image_box[1], image_box[3]),
+        )
+
+        if self._outermost_subset_points is not None:
+            if result[0] < self._outermost_subset_points[0]:
+                self._outermost_subset_points[0] = max(
+                    result[0] - ImageBox._OFFSET, image_box[0]
+                )
+            elif result[0] > self._outermost_subset_points[2]:
+                self._outermost_subset_points[2] = min(
+                    result[0] + ImageBox._OFFSET, image_box[2]
+                )
+
+            if result[1] < self._outermost_subset_points[1]:
+                self._outermost_subset_points[1] = max(
+                    result[1] - ImageBox._OFFSET, image_box[1]
+                )
+            elif result[1] > self._outermost_subset_points[3]:
+                self._outermost_subset_points[3] = min(
+                    result[1] + ImageBox._OFFSET, image_box[3]
+                )
+
+        return result
+
+    @property
+    def image_box(self) -> Optional[tuple[int, int, int, int]]:
+        """Get image box."""
+        if self._outermost_subset_points:
+            return (
+                self._outermost_subset_points[0],
+                self._outermost_subset_points[1],
+                self._outermost_subset_points[2],
+                self._outermost_subset_points[3],
+            )
+
+        return self._image_box

@@ -9,6 +9,7 @@ from .command import Command
 from .commands import COMMANDS_WITH_HANDLING, Clean, CommandWithHandling
 from .commands.clean import CleanAction
 from .commands.custom import CustomCommand
+from .configuration import Config
 from .events import (
     CleanLogEvent,
     LifeSpanEvent,
@@ -34,13 +35,10 @@ _COMMAND_REPLACE_REPLACEMENT = "get"
 class VacuumBot:
     """Vacuum bot representation."""
 
-    def __init__(
-        self,
-        device_info: DeviceInfo,
-        api_client: ApiClient,
-    ):
+    def __init__(self, device_info: DeviceInfo, api_client: ApiClient, config: Config):
         self.device_info: Final[DeviceInfo] = device_info
         self._api_client = api_client
+        self._config = config
 
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
@@ -48,7 +46,7 @@ class VacuumBot:
         self.fw_version: Optional[str] = None
         self.events: Final[EventBus] = EventBus(self.execute_command)
 
-        self.map: Final[Map] = Map(self.execute_command, self.events)
+        self.map: Final[Map] = Map(self.execute_command, self.events, config.map)
 
         async def on_pos(event: PositionsEvent) -> None:
             if self._status == StatusEvent(True, VacuumState.DOCKED):

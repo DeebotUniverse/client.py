@@ -4,16 +4,16 @@ from typing import Tuple
 from ._api_client import _InternalApiClient
 from .api_client import ApiClient
 from .authentication import Authenticator
-from .models import Configuration
+from .configuration import AuthenticationConfig
 
 
 def create_instances(
-    config: Configuration, account_id: str, password_hash: str
+    auth_config: AuthenticationConfig, account_id: str, password_hash: str
 ) -> tuple[Authenticator, ApiClient]:
-    """Create a authenticator and api client instance."""
-    internal_api_client = _InternalApiClient(config)
+    """Create an authenticator and api client instance."""
+    internal_api_client = _InternalApiClient(auth_config)
     authenticator = Authenticator(
-        config, internal_api_client, account_id, password_hash
+        auth_config, internal_api_client, account_id, password_hash
     )
     api_client = ApiClient(internal_api_client, authenticator)
 

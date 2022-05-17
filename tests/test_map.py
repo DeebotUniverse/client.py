@@ -2,7 +2,7 @@ from typing import Optional
 
 import pytest
 
-from deebot_client.map import _calc_point
+from deebot_client.map import ImageBox
 
 _test_calc_point_data = [
     (0, 10, None, (0, 10)),
@@ -18,5 +18,6 @@ def test_calc_point(
     image_box: Optional[tuple[int, int, int, int]],
     expected: tuple[int, int],
 ) -> None:
-    result = _calc_point(x, y, image_box)
+    box = ImageBox(image_box, False)
+    result = box.calc_point(x, y)
     assert result == expected
