@@ -1,7 +1,7 @@
 """Event emitter module."""
 import asyncio
 import threading
-from typing import Awaitable, Callable, Final, Generic, Optional, TypeVar
+from typing import Any, Callable, Coroutine, Final, Generic, Optional, TypeVar
 
 from ..command import Command
 from ..logging_filter import get_logger
@@ -19,7 +19,7 @@ class EventListener(Generic[T]):
     def __init__(
         self,
         event_processing_data: "_EventProcessingData",
-        callback: Callable[[T], Awaitable[None]],
+        callback: Callable[[T], Coroutine[Any, Any, None]],
     ) -> None:
         self._event_processing_data: Final = event_processing_data
         self.callback: Final = callback
@@ -53,7 +53,7 @@ class _EventProcessingData(Generic[T]):
 class EventBus:
     """A very simple event bus system."""
 
-    def __init__(self, execute_command: Callable[[Command], Awaitable[None]]):
+    def __init__(self, execute_command: Callable[[Command], Coroutine[Any, Any, None]]):
         self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
         self._execute_command: Final = execute_command
@@ -69,7 +69,7 @@ class EventBus:
     def subscribe(
         self,
         event_type: type[T],
-        callback: Callable[[T], Awaitable[None]],
+        callback: Callable[[T], Coroutine[Any, Any, None]],
     ) -> EventListener[T]:
         """Subscribe to event."""
         event_processing_data = self._get_or_create_event_processing_data(event_type)
