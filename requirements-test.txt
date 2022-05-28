@@ -1,4 +1,4 @@
-mypy==0.942
+mypy==0.960
 pre-commit==2.19.0
 pylint==2.13.9
 pytest==7.1.2

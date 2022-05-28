@@ -8,7 +8,7 @@ import math
 import struct
 import zlib
 from io import BytesIO
-from typing import Awaitable, Callable, Final, Optional, Union
+from typing import Any, Callable, Coroutine, Final, Optional, Union
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
@@ -132,7 +132,9 @@ class Map:
     RESIZE_FACTOR = 3
 
     def __init__(
-        self, execute_command: Callable[[Command], Awaitable[None]], event_bus: EventBus
+        self,
+        execute_command: Callable[[Command], Coroutine[Any, Any, None]],
+        event_bus: EventBus,
     ):
         self._execute_command = execute_command
         self._event_bus = event_bus
