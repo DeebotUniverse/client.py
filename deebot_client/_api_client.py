@@ -38,7 +38,8 @@ class _InternalApiClient:
         """Perform a post request."""
         url = _get_portal_url(self._config, path)
 
-        _LOGGER.debug("calling api %s with %s", path, json)
+        logger_msg = f"calling api: url={url}, params={query_params}, json={json}"
+        _LOGGER.debug(logger_msg)
 
         if credentials is not None:
             json.update(
@@ -63,18 +64,19 @@ class _InternalApiClient:
                 ssl=self._config.verify_ssl,
             ) as res:
                 res.raise_for_status()
-                if res.status != 200:
-                    _LOGGER.warning("Error calling API (%d): %s", res.status, path)
-                    return {}
+                if res.status == 200:
+                    response_data: dict[str, Any] = await res.json()
+                    _LOGGER.debug("Success: %s, response=%s", logger_msg, response_data)
+                    return response_data
 
-                response_data: dict[str, Any] = await res.json()
-                _LOGGER.debug("got %s", response_data)
-                return response_data
+                _LOGGER.warning("Error calling API (%d): %s", res.status, path)
+                _LOGGER.debug("Error: %s, status=%s", logger_msg, res.status)
         except asyncio.TimeoutError:
             command = ""
             if "cmdName" in json:
                 command = f"({json['cmdName']})"
             _LOGGER.warning("Timeout reached on api path: %s%s", path, command)
+            _LOGGER.debug("Timeout on %s", logger_msg)
         except ClientResponseError as err:
             if err.status == 502:
                 _LOGGER.info(
@@ -82,6 +84,7 @@ class _InternalApiClient:
                     url,
                 )
             else:
-                _LOGGER.warning("Error calling API (%sd): %s", err.status, url)
+                _LOGGER.warning("Error calling API (%d): %s", err.status, url)
+            _LOGGER.debug("Error: %s, status=%s", logger_msg, err.status)
 
         return {}
