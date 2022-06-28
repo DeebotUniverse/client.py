@@ -6,7 +6,7 @@ from tests.messages import assert_message
 
 
 @pytest.mark.parametrize("percentage", [0, 49, 100])
-def test_getBattery(percentage: int):
+def test_getBattery(percentage: int) -> None:
     data = {
         "header": {
             "pri": 1,

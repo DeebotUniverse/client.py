@@ -5,7 +5,7 @@ from deebot_client.events import EnableEvent, Event
 from deebot_client.events.const import EVENT_DTO_REFRESH_COMMANDS
 
 
-def test_events_has_refresh_function():
+def test_events_has_refresh_function() -> None:
     for name, obj in inspect.getmembers(deebot_client.events, inspect.isclass):
         if issubclass(obj, Event) and obj not in [Event, EnableEvent]:
             assert obj in EVENT_DTO_REFRESH_COMMANDS

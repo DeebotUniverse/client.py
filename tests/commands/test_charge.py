@@ -9,7 +9,7 @@ from tests.commands import assert_command_requested
 from tests.helpers import get_request_json
 
 
-def prepare_json_docked_test():
+def prepare_json_docked_test() -> dict[str, Any]:
     json = get_request_json(None)
     json["resp"]["body"]["code"] = 30007
     return json
@@ -22,5 +22,5 @@ def prepare_json_docked_test():
         (prepare_json_docked_test(), StatusEvent(True, VacuumState.DOCKED)),
     ],
 )
-def test_charge(json: dict[str, Any], expected: StatusEvent):
+def test_charge(json: dict[str, Any], expected: StatusEvent) -> None:
     assert_command_requested(Charge(), json, expected)
