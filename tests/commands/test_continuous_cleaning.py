@@ -7,7 +7,7 @@ from tests.helpers import get_request_json
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_get_continuous_cleaning_requested(value: bool):
+def test_get_continuous_cleaning_requested(value: bool) -> None:
     json = get_request_json({"enable": 1 if value else 0})
     assert_command_requested(
         GetContinuousCleaning(), json, ContinuousCleaningEvent(value)
@@ -15,7 +15,7 @@ def test_get_continuous_cleaning_requested(value: bool):
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_set_continuous_cleaning(value: bool):
+def test_set_continuous_cleaning(value: bool) -> None:
     args = {"enable": 1 if value else 0}
     assert_set_command(
         SetContinuousCleaning(value), args, ContinuousCleaningEvent(value)

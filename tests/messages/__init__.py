@@ -6,7 +6,9 @@ from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingState, Message
 
 
-def assert_message(message: type[Message], data: dict[str, Any], expected_event: Event):
+def assert_message(
+    message: type[Message], data: dict[str, Any], expected_event: Event
+) -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)

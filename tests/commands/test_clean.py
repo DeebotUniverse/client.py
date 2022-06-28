@@ -18,5 +18,5 @@ from tests.helpers import get_request_json
         ),
     ],
 )
-def test_GetCleanInfo(json: dict[str, Any], expected: StatusEvent):
+def test_GetCleanInfo(json: dict[str, Any], expected: StatusEvent) -> None:
     assert_command_requested(GetCleanInfo(), json, expected)

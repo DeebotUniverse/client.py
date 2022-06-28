@@ -1,9 +1,9 @@
-from typing import Any, Optional, Set, Type
+from typing import Any, Optional
 
 from deebot_client.util import DisplayNameIntEnum
 
 
-def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]):
+def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]) -> None:
     assert issubclass(enum, DisplayNameIntEnum)
     names: set[str] = set()
     values: set[int] = set()
