@@ -44,9 +44,7 @@ class GetCleanLogs(CommandWithHandling):
                             )
                         )
                     except Exception:  # pylint: disable=broad-except
-                        _LOGGER.warning(
-                            "Skipping log entry: %s", response, exc_info=True
-                        )
+                        _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
 
                 event_bus.notify(CleanLogEvent(logs))
                 return CommandResult.success()
