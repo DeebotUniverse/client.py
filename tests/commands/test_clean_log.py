@@ -1,4 +1,5 @@
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from testfixtures import LogCapture
@@ -6,6 +7,7 @@ from testfixtures import LogCapture
 from deebot_client.commands import GetCleanLogs
 from deebot_client.commands.common import CommandResult
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
+from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingState
 from tests.commands import assert_command_requested
 
@@ -126,5 +128,19 @@ def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
                 "deebot_client.commands.common",
                 "DEBUG",
                 f"Could not handle command: GetCleanLogs with {json}",
+            )
+        )
+
+
+def test_GetCleanLogs_handle_fails() -> None:
+    with LogCapture() as log:
+        result = GetCleanLogs.handle(Mock(spec_set=EventBus), {})
+
+        assert result.state == HandlingState.ERROR
+        log.check_present(
+            (
+                "deebot_client.message",
+                "WARNING",
+                f"Could not parse {GetCleanLogs.name}: {{}}",
             )
         )
