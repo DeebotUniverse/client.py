@@ -1,7 +1,7 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Union
+from typing import Any, Mapping, Optional, Union, final
 
 from ..command import Command
 from ..events import EnableEvent
@@ -36,7 +36,33 @@ class CommandWithHandling(Command, Message, ABC):
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
 
+    @final
     def handle_requested(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
+
+        :return: A message response
+        """
+        try:
+            result = self._handle_requested(event_bus, response)
+            if result.state == HandlingState.ANALYSE:
+                _LOGGER.debug(
+                    "Could not handle command: %s with %s", self.name, response
+                )
+                return CommandResult(
+                    HandlingState.ANALYSE_LOGGED,
+                    result.args,
+                    result.requested_commands,
+                )
+            return result
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Could not parse %s: %s", self.name, response, exc_info=True
+            )
+            return CommandResult(HandlingState.ERROR)
+
+    def _handle_requested(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.

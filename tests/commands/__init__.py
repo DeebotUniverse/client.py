@@ -2,14 +2,17 @@ from typing import Any, Optional, Union
 from unittest.mock import Mock
 
 from deebot_client.commands import CommandWithHandling, SetCommand
+from deebot_client.commands.common import CommandResult
 from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
-from deebot_client.message import HandlingState
 from tests.helpers import get_message_json
 
 
 def assert_command_requested(
-    command: CommandWithHandling, json: dict[str, Any], expected_event: Optional[Event]
+    command: CommandWithHandling,
+    json: dict[str, Any],
+    expected_event: Optional[Event],
+    expected_result: CommandResult = CommandResult.success(),
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
@@ -17,7 +20,7 @@ def assert_command_requested(
 
     result = command.handle_requested(event_bus, json)
 
-    assert result.state == HandlingState.SUCCESS
+    assert result == expected_result
     if expected_event:
         event_bus.notify.assert_called_once_with(expected_event)
     else:
