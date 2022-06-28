@@ -9,7 +9,10 @@ from tests.helpers import get_message_json
 
 
 def assert_command_requested(
-    command: CommandWithHandling, json: dict[str, Any], expected_event: Optional[Event], expected_result: CommandResult = CommandResult.success()
+    command: CommandWithHandling,
+    json: dict[str, Any],
+    expected_event: Optional[Event],
+    expected_result: CommandResult = CommandResult.success(),
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 

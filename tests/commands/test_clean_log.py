@@ -105,13 +105,19 @@ def test_GetCleanLogs() -> None:
             )
         )
 
+
 def test_GetCleanLogs_missing_logs_key() -> None:
     with LogCapture() as log:
-        assert_command_requested(GetCleanLogs(), {"ret": "ok"}, None, CommandResult(HandlingState.ANALYSE_LOGGED))
+        assert_command_requested(
+            GetCleanLogs(),
+            {"ret": "ok"},
+            None,
+            CommandResult(HandlingState.ANALYSE_LOGGED),
+        )
         log.check_present(
             (
                 "deebot_client.commands.common",
                 "DEBUG",
-                "Could not handle command: GetCleanLogs with {'ret': 'ok'}"
+                "Could not handle command: GetCleanLogs with {'ret': 'ok'}",
             )
         )
