@@ -1,3 +1,6 @@
+from typing import Any
+
+import pytest
 from testfixtures import LogCapture
 
 from deebot_client.commands import GetCleanLogs
@@ -106,11 +109,15 @@ def test_GetCleanLogs() -> None:
         )
 
 
-def test_GetCleanLogs_missing_logs_key() -> None:
+@pytest.mark.parametrize(
+    "json",
+    [{"ret": "ok"}, {"ret": "fail"}],
+)
+def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
     with LogCapture() as log:
         assert_command_requested(
             GetCleanLogs(),
-            {"ret": "ok"},
+            json,
             None,
             CommandResult(HandlingState.ANALYSE_LOGGED),
         )
@@ -118,6 +125,6 @@ def test_GetCleanLogs_missing_logs_key() -> None:
             (
                 "deebot_client.commands.common",
                 "DEBUG",
-                "Could not handle command: GetCleanLogs with {'ret': 'ok'}",
+                f"Could not handle command: GetCleanLogs with {json}",
             )
         )
