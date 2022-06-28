@@ -37,7 +37,7 @@ class GetCachedMapInfo(CommandWithHandling):
 
         return HandlingResult.analyse()
 
-    def handle_requested(
+    def _handle_requested(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
@@ -76,7 +76,7 @@ class GetMajorMap(CommandWithHandling):
             {"map_id": map_id, "values": values},
         )
 
-    def handle_requested(
+    def _handle_requested(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
@@ -132,7 +132,7 @@ class GetMapSet(CommandWithHandling):
         event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
         return HandlingResult(HandlingState.SUCCESS, args)
 
-    def handle_requested(
+    def _handle_requested(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
@@ -267,7 +267,7 @@ class GetMapTrace(CommandWithHandling):
         )
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
-    def handle_requested(
+    def _handle_requested(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
