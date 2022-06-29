@@ -5,12 +5,16 @@ ci:
     - pylint
     - verifyNoGetLogger
 
+default_language_version:
+  python: python3.10
+
 repos:
   - repo: https://github.com/asottile/pyupgrade
     rev: v2.34.0
     hooks:
       - id: pyupgrade
-        args: [--py39-plus]
+        args:
+          - --py310-plus
   - repo: https://github.com/psf/black
     rev: 22.3.0
     hooks:
@@ -26,7 +30,9 @@ repos:
           - --ignore-words-list=hass,deebot
           - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
-        exclude_types: [csv, json]
+        exclude_types:
+          - csv
+          - json
   - repo: https://github.com/PyCQA/flake8
     rev: 4.0.1
     hooks:
@@ -72,13 +78,15 @@ repos:
         name: Check with mypy
         entry: scripts/run-in-env.sh mypy
         language: script
-        types: [python]
+        types:
+          - python
         require_serial: true
       - id: pylint
         name: Check with pylint
         entry: scripts/run-in-env.sh pylint
         language: script
-        types: [python]
+        types:
+          - python
         require_serial: true
         exclude: ^tests/.+
       - id: verifyNoGetLogger

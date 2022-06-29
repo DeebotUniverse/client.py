@@ -1,5 +1,5 @@
 """Maps commands."""
-from typing import Any, Optional, Union
+from typing import Any
 
 from ..command import Command
 from ..events import (
@@ -104,9 +104,9 @@ class GetMapSet(CommandWithHandling):
     def __init__(
         self,
         mid: str,
-        type: Union[  # pylint: disable=redefined-builtin
-            MapSetType, str
-        ] = MapSetType.ROOMS,
+        type: (  # pylint: disable=redefined-builtin
+            MapSetType | str
+        ) = MapSetType.ROOMS,
     ) -> None:
         if isinstance(type, MapSetType):
             type = type.value
@@ -183,12 +183,10 @@ class GetMapSubSet(CommandWithHandling):
     def __init__(
         self,
         *,
-        mid: Union[str, int],
-        mssid: Union[str, int],
-        msid: Optional[Union[str, int]] = None,
-        type: Union[  # pylint: disable=redefined-builtin
-            MapSetType, str
-        ] = MapSetType.ROOMS
+        mid: str | int,
+        mssid: str | int,
+        msid: str | int | None = None,
+        type: (MapSetType | str) = MapSetType.ROOMS  # pylint: disable=redefined-builtin
     ) -> None:
         if isinstance(type, MapSetType):
             type = type.value

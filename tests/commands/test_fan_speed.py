@@ -1,5 +1,3 @@
-from typing import Union
-
 import pytest
 
 from deebot_client.commands import FanSpeedLevel, GetFanSpeed, SetFanSpeed
@@ -20,7 +18,7 @@ def test_GetFanSpeed_requested() -> None:
 @pytest.mark.parametrize(
     "value, expected", [("quiet", 1000), ("max+", 2), (0, 0), (FanSpeedLevel.MAX, 1)]
 )
-def test_SetFanSpeed(value: Union[str, int, FanSpeedLevel], expected: int) -> None:
+def test_SetFanSpeed(value: str | int | FanSpeedLevel, expected: int) -> None:
 
     command = SetFanSpeed(value)
     assert command.name == "setSpeed"

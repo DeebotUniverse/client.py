@@ -70,7 +70,7 @@ class ErrorEvent(Event):
     """Error event representation."""
 
     code: int
-    description: Optional[str]
+    description: str | None
 
 
 @dataclass(frozen=True)
@@ -109,9 +109,9 @@ class RoomsEvent(Event):
 class StatsEvent(Event):
     """Stats event representation."""
 
-    area: Optional[int]
-    time: Optional[int]
-    type: Optional[str]
+    area: int | None
+    time: int | None
+    type: str | None
 
 
 @dataclass(frozen=True)
@@ -120,7 +120,7 @@ class ReportStatsEvent(StatsEvent):
 
     cleaning_id: str
     status: CleanJobStatus
-    content: Optional[list[int]]
+    content: list[int] | None
 
 
 @dataclass(frozen=True)
@@ -137,7 +137,7 @@ class StatusEvent(Event):
     """Status event representation."""
 
     available: bool
-    state: Optional[VacuumState]
+    state: VacuumState | None
 
 
 @dataclass(frozen=True)
@@ -145,7 +145,7 @@ class VolumeEvent(Event):
     """Volume event."""
 
     volume: int
-    maximum: Optional[int]
+    maximum: int | None
 
 
 @dataclass(frozen=True)

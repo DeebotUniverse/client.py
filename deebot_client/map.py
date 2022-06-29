@@ -8,7 +8,7 @@ import math
 import struct
 import zlib
 from io import BytesIO
-from typing import Any, Callable, Coroutine, Final, Optional, Union
+from typing import Any, Callable, Coroutine, Final
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
@@ -86,7 +86,7 @@ def _calc_value(value: int, min_value: int, max_value: int) -> int:
 
 
 def _calc_point(
-    x: int, y: int, image_box: Optional[tuple[int, int, int, int]]
+    x: int, y: int, image_box: tuple[int, int, int, int] | None
 ) -> tuple[int, int]:
     if image_box is None:
         image_box = (0, 0, x, y)
@@ -141,7 +141,7 @@ class Map:
 
         self._map_data: Final[MapData] = MapData()
         self._amount_rooms: int = 0
-        self._last_image: Optional[LastImage] = None
+        self._last_image: LastImage | None = None
         self._listeners: list[EventListener] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
@@ -285,7 +285,7 @@ class Map:
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
 
-    def get_base64_map(self, width: Optional[int] = None) -> bytes:
+    def get_base64_map(self, width: int | None = None) -> bytes:
         """Return map as base64 image string."""
         if not self._listeners:
             raise MapError("Please enable the map first")
@@ -375,7 +375,7 @@ class MapPiece:
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
         self._index = index
-        self._points: Optional[ndarray] = None
+        self._points: ndarray | None = None
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
 
     def crc32_indicates_update(self, crc32: str) -> bool:
@@ -435,7 +435,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
         self,
         xy: list[tuple[int, int]],
         direction: list[tuple[int, int]],
-        fill: Optional[Union[tuple, str]] = None,
+        fill: tuple | str | None = None,
         width: int = 0,
     ) -> None:
         if xy[0] != xy[1]:
@@ -473,7 +473,7 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
         self,
         xy: list[tuple[int, int]],
         dash: tuple = (2, 2),
-        fill: Optional[Union[tuple, str]] = None,
+        fill: tuple | str | None = None,
         width: int = 0,
     ) -> None:
         """Draw a dashed line, or a connected sequence of line segments."""
@@ -515,7 +515,7 @@ class LastImage:
     """Last created image."""
 
     base64_image: bytes
-    width: Optional[int]
+    width: int | None
 
 
 class MapData:

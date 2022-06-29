@@ -1,5 +1,5 @@
 """clean log commands."""
-from typing import Any, Optional
+from typing import Any
 
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from ..exceptions import DeebotError
@@ -26,7 +26,7 @@ class GetCleanLogs(CommandWithHandling):
         :return: A message response
         """
         if response["ret"] == "ok":
-            resp_logs: Optional[list[dict]] = response.get("logs")
+            resp_logs: list[dict] | None = response.get("logs")
 
             # Ecovacs API is changing their API, this request may not work properly
             if resp_logs is not None and len(resp_logs) >= 0:

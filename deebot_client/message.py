@@ -3,7 +3,7 @@ import functools
 from abc import ABC
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import Any, Callable, Optional, Union, final
+from typing import Any, Callable, final
 
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
@@ -26,7 +26,7 @@ class HandlingResult:
     """Handling result object."""
 
     state: HandlingState
-    args: Optional[dict[str, Any]] = None
+    args: dict[str, Any] | None = None
 
     @classmethod
     def success(cls) -> "HandlingResult":
@@ -87,7 +87,7 @@ class Message(ABC):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: Union[dict[str, Any], list]
+        cls, event_bus: EventBus, data: dict[str, Any] | list
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -103,7 +103,7 @@ class Message(ABC):
     @_handle_error_or_analyse
     @final
     def __handle_body_data(
-        cls, event_bus: EventBus, data: Union[dict[str, Any], list]
+        cls, event_bus: EventBus, data: dict[str, Any] | list
     ) -> HandlingResult:
         return cls._handle_body_data(event_bus, data)
 

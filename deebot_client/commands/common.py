@@ -1,7 +1,7 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import Any, Mapping, Optional, Union, final
+from typing import Any, Mapping, final
 
 from ..command import Command
 from ..events import EnableEvent
@@ -17,7 +17,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: Optional[list[Command]] = None
+    requested_commands: list[Command] | None = None
 
     @classmethod
     def success(cls) -> "CommandResult":
@@ -130,7 +130,7 @@ class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
 
     def __init__(
         self,
-        args: Union[dict, list, None],
+        args: dict | list | None,
         **kwargs: Mapping[str, Any],
     ) -> None:
         if kwargs:
@@ -183,7 +183,7 @@ class SetEnableCommand(SetCommand):
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
 
-    def __init__(self, enable: Union[int, bool], **kwargs: Mapping[str, Any]) -> None:
+    def __init__(self, enable: int | bool, **kwargs: Mapping[str, Any]) -> None:
         if isinstance(enable, bool):
             enable = 1 if enable else 0
         super().__init__({"enable": enable}, **kwargs)

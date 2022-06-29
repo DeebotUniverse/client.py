@@ -1,6 +1,6 @@
 """Internal api client module."""
 import asyncio
-from typing import Any, Optional
+from typing import Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError
@@ -31,9 +31,9 @@ class _InternalApiClient:
         path: str,
         json: dict[str, Any],
         *,
-        query_params: Optional[dict[str, Any]] = None,
-        headers: Optional[dict[str, Any]] = None,
-        credentials: Optional[Credentials] = None,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
+        credentials: Credentials | None = None,
     ) -> dict[str, Any]:
         """Perform a post request."""
         url = _get_portal_url(self._config, path)

@@ -2,7 +2,7 @@
 import asyncio
 import inspect
 import re
-from typing import Any, Final, Optional, Union
+from typing import Any, Final
 
 from .api_client import ApiClient
 from .command import Command
@@ -45,7 +45,7 @@ class VacuumBot:
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
 
-        self.fw_version: Optional[str] = None
+        self.fw_version: str | None = None
         self.events: Final[EventBus] = EventBus(self.execute_command)
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
@@ -90,7 +90,7 @@ class VacuumBot:
 
         self.events.subscribe(StatsEvent, on_stats)
 
-    async def execute_command(self, command: Union[Command, CustomCommand]) -> None:
+    async def execute_command(self, command: Command | CustomCommand) -> None:
         """Execute given command and handle response."""
         if (
             command == Clean(CleanAction.RESUME)

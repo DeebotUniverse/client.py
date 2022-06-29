@@ -1,4 +1,4 @@
-from typing import Any, Optional
+from typing import Any
 
 import pytest
 
@@ -14,5 +14,5 @@ from tests.helpers import get_request_json
         (get_request_json({"isCharging": 0, "mode": "slot"}), None),
     ],
 )
-def test_GetChargeState(json: dict[str, Any], expected: Optional[StatusEvent]) -> None:
+def test_GetChargeState(json: dict[str, Any], expected: StatusEvent | None) -> None:
     assert_command_requested(GetChargeState(), json, expected)

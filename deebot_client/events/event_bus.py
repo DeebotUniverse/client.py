@@ -1,7 +1,7 @@
 """Event emitter module."""
 import asyncio
 import threading
-from typing import Any, Callable, Coroutine, Final, Generic, Optional, TypeVar
+from typing import Any, Callable, Coroutine, Final, Generic, TypeVar
 
 from ..command import Command
 from ..logging_filter import get_logger
@@ -37,7 +37,7 @@ class _EventProcessingData(Generic[T]):
 
         self._subscribers: Final[list[EventListener[T]]] = []
         self._semaphore: Final = asyncio.Semaphore(1)
-        self.last_event: Optional[T] = None
+        self.last_event: T | None = None
 
     @property
     def subscribers(self) -> list[EventListener[T]]:

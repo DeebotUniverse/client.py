@@ -1,6 +1,6 @@
 """Api client module."""
 from datetime import datetime
-from typing import Any, Union
+from typing import Any
 from urllib.parse import urljoin
 
 from ._api_client import _InternalApiClient
@@ -80,7 +80,7 @@ class ApiClient:
 
     async def send_command(
         self,
-        command: Union[Command, CustomCommand],
+        command: Command | CustomCommand,
         device_info: DeviceInfo,
     ) -> dict[str, Any]:
         """Send json command for given vacuum to the api."""

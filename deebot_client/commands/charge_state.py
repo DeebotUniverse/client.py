@@ -1,5 +1,5 @@
 """Charge state commands."""
-from typing import Any, Optional
+from typing import Any
 
 from ..events import StatusEvent
 from ..message import HandlingResult
@@ -31,7 +31,7 @@ class GetChargeState(_NoArgsCommand):
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
-        status: Optional[VacuumState] = None
+        status: VacuumState | None = None
         if body.get("msg", None) == "fail":
             if body["code"] == "30007":  # Already charging
                 status = VacuumState.DOCKED

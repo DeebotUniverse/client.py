@@ -1,5 +1,3 @@
-from typing import Optional
-
 import pytest
 
 from deebot_client.map import _calc_point
@@ -15,7 +13,7 @@ _test_calc_point_data = [
 def test_calc_point(
     x: int,
     y: int,
-    image_box: Optional[tuple[int, int, int, int]],
+    image_box: tuple[int, int, int, int] | None,
     expected: tuple[int, int],
 ) -> None:
     result = _calc_point(x, y, image_box)
