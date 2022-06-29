@@ -57,8 +57,10 @@ class ApiClient:
                 else:
                     _LOGGER.debug("Skipping device as it is not supported: %s", device)
             return devices
-        _LOGGER.error("Failed to get devices")
-        raise ApiError(f"failure {resp['error']} ({resp['errno']}) on getting devices")
+        _LOGGER.error("Failed to get devices: %s", resp)
+        raise ApiError(
+            f"failure {resp.get('error', '')} ({resp.get('errno', '')}) on getting devices"
+        )
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""
