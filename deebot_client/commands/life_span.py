@@ -1,5 +1,5 @@
 """Life span commands."""
-from typing import Any, Union
+from typing import Any
 
 from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult, HandlingState
@@ -46,7 +46,7 @@ class ResetLifeSpan(_ExecuteCommand, CommandWithMqttP2PHandling):
     name = "resetLifeSpan"
 
     def __init__(
-        self, type: Union[str, LifeSpan]  # pylint: disable=redefined-builtin
+        self, type: str | LifeSpan  # pylint: disable=redefined-builtin
     ) -> None:
         if isinstance(type, LifeSpan):
             type = type.value

@@ -2,7 +2,6 @@
 import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Optional, Union
 
 from aiohttp import ClientSession
 
@@ -26,7 +25,7 @@ class DeviceInfo(dict):
         return str(self["name"])
 
     @property
-    def nick(self) -> Optional[str]:
+    def nick(self) -> str | None:
         """Return nick name."""
         return self.get("nick", None)
 
@@ -81,7 +80,7 @@ class Credentials:
     expires_at: int = 0
 
 
-def _str_to_bool_or_cert(value: Union[bool, str]) -> Union[bool, str]:
+def _str_to_bool_or_cert(value: bool | str) -> bool | str:
     """Convert string to bool or certificate."""
     if isinstance(value, bool):
         return value
@@ -111,7 +110,7 @@ class Configuration:
         device_id: str,
         country: str,
         continent: str,
-        verify_ssl: Union[bool, str] = True,
+        verify_ssl: bool | str = True,
     ):
         self._session = session
         self._device_id = device_id
@@ -140,6 +139,6 @@ class Configuration:
         return self._continent
 
     @property
-    def verify_ssl(self) -> Union[bool, str]:
+    def verify_ssl(self) -> bool | str:
         """Return bool or path to cert."""
         return self._verify_ssl

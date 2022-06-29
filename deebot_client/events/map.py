@@ -1,7 +1,7 @@
 """Map event module."""
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, Optional
+from typing import Any
 
 from ..events import Event
 
@@ -86,4 +86,4 @@ class MapSubsetEvent(Event):
     id: int
     type: MapSetType
     coordinates: str
-    name: Optional[str] = None
+    name: str | None = None

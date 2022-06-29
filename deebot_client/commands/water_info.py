@@ -1,5 +1,5 @@
 """Water info commands."""
-from typing import Any, Mapping, Union
+from typing import Any, Mapping
 
 from ..events import WaterAmount, WaterInfoEvent
 from ..message import HandlingResult
@@ -33,7 +33,7 @@ class SetWaterInfo(SetCommand):
     get_command = GetWaterInfo
 
     def __init__(
-        self, amount: Union[str, int, WaterAmount], **kwargs: Mapping[str, Any]
+        self, amount: str | int | WaterAmount, **kwargs: Mapping[str, Any]
     ) -> None:
         # removing "enable" as we don't can set it
         kwargs.pop("enable", None)

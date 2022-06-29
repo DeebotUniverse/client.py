@@ -1,6 +1,6 @@
 """Clean commands."""
 from enum import Enum, unique
-from typing import Any, Optional
+from typing import Any
 
 from ..events import StatusEvent
 from ..logging_filter import get_logger
@@ -69,7 +69,7 @@ class GetCleanInfo(_NoArgsCommand):
         :return: A message response
         """
 
-        status: Optional[VacuumState] = None
+        status: VacuumState | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":
             status = VacuumState.ERROR

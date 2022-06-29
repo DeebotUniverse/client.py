@@ -1,7 +1,7 @@
 """Authentication module."""
 import asyncio
 import time
-from typing import Any, Callable, Mapping, Optional, Union
+from typing import Any, Callable, Mapping
 
 from aiohttp import hdrs
 
@@ -117,7 +117,7 @@ class _AuthClient:
         self, account_id: str, password_hash: str
     ) -> dict[str, Any]:
         _LOGGER.debug("calling login api")
-        params: dict[str, Union[str, int]] = {
+        params: dict[str, str | int] = {
             "account": account_id,
             "password": password_hash,
             "requestId": md5(str(time.time())),
@@ -136,12 +136,12 @@ class _AuthClient:
 
     @staticmethod
     def __sign(
-        params: dict[str, Union[str, int]],
-        additional_sign_params: Mapping[str, Union[str, int]],
+        params: dict[str, str | int],
+        additional_sign_params: Mapping[str, str | int],
         key: str,
         secret: str,
-    ) -> dict[str, Union[str, int]]:
-        sign_data: dict[str, Union[str, int]] = {**additional_sign_params, **params}
+    ) -> dict[str, str | int]:
+        sign_data: dict[str, str | int] = {**additional_sign_params, **params}
         sign_on_text = (
             key
             + "".join([k + "=" + str(sign_data[k]) for k in sorted(sign_data.keys())])
@@ -153,7 +153,7 @@ class _AuthClient:
 
     async def __call_auth_api(self, access_token: str, user_id: str) -> str:
         _LOGGER.debug("calling auth api")
-        params: dict[str, Union[str, int]] = {
+        params: dict[str, str | int] = {
             "uid": user_id,
             "accessToken": access_token,
             "bizType": "ECOVACS_IOT",
@@ -224,8 +224,8 @@ class Authenticator:
 
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[Callable[[Credentials], None]] = set()
-        self._credentials: Optional[Credentials] = None
-        self._refresh_task: Optional[asyncio.TimerHandle] = None
+        self._credentials: Credentials | None = None
+        self._refresh_task: asyncio.TimerHandle | None = None
 
     async def authenticate(self, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""

@@ -1,7 +1,7 @@
 """MQTT module."""
 import json
 import ssl
-from typing import MutableMapping, Optional
+from typing import MutableMapping
 
 from cachetools import TTLCache
 from gmqtt import Client, Subscription
@@ -47,7 +47,7 @@ class MqttClient:
         if config.country.lower() == "cn":
             self._hostname = "mq.ecouser.net"
 
-        self._client: Optional[Client] = None
+        self._client: Client | None = None
         self._received_p2p_commands: MutableMapping[
             str, CommandWithMqttP2PHandling
         ] = TTLCache(maxsize=60 * 60, ttl=60)
