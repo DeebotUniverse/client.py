@@ -1,5 +1,19 @@
-from deebot_client.commands import GetMapSubSet
-from deebot_client.events import MapSetType, MapSubsetEvent
+from deebot_client.commands import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapSubSet,
+    GetMapTrace,
+)
+from deebot_client.commands.common import CommandResult
+from deebot_client.events import (
+    MajorMapEvent,
+    MapSetEvent,
+    MapSetType,
+    MapSubsetEvent,
+    MapTraceEvent,
+)
+from deebot_client.message import HandlingState
 from tests.commands import assert_command_requested
 from tests.helpers import get_request_json
 
@@ -52,4 +66,119 @@ def test_getMapSubSet_requested_living_room() -> None:
         GetMapSubSet(mid="199390082", mssid="7", msid="1"),
         json,
         MapSubsetEvent(7, type, value, "Living Room"),
+    )
+
+
+def test_getCachedMapInfo_requested() -> None:
+    expected_mid = "199390082"
+    json = get_request_json(
+        {
+            "enable": 1,
+            "info": [
+                {
+                    "mid": expected_mid,
+                    "index": 0,
+                    "status": 1,
+                    "using": 1,
+                    "built": 1,
+                    "name": "Erdgeschoss",
+                },
+                {
+                    "mid": "722607162",
+                    "index": 3,
+                    "status": 0,
+                    "using": 0,
+                    "built": 0,
+                    "name": "",
+                },
+            ],
+        }
+    )
+    assert_command_requested(
+        GetCachedMapInfo(),
+        json,
+        None,
+        CommandResult(
+            HandlingState.SUCCESS,
+            {"map_id": expected_mid},
+            [GetMapSet(expected_mid, entry) for entry in MapSetType],
+        ),
+    )
+
+
+def test_getMajorMap_requested() -> None:
+    expected_mid = "199390082"
+    value = "1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,3378526980,2963288214,2739565817,729228561,2452519304,1295764014,1295764014,1295764014,2753376360,329080101,952462272,3648890579,412193448,1540631558,1295764014,1295764014,1561391782,1081327924,1096350476,2860639280,37066625,86907282,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014"
+    json = get_request_json(
+        {
+            "mid": expected_mid,
+            "pieceWidth": 100,
+            "pieceHeight": 100,
+            "cellWidth": 8,
+            "cellHeight": 8,
+            "pixel": 50,
+            "value": value,
+        }
+    )
+    assert_command_requested(
+        GetMajorMap(), json, MajorMapEvent(True, expected_mid, value.split(","))
+    )
+
+
+def test_getMapSet_requested() -> None:
+    mid = "199390082"
+    msid = "8"
+    json = get_request_json(
+        {
+            "type": "ar",
+            "count": 7,
+            "mid": mid,
+            "msid": "8",
+            "subsets": [
+                {"mssid": "7"},
+                {"mssid": "12"},
+                {"mssid": "17"},
+                {"mssid": "14"},
+                {"mssid": "10"},
+                {"mssid": "11"},
+                {"mssid": "13"},
+            ],
+        }
+    )
+    subsets = [7, 12, 17, 14, 10, 11, 13]
+    assert_command_requested(
+        GetMapSet(mid),
+        json,
+        MapSetEvent(MapSetType.ROOMS, subsets),
+        CommandResult(
+            HandlingState.SUCCESS,
+            {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
+            [
+                GetMapSubSet(mid=mid, msid=msid, type=MapSetType.ROOMS, mssid=s)
+                for s in subsets
+            ],
+        ),
+    )
+
+
+def test_getMapTrace_requested() -> None:
+    start = 0
+    total = 2545
+    trace_value = "REMOVED"
+    json = get_request_json(
+        {
+            "tid": "173207",
+            "totalCount": 2545,
+            "traceStart": start,
+            "pointCount": 200,
+            "traceValue": trace_value,
+        }
+    )
+    assert_command_requested(
+        GetMapTrace(start),
+        json,
+        MapTraceEvent(start=start, total=total, data=trace_value),
+        CommandResult(
+            HandlingState.SUCCESS, {"start": start, "total": total}, [GetMapTrace(200)]
+        ),
     )

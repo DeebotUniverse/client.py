@@ -121,7 +121,7 @@ class GetMapSet(CommandWithHandling):
 
         :return: A message response
         """
-        subsets = [subset["mssid"] for subset in data["subsets"]]
+        subsets = [int(subset["mssid"]) for subset in data["subsets"]]
         args = {
             cls._ARGS_ID: data["mid"],
             cls._ARGS_SET_ID: data.get("msid", None),
