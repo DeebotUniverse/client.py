@@ -44,7 +44,7 @@ class GetCachedMapInfo(CommandWithHandling):
 
         :return: A message response
         """
-        result = super().handle_requested(event_bus, response)
+        result = super()._handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             return CommandResult(
                 result.state,
@@ -83,7 +83,7 @@ class GetMajorMap(CommandWithHandling):
 
         :return: A message response
         """
-        result = super().handle_requested(event_bus, response)
+        result = super()._handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             event_bus.notify(MajorMapEvent(True, **result.args))
             return CommandResult.success()
@@ -139,7 +139,7 @@ class GetMapSet(CommandWithHandling):
 
         :return: A message response
         """
-        result = super().handle_requested(event_bus, response)
+        result = super()._handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             commands: list[Command] = []
             for subset in result.args[self._ARGS_SUBSETS]:
@@ -272,7 +272,7 @@ class GetMapTrace(CommandWithHandling):
 
         :return: A message response
         """
-        result = super().handle_requested(event_bus, response)
+        result = super()._handle_requested(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             start = result.args["start"] + self._TRACE_POINT_COUNT
             if start < result.args["total"]:
