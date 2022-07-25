@@ -2,10 +2,9 @@
 from __future__ import annotations
 
 import hashlib
+from collections.abc import Callable, Iterable, Mapping
 from enum import IntEnum, unique
-from typing import TYPE_CHECKING, Callable, Iterable, Mapping, TypeVar, overload
-
-from typing_extensions import SupportsIndex
+from typing import TYPE_CHECKING, SupportsIndex, TypeVar, overload
 
 if TYPE_CHECKING:
     from _typeshed import SupportsKeysAndGetItem

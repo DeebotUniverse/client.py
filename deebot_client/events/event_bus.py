@@ -1,7 +1,8 @@
 """Event emitter module."""
 import asyncio
 import threading
-from typing import Any, Callable, Coroutine, Final, Generic, TypeVar
+from collections.abc import Callable, Coroutine
+from typing import Any, Final, Generic, TypeVar
 
 from ..command import Command
 from ..logging_filter import get_logger

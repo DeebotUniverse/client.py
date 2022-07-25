@@ -1,9 +1,10 @@
 """Base messages."""
 import functools
 from abc import ABC
+from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import Any, Callable, final
+from typing import Any, final
 
 from .events.event_bus import EventBus
 from .logging_filter import get_logger

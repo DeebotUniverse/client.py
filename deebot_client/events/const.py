@@ -1,5 +1,5 @@
 """Event constants."""
-from typing import Mapping
+from collections.abc import Mapping
 
 from ..command import Command
 from ..commands import (
