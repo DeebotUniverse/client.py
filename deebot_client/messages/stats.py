@@ -22,7 +22,7 @@ class ReportStats(Message):
         status = CleanJobStatus.CLEANING
 
         if data["stop"] != 0:
-            status = CleanJobStatus(int(data["stopReason"]))
+            status = CleanJobStatus(int(data.get("stopReason", 1)))
 
         stats_event = ReportStatsEvent(
             area=data.get("area"),
