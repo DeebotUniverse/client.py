@@ -1,7 +1,8 @@
 """Authentication module."""
 import asyncio
 import time
-from typing import Any, Callable, Mapping
+from collections.abc import Callable, Mapping
+from typing import Any
 
 from aiohttp import hdrs
 

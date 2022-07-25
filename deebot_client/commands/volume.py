@@ -1,6 +1,7 @@
 """Volume command module."""
 
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from ..events import VolumeEvent
 from ..message import HandlingResult

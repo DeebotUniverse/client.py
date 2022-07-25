@@ -1,5 +1,6 @@
 """Water info commands."""
-from typing import Any, Mapping
+from collections.abc import Mapping
+from typing import Any
 
 from ..events import WaterAmount, WaterInfoEvent
 from ..message import HandlingResult
