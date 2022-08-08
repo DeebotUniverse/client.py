@@ -1,7 +1,8 @@
 """Base commands."""
 from abc import ABC, abstractmethod
+from collections.abc import Mapping
 from dataclasses import dataclass
-from typing import Any, Mapping, final
+from typing import Any, final
 
 from ..command import Command
 from ..events import EnableEvent

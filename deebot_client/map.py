@@ -7,8 +7,9 @@ import lzma
 import math
 import struct
 import zlib
+from collections.abc import Callable, Coroutine
 from io import BytesIO
-from typing import Any, Callable, Coroutine, Final
+from typing import Any, Final
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
