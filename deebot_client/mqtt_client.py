@@ -1,7 +1,7 @@
 """MQTT module."""
 import json
 import ssl
-from typing import MutableMapping
+from collections.abc import MutableMapping
 
 from cachetools import TTLCache
 from gmqtt import Client, Subscription

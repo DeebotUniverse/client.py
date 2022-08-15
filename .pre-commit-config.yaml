@@ -10,7 +10,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.34.0
+    rev: v2.37.3
     hooks:
       - id: pyupgrade
         args:
@@ -34,7 +34,7 @@ repos:
           - csv
           - json
   - repo: https://github.com/PyCQA/flake8
-    rev: 4.0.1
+    rev: 5.0.4
     hooks:
       - id: flake8
         additional_dependencies:
@@ -65,7 +65,7 @@ repos:
     hooks:
       - id: prettier
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.26.3
+    rev: v1.27.1
     hooks:
       - id: yamllint
   - repo: local
