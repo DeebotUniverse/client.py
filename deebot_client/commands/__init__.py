@@ -21,6 +21,7 @@ from .map import (
     GetMapTrace,
     GetMinorMap,
 )
+from .multimap_state import GetMultimapState, SetMultimapState
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
@@ -66,6 +67,9 @@ _COMMANDS: list[type[CommandWithHandling]] = [
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+
+    GetMultimapState,
+    SetMultimapState,
 
     PlaySound,
 
