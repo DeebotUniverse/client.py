@@ -2,7 +2,7 @@
 from typing import Any
 
 from ..events import LifeSpan, LifeSpanEvent
-from ..message import HandlingResult, HandlingState
+from ..message import HandlingResult, HandlingState, MessageBodyDataList
 from .common import (
     CommandWithHandling,
     CommandWithMqttP2PHandling,
@@ -11,7 +11,7 @@ from .common import (
 )
 
 
-class GetLifeSpan(CommandWithHandling):
+class GetLifeSpan(CommandWithHandling, MessageBodyDataList):
     """Get life span command."""
 
     name = "getLifeSpan"

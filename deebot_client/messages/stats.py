@@ -3,10 +3,10 @@ from typing import Any
 
 from ..events import CleanJobStatus, ReportStatsEvent
 from ..events.event_bus import EventBus
-from ..message import HandlingResult, Message
+from ..message import HandlingResult, MessageBodyDataDict
 
 
-class ReportStats(Message):
+class ReportStats(MessageBodyDataDict):
     """Report stats message."""
 
     name = "reportStats"

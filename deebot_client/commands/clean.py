@@ -4,7 +4,7 @@ from typing import Any
 
 from ..events import StatusEvent
 from ..logging_filter import get_logger
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from ..models import VacuumState
 from .common import EventBus, _ExecuteCommand, _NoArgsCommand
 
@@ -55,7 +55,7 @@ class CleanArea(Clean):
         self.args["count"] = cleanings
 
 
-class GetCleanInfo(_NoArgsCommand):
+class GetCleanInfo(_NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"

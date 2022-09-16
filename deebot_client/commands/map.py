@@ -11,12 +11,12 @@ from ..events import (
     MinorMapEvent,
 )
 from ..events.event_bus import EventBus
-from ..message import HandlingResult, HandlingState
+from ..message import HandlingResult, HandlingState, MessageBodyDataDict
 from . import CommandWithHandling
 from .common import CommandResult
 
 
-class GetCachedMapInfo(CommandWithHandling):
+class GetCachedMapInfo(CommandWithHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -55,7 +55,7 @@ class GetCachedMapInfo(CommandWithHandling):
         return result
 
 
-class GetMajorMap(CommandWithHandling):
+class GetMajorMap(CommandWithHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "getMajorMap"
@@ -91,7 +91,7 @@ class GetMajorMap(CommandWithHandling):
         return result
 
 
-class GetMapSet(CommandWithHandling):
+class GetMapSet(CommandWithHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -156,7 +156,7 @@ class GetMapSet(CommandWithHandling):
         return result
 
 
-class GetMapSubSet(CommandWithHandling):
+class GetMapSubSet(CommandWithHandling, MessageBodyDataDict):
     """Get map subset command."""
 
     _ROOM_NUM_TO_NAME = {
@@ -233,7 +233,7 @@ class GetMapSubSet(CommandWithHandling):
         return HandlingResult.analyse()
 
 
-class GetMapTrace(CommandWithHandling):
+class GetMapTrace(CommandWithHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -281,7 +281,7 @@ class GetMapTrace(CommandWithHandling):
         return result
 
 
-class GetMinorMap(CommandWithHandling):
+class GetMinorMap(CommandWithHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "getMinorMap"

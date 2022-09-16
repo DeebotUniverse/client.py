@@ -4,11 +4,11 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..events import VolumeEvent
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from .common import EventBus, SetCommand, _NoArgsCommand
 
 
-class GetVolume(_NoArgsCommand):
+class GetVolume(_NoArgsCommand, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"

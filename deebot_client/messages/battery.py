@@ -3,10 +3,10 @@ from typing import Any
 
 from ..events import BatteryEvent
 from ..events.event_bus import EventBus
-from ..message import HandlingResult, Message
+from ..message import HandlingResult, MessageBodyDataDict
 
 
-class OnBattery(Message):
+class OnBattery(MessageBodyDataDict):
     """On battery message."""
 
     name = "onBattery"

@@ -3,11 +3,11 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..events import WaterAmount, WaterInfoEvent
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from .common import EventBus, SetCommand, _NoArgsCommand
 
 
-class GetWaterInfo(_NoArgsCommand):
+class GetWaterInfo(_NoArgsCommand, MessageBodyDataDict):
     """Get water info command."""
 
     name = "getWaterInfo"

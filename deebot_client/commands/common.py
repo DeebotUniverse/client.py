@@ -8,7 +8,7 @@ from ..command import Command
 from ..events import EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
-from ..message import HandlingResult, HandlingState, Message
+from ..message import HandlingResult, HandlingState, Message, MessageBodyDataDict
 from .const import CODE
 
 _LOGGER = get_logger(__name__)
@@ -33,9 +33,6 @@ class CommandResult(HandlingResult):
 
 class CommandWithHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     @final
     def handle_requested(
@@ -82,19 +79,13 @@ class CommandWithHandling(Command, Message, ABC):
 class CommandWithMqttP2PHandling(CommandWithHandling, ABC):
     """Command which handles also mqtt p2p messages."""
 
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
-
+    @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
-        raise NotImplementedError
 
 
 class _NoArgsCommand(CommandWithHandling, ABC):
     """Command without args."""
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     def __init__(self) -> None:
         super().__init__()
@@ -102,9 +93,6 @@ class _NoArgsCommand(CommandWithHandling, ABC):
 
 class _ExecuteCommand(CommandWithHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
@@ -125,9 +113,6 @@ class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
     """
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     def __init__(
         self,
@@ -152,11 +137,8 @@ class SetCommand(_ExecuteCommand, CommandWithMqttP2PHandling, ABC):
             self.get_command.handle(event_bus, self.args)
 
 
-class _GetEnableCommand(_NoArgsCommand):
+class _GetEnableCommand(_NoArgsCommand, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     @classmethod
     @property
@@ -178,11 +160,8 @@ class _GetEnableCommand(_NoArgsCommand):
         return HandlingResult.success()
 
 
-class SetEnableCommand(SetCommand):
+class SetEnableCommand(SetCommand, ABC):
     """Abstract set enable command."""
-
-    # required as name is class variable, will be overwritten in subclasses
-    name = "__invalid__"
 
     def __init__(self, enable: int | bool, **kwargs: Mapping[str, Any]) -> None:
         if isinstance(enable, bool):

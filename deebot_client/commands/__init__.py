@@ -85,7 +85,7 @@ _COMMANDS: list[type[CommandWithHandling]] = [
 # fmt: on
 
 COMMANDS_WITH_HANDLING: dict[str, type[CommandWithHandling]] = {
-    cmd.name: cmd for cmd in _COMMANDS
+    cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
 }
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandWithMqttP2PHandling]] = {

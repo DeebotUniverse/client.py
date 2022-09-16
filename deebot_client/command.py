@@ -16,7 +16,6 @@ class Command(ABC):
     @abstractmethod
     def name(cls) -> str:
         """Command name."""
-        raise NotImplementedError
 
     @property
     def args(self) -> dict[str, Any] | list:

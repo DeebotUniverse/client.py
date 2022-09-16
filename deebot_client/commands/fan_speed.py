@@ -3,7 +3,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..events import FanSpeedEvent
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from ..util import DisplayNameIntEnum
 from .common import EventBus, SetCommand, _NoArgsCommand
 
@@ -18,7 +18,7 @@ class FanSpeedLevel(DisplayNameIntEnum):
     MAX_PLUS = 2, "max+"
 
 
-class GetFanSpeed(_NoArgsCommand):
+class GetFanSpeed(_NoArgsCommand, MessageBodyDataDict):
     """Get fan speed command."""
 
     name = "getSpeed"

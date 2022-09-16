@@ -2,12 +2,12 @@
 from typing import Any
 
 from ..events import ErrorEvent, StatusEvent
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from ..models import VacuumState
 from .common import EventBus, _NoArgsCommand
 
 
-class GetError(_NoArgsCommand):
+class GetError(_NoArgsCommand, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"
