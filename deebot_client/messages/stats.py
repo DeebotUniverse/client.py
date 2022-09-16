@@ -20,8 +20,9 @@ class ReportStats(Message):
         :return: A message response
         """
         status = CleanJobStatus.CLEANING
-
-        if data["stop"] != 0:
+        if "stop" not in data:
+            status = CleanJobStatus.NO_STATUS
+        elif data["stop"] != 0:
             status = CleanJobStatus(int(data["stopReason"]))
 
         stats_event = ReportStatsEvent(

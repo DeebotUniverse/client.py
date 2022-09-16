@@ -81,6 +81,14 @@ def test_GetCleanLogs() -> None:
                 duration=139,
             ),
             CleanLogEntry(
+                timestamp=1655564615,
+                image_url="https://portal-eu.ecouser.net/api/lg/image/acb2e78e-8f25-454a-a0ac-***@***@iCmB",
+                type="auto",
+                area=0,
+                stop_reason=CleanJobStatus.NO_STATUS,
+                duration=366,
+            ),
+            CleanLogEntry(
                 timestamp=1655564399,
                 image_url="https://portal-eu.ecouser.net/api/lg/image/acb2e78e-8f25-454a-a0ac-***@***@iCmB",
                 type="spotArea",
@@ -99,16 +107,7 @@ def test_GetCleanLogs() -> None:
         ]
     )
 
-    with LogCapture() as log:
-        assert_command_requested(GetCleanLogs(), json, expected)
-
-        log.check_present(
-            (
-                "deebot_client.commands.clean_logs",
-                "WARNING",
-                "Skipping log entry: {'ts': 1655564615, 'last': 366, 'area': 0, 'id': 'acb2e78e-8f25-454a-a0ac-***@***@iCmB', 'imageUrl': 'https://portal-eu.ecouser.net/api/lg/image/acb2e78e-8f25-454a-a0ac-***@***@iCmB', 'type': 'auto', 'aiavoid': 0, 'aitypes': [], 'aiopen': 1, 'powerMopType': 1}",
-            )
-        )
+    assert_command_requested(GetCleanLogs(), json, expected)
 
 
 @pytest.mark.parametrize(

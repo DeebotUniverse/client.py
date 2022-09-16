@@ -31,6 +31,7 @@ class BatteryEvent(Event):
 class CleanJobStatus(DisplayNameIntEnum):
     """Enum of the different clean job status."""
 
+    NO_STATUS = -2
     CLEANING = -1
     # below the identified stop_reason values
     FINISHED = 1

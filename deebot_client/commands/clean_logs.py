@@ -39,7 +39,9 @@ class GetCleanLogs(CommandWithHandling):
                                 image_url=log["imageUrl"],
                                 type=log["type"],
                                 area=log["area"],
-                                stop_reason=CleanJobStatus(int(log["stopReason"])),
+                                stop_reason=CleanJobStatus(
+                                    int(log.get("stopReason", -2))
+                                ),
                                 duration=log["last"],
                             )
                         )
