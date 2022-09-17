@@ -31,6 +31,7 @@ class BatteryEvent(Event):
 class CleanJobStatus(DisplayNameIntEnum):
     """Enum of the different clean job status."""
 
+    NO_STATUS = -2
     CLEANING = -1
     # below the identified stop_reason values
     FINISHED = 1
@@ -120,7 +121,7 @@ class ReportStatsEvent(StatsEvent):
 
     cleaning_id: str
     status: CleanJobStatus
-    content: list[int] | None
+    content: list[int]
 
 
 @dataclass(frozen=True)
