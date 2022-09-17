@@ -21,11 +21,11 @@ def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]) -> None:
             names.add(display_name)
 
 
-def get_request_json(data: dict[str, Any] | None) -> dict[str, Any]:
+def get_request_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
     return {"id": "ALZf", "ret": "ok", "resp": get_message_json(data)}
 
 
-def get_message_json(data: dict[str, Any] | None) -> dict[str, Any]:
+def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
     json = {
         "header": {
             "pri": 1,

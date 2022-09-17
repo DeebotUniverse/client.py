@@ -1,5 +1,6 @@
+from collections.abc import Sequence
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from deebot_client.commands import CommandWithHandling, SetCommand
 from deebot_client.commands.common import CommandResult
@@ -11,7 +12,7 @@ from tests.helpers import get_message_json
 def assert_command_requested(
     command: CommandWithHandling,
     json: dict[str, Any],
-    expected_event: Event | None,
+    expected_events: Event | None | Sequence[Event],
     expected_result: CommandResult = CommandResult.success(),
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
@@ -21,8 +22,12 @@ def assert_command_requested(
     result = command.handle_requested(event_bus, json)
 
     assert result == expected_result
-    if expected_event:
-        event_bus.notify.assert_called_once_with(expected_event)
+    if expected_events:
+        if isinstance(expected_events, Sequence):
+            event_bus.notify.assert_has_calls([call(x) for x in expected_events])
+            assert event_bus.notify.call_count == len(expected_events)
+        else:
+            event_bus.notify.assert_called_once_with(expected_events)
     else:
         event_bus.notify.assert_not_called()
 
