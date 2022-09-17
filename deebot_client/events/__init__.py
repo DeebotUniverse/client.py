@@ -121,7 +121,7 @@ class ReportStatsEvent(StatsEvent):
 
     cleaning_id: str
     status: CleanJobStatus
-    content: list[int] | None
+    content: list[int]
 
 
 @dataclass(frozen=True)

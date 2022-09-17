@@ -67,6 +67,7 @@ def test_GetCleanLogs() -> None:
                 "aiopen": 1,
                 "powerMopType": 1,
             },
+            {"ts": 1655564616, "invalid": "event"},
         ],
     }
 
@@ -107,7 +108,16 @@ def test_GetCleanLogs() -> None:
         ]
     )
 
-    assert_command_requested(GetCleanLogs(), json, expected)
+    with LogCapture() as log:
+        assert_command_requested(GetCleanLogs(), json, expected)
+
+        log.check_present(
+            (
+                "deebot_client.commands.clean_logs",
+                "WARNING",
+                "Skipping log entry: {'ts': 1655564616, 'invalid': 'event'}",
+            )
+        )
 
 
 @pytest.mark.parametrize(
