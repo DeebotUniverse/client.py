@@ -169,3 +169,8 @@ class ContinuousCleaningEvent(EnableEvent):
 @dataclass(frozen=True)
 class CarpetAutoFanBoostEvent(EnableEvent):
     """Carpet pressure event."""
+
+
+@dataclass(frozen=True)
+class MultimapStateEvent(EnableEvent):
+    """Multimap state event."""
