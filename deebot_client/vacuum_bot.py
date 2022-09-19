@@ -6,8 +6,7 @@ from typing import Any, Final
 
 from .api_client import ApiClient
 from .command import Command
-from .command_old import CommandOld
-from .commands import COMMANDS_WITH_HANDLING, Clean, CommandWithHandling
+from .commands import COMMANDS_WITH_HANDLING, Clean
 from .commands.clean import CleanAction
 from .events import (
     CleanLogEvent,
@@ -22,7 +21,7 @@ from .events import (
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
-from .message import HandlingState, Message
+from .message import Message
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
@@ -97,7 +96,7 @@ class VacuumBot:
 
         self.events.subscribe(CustomCommandEvent, on_custom_command)
 
-    async def execute_command(self, command: Command | CommandOld) -> None:
+    async def execute_command(self, command: Command) -> None:
         """Execute given command and handle response."""
         if (
             command == Clean(CleanAction.RESUME)
@@ -110,31 +109,8 @@ class VacuumBot:
         ):
             command = Clean(CleanAction.RESUME)
 
-        if isinstance(command, Command):
-            async with self._semaphore:
-                await command.execute(
-                    self._authenticator, self.device_info, self.events
-                )
-        else:
-            async with self._semaphore:
-                response = await self._api_client.send_command(
-                    command, self.device_info
-                )
-
-            _LOGGER.debug("Handle command %s: %s", command.name, response)
-            if isinstance(command, CommandWithHandling):
-                result = command.handle_requested(self.events, response)
-                if result.state == HandlingState.SUCCESS and result.requested_commands:
-                    # Execute command which are requested by the handler
-                    tasks = []
-                    for requested_command in result.requested_commands:
-                        tasks.append(
-                            asyncio.create_task(self.execute_command(requested_command))
-                        )
-
-                    await asyncio.gather(*tasks)
-            else:
-                _LOGGER.warning("Unsupported command! Command %s", command.name)
+        async with self._semaphore:
+            await command.execute(self._authenticator, self.device_info, self.events)
 
     def set_available(self, available: bool) -> None:
         """Set available."""

@@ -5,13 +5,13 @@ from ..events import StatusEvent
 from ..logging_filter import get_logger
 from ..message import HandlingResult
 from ..models import VacuumState
-from .common import EventBus, _ExecuteCommand
+from .common import EventBus, ExecuteCommand
 from .const import CODE
 
 _LOGGER = get_logger(__name__)
 
 
-class Charge(_ExecuteCommand):
+class Charge(ExecuteCommand):
     """Charge command."""
 
     name = "charge"

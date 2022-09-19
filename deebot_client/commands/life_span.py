@@ -4,14 +4,14 @@ from typing import Any
 from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult, HandlingState, MessageBodyDataList
 from .common import (
-    CommandWithHandling,
-    CommandWithMqttP2PHandling,
+    CommandHandlingMqttP2P,
+    CommandWithMessageHandling,
     EventBus,
-    _ExecuteCommand,
+    ExecuteCommand,
 )
 
 
-class GetLifeSpan(CommandWithHandling, MessageBodyDataList):
+class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
     """Get life span command."""
 
     name = "getLifeSpan"
@@ -40,7 +40,7 @@ class GetLifeSpan(CommandWithHandling, MessageBodyDataList):
         return HandlingResult.success()
 
 
-class ResetLifeSpan(_ExecuteCommand, CommandWithMqttP2PHandling):
+class ResetLifeSpan(ExecuteCommand, CommandHandlingMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"

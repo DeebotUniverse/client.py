@@ -5,7 +5,7 @@ import pytest
 from deebot_client.commands import Charge
 from deebot_client.events import StatusEvent
 from deebot_client.models import VacuumState
-from tests.commands import assert_command_requestedOLD as assert_command_requested
+from tests.commands import assert_command_requested
 from tests.helpers import get_request_json
 
 
@@ -22,5 +22,5 @@ def prepare_json_docked_test() -> dict[str, Any]:
         (prepare_json_docked_test(), StatusEvent(True, VacuumState.DOCKED)),
     ],
 )
-def test_charge(json: dict[str, Any], expected: StatusEvent) -> None:
-    assert_command_requested(Charge(), json, expected)
+async def test_charge(json: dict[str, Any], expected: StatusEvent) -> None:
+    await assert_command_requested(Charge(), json, expected)

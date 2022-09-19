@@ -9,7 +9,7 @@ from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_logs import GetCleanLogs
-from .common import CommandWithHandling, CommandWithMqttP2PHandling, SetCommand
+from .common import CommandHandlingMqttP2P, CommandWithMessageHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
@@ -31,7 +31,7 @@ from .water_info import GetWaterInfo, SetWaterInfo
 
 # fmt: off
 # ordered by file asc
-_COMMANDS: list[type[Command | CommandWithHandling]] = [
+_COMMANDS: list[type[Command | CommandWithMessageHandling]] = [
     GetAdvancedMode,
     SetAdvancedMode,
 
@@ -85,12 +85,12 @@ _COMMANDS: list[type[Command | CommandWithHandling]] = [
 ]
 # fmt: on
 
-COMMANDS_WITH_HANDLING: dict[str, type[Command | CommandWithHandling]] = {
+COMMANDS_WITH_HANDLING: dict[str, type[Command | CommandWithMessageHandling]] = {
     cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
 }
 
-COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandWithMqttP2PHandling]] = {
+COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandHandlingMqttP2P]] = {
     cmd_name: cmd
     for (cmd_name, cmd) in COMMANDS_WITH_HANDLING.items()
-    if issubclass(cmd, CommandWithMqttP2PHandling)
+    if issubclass(cmd, CommandHandlingMqttP2P)
 }

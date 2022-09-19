@@ -1,7 +1,7 @@
 """Maps commands."""
 from typing import Any
 
-from ..command_old import CommandOld as Command
+from ..command import Command
 from ..events import (
     MajorMapEvent,
     MapSetEvent,
@@ -12,11 +12,11 @@ from ..events import (
 )
 from ..events.event_bus import EventBus
 from ..message import HandlingResult, HandlingState, MessageBodyDataDict
-from . import CommandWithHandling
+from . import CommandWithMessageHandling
 from .common import CommandResult
 
 
-class GetCachedMapInfo(CommandWithHandling, MessageBodyDataDict):
+class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -55,7 +55,7 @@ class GetCachedMapInfo(CommandWithHandling, MessageBodyDataDict):
         return result
 
 
-class GetMajorMap(CommandWithHandling, MessageBodyDataDict):
+class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "getMajorMap"
@@ -91,7 +91,7 @@ class GetMajorMap(CommandWithHandling, MessageBodyDataDict):
         return result
 
 
-class GetMapSet(CommandWithHandling, MessageBodyDataDict):
+class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -156,7 +156,7 @@ class GetMapSet(CommandWithHandling, MessageBodyDataDict):
         return result
 
 
-class GetMapSubSet(CommandWithHandling, MessageBodyDataDict):
+class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
     _ROOM_NUM_TO_NAME = {
@@ -233,7 +233,7 @@ class GetMapSubSet(CommandWithHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-class GetMapTrace(CommandWithHandling, MessageBodyDataDict):
+class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -281,7 +281,7 @@ class GetMapTrace(CommandWithHandling, MessageBodyDataDict):
         return result
 
 
-class GetMinorMap(CommandWithHandling, MessageBodyDataDict):
+class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "getMinorMap"

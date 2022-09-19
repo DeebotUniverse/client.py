@@ -4,7 +4,7 @@ import pytest
 
 from deebot_client.commands import GetLifeSpan
 from deebot_client.events import LifeSpan, LifeSpanEvent
-from tests.commands import assert_command_requestedOLD as assert_command_requested
+from tests.commands import assert_command_requested
 from tests.helpers import get_request_json
 
 
@@ -27,5 +27,5 @@ from tests.helpers import get_request_json
         ),
     ],
 )
-def test_GetLifeSpan(json: dict[str, Any], expected: list[LifeSpanEvent]) -> None:
-    assert_command_requested(GetLifeSpan(), json, expected)
+async def test_GetLifeSpan(json: dict[str, Any], expected: list[LifeSpanEvent]) -> None:
+    await assert_command_requested(GetLifeSpan(), json, expected)

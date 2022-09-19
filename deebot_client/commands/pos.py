@@ -4,10 +4,10 @@ from typing import Any
 
 from ..events import Position, PositionsEvent, PositionType
 from ..message import HandlingResult, MessageBodyDataDict
-from .common import CommandWithHandling, EventBus
+from .common import CommandWithMessageHandling, EventBus
 
 
-class GetPos(CommandWithHandling, MessageBodyDataDict):
+class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getPos"

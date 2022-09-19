@@ -4,8 +4,7 @@ from unittest.mock import AsyncMock, Mock, call
 
 from deebot_client import Authenticator
 from deebot_client.command import Command
-from deebot_client.commands import CommandWithHandling, SetCommand
-from deebot_client.commands.common import CommandResult as CommandResultOld
+from deebot_client.commands import SetCommand
 from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Credentials, DeviceInfo
@@ -50,36 +49,13 @@ async def assert_command_requested(
         event_bus.notify.assert_not_called()
 
 
-def assert_command_requestedOLD(
-    command: CommandWithHandling,
-    json: dict[str, Any],
-    expected_events: Event | None | Sequence[Event],
-    expected_result: CommandResultOld = CommandResultOld.success(),
-) -> None:
-    event_bus = Mock(spec_set=EventBus)
-
-    assert command.name != "invalid"
-
-    result = command.handle_requested(event_bus, json)
-
-    assert result == expected_result
-    if expected_events:
-        if isinstance(expected_events, Sequence):
-            event_bus.notify.assert_has_calls([call(x) for x in expected_events])
-            assert event_bus.notify.call_count == len(expected_events)
-        else:
-            event_bus.notify.assert_called_once_with(expected_events)
-    else:
-        event_bus.notify.assert_not_called()
-
-
 def assert_set_command(
     command: SetCommand,
     args: dict | list | None,
     expected_get_command_event: Event,
 ) -> None:
     assert command.name != "invalid"
-    assert command.args == args
+    assert command._args == args
 
     event_bus = Mock(spec_set=EventBus)
 

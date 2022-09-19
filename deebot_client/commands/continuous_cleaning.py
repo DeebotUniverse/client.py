@@ -1,10 +1,10 @@
 """Continuous cleaning (break point) command module."""
 
 from ..events import ContinuousCleaningEvent
-from .common import SetEnableCommand, _GetEnableCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetContinuousCleaning(_GetEnableCommand):
+class GetContinuousCleaning(GetEnableCommand):
     """Get continuous cleaning command."""
 
     name = "getBreakPoint"

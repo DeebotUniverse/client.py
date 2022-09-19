@@ -2,7 +2,6 @@
 from collections.abc import Mapping
 
 from ..command import Command
-from ..command_old import CommandOld
 from ..commands import (
     GetAdvancedMode,
     GetBattery,
@@ -51,7 +50,7 @@ from .map import (
     MinorMapEvent,
 )
 
-EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command | CommandOld]] = {
+EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
