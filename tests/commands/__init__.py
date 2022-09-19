@@ -4,13 +4,14 @@ from unittest.mock import Mock, call
 
 from deebot_client.commands import CommandWithHandling, SetCommand
 from deebot_client.commands.common import CommandResult
+from deebot_client.commands.custom import CustomCommand
 from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
 from tests.helpers import get_message_json
 
 
 def assert_command_requested(
-    command: CommandWithHandling,
+    command: CommandWithHandling | CustomCommand,
     json: dict[str, Any],
     expected_events: Event | None | Sequence[Event],
     expected_result: CommandResult = CommandResult.success(),
