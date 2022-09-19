@@ -22,7 +22,7 @@ from .events import (
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
-from .message import HandlingState
+from .message import HandlingState, Message
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
@@ -176,6 +176,9 @@ class VacuumBot:
         )
         if found_command:
             _LOGGER.debug("Falling back to old handling way for %s", message_name)
-            found_command.handle(self.events, message_data)
+            if issubclass(found_command, Message):
+                found_command.handle(self.events, message_data)
+            else:
+                _LOGGER.debug('Command "%s" doesn\'t support handle', converted_name)
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)

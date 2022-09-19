@@ -1,6 +1,7 @@
 """Commands module."""
 from typing import Dict, Type
 
+from ..command import Command
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
@@ -30,7 +31,7 @@ from .water_info import GetWaterInfo, SetWaterInfo
 
 # fmt: off
 # ordered by file asc
-_COMMANDS: list[type[CommandWithHandling]] = [
+_COMMANDS: list[type[Command | CommandWithHandling]] = [
     GetAdvancedMode,
     SetAdvancedMode,
 
@@ -84,7 +85,7 @@ _COMMANDS: list[type[CommandWithHandling]] = [
 ]
 # fmt: on
 
-COMMANDS_WITH_HANDLING: dict[str, type[CommandWithHandling]] = {
+COMMANDS_WITH_HANDLING: dict[str, type[Command | CommandWithHandling]] = {
     cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
 }
 

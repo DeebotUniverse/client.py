@@ -5,11 +5,9 @@ from urllib.parse import urljoin
 
 from .authentication import Authenticator
 from .command_old import CommandOld as Command
-from .commands import GetCleanLogs
 from .const import (
     PATH_API_APPSVR_APP,
     PATH_API_IOT_DEVMANAGER,
-    PATH_API_LG_LOG,
     PATH_API_PIM_PRODUCT_IOT_MAP,
 )
 from .exceptions import ApiError
@@ -81,39 +79,30 @@ class ApiClient:
         query_params = {}
         json: dict[str, Any]
 
-        if command.name == GetCleanLogs.name:
-            json = {
-                "td": command.name,
-                "did": device_info.did,
-                "resource": device_info.resource,
+        payload = {
+            "header": {
+                "pri": "1",
+                "ts": datetime.now().timestamp(),
+                "tzm": 480,
+                "ver": "0.0.50",
             }
+        }
 
-            path = PATH_API_LG_LOG
-        else:
-            payload = {
-                "header": {
-                    "pri": "1",
-                    "ts": datetime.now().timestamp(),
-                    "tzm": 480,
-                    "ver": "0.0.50",
-                }
-            }
+        if len(command.args) > 0:
+            payload["body"] = {"data": command.args}
 
-            if len(command.args) > 0:
-                payload["body"] = {"data": command.args}
+        json = {
+            "cmdName": command.name,
+            "payload": payload,
+            "payloadType": "j",
+            "td": "q",
+            "toId": device_info.did,
+            "toRes": device_info.resource,
+            "toType": device_info.get_class,
+        }
 
-            json = {
-                "cmdName": command.name,
-                "payload": payload,
-                "payloadType": "j",
-                "td": "q",
-                "toId": device_info.did,
-                "toRes": device_info.resource,
-                "toType": device_info.get_class,
-            }
-
-            path = PATH_API_IOT_DEVMANAGER
-            query_params.update({"mid": json["toType"], "did": json["toId"]})
+        path = PATH_API_IOT_DEVMANAGER
+        query_params.update({"mid": json["toType"], "did": json["toId"]})
 
         credentials = await self._authenticator.authenticate()
         query_params.update(

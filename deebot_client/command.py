@@ -3,13 +3,16 @@ import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from datetime import datetime
-from typing import Any
+from typing import Any, final
 
 from deebot_client import Authenticator
 from deebot_client.const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
 from deebot_client.events.event_bus import EventBus
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import DeviceInfo
+
+_LOGGER = get_logger(__name__)
 
 
 @dataclass(frozen=True)
@@ -43,10 +46,29 @@ class Command(ABC):
     def name(cls) -> str:
         """Command name."""
 
+    @final
     async def execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> None:
         """Execute command."""
+        response = await self._execute_api_request(authenticator, device_info)
+
+        result = self.__handle_requested(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.requested_commands:
+            # Execute command which are requested by the handler
+            tasks = []
+            for requested_command in result.requested_commands:
+                tasks.append(
+                    asyncio.create_task(
+                        requested_command.execute(authenticator, device_info, event_bus)
+                    )
+                )
+
+            await asyncio.gather(*tasks)
+
+    async def _execute_api_request(
+        self, authenticator: Authenticator, device_info: DeviceInfo
+    ) -> dict[str, Any]:
         payload = {
             "header": {
                 "pri": "1",
@@ -80,25 +102,37 @@ class Command(ABC):
             "av": "1.3.1",
         }
 
-        response = await authenticator.post_authenticated(
+        return await authenticator.post_authenticated(
             PATH_API_IOT_DEVMANAGER,
             json,
             query_params=query_params,
             headers=REQUEST_HEADERS,
         )
 
-        result = self._handle_requested(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.requested_commands:
-            # Execute command which are requested by the handler
-            tasks = []
-            for requested_command in result.requested_commands:
-                tasks.append(
-                    asyncio.create_task(
-                        requested_command.execute(authenticator, device_info, event_bus)
-                    )
-                )
+    def __handle_requested(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a manual requested command.
 
-            await asyncio.gather(*tasks)
+        :return: A message response
+        """
+        try:
+            result = self._handle_requested(event_bus, response)
+            if result.state == HandlingState.ANALYSE:
+                _LOGGER.debug(
+                    "ANALYSE: Could not handle command: %s with %s", self.name, response
+                )
+                return CommandResult(
+                    HandlingState.ANALYSE_LOGGED,
+                    result.args,
+                    result.requested_commands,
+                )
+            return result
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Could not parse %s: %s", self.name, response, exc_info=True
+            )
+            return CommandResult(HandlingState.ERROR)
 
     @abstractmethod
     def _handle_requested(

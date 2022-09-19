@@ -1,19 +1,14 @@
 from typing import Any
-from unittest.mock import Mock
 
 import pytest
 from testfixtures import LogCapture
 
 from deebot_client.commands import GetCleanLogs
-from deebot_client.commands.common import CommandResult
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
-from deebot_client.events.event_bus import EventBus
-from deebot_client.message import HandlingState
-from tests.commands import assert_command_requestedOLD
-from tests.commands import assert_command_requestedOLD as assert_command_requested
+from tests.commands import assert_command_requested
 
 
-def test_GetCleanLogs() -> None:
+async def test_GetCleanLogs() -> None:
     json = {
         "ret": "ok",
         "logs": [
@@ -110,7 +105,7 @@ def test_GetCleanLogs() -> None:
     )
 
     with LogCapture() as log:
-        assert_command_requested(GetCleanLogs(), json, expected)
+        await assert_command_requested(GetCleanLogs(), json, expected)
 
         log.check_present(
             (
@@ -125,31 +120,32 @@ def test_GetCleanLogs() -> None:
     "json",
     [{"ret": "ok"}, {"ret": "fail"}],
 )
-def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
+async def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
     with LogCapture() as log:
-        assert_command_requestedOLD(
+        await assert_command_requested(
             GetCleanLogs(),
             json,
             None,
-            CommandResult(HandlingState.ANALYSE_LOGGED),
         )
         log.check_present(
             (
-                "deebot_client.commands.common",
+                "deebot_client.command",
                 "DEBUG",
-                f"Could not handle command: GetCleanLogs with {json}",
+                f"ANALYSE: Could not handle command: GetCleanLogs with {json}",
             )
         )
 
 
-def test_GetCleanLogs_handle_fails() -> None:
+async def test_GetCleanLogs_handle_fails() -> None:
     with LogCapture() as log:
-        result = GetCleanLogs.handle(Mock(spec_set=EventBus), {})
-
-        assert result.state == HandlingState.ERROR
+        await assert_command_requested(
+            GetCleanLogs(),
+            {},
+            None,
+        )
         log.check_present(
             (
-                "deebot_client.message",
+                "deebot_client.command",
                 "WARNING",
                 f"Could not parse {GetCleanLogs.name}: {{}}",
             )
