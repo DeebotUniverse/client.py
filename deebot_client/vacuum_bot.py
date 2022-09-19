@@ -6,11 +6,12 @@ from typing import Any, Final
 
 from .api_client import ApiClient
 from .command import Command
+from .command_old import CommandOld
 from .commands import COMMANDS_WITH_HANDLING, Clean, CommandWithHandling
 from .commands.clean import CleanAction
-from .commands.custom import CustomCommand
 from .events import (
     CleanLogEvent,
+    CustomCommandEvent,
     LifeSpanEvent,
     PositionsEvent,
     PositionType,
@@ -41,6 +42,7 @@ class VacuumBot:
     ):
         self.device_info: Final[DeviceInfo] = device_info
         self._api_client = api_client
+        self._authenticator = api_client._authenticator
 
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
@@ -90,7 +92,12 @@ class VacuumBot:
 
         self.events.subscribe(StatsEvent, on_stats)
 
-    async def execute_command(self, command: Command | CustomCommand) -> None:
+        async def on_custom_command(event: CustomCommandEvent) -> None:
+            await self.handle_message(event.name, event.response)
+
+        self.events.subscribe(CustomCommandEvent, on_custom_command)
+
+    async def execute_command(self, command: Command | CommandOld) -> None:
         """Execute given command and handle response."""
         if (
             command == Clean(CleanAction.RESUME)
@@ -103,28 +110,31 @@ class VacuumBot:
         ):
             command = Clean(CleanAction.RESUME)
 
-        async with self._semaphore:
-            response = await self._api_client.send_command(command, self.device_info)
-
-        _LOGGER.debug("Handle command %s: %s", command.name, response)
-        if isinstance(command, (CommandWithHandling, CustomCommand)):
-            result = command.handle_requested(self.events, response)
-            if isinstance(command, CustomCommand):
-                # Custom command can be send for implemented commands too.
-                # We handle the response explicit to fire event if necessary
-                await self.handle_message(command.name, response)
-
-            if result.state == HandlingState.SUCCESS and result.requested_commands:
-                # Execute command which are requested by the handler
-                tasks = []
-                for requested_command in result.requested_commands:
-                    tasks.append(
-                        asyncio.create_task(self.execute_command(requested_command))
-                    )
-
-                await asyncio.gather(*tasks)
+        if isinstance(command, Command):
+            async with self._semaphore:
+                await command.execute(
+                    self._authenticator, self.device_info, self.events
+                )
         else:
-            _LOGGER.warning("Unsupported command! Command %s", command.name)
+            async with self._semaphore:
+                response = await self._api_client.send_command(
+                    command, self.device_info
+                )
+
+            _LOGGER.debug("Handle command %s: %s", command.name, response)
+            if isinstance(command, CommandWithHandling):
+                result = command.handle_requested(self.events, response)
+                if result.state == HandlingState.SUCCESS and result.requested_commands:
+                    # Execute command which are requested by the handler
+                    tasks = []
+                    for requested_command in result.requested_commands:
+                        tasks.append(
+                            asyncio.create_task(self.execute_command(requested_command))
+                        )
+
+                    await asyncio.gather(*tasks)
+            else:
+                _LOGGER.warning("Unsupported command! Command %s", command.name)
 
     def set_available(self, available: bool) -> None:
         """Set available."""

@@ -2,7 +2,7 @@ import pytest
 
 from deebot_client.commands import FanSpeedLevel, GetFanSpeed, SetFanSpeed
 from deebot_client.events import FanSpeedEvent
-from tests.commands import assert_command_requested
+from tests.commands import assert_command_requestedOLD as assert_command_requested
 from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
 
 

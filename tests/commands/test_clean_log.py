@@ -9,7 +9,8 @@ from deebot_client.commands.common import CommandResult
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingState
-from tests.commands import assert_command_requested
+from tests.commands import assert_command_requestedOLD
+from tests.commands import assert_command_requestedOLD as assert_command_requested
 
 
 def test_GetCleanLogs() -> None:
@@ -126,7 +127,7 @@ def test_GetCleanLogs() -> None:
 )
 def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
     with LogCapture() as log:
-        assert_command_requested(
+        assert_command_requestedOLD(
             GetCleanLogs(),
             json,
             None,

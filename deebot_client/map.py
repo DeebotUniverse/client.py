@@ -15,6 +15,7 @@ from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
 
 from .command import Command
+from .command_old import CommandOld
 from .commands import GetCachedMapInfo, GetMinorMap
 from .events import (
     MajorMapEvent,
@@ -134,7 +135,7 @@ class Map:
 
     def __init__(
         self,
-        execute_command: Callable[[Command], Coroutine[Any, Any, None]],
+        execute_command: Callable[[Command | CommandOld], Coroutine[Any, Any, None]],
         event_bus: EventBus,
     ):
         self._execute_command = execute_command

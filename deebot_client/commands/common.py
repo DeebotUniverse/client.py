@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass
 from typing import Any, final
 
-from ..command import Command
+from ..command_old import CommandOld as Command
 from ..events import EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger

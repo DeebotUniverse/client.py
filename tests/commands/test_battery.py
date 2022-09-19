@@ -2,7 +2,7 @@ import pytest
 
 from deebot_client.commands import GetBattery
 from deebot_client.events import BatteryEvent
-from tests.commands import assert_command_requested
+from tests.commands import assert_command_requestedOLD as assert_command_requested
 from tests.helpers import get_request_json
 
 

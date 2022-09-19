@@ -4,9 +4,8 @@ from typing import Any
 from urllib.parse import urljoin
 
 from .authentication import Authenticator
-from .command import Command
+from .command_old import CommandOld as Command
 from .commands import GetCleanLogs
-from .commands.custom import CustomCommand
 from .const import (
     PATH_API_APPSVR_APP,
     PATH_API_IOT_DEVMANAGER,
@@ -75,7 +74,7 @@ class ApiClient:
 
     async def send_command(
         self,
-        command: Command | CustomCommand,
+        command: Command,
         device_info: DeviceInfo,
     ) -> dict[str, Any]:
         """Send json command for given vacuum to the api."""

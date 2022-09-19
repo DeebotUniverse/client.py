@@ -2,7 +2,8 @@ import pytest
 
 from deebot_client.commands import GetAdvancedMode, SetAdvancedMode
 from deebot_client.events import AdvancedModeEvent
-from tests.commands import assert_command_requested, assert_set_command
+from tests.commands import assert_command_requestedOLD as assert_command_requested
+from tests.commands import assert_set_command
 from tests.helpers import get_request_json
 
 

@@ -2,12 +2,15 @@
 import asyncio
 import threading
 from collections.abc import Callable, Coroutine
-from typing import Any, Final, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar, Union
 
-from ..command import Command
+from ..command_old import CommandOld
 from ..logging_filter import get_logger
 from ..models import VacuumState
 from . import Event, StatusEvent
+
+if TYPE_CHECKING:
+    from ..command import Command
 
 _LOGGER = get_logger(__name__)
 
@@ -54,7 +57,12 @@ class _EventProcessingData(Generic[T]):
 class EventBus:
     """A very simple event bus system."""
 
-    def __init__(self, execute_command: Callable[[Command], Coroutine[Any, Any, None]]):
+    def __init__(
+        self,
+        execute_command: Callable[
+            [Union["Command", CommandOld]], Coroutine[Any, Any, None]
+        ],
+    ):
         self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
         self._execute_command: Final = execute_command

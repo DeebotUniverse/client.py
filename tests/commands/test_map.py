@@ -14,7 +14,8 @@ from deebot_client.events import (
     MapTraceEvent,
 )
 from deebot_client.message import HandlingState
-from tests.commands import assert_command_requested
+from tests.commands import assert_command_requestedOLD
+from tests.commands import assert_command_requestedOLD as assert_command_requested
 from tests.helpers import get_request_json
 
 
@@ -94,7 +95,7 @@ def test_getCachedMapInfo_requested() -> None:
             ],
         }
     )
-    assert_command_requested(
+    assert_command_requestedOLD(
         GetCachedMapInfo(),
         json,
         None,
@@ -146,7 +147,7 @@ def test_getMapSet_requested() -> None:
         }
     )
     subsets = [7, 12, 17, 14, 10, 11, 13]
-    assert_command_requested(
+    assert_command_requestedOLD(
         GetMapSet(mid),
         json,
         MapSetEvent(MapSetType.ROOMS, subsets),
@@ -174,7 +175,7 @@ def test_getMapTrace_requested() -> None:
             "traceValue": trace_value,
         }
     )
-    assert_command_requested(
+    assert_command_requestedOLD(
         GetMapTrace(start),
         json,
         MapTraceEvent(start=start, total=total, data=trace_value),

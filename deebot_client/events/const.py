@@ -1,7 +1,7 @@
 """Event constants."""
 from collections.abc import Mapping
 
-from ..command import Command
+from ..command_old import CommandOld as Command
 from ..commands import (
     GetAdvancedMode,
     GetBattery,

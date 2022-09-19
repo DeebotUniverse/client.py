@@ -1,7 +1,7 @@
 """Maps commands."""
 from typing import Any
 
-from ..command import Command
+from ..command_old import CommandOld as Command
 from ..events import (
     MajorMapEvent,
     MapSetEvent,

@@ -5,7 +5,7 @@ import pytest
 from deebot_client.commands import GetCleanInfo
 from deebot_client.events import StatusEvent
 from deebot_client.models import VacuumState
-from tests.commands import assert_command_requested
+from tests.commands import assert_command_requestedOLD as assert_command_requested
 from tests.helpers import get_request_json
 
 
