@@ -3,10 +3,10 @@ import asyncio
 import time
 from collections.abc import Callable, Mapping
 from typing import Any
+from urllib.parse import urljoin
 
-from aiohttp import hdrs
+from aiohttp import ClientResponseError, hdrs
 
-from ._api_client import _InternalApiClient
 from .const import REALM
 from .exceptions import AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
@@ -36,18 +36,21 @@ _META = {
 }
 
 
+def _get_portal_url(config: Configuration, path: str) -> str:
+    subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
+    return urljoin(f"https://{subdomain}.ecouser.net/api/", path)
+
+
 class _AuthClient:
     """Ecovacs auth client."""
 
     def __init__(
         self,
         config: Configuration,
-        internal_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,
     ):
         self._config = config
-        self._api_client = internal_api_client
         self._account_id = account_id
         self._password_hash = password_hash
         self._tld = "com" if self._config.country != "cn" else "cn"
@@ -190,7 +193,7 @@ class _AuthClient:
         }
 
         for i in range(3):
-            resp = await self._api_client.post(_PATH_USERS_USER, data)
+            resp = await self.post(_PATH_USERS_USER, data)
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
@@ -205,6 +208,68 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
+    async def post(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
+        credentials: Credentials | None = None,
+    ) -> dict[str, Any]:
+        """Perform a post request."""
+        url = _get_portal_url(self._config, path)
+
+        logger_msg = f"calling api: url={url}, params={query_params}, json={json}"
+        _LOGGER.debug(logger_msg)
+
+        if credentials is not None:
+            json.update(
+                {
+                    "auth": {
+                        "with": "users",
+                        "userid": credentials.user_id,
+                        "realm": REALM,
+                        "token": credentials.token,
+                        "resource": self._config.device_id,
+                    }
+                }
+            )
+
+        try:
+            async with self._config.session.post(
+                url,
+                json=json,
+                params=query_params,
+                headers=headers,
+                timeout=60,
+                ssl=self._config.verify_ssl,
+            ) as res:
+                res.raise_for_status()
+                if res.status == 200:
+                    response_data: dict[str, Any] = await res.json()
+                    _LOGGER.debug("Success: %s, response=%s", logger_msg, response_data)
+                    return response_data
+
+                _LOGGER.warning("Error calling API (%d): %s", res.status, path)
+                _LOGGER.debug("Error: %s, status=%s", logger_msg, res.status)
+        except asyncio.TimeoutError:
+            _LOGGER.warning(
+                "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
+            )
+            _LOGGER.debug("Timeout on %s", logger_msg)
+        except ClientResponseError as err:
+            if err.status == 502:
+                _LOGGER.info(
+                    "Error calling API (502): Unfortunately the ecovacs api is unreliable. URL was: %s",
+                    url,
+                )
+            else:
+                _LOGGER.warning("Error calling API (%d): %s", err.status, url)
+            _LOGGER.debug("Error: %s, status=%s", logger_msg, err.status)
+
+        return {}
+
 
 class Authenticator:
     """Authenticator."""
@@ -212,13 +277,11 @@ class Authenticator:
     def __init__(
         self,
         config: Configuration,
-        ecovacs_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,
     ):
         self._auth_client = _AuthClient(
             config,
-            ecovacs_api_client,
             account_id,
             password_hash,
         )
@@ -283,3 +346,20 @@ class Authenticator:
                 )
 
         asyncio.create_task(refresh())
+
+    async def post_authenticated(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Perform an authenticated post request."""
+        return await self._auth_client.post(
+            path,
+            json,
+            query_params=query_params,
+            headers=headers,
+            credentials=await self.authenticate(),
+        )

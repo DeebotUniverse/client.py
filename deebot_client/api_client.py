@@ -3,7 +3,6 @@ from datetime import datetime
 from typing import Any
 from urllib.parse import urljoin
 
-from ._api_client import _InternalApiClient
 from .authentication import Authenticator
 from .command import Command
 from .commands import GetCleanLogs
@@ -32,10 +31,7 @@ def _get_portal_url(config: Configuration, path: str) -> str:
 class ApiClient:
     """Api client."""
 
-    def __init__(
-        self, internal_api_client: _InternalApiClient, authenticator: Authenticator
-    ):
-        self._api_client = internal_api_client
+    def __init__(self, authenticator: Authenticator):
         self._authenticator = authenticator
 
     async def get_devices(self) -> list[DeviceInfo]:
@@ -45,9 +41,7 @@ class ApiClient:
             "userid": credentials.user_id,
             "todo": "GetGlobalDeviceList",
         }
-        resp = await self._api_client.post(
-            PATH_API_APPSVR_APP, json, credentials=credentials
-        )
+        resp = await self._authenticator.post_authenticated(PATH_API_APPSVR_APP, json)
 
         if resp.get("code", None) == 0:
             devices: list[DeviceInfo] = []
@@ -64,10 +58,9 @@ class ApiClient:
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""
-        resp = await self._api_client.post(
+        resp = await self._authenticator.post_authenticated(
             PATH_API_PIM_PRODUCT_IOT_MAP,
             {},
-            credentials=await self._authenticator.authenticate(),
         )
 
         if resp.get("code", None) in [0, "0000"]:
@@ -134,10 +127,9 @@ class ApiClient:
             }
         )
 
-        return await self._api_client.post(
+        return await self._authenticator.post_authenticated(
             path,
             json,
             query_params=query_params,
             headers=_REQUEST_HEADERS,
-            credentials=credentials,
         )
