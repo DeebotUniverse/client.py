@@ -147,6 +147,6 @@ async def test_GetCleanLogs_handle_fails() -> None:
             (
                 "deebot_client.command",
                 "WARNING",
-                f"Could not parse {GetCleanLogs.name}: {{}}",
+                f"Could not parse response for {GetCleanLogs.name}: {{}}",
             )
         )

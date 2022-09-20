@@ -21,3 +21,5 @@ nosetests.xml
 
 .mypy_cache
 .pytest_cache
+
+/test.py

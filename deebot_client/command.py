@@ -155,7 +155,10 @@ class Command(ABC):
             return result
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning(
-                "Could not parse %s: %s", self.name, response, exc_info=True
+                "Could not parse response for %s: %s",
+                self.name,
+                response,
+                exc_info=True,
             )
             return CommandResult(HandlingState.ERROR)
 
