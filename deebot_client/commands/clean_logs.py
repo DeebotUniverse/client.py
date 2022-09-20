@@ -1,7 +1,7 @@
 """clean log commands."""
 from typing import Any
 
-from .. import Authenticator
+from ..authentication import Authenticator
 from ..command import Command, CommandResult
 from ..const import PATH_API_LG_LOG, REQUEST_HEADERS
 from ..events import CleanJobStatus, CleanLogEntry, CleanLogEvent

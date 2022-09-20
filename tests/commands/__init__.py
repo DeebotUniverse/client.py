@@ -2,13 +2,14 @@ from collections.abc import Sequence
 from typing import Any
 from unittest.mock import AsyncMock, Mock, call
 
-from deebot_client import Authenticator
+from deebot_client.authentication import Authenticator
 from deebot_client.command import Command
 from deebot_client.commands import SetCommand
 from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Credentials, DeviceInfo
-from tests.helpers import get_message_json
+
+from ..helpers import get_message_json
 
 
 async def assert_command_requested(

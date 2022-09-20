@@ -4,7 +4,7 @@ import inspect
 import re
 from typing import Any, Final
 
-from .api_client import ApiClient
+from .authentication import Authenticator
 from .command import Command
 from .commands import COMMANDS_WITH_HANDLING, Clean
 from .commands.clean import CleanAction
@@ -37,11 +37,10 @@ class VacuumBot:
     def __init__(
         self,
         device_info: DeviceInfo,
-        api_client: ApiClient,
+        authenticator: Authenticator,
     ):
         self.device_info: Final[DeviceInfo] = device_info
-        self._api_client = api_client
-        self._authenticator = api_client._authenticator
+        self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
@@ -155,6 +154,8 @@ class VacuumBot:
                 _LOGGER.debug("Falling back to old handling way for %s", message_name)
                 found_command.handle(self.events, message_data)
             else:
-                _LOGGER.debug('Command "%s" doesn\'t support message handling', converted_name)
+                _LOGGER.debug(
+                    'Command "%s" doesn\'t support message handling', converted_name
+                )
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)

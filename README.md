@@ -25,12 +25,13 @@ import asyncio
 import logging
 import time
 
-from deebot_client import create_instances
+from deebot_client.api_client import ApiClient
+from deebot_client.authentication import Authenticator
 from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
+from deebot_client.events import BatteryEvent
 from deebot_client.models import Configuration
 from deebot_client.mqtt_client import MqttClient
-from deebot_client.events import BatteryEvent
 from deebot_client.util import md5
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -48,11 +49,12 @@ async def main():
                            device_id=device_id, country=country, continent=continent,
                            )
 
-    (authenticator, api_client) = create_instances(config, account_id, password_hash)
+    authenticator = Authenticator(config, account_id, password_hash)
+    api_client = ApiClient(authenticator)
 
     devices_ = await api_client.get_devices()
 
-    bot = VacuumBot(devices_[0], api_client)
+    bot = VacuumBot(devices_[0], authenticator)
 
     mqtt = MqttClient(config, authenticator)
     await mqtt.initialize()

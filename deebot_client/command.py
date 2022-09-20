@@ -5,12 +5,12 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Any, final
 
-from deebot_client import Authenticator
-from deebot_client.const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
-from deebot_client.events.event_bus import EventBus
-from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, HandlingState
-from deebot_client.models import DeviceInfo
+from .authentication import Authenticator
+from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
+from .events.event_bus import EventBus
+from .logging_filter import get_logger
+from .message import HandlingResult, HandlingState
+from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
 
