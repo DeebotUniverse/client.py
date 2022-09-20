@@ -7,9 +7,9 @@ from tests.helpers import get_request_json
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_get_multimap_state(value: bool) -> None:
+async def test_get_multimap_state(value: bool) -> None:
     json = get_request_json({"enable": 1 if value else 0})
-    assert_command_requested(GetMultimapState(), json, MultimapStateEvent(value))
+    await assert_command_requested(GetMultimapState(), json, MultimapStateEvent(value))
 
 
 @pytest.mark.parametrize("value", [False, True])
