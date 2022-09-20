@@ -12,8 +12,7 @@ from ..events import (
 )
 from ..events.event_bus import EventBus
 from ..message import HandlingResult, HandlingState, MessageBodyDataDict
-from . import CommandWithMessageHandling
-from .common import CommandResult
+from .common import CommandResult, CommandWithMessageHandling
 
 
 class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):

@@ -9,7 +9,7 @@ from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_logs import GetCleanLogs
-from .common import CommandHandlingMqttP2P, CommandWithMessageHandling, SetCommand
+from .common import CommandHandlingMqttP2P, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
 from .fan_speed import FanSpeedLevel, GetFanSpeed, SetFanSpeed
@@ -32,7 +32,7 @@ from .water_info import GetWaterInfo, SetWaterInfo
 
 # fmt: off
 # ordered by file asc
-_COMMANDS: list[type[Command | CommandWithMessageHandling]] = [
+_COMMANDS: list[type[Command]] = [
     GetAdvancedMode,
     SetAdvancedMode,
 
@@ -89,7 +89,7 @@ _COMMANDS: list[type[Command | CommandWithMessageHandling]] = [
 ]
 # fmt: on
 
-COMMANDS_WITH_HANDLING: dict[str, type[Command | CommandWithMessageHandling]] = {
+COMMANDS_WITH_HANDLING: dict[str, type[Command]] = {
     cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
 }
 

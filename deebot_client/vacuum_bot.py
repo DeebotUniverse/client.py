@@ -151,10 +151,10 @@ class VacuumBot:
             converted_name, COMMANDS_WITH_HANDLING.get(converted_name, None)
         )
         if found_command:
-            _LOGGER.debug("Falling back to old handling way for %s", message_name)
             if issubclass(found_command, Message):
+                _LOGGER.debug("Falling back to old handling way for %s", message_name)
                 found_command.handle(self.events, message_data)
             else:
-                _LOGGER.debug('Command "%s" doesn\'t support handle', converted_name)
+                _LOGGER.debug('Command "%s" doesn\'t support message handling', converted_name)
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)
