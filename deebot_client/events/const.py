@@ -16,6 +16,7 @@ from ..commands import (
     GetLifeSpan,
     GetMajorMap,
     GetMapTrace,
+    GetMultimapState,
     GetPos,
     GetStats,
     GetTotalStats,
@@ -33,6 +34,7 @@ from . import (
     Event,
     FanSpeedEvent,
     LifeSpanEvent,
+    MultimapStateEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -65,6 +67,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     MapSubsetEvent: [],
     MapTraceEvent: [GetMapTrace()],
     MinorMapEvent: [],
+    MultimapStateEvent: [GetMultimapState()],
     PositionsEvent: [GetPos()],
     ReportStatsEvent: [],  # ReportStats cannot be pulled
     RoomsEvent: [GetCachedMapInfo()],
