@@ -40,8 +40,8 @@ class Command(ABC):
             args = {}
         self._args = args
 
-    @classmethod
     @property
+    @classmethod
     @abstractmethod
     def name(cls) -> str:
         """Command name."""

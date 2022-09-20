@@ -20,3 +20,4 @@ deebotozmo.egg-info
 nosetests.xml
 
 .mypy_cache
+.pytest_cache

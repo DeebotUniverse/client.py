@@ -96,8 +96,8 @@ class SetCommand(ExecuteCommand, CommandHandlingMqttP2P, ABC):
 class GetEnableCommand(_NoArgsCommand, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
 
-    @classmethod
     @property
+    @classmethod
     @abstractmethod
     def event_type(cls) -> type[EnableEvent]:
         """Event type."""

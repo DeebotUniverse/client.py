@@ -32,3 +32,12 @@ class CustomCommand(Command):
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self._name, response)
         return CommandResult(HandlingState.FAILED)
+
+    def __eq__(self, obj: object) -> bool:
+        if super().__eq__(obj) and isinstance(obj, CustomCommand):
+            return self._name == obj._name
+
+        return False
+
+    def __hash__(self) -> int:
+        return super().__hash__() + hash(self._name)
