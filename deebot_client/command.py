@@ -51,20 +51,45 @@ class Command(ABC):
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> None:
         """Execute command."""
+        try:
+            result = await self._execute(authenticator, device_info, event_bus)
+            if result.state == HandlingState.SUCCESS and result.requested_commands:
+                # Execute command which are requested by the handler
+                tasks = []
+                for requested_command in result.requested_commands:
+                    tasks.append(
+                        asyncio.create_task(
+                            requested_command.execute(
+                                authenticator, device_info, event_bus
+                            )
+                        )
+                    )
+
+                await asyncio.gather(*tasks)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.warning(
+                "Could not execute command %s",
+                self.name,
+                exc_info=True,
+            )
+
+    async def _execute(
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+    ) -> CommandResult:
+        """Execute command."""
         response = await self._execute_api_request(authenticator, device_info)
 
         result = self.__handle_requested(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.requested_commands:
-            # Execute command which are requested by the handler
-            tasks = []
-            for requested_command in result.requested_commands:
-                tasks.append(
-                    asyncio.create_task(
-                        requested_command.execute(authenticator, device_info, event_bus)
-                    )
-                )
-
-            await asyncio.gather(*tasks)
+        if result.state == HandlingState.ANALYSE:
+            _LOGGER.debug(
+                "ANALYSE: Could not handle command: %s with %s", self.name, response
+            )
+            return CommandResult(
+                HandlingState.ANALYSE_LOGGED,
+                result.args,
+                result.requested_commands,
+            )
+        return result
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: DeviceInfo

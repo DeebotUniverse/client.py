@@ -6,8 +6,7 @@ from typing import Any, Final
 
 from .authentication import Authenticator
 from .command import Command
-from .commands import COMMANDS_WITH_HANDLING, Clean
-from .commands.clean import CleanAction
+from .commands import COMMANDS_WITH_HANDLING
 from .events import (
     CleanLogEvent,
     CustomCommandEvent,
@@ -96,18 +95,7 @@ class VacuumBot:
         self.events.subscribe(CustomCommandEvent, on_custom_command)
 
     async def execute_command(self, command: Command) -> None:
-        """Execute given command and handle response."""
-        if (
-            command == Clean(CleanAction.RESUME)
-            and self._status.state != VacuumState.PAUSED
-        ):
-            command = Clean(CleanAction.START)
-        elif (
-            command == Clean(CleanAction.START)
-            and self._status.state == VacuumState.PAUSED
-        ):
-            command = Clean(CleanAction.RESUME)
-
+        """Execute given command."""
         async with self._semaphore:
             await command.execute(self._authenticator, self.device_info, self.events)
 

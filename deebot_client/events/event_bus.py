@@ -161,3 +161,13 @@ class EventBus:
                 self._event_processing_dict[event_class] = event_processing_data
 
             return event_processing_data
+
+    def get_last_event(
+        self,
+        event_type: type[T],
+    ) -> T | None:
+        """Get last event of type T, if available."""
+        if event_processing := self._event_processing_dict.get(event_type, None):
+            return event_processing.last_event
+
+        return None
