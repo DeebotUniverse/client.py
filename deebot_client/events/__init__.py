@@ -174,3 +174,7 @@ class CarpetAutoFanBoostEvent(EnableEvent):
 @dataclass(frozen=True)
 class MultimapStateEvent(EnableEvent):
     """Multimap state event."""
+
+@dataclass(frozen=True)
+class TrueDetectEvent(EnableEvent):
+    """TrueDetect state event."""

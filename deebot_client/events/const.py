@@ -20,6 +20,7 @@ from ..commands import (
     GetPos,
     GetStats,
     GetTotalStats,
+    GetTrueDetect,
     GetVolume,
     GetWaterInfo,
 )
@@ -41,6 +42,7 @@ from . import (
     StatsEvent,
     StatusEvent,
     TotalStatsEvent,
+    TrueDetectEvent,
     VolumeEvent,
     WaterInfoEvent,
 )
@@ -74,6 +76,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     StatsEvent: [GetStats()],
     StatusEvent: [GetChargeState(), GetCleanInfo()],
     TotalStatsEvent: [GetTotalStats()],
+    TrueDetectEvent: [GetTrueDetect()],
     VolumeEvent: [GetVolume()],
     WaterInfoEvent: [GetWaterInfo()],
 }
