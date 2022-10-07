@@ -1,4 +1,4 @@
-"""Multimap state command module."""
+"""Clean preference command module."""
 
 from ..events import CleanPreferenceEvent
 from .common import SetEnableCommand, _GetEnableCommand

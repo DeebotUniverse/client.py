@@ -1,4 +1,4 @@
-"""Multimap state command module."""
+"""True detect command module."""
 
 from ..events import TrueDetectEvent
 from .common import SetEnableCommand, _GetEnableCommand

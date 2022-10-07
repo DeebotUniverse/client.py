@@ -1,3 +1,5 @@
+"""Clean count command module."""
+
 from collections.abc import Mapping
 from typing import Any
 
