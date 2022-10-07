@@ -7,7 +7,9 @@ from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
+from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
+from .clean_preference import SetCleanPreference, GetCleanPreference
 from .common import CommandWithHandling, CommandWithMqttP2PHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
@@ -40,6 +42,12 @@ _COMMANDS: list[type[CommandWithHandling]] = [
 
     GetCarpetAutoFanBoost,
     SetCarpetAutoFanBoost,
+
+    GetCleanCount,
+    SetCleanCount,
+
+    GetCleanPreference,
+    SetCleanPreference,
 
     Charge,
 

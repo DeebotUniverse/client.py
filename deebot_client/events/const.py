@@ -22,7 +22,7 @@ from ..commands import (
     GetTotalStats,
     GetTrueDetect,
     GetVolume,
-    GetWaterInfo,
+    GetWaterInfo, GetCleanPreference, GetCleanCount,
 )
 from . import (
     AdvancedModeEvent,
@@ -44,7 +44,7 @@ from . import (
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
-    WaterInfoEvent,
+    WaterInfoEvent, CleanPreferenceEvent, CleanCountEvent,
 )
 from .map import (
     MajorMapEvent,
@@ -59,6 +59,8 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     BatteryEvent: [GetBattery()],
     CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
     CleanLogEvent: [GetCleanLogs()],
+    CleanCountEvent: [GetCleanCount()],
+    CleanPreferenceEvent: [GetCleanPreference()],
     ContinuousCleaningEvent: [GetContinuousCleaning()],
     CustomCommandEvent: [],
     ErrorEvent: [GetError()],
