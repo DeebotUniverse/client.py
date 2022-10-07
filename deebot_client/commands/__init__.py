@@ -9,7 +9,7 @@ from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
-from .clean_preference import SetCleanPreference, GetCleanPreference
+from .clean_preference import GetCleanPreference, SetCleanPreference
 from .common import CommandWithHandling, CommandWithMqttP2PHandling, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError

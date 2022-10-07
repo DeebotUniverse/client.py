@@ -20,9 +20,7 @@ class GetCleanCount(_NoArgsCommand):
         :return: A message response
         """
 
-        event_bus.notify(
-            CleanCountEvent(count=data["count"])
-        )
+        event_bus.notify(CleanCountEvent(count=data["count"]))
         return HandlingResult.success()
 
 

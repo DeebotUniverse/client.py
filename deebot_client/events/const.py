@@ -8,8 +8,10 @@ from ..commands import (
     GetCachedMapInfo,
     GetCarpetAutoFanBoost,
     GetChargeState,
+    GetCleanCount,
     GetCleanInfo,
     GetCleanLogs,
+    GetCleanPreference,
     GetContinuousCleaning,
     GetError,
     GetFanSpeed,
@@ -22,13 +24,15 @@ from ..commands import (
     GetTotalStats,
     GetTrueDetect,
     GetVolume,
-    GetWaterInfo, GetCleanPreference, GetCleanCount,
+    GetWaterInfo,
 )
 from . import (
     AdvancedModeEvent,
     BatteryEvent,
     CarpetAutoFanBoostEvent,
+    CleanCountEvent,
     CleanLogEvent,
+    CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
@@ -44,7 +48,7 @@ from . import (
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
-    WaterInfoEvent, CleanPreferenceEvent, CleanCountEvent,
+    WaterInfoEvent,
 )
 from .map import (
     MajorMapEvent,
