@@ -10,17 +10,16 @@ default_language_version:
 
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v2.37.3
+    rev: v3.0.0
     hooks:
       - id: pyupgrade
         args:
           - --py310-plus
   - repo: https://github.com/psf/black
-    rev: 22.8.0
+    rev: 22.10.0
     hooks:
       - id: black
         args:
-          - --safe
           - --quiet
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.1
@@ -64,6 +63,11 @@ repos:
     rev: v2.7.1
     hooks:
       - id: prettier
+        additional_dependencies:
+          - prettier@2.7.1
+          - prettier-plugin-sort-json@0.0.3
+        exclude_types:
+          - python
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.28.0
     hooks:

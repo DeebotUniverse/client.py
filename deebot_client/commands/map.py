@@ -185,7 +185,9 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         mid: str | int,
         mssid: str | int,
         msid: str | int | None = None,
-        type: (MapSetType | str) = MapSetType.ROOMS  # pylint: disable=redefined-builtin
+        type: (  # pylint: disable=redefined-builtin
+            MapSetType | str
+        ) = MapSetType.ROOMS,
     ) -> None:
         if isinstance(type, MapSetType):
             type = type.value
