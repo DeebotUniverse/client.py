@@ -14,8 +14,7 @@ cover/
 # Ignore Vscode files
 .vscode
 
-# Ignore sucks.egg-info
-deebotozmo.egg-info
+*.egg-info/
 .noseids
 nosetests.xml
 

@@ -11,7 +11,7 @@ class Command(ABC):
             args = {}
         self._args = args
 
-    @classmethod
+    @classmethod  # type: ignore[misc]
     @property
     @abstractmethod
     def name(cls) -> str:
