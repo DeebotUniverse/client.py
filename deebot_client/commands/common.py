@@ -158,7 +158,7 @@ class _GetEnableCommand(_NoArgsCommand):
     # required as name is class variable, will be overwritten in subclasses
     name = "__invalid__"
 
-    @classmethod
+    @classmethod  # type: ignore[misc]
     @property
     @abstractmethod
     def event_type(cls) -> type[EnableEvent]:
