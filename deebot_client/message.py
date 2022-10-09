@@ -65,7 +65,7 @@ def _handle_error_or_analyse(
 class Message(ABC):
     """Message with handling code."""
 
-    @property
+    @property  # type: ignore[misc]
     @classmethod
     @abstractmethod
     def name(cls) -> str:

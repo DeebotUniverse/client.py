@@ -40,7 +40,7 @@ class Command(ABC):
             args = {}
         self._args = args
 
-    @property
+    @property  # type: ignore[misc]
     @classmethod
     @abstractmethod
     def name(cls) -> str:

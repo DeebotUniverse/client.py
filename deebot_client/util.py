@@ -64,6 +64,7 @@ class DisplayNameIntEnum(IntEnum):
 
 
 _T = TypeVar("_T")
+_S = TypeVar("_S")
 
 
 class OnChangedList(list[_T]):
@@ -97,7 +98,7 @@ class OnChangedList(list[_T]):
         self._on_change()
         super().insert(__index, __object)
 
-    def pop(self, __index=...) -> _T:  # type: ignore
+    def pop(self, __index=...) -> _T:  # type: ignore[no-untyped-def]
         """
         Remove and return item at index (default last).
 
@@ -125,7 +126,7 @@ class OnChangedList(list[_T]):
     def __setitem__(self, s: slice, o: Iterable[_T]) -> None:
         ...
 
-    def __setitem__(self, i, o) -> None:  # type: ignore
+    def __setitem__(self, i, o) -> None:  # type: ignore[no-untyped-def]
         self._on_change()
         super().__setitem__(i, o)
 
@@ -133,7 +134,15 @@ class OnChangedList(list[_T]):
         self._on_change()
         super().__delitem__(i)
 
-    def __add__(self, x: list[_T]) -> list[_T]:
+    @overload
+    def __add__(self, __x: list[_T]) -> list[_T]:
+        ...
+
+    @overload
+    def __add__(self, __x: list[_S]) -> list[_S | _T]:
+        ...
+
+    def __add__(self, x):  # type: ignore[no-untyped-def]
         self._on_change()
         return super().__add__(x)
 
@@ -165,7 +174,7 @@ class OnChangedDict(dict[_KT, _VT]):
     def pop(self, key: _KT, default: _VT | _T = ...) -> _VT | _T:
         ...
 
-    def pop(self, key, default=...):  # type: ignore
+    def pop(self, key, default=...):  # type: ignore[no-untyped-def]
         """
         Remove specified key and return the corresponding value.
 
@@ -198,7 +207,7 @@ class OnChangedDict(dict[_KT, _VT]):
     def update(self, **kwargs: _VT) -> None:
         ...
 
-    def update(self, __m, **kwargs) -> None:  # type: ignore
+    def update(self, __m, **kwargs) -> None:  # type: ignore[no-untyped-def, misc]
         """Update dict."""
         self._on_change()
         super().update(__m, **kwargs)
