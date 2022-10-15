@@ -18,4 +18,4 @@ cover/
 .noseids
 nosetests.xml
 
-.mypy_cache
+.*_cache
