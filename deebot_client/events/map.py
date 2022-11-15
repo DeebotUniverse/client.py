@@ -68,7 +68,7 @@ class MapSetType(str, Enum):
     def has_value(cls, value: Any) -> bool:
         """Check if value exists."""
 
-        return value in cls._value2member_map_  # pylint: disable=no-member
+        return value in cls._value2member_map_
 
 
 @dataclass(frozen=True)
