@@ -2,7 +2,7 @@ mypy==0.991
 pre-commit==2.20.0
 pylint==2.15.6
 pytest==7.2.0
-pytest-asyncio==0.20.2
+pytest-asyncio==0.20.3
 pytest-cov==4.0.0
 testfixtures==7.0.3
 types-cachetools==5.2.1
