@@ -1,7 +1,5 @@
 # Client Library for Deebot Vacuums
 
-[![Total alerts](https://img.shields.io/lgtm/alerts/g/DeebotUniverse/client.py.svg?logo=lgtm&logoWidth=18&style=for-the-badge)](https://lgtm.com/projects/g/DeebotUniverse/client.py/alerts/)
-[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DeebotUniverse/client.py.svg?logo=lgtm&logoWidth=18&style=for-the-badge)](https://lgtm.com/projects/g/DeebotUniverse/client.py/context:python)
 [![PyPI - Downloads](https://img.shields.io/pypi/dw/deebot-client?style=for-the-badge)](https://pypi.org/project/deebot-client)
 <a href="https://www.buymeacoffee.com/edenhaus" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-black.png" width="150px" height="35px" alt="Buy Me A Coffee" style="height: 35px !important;width: 150px !important;" ></a>
 
