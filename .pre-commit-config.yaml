@@ -16,7 +16,7 @@ repos:
         args:
           - --py310-plus
   - repo: https://github.com/psf/black
-    rev: 22.12.0
+    rev: 23.1.0
     hooks:
       - id: black
         args:
@@ -48,7 +48,7 @@ repos:
           - --format=custom
           - --configfile=bandit.yaml
   - repo: https://github.com/PyCQA/isort
-    rev: 5.11.4
+    rev: 5.12.0
     hooks:
       - id: isort
   - repo: https://github.com/pre-commit/pre-commit-hooks
@@ -69,7 +69,7 @@ repos:
         exclude_types:
           - python
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.28.0
+    rev: v1.29.0
     hooks:
       - id: yamllint
   - repo: local
