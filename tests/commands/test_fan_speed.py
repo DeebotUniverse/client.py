@@ -19,7 +19,6 @@ def test_GetFanSpeed_requested() -> None:
     "value, expected", [("quiet", 1000), ("max+", 2), (0, 0), (FanSpeedLevel.MAX, 1)]
 )
 def test_SetFanSpeed(value: str | int | FanSpeedLevel, expected: int) -> None:
-
     command = SetFanSpeed(value)
     assert command.name == "setSpeed"
     assert command.args == {"speed": expected}
