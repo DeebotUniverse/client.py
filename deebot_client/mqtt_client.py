@@ -55,7 +55,7 @@ class MqttClient:
         self._last_message_received_at: datetime | None = None
 
         # pylint: disable=unused-argument
-        async def _on_message(
+        async def __on_message(
             client: Client, topic: str, payload: bytes, qos: int, properties: dict
         ) -> None:
             _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload.decode())
@@ -69,7 +69,7 @@ class MqttClient:
             else:
                 _LOGGER.debug("Got unsupported topic: %s", topic)
 
-        self.__on_message = _on_message
+        self._on_message = __on_message
 
         def on_credentials_changed(credentials: Credentials) -> None:
             if self._client:
@@ -92,7 +92,7 @@ class MqttClient:
         credentials = await self._authenticator.authenticate()
         client_id = f"{credentials.user_id}@ecouser/{self._config.device_id}"
         self._client = Client(client_id)
-        self._client.on_message = self.__on_message
+        self._client.on_message = self._on_message
         self._client.set_auth_credentials(credentials.user_id, credentials.token)
 
         ssl_ctx = ssl.create_default_context()
