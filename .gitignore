@@ -19,3 +19,4 @@ cover/
 nosetests.xml
 
 .mypy_cache
+test.py
