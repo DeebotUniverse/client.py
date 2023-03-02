@@ -2,6 +2,7 @@
 import json
 import ssl
 from collections.abc import MutableMapping
+from datetime import datetime
 
 from cachetools import TTLCache
 from gmqtt import Client, Subscription
@@ -51,12 +52,15 @@ class MqttClient:
         self._received_p2p_commands: MutableMapping[
             str, CommandWithMqttP2PHandling
         ] = TTLCache(maxsize=60 * 60, ttl=60)
+        self._last_message_received_at: datetime | None = None
 
         # pylint: disable=unused-argument
         async def _on_message(
             client: Client, topic: str, payload: bytes, qos: int, properties: dict
         ) -> None:
             _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload.decode())
+            self._last_message_received_at = datetime.now()
+
             topic_split = topic.split("/")
             if topic.startswith("iot/atr"):
                 await self._handle_atr(topic_split, payload)
@@ -74,6 +78,11 @@ class MqttClient:
                 )
 
         authenticator.subscribe(on_credentials_changed)
+
+    @property
+    def last_message_received_at(self) -> datetime | None:
+        """Return the datetime of the last received message or None."""
+        return self._last_message_received_at
 
     async def initialize(self) -> None:
         """Initialize MQTT."""
