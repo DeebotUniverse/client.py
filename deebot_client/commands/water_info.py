@@ -20,8 +20,9 @@ class GetWaterInfo(_NoArgsCommand):
 
         :return: A message response
         """
-        # todo enable can be missing pylint: disable=fixme
-        mop_attached = bool(data.get("enable"))
+        mop_attached = data.get("enable", None)
+        if mop_attached is not None:
+            mop_attached = bool(mop_attached)
 
         event_bus.notify(WaterInfoEvent(mop_attached, WaterAmount(int(data["amount"]))))
         return HandlingResult.success()
