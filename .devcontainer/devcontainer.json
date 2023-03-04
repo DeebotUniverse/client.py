@@ -2,11 +2,11 @@
 // https://github.com/microsoft/vscode-dev-containers/tree/v0.177.0/containers/python-3
 {
   "build": {
-    "dockerfile": "Dockerfile",
-    "context": "..",
     "args": {
-      "VARIANT": "3.10-bullseye"
-    }
+      "VARIANT": "3"
+    },
+    "context": "..",
+    "dockerfile": "Dockerfile"
   },
 
   // Add the IDs of extensions you want installed when the container is created.
@@ -22,7 +22,7 @@
   // "forwardPorts": [],
 
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "pip install -r requirements-dev.txt && pre-commit install --install-hooks && pip install -e .",
+  "postCreateCommand": "pip install -r requirements-dev.txt && pre-commit install && pip install -e .",
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
 
@@ -30,23 +30,24 @@
 
   // Set *default* container specific settings.json values on container create.
   "settings": {
-    "terminal.integrated.profiles.linux": {
-      "zsh": {
-        "path": "/usr/bin/zsh"
-      }
-    },
-    "terminal.integrated.defaultProfile.linux": "zsh",
     "editor.formatOnPaste": false,
     "editor.formatOnSave": true,
     "editor.formatOnType": true,
     "files.trimTrailingWhitespace": true,
-    "python.pythonPath": "/usr/local/bin/python3",
-    "python.linting.enabled": true,
+    "python.analysis.typeCheckingMode": "basic",
     "python.formatting.provider": "black",
+    "python.languageServer": "Pylance",
+    "python.linting.enabled": true,
     "python.linting.mypyEnabled": true,
-    "python.linting.banditEnabled": true,
-    "python.linting.flake8Enabled": true,
     "python.linting.pylintEnabled": true,
-    "python.languageServer": "Pylance"
+    "python.pythonPath": "/usr/local/bin/python3",
+    "python.testing.pytestEnabled": true,
+    "python.testing.unittestEnabled": false,
+    "terminal.integrated.defaultProfile.linux": "zsh",
+    "terminal.integrated.profiles.linux": {
+      "zsh": {
+        "path": "/usr/bin/zsh"
+      }
+    }
   }
 }

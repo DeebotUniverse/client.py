@@ -8,7 +8,9 @@ from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
+from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
+from .clean_preference import GetCleanPreference, SetCleanPreference
 from .common import CommandHandlingMqttP2P, SetCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .error import GetError
@@ -27,6 +29,7 @@ from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
 from .stats import GetStats, GetTotalStats
+from .true_detect import GetTrueDetect, SetTrueDetect
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 
@@ -40,6 +43,12 @@ _COMMANDS: list[type[Command]] = [
 
     GetCarpetAutoFanBoost,
     SetCarpetAutoFanBoost,
+
+    GetCleanCount,
+    SetCleanCount,
+
+    GetCleanPreference,
+    SetCleanPreference,
 
     Charge,
 
@@ -80,6 +89,9 @@ _COMMANDS: list[type[Command]] = [
 
     GetStats,
     GetTotalStats,
+
+    GetTrueDetect,
+    SetTrueDetect,
 
     GetVolume,
     SetVolume,

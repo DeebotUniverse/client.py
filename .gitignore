@@ -18,7 +18,6 @@ cover/
 .noseids
 nosetests.xml
 
-.mypy_cache
-.pytest_cache
+.*_cache
 
-/test.py
+test.py

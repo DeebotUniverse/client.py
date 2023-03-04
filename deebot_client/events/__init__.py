@@ -59,6 +59,13 @@ class CleanLogEvent(Event):
 
 
 @dataclass(frozen=True)
+class CleanCountEvent(Event):
+    """Clean count event representation."""
+
+    count: int
+
+
+@dataclass(frozen=True)
 class CustomCommandEvent(Event):
     """Custom command event representation."""
 
@@ -172,5 +179,15 @@ class CarpetAutoFanBoostEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class CleanPreferenceEvent(EnableEvent):
+    """CleanPreference event."""
+
+
+@dataclass(frozen=True)
 class MultimapStateEvent(EnableEvent):
     """Multimap state event."""
+
+
+@dataclass(frozen=True)
+class TrueDetectEvent(EnableEvent):
+    """TrueDetect event."""
