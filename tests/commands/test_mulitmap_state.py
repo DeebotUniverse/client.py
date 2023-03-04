@@ -13,6 +13,6 @@ async def test_GetMultimapState(value: bool) -> None:
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_SetMultimapState(value: bool) -> None:
+async def test_SetMultimapState(value: bool) -> None:
     args = {"enable": 1 if value else 0}
-    assert_set_command(SetMultimapState(value), args, MultimapStateEvent(value))
+    await assert_set_command(SetMultimapState(value), args, MultimapStateEvent(value))

@@ -9,7 +9,7 @@ from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Credentials, DeviceInfo
 
-from ..helpers import get_message_json
+from ..helpers import get_message_json, get_request_json
 
 
 async def assert_command(
@@ -50,13 +50,16 @@ async def assert_command(
         event_bus.notify.assert_not_called()
 
 
-def assert_set_command(
+async def assert_set_command(
     command: SetCommand,
     args: dict | list | None,
     expected_get_command_event: Event,
 ) -> None:
     assert command.name != "invalid"
     assert command._args == args
+
+    json = get_request_json({"code": 0, "msg": "ok"})
+    await assert_command(command, json, None)
 
     event_bus = Mock(spec_set=EventBus)
 

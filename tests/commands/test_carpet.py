@@ -13,8 +13,8 @@ async def test_GetCarpetAutoFanBoost(value: bool) -> None:
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_SetCarpetAutoFanBoost(value: bool) -> None:
+async def test_SetCarpetAutoFanBoost(value: bool) -> None:
     args = {"enable": 1 if value else 0}
-    assert_set_command(
+    await assert_set_command(
         SetCarpetAutoFanBoost(value), args, CarpetAutoFanBoostEvent(value)
     )

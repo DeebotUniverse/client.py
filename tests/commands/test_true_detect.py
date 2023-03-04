@@ -13,6 +13,6 @@ async def test_GetTrueDetect(value: bool) -> None:
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_SetTrueDetect(value: bool) -> None:
+async def test_SetTrueDetect(value: bool) -> None:
     args = {"enable": 1 if value else 0}
-    assert_set_command(SetTrueDetect(value), args, TrueDetectEvent(value))
+    await assert_set_command(SetTrueDetect(value), args, TrueDetectEvent(value))

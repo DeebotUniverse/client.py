@@ -34,7 +34,7 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> N
         (4, 4, WaterInfoEvent(None, WaterAmount.ULTRAHIGH)),
     ],
 )
-def test_SetWaterInfo(
+async def test_SetWaterInfo(
     value: str | int | WaterAmount | dict,
     exptected_args_amount: int,
     expected: WaterInfoEvent,
@@ -45,4 +45,4 @@ def test_SetWaterInfo(
         command = SetWaterInfo(value)
 
     args = {"amount": exptected_args_amount}
-    assert_set_command(command, args, expected)
+    await assert_set_command(command, args, expected)

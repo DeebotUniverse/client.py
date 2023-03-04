@@ -13,6 +13,8 @@ async def test_GetCleanPreference(value: bool) -> None:
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_SetCleanPreference(value: bool) -> None:
+async def test_SetCleanPreference(value: bool) -> None:
     args = {"enable": 1 if value else 0}
-    assert_set_command(SetCleanPreference(value), args, CleanPreferenceEvent(value))
+    await assert_set_command(
+        SetCleanPreference(value), args, CleanPreferenceEvent(value)
+    )

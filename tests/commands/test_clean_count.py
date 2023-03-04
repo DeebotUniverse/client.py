@@ -12,6 +12,6 @@ async def test_GetCleanCount() -> None:
 
 
 @pytest.mark.parametrize("count", [1, 2, 3])
-def test_SetCleanCount(count: int) -> None:
+async def test_SetCleanCount(count: int) -> None:
     args = {"count": count}
-    assert_set_command(SetCleanCount(count), args, CleanCountEvent(count))
+    await assert_set_command(SetCleanCount(count), args, CleanCountEvent(count))

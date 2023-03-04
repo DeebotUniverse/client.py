@@ -13,8 +13,8 @@ async def test_GetContinuousCleaning(value: bool) -> None:
 
 
 @pytest.mark.parametrize("value", [False, True])
-def test_SetContinuousCleaning(value: bool) -> None:
+async def test_SetContinuousCleaning(value: bool) -> None:
     args = {"enable": 1 if value else 0}
-    assert_set_command(
+    await assert_set_command(
         SetContinuousCleaning(value), args, ContinuousCleaningEvent(value)
     )
