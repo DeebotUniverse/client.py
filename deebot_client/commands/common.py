@@ -16,10 +16,10 @@ _LOGGER = get_logger(__name__)
 class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """

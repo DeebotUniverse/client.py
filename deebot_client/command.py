@@ -137,12 +137,12 @@ class Command(ABC):
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
         try:
-            result = self._handle_requested(event_bus, response)
+            result = self._handle_response(event_bus, response)
             if result.state == HandlingState.ANALYSE:
                 _LOGGER.debug(
                     "ANALYSE: Could not handle command: %s with %s", self.name, response
@@ -163,10 +163,10 @@ class Command(ABC):
             return CommandResult(HandlingState.ERROR)
 
     @abstractmethod
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """

@@ -45,10 +45,10 @@ class GetCleanLogs(Command):
             headers=REQUEST_HEADERS,
         )
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
