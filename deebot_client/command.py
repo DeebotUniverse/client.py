@@ -79,7 +79,7 @@ class Command(ABC):
         """Execute command."""
         response = await self._execute_api_request(authenticator, device_info)
 
-        result = self.__handle_requested(event_bus, response)
+        result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
             _LOGGER.debug(
                 "ANALYSE: Could not handle command: %s with %s", self.name, response
@@ -134,7 +134,7 @@ class Command(ABC):
             headers=REQUEST_HEADERS,
         )
 
-    def __handle_requested(
+    def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a manual requested command.
