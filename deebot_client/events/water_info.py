@@ -18,5 +18,6 @@ class WaterAmount(DisplayNameIntEnum):
 class WaterInfoEvent(Event):
     """Water info event representation."""
 
-    mop_attached: bool
+    # None means no data available
+    mop_attached: bool | None
     amount: WaterAmount
