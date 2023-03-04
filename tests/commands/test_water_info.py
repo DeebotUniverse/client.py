@@ -4,7 +4,7 @@ import pytest
 
 from deebot_client.commands import GetWaterInfo, SetWaterInfo
 from deebot_client.events import WaterAmount, WaterInfoEvent
-from tests.commands import assert_command_requested, assert_set_command
+from tests.commands import assert_command, assert_set_command
 from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
 
 
@@ -20,11 +20,9 @@ def test_WaterAmount_unique() -> None:
         ({"amount": 4, "enable": 0}, WaterInfoEvent(False, WaterAmount.ULTRAHIGH)),
     ],
 )
-async def test_GetWaterInfo_requested(
-    json: dict[str, Any], expected: WaterInfoEvent
-) -> None:
+async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> None:
     json = get_request_json(json)
-    await assert_command_requested(GetWaterInfo(), json, expected)
+    await assert_command(GetWaterInfo(), json, expected)
 
 
 @pytest.mark.parametrize(

@@ -4,7 +4,7 @@ import pytest
 
 from deebot_client.commands.custom import CustomCommand
 from deebot_client.events import CustomCommandEvent
-from tests.commands import assert_command_requested
+from tests.commands import assert_command
 from tests.helpers import get_message_json, get_request_json
 
 
@@ -22,4 +22,4 @@ from tests.helpers import get_message_json, get_request_json
 async def test_CustomCommand(
     command: CustomCommand, json: dict[str, Any], expected: CustomCommandEvent | None
 ) -> None:
-    await assert_command_requested(command, json, expected)
+    await assert_command(command, json, expected)

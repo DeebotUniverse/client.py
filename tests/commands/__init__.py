@@ -12,9 +12,9 @@ from deebot_client.models import Credentials, DeviceInfo
 from ..helpers import get_message_json
 
 
-async def assert_command_requested(
+async def assert_command(
     command: Command,
-    json: dict[str, Any],
+    json_api_response: dict[str, Any],
     expected_events: Event | None | Sequence[Event],
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
@@ -22,7 +22,7 @@ async def assert_command_requested(
     authenticator.authenticate = AsyncMock(
         return_value=Credentials("token", "user_id", 9999)
     )
-    authenticator.post_authenticated = AsyncMock(return_value=json)
+    authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
     device_info = DeviceInfo(
         {
             "company": "company",

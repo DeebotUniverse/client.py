@@ -5,7 +5,7 @@ from testfixtures import LogCapture
 
 from deebot_client.commands import GetCleanLogs
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
-from tests.commands import assert_command_requested
+from tests.commands import assert_command
 
 
 async def test_GetCleanLogs() -> None:
@@ -105,7 +105,7 @@ async def test_GetCleanLogs() -> None:
     )
 
     with LogCapture() as log:
-        await assert_command_requested(GetCleanLogs(), json, expected)
+        await assert_command(GetCleanLogs(), json, expected)
 
         log.check_present(
             (
@@ -122,7 +122,7 @@ async def test_GetCleanLogs() -> None:
 )
 async def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
     with LogCapture() as log:
-        await assert_command_requested(
+        await assert_command(
             GetCleanLogs(),
             json,
             None,
@@ -138,7 +138,7 @@ async def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
 
 async def test_GetCleanLogs_handle_fails() -> None:
     with LogCapture() as log:
-        await assert_command_requested(
+        await assert_command(
             GetCleanLogs(),
             {},
             None,

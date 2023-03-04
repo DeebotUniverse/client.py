@@ -4,7 +4,7 @@ import pytest
 
 from deebot_client.commands import GetChargeState
 from deebot_client.events import StatusEvent
-from tests.commands import assert_command_requested
+from tests.commands import assert_command
 from tests.helpers import get_request_json
 
 
@@ -17,4 +17,4 @@ from tests.helpers import get_request_json
 async def test_GetChargeState(
     json: dict[str, Any], expected: StatusEvent | None
 ) -> None:
-    await assert_command_requested(GetChargeState(), json, expected)
+    await assert_command(GetChargeState(), json, expected)
