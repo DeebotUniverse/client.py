@@ -3,10 +3,10 @@ from typing import Any
 
 from ..events import StatsEvent, TotalStatsEvent
 from ..message import HandlingResult, MessageBodyDataDict
-from .common import EventBus, _NoArgsCommand
+from .common import EventBus, NoArgsCommand
 
 
-class GetStats(_NoArgsCommand, MessageBodyDataDict):
+class GetStats(NoArgsCommand, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getStats"
@@ -28,7 +28,7 @@ class GetStats(_NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class GetTotalStats(_NoArgsCommand, MessageBodyDataDict):
+class GetTotalStats(NoArgsCommand, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getTotalStats"

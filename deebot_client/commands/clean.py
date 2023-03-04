@@ -8,7 +8,7 @@ from ..events import StatusEvent
 from ..logging_filter import get_logger
 from ..message import HandlingResult, MessageBodyDataDict
 from ..models import DeviceInfo, VacuumState
-from .common import EventBus, ExecuteCommand, _NoArgsCommand
+from .common import EventBus, ExecuteCommand, NoArgsCommand
 
 _LOGGER = get_logger(__name__)
 
@@ -80,7 +80,7 @@ class CleanArea(Clean):
         self._args["count"] = cleanings
 
 
-class GetCleanInfo(_NoArgsCommand, MessageBodyDataDict):
+class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"

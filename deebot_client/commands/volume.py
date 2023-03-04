@@ -5,10 +5,10 @@ from typing import Any
 
 from ..events import VolumeEvent
 from ..message import HandlingResult, MessageBodyDataDict
-from .common import EventBus, SetCommand, _NoArgsCommand
+from .common import EventBus, NoArgsCommand, SetCommand
 
 
-class GetVolume(_NoArgsCommand, MessageBodyDataDict):
+class GetVolume(NoArgsCommand, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"

@@ -40,7 +40,7 @@ class CommandHandlingMqttP2P(CommandWithMessageHandling, ABC):
         """Handle response received over the mqtt channel "p2p"."""
 
 
-class _NoArgsCommand(CommandWithMessageHandling, ABC):
+class NoArgsCommand(CommandWithMessageHandling, ABC):
     """Command without args."""
 
     def __init__(self) -> None:
@@ -93,7 +93,7 @@ class SetCommand(ExecuteCommand, CommandHandlingMqttP2P, ABC):
             self.get_command.handle(event_bus, self._args)
 
 
-class GetEnableCommand(_NoArgsCommand, MessageBodyDataDict, ABC):
+class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
 
     @property  # type: ignore[misc]

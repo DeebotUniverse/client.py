@@ -4,10 +4,10 @@ from typing import Any
 
 from ..events import WaterAmount, WaterInfoEvent
 from ..message import HandlingResult, MessageBodyDataDict
-from .common import EventBus, SetCommand, _NoArgsCommand
+from .common import EventBus, NoArgsCommand, SetCommand
 
 
-class GetWaterInfo(_NoArgsCommand, MessageBodyDataDict):
+class GetWaterInfo(NoArgsCommand, MessageBodyDataDict):
     """Get water info command."""
 
     name = "getWaterInfo"
