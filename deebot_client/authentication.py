@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 from aiohttp import ClientResponseError, hdrs
 
 from .const import REALM
-from .exceptions import AuthenticationError, InvalidAuthenticationError
+from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
 from .util import md5
@@ -34,6 +34,7 @@ _META = {
     "channel": "google_play",
     "deviceType": "1",
 }
+MAX_RETRIES = 3
 
 
 def _get_portal_url(config: Configuration, path: str) -> str:
@@ -219,9 +220,7 @@ class _AuthClient:
     ) -> dict[str, Any]:
         """Perform a post request."""
         url = _get_portal_url(self._config, path)
-
-        logger_msg = f"calling api: url={url}, params={query_params}, json={json}"
-        _LOGGER.debug(logger_msg)
+        logger_requst_params = f"url={url}, params={query_params}, json={json}"
 
         if credentials is not None:
             json.update(
@@ -236,39 +235,62 @@ class _AuthClient:
                 }
             )
 
-        try:
-            async with self._config.session.post(
-                url,
-                json=json,
-                params=query_params,
-                headers=headers,
-                timeout=60,
-                ssl=self._config.verify_ssl,
-            ) as res:
-                res.raise_for_status()
-                if res.status == 200:
-                    response_data: dict[str, Any] = await res.json()
-                    _LOGGER.debug("Success: %s, response=%s", logger_msg, response_data)
-                    return response_data
-
-                _LOGGER.warning("Error calling API (%d): %s", res.status, path)
-                _LOGGER.debug("Error: %s, status=%s", logger_msg, res.status)
-        except asyncio.TimeoutError:
-            _LOGGER.warning(
-                "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
+        for i in range(MAX_RETRIES):
+            _LOGGER.debug(
+                "Calling api(%d/%d): %s",
+                i + 1,
+                MAX_RETRIES,
+                logger_requst_params,
             )
-            _LOGGER.debug("Timeout on %s", logger_msg)
-        except ClientResponseError as err:
-            if err.status == 502:
-                _LOGGER.info(
-                    "Error calling API (502): Unfortunately the ecovacs api is unreliable. URL was: %s",
-                    url,
-                )
-            else:
-                _LOGGER.warning("Error calling API (%d): %s", err.status, url)
-            _LOGGER.debug("Error: %s, status=%s", logger_msg, err.status)
 
-        return {}
+            try:
+                async with self._config.session.post(
+                    url,
+                    json=json,
+                    params=query_params,
+                    headers=headers,
+                    timeout=60,
+                    ssl=self._config.verify_ssl,
+                ) as res:
+                    if res.status == 200:
+                        response_data: dict[str, Any] = await res.json()
+                        _LOGGER.debug(
+                            "Success calling api %s, response=%s",
+                            logger_requst_params,
+                            response_data,
+                        )
+                        return response_data
+
+                    _LOGGER.debug(
+                        "Error calling api %s, response=%s", logger_requst_params, res
+                    )
+                    raise ClientResponseError(
+                        res.request_info,
+                        res.history,
+                        status=res.status,
+                        message=str(res.reason),
+                        headers=res.headers,
+                    )
+            except asyncio.TimeoutError as ex:
+                _LOGGER.warning(
+                    "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
+                )
+                raise ApiError("Timeout reached") from ex
+            except ClientResponseError as ex:
+                _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
+                if ex.status == 502:
+                    seconds_to_sleep = 10
+                    _LOGGER.info(
+                        "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
+                        seconds_to_sleep,
+                    )
+
+                    await asyncio.sleep(seconds_to_sleep)
+                    continue
+
+                raise ApiError from ex
+
+        raise ApiError("Unknown error occurred")
 
 
 class Authenticator:
