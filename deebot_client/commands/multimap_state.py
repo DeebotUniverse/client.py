@@ -1,10 +1,10 @@
 """Multimap state command module."""
 
 from ..events import MultimapStateEvent
-from .common import SetEnableCommand, _GetEnableCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetMultimapState(_GetEnableCommand):
+class GetMultimapState(GetEnableCommand):
     """Get multimap state command."""
 
     name = "getMultiMapState"

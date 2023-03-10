@@ -2,11 +2,13 @@
 from enum import Enum, unique
 from typing import Any
 
+from ..authentication import Authenticator
+from ..command import CommandResult
 from ..events import StatusEvent
 from ..logging_filter import get_logger
-from ..message import HandlingResult
-from ..models import VacuumState
-from .common import EventBus, _ExecuteCommand, _NoArgsCommand
+from ..message import HandlingResult, MessageBodyDataDict
+from ..models import DeviceInfo, VacuumState
+from .common import EventBus, ExecuteCommand, NoArgsCommand
 
 _LOGGER = get_logger(__name__)
 
@@ -30,16 +32,39 @@ class CleanMode(str, Enum):
     CUSTOM_AREA = "customArea"
 
 
-class Clean(_ExecuteCommand):
+class Clean(ExecuteCommand):
     """Clean command."""
 
     name = "clean"
 
     def __init__(self, action: CleanAction) -> None:
+        super().__init__(self.__get_args(action))
+
+    async def _execute(
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+    ) -> CommandResult:
+        """Execute command."""
+        status = event_bus.get_last_event(StatusEvent)
+        if status and isinstance(self._args, dict):
+            if (
+                self._args["act"] == CleanAction.RESUME.value
+                and status.state != VacuumState.PAUSED
+            ):
+                self._args = self.__get_args(CleanAction.START)
+            elif (
+                self._args["act"] == CleanAction.START.value
+                and status.state == VacuumState.PAUSED
+            ):
+                self._args = self.__get_args(CleanAction.RESUME)
+
+        return await super()._execute(authenticator, device_info, event_bus)
+
+    @staticmethod
+    def __get_args(action: CleanAction) -> dict[str, Any]:
         args = {"act": action.value}
         if action == CleanAction.START:
             args["type"] = CleanMode.AUTO.value
-        super().__init__(args)
+        return args
 
 
 class CleanArea(Clean):
@@ -47,15 +72,15 @@ class CleanArea(Clean):
 
     def __init__(self, mode: CleanMode, area: str, cleanings: int = 1) -> None:
         super().__init__(CleanAction.START)
-        if not isinstance(self.args, dict):
+        if not isinstance(self._args, dict):
             raise ValueError("args must be a dict!")
 
-        self.args["type"] = mode.value
-        self.args["content"] = str(area)
-        self.args["count"] = cleanings
+        self._args["type"] = mode.value
+        self._args["content"] = str(area)
+        self._args["count"] = cleanings
 
 
-class GetCleanInfo(_NoArgsCommand):
+class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"

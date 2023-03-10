@@ -4,7 +4,7 @@ import pytest
 
 from deebot_client.commands import GetWaterInfo, SetWaterInfo
 from deebot_client.events import WaterAmount, WaterInfoEvent
-from tests.commands import assert_command_requested, assert_set_command
+from tests.commands import assert_command, assert_set_command
 from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
 
 
@@ -20,26 +20,29 @@ def test_WaterAmount_unique() -> None:
         ({"amount": 4, "enable": 0}, WaterInfoEvent(False, WaterAmount.ULTRAHIGH)),
     ],
 )
-def test_GetWaterInfo_requested(json: dict[str, Any], expected: WaterInfoEvent) -> None:
+async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> None:
     json = get_request_json(json)
-    assert_command_requested(GetWaterInfo(), json, expected)
+    await assert_command(GetWaterInfo(), json, expected)
 
 
 @pytest.mark.parametrize(
-    "value, expected",
+    "value, exptected_args_amount, expected",
     [
-        (WaterAmount.MEDIUM, WaterInfoEvent(None, WaterAmount.MEDIUM)),
-        ({"amount": 1, "enable": 1}, WaterInfoEvent(None, WaterAmount.LOW)),
-        (4, WaterInfoEvent(None, WaterAmount.ULTRAHIGH)),
-        ("low", WaterInfoEvent(None, WaterAmount.LOW)),
+        ("low", 1, WaterInfoEvent(None, WaterAmount.LOW)),
+        (WaterAmount.MEDIUM, 2, WaterInfoEvent(None, WaterAmount.MEDIUM)),
+        ({"amount": 3, "enable": 1}, 3, WaterInfoEvent(None, WaterAmount.HIGH)),
+        (4, 4, WaterInfoEvent(None, WaterAmount.ULTRAHIGH)),
     ],
 )
-def test_SetWaterInfo(
-    value: str | int | WaterAmount | dict, expected: WaterInfoEvent
+async def test_SetWaterInfo(
+    value: str | int | WaterAmount | dict,
+    exptected_args_amount: int,
+    expected: WaterInfoEvent,
 ) -> None:
     if isinstance(value, dict):
         command = SetWaterInfo(**value)
     else:
         command = SetWaterInfo(value)
 
-    assert_set_command(command, command.args, expected)
+    args = {"amount": exptected_args_amount}
+    await assert_set_command(command, args, expected)

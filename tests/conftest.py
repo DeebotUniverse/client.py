@@ -4,7 +4,6 @@ from collections.abc import AsyncGenerator
 import aiohttp
 import pytest
 
-from deebot_client._api_client import _InternalApiClient
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.models import Configuration
@@ -26,19 +25,10 @@ async def config() -> AsyncGenerator:
 
 
 @pytest.fixture
-def internal_api_client(config: Configuration) -> _InternalApiClient:
-    return _InternalApiClient(config)
+def authenticator(config: Configuration) -> Authenticator:
+    return Authenticator(config, "test@test.com", md5("test"))
 
 
 @pytest.fixture
-def authenticator(
-    config: Configuration, internal_api_client: _InternalApiClient
-) -> Authenticator:
-    return Authenticator(config, internal_api_client, "test@test.com", md5("test"))
-
-
-@pytest.fixture
-def api_client(
-    internal_api_client: _InternalApiClient, authenticator: Authenticator
-) -> ApiClient:
-    return ApiClient(internal_api_client, authenticator)
+def api_client(authenticator: Authenticator) -> ApiClient:
+    return ApiClient(authenticator)

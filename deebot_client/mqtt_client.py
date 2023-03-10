@@ -9,7 +9,7 @@ from gmqtt import Client, Subscription
 from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
-from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandWithMqttP2PHandling
+from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
 from .exceptions import NotInitializedError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
@@ -50,7 +50,7 @@ class MqttClient:
 
         self._client: Client | None = None
         self._received_p2p_commands: MutableMapping[
-            str, CommandWithMqttP2PHandling
+            str, CommandHandlingMqttP2P
         ] = TTLCache(maxsize=60 * 60, ttl=60)
         self._last_message_received_at: datetime | None = None
 

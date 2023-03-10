@@ -1,39 +1,65 @@
+from collections.abc import Sequence
 from typing import Any
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock, call
 
-from deebot_client.commands import CommandWithHandling, SetCommand
-from deebot_client.commands.common import CommandResult
+from deebot_client.authentication import Authenticator
+from deebot_client.command import Command
+from deebot_client.commands import SetCommand
 from deebot_client.events import Event
 from deebot_client.events.event_bus import EventBus
-from tests.helpers import get_message_json
+from deebot_client.models import Credentials, DeviceInfo
+
+from ..helpers import get_message_json, get_request_json
 
 
-def assert_command_requested(
-    command: CommandWithHandling,
-    json: dict[str, Any],
-    expected_event: Event | None,
-    expected_result: CommandResult = CommandResult.success(),
+async def assert_command(
+    command: Command,
+    json_api_response: dict[str, Any],
+    expected_events: Event | None | Sequence[Event],
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
+    authenticator = Mock(spec_set=Authenticator)
+    authenticator.authenticate = AsyncMock(
+        return_value=Credentials("token", "user_id", 9999)
+    )
+    authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
+    device_info = DeviceInfo(
+        {
+            "company": "company",
+            "did": "did",
+            "name": "name",
+            "nick": "nick",
+            "resource": "resource",
+            "deviceName": "device_name",
+            "status": "status",
+            "class": "get_class",
+        }
+    )
 
-    assert command.name != "invalid"
+    await command.execute(authenticator, device_info, event_bus)
 
-    result = command.handle_requested(event_bus, json)
-
-    assert result == expected_result
-    if expected_event:
-        event_bus.notify.assert_called_once_with(expected_event)
+    # verify
+    authenticator.post_authenticated.assert_called()
+    if expected_events:
+        if isinstance(expected_events, Sequence):
+            event_bus.notify.assert_has_calls([call(x) for x in expected_events])
+            assert event_bus.notify.call_count == len(expected_events)
+        else:
+            event_bus.notify.assert_called_once_with(expected_events)
     else:
         event_bus.notify.assert_not_called()
 
 
-def assert_set_command(
+async def assert_set_command(
     command: SetCommand,
     args: dict | list | None,
     expected_get_command_event: Event,
 ) -> None:
     assert command.name != "invalid"
-    assert command.args == args
+    assert command._args == args
+
+    json = get_request_json({"code": 0, "msg": "ok"})
+    await assert_command(command, json, None)
 
     event_bus = Mock(spec_set=EventBus)
 

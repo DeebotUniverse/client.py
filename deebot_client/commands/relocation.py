@@ -1,8 +1,8 @@
 """Relocate commands."""
-from .common import _ExecuteCommand
+from .common import ExecuteCommand
 
 
-class SetRelocationState(_ExecuteCommand):
+class SetRelocationState(ExecuteCommand):
     """Set relocation state command."""
 
     name = "setRelocationState"

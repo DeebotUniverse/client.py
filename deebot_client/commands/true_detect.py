@@ -1,10 +1,10 @@
 """True detect command module."""
 
 from ..events import TrueDetectEvent
-from .common import SetEnableCommand, _GetEnableCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetTrueDetect(_GetEnableCommand):
+class GetTrueDetect(GetEnableCommand):
     """Get multimap state command."""
 
     name = "getTrueDetect"

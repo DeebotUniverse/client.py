@@ -1,9 +1,9 @@
 """Battery commands."""
 from ..messages import OnBattery
-from .common import _NoArgsCommand
+from .common import NoArgsCommand
 
 
-class GetBattery(OnBattery, _NoArgsCommand):
+class GetBattery(OnBattery, NoArgsCommand):
     """Get battery command."""
 
     name = "getBattery"

@@ -1,10 +1,10 @@
 """Clean preference command module."""
 
 from ..events import CleanPreferenceEvent
-from .common import SetEnableCommand, _GetEnableCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetCleanPreference(_GetEnableCommand):
+class GetCleanPreference(GetEnableCommand):
     """Get clean preference command."""
 
     name = "getCleanPreference"

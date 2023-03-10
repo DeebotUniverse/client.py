@@ -4,11 +4,11 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..events import CleanCountEvent
-from ..message import HandlingResult
-from .common import EventBus, SetCommand, _NoArgsCommand
+from ..message import HandlingResult, MessageBodyDataDict
+from .common import EventBus, NoArgsCommand, SetCommand
 
 
-class GetCleanCount(_NoArgsCommand):
+class GetCleanCount(NoArgsCommand, MessageBodyDataDict):
     """Get clean count command."""
 
     name = "getCleanCount"

@@ -11,12 +11,11 @@ from ..events import (
     MinorMapEvent,
 )
 from ..events.event_bus import EventBus
-from ..message import HandlingResult, HandlingState
-from . import CommandWithHandling
-from .common import CommandResult
+from ..message import HandlingResult, HandlingState, MessageBodyDataDict
+from .common import CommandResult, CommandWithMessageHandling
 
 
-class GetCachedMapInfo(CommandWithHandling):
+class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -37,14 +36,14 @@ class GetCachedMapInfo(CommandWithHandling):
 
         return HandlingResult.analyse()
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
-        result = super()._handle_requested(event_bus, response)
+        result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             return CommandResult(
                 result.state,
@@ -55,7 +54,7 @@ class GetCachedMapInfo(CommandWithHandling):
         return result
 
 
-class GetMajorMap(CommandWithHandling):
+class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "getMajorMap"
@@ -76,14 +75,14 @@ class GetMajorMap(CommandWithHandling):
             {"map_id": map_id, "values": values},
         )
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
-        result = super()._handle_requested(event_bus, response)
+        result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             event_bus.notify(MajorMapEvent(True, **result.args))
             return CommandResult.success()
@@ -91,7 +90,7 @@ class GetMajorMap(CommandWithHandling):
         return result
 
 
-class GetMapSet(CommandWithHandling):
+class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -132,14 +131,14 @@ class GetMapSet(CommandWithHandling):
         event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
         return HandlingResult(HandlingState.SUCCESS, args)
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
-        result = super()._handle_requested(event_bus, response)
+        result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             commands: list[Command] = []
             for subset in result.args[self._ARGS_SUBSETS]:
@@ -156,7 +155,7 @@ class GetMapSet(CommandWithHandling):
         return result
 
 
-class GetMapSubSet(CommandWithHandling):
+class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
     _ROOM_NUM_TO_NAME = {
@@ -235,7 +234,7 @@ class GetMapSubSet(CommandWithHandling):
         return HandlingResult.analyse()
 
 
-class GetMapTrace(CommandWithHandling):
+class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -267,14 +266,14 @@ class GetMapTrace(CommandWithHandling):
         )
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
-    def _handle_requested(
+    def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
-        """Handle response from a manual requested command.
+        """Handle response from a command.
 
         :return: A message response
         """
-        result = super()._handle_requested(event_bus, response)
+        result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             start = result.args["start"] + self._TRACE_POINT_COUNT
             if start < result.args["total"]:
@@ -283,7 +282,7 @@ class GetMapTrace(CommandWithHandling):
         return result
 
 
-class GetMinorMap(CommandWithHandling):
+class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "getMinorMap"

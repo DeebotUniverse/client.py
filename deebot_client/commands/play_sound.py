@@ -1,9 +1,9 @@
 """Play sound commands."""
 
-from .common import _ExecuteCommand
+from .common import ExecuteCommand
 
 
-class PlaySound(_ExecuteCommand):
+class PlaySound(ExecuteCommand):
     """Play sound command."""
 
     name = "playSound"

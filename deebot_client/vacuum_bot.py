@@ -4,13 +4,12 @@ import inspect
 import re
 from typing import Any, Final
 
-from .api_client import ApiClient
+from .authentication import Authenticator
 from .command import Command
-from .commands import COMMANDS_WITH_HANDLING, Clean, CommandWithHandling
-from .commands.clean import CleanAction
-from .commands.custom import CustomCommand
+from .commands import COMMANDS_WITH_HANDLING
 from .events import (
     CleanLogEvent,
+    CustomCommandEvent,
     LifeSpanEvent,
     PositionsEvent,
     PositionType,
@@ -21,7 +20,7 @@ from .events import (
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
-from .message import HandlingState
+from .message import Message
 from .messages import MESSAGES
 from .models import DeviceInfo, VacuumState
 
@@ -37,10 +36,10 @@ class VacuumBot:
     def __init__(
         self,
         device_info: DeviceInfo,
-        api_client: ApiClient,
+        authenticator: Authenticator,
     ):
         self.device_info: Final[DeviceInfo] = device_info
-        self._api_client = api_client
+        self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
@@ -90,41 +89,15 @@ class VacuumBot:
 
         self.events.subscribe(StatsEvent, on_stats)
 
-    async def execute_command(self, command: Command | CustomCommand) -> None:
-        """Execute given command and handle response."""
-        if (
-            command == Clean(CleanAction.RESUME)
-            and self._status.state != VacuumState.PAUSED
-        ):
-            command = Clean(CleanAction.START)
-        elif (
-            command == Clean(CleanAction.START)
-            and self._status.state == VacuumState.PAUSED
-        ):
-            command = Clean(CleanAction.RESUME)
+        async def on_custom_command(event: CustomCommandEvent) -> None:
+            await self.handle_message(event.name, event.response)
 
+        self.events.subscribe(CustomCommandEvent, on_custom_command)
+
+    async def execute_command(self, command: Command) -> None:
+        """Execute given command."""
         async with self._semaphore:
-            response = await self._api_client.send_command(command, self.device_info)
-
-        _LOGGER.debug("Handle command %s: %s", command.name, response)
-        if isinstance(command, (CommandWithHandling, CustomCommand)):
-            result = command.handle_requested(self.events, response)
-            if isinstance(command, CustomCommand):
-                # Custom command can be send for implemented commands too.
-                # We handle the response explicit to fire event if necessary
-                await self.handle_message(command.name, response)
-
-            if result.state == HandlingState.SUCCESS and result.requested_commands:
-                # Execute command which are requested by the handler
-                tasks = []
-                for requested_command in result.requested_commands:
-                    tasks.append(
-                        asyncio.create_task(self.execute_command(requested_command))
-                    )
-
-                await asyncio.gather(*tasks)
-        else:
-            _LOGGER.warning("Unsupported command! Command %s", command.name)
+            await command.execute(self._authenticator, self.device_info, self.events)
 
     def set_available(self, available: bool) -> None:
         """Set available."""
@@ -150,22 +123,27 @@ class VacuumBot:
             message_type.handle(self.events, message_data)
             return
 
-        _LOGGER.debug("Falling back to old handling way for %s", message_name)
         # Handle message starting with "on","off","report" the same as "get" commands
-        message_name = re.sub(
+        converted_name = re.sub(
             _COMMAND_REPLACE_PATTERN,
             _COMMAND_REPLACE_REPLACEMENT,
             message_name,
         )
 
         # T8 series and newer
-        if message_name.endswith("_V2"):
-            message_name = message_name[:-3]
+        if converted_name.endswith("_V2"):
+            converted_name = converted_name[:-3]
 
         found_command = MESSAGES.get(
-            message_name, COMMANDS_WITH_HANDLING.get(message_name, None)
+            converted_name, COMMANDS_WITH_HANDLING.get(converted_name, None)
         )
         if found_command:
-            found_command.handle(self.events, message_data)
+            if issubclass(found_command, Message):
+                _LOGGER.debug("Falling back to old handling way for %s", message_name)
+                found_command.handle(self.events, message_data)
+            else:
+                _LOGGER.debug(
+                    'Command "%s" doesn\'t support message handling', converted_name
+                )
         else:
             _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)

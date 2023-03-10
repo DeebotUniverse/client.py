@@ -2,13 +2,13 @@
 from typing import Any
 
 from ..events import StatusEvent
-from ..message import HandlingResult
+from ..message import HandlingResult, MessageBodyDataDict
 from ..models import VacuumState
-from .common import EventBus, _NoArgsCommand
+from .common import EventBus, NoArgsCommand
 from .const import CODE
 
 
-class GetChargeState(_NoArgsCommand):
+class GetChargeState(NoArgsCommand, MessageBodyDataDict):
     """Get charge state command."""
 
     name = "getChargeState"

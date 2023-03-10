@@ -1,10 +1,10 @@
 """Advanced mode command module."""
 
 from ..events import AdvancedModeEvent
-from .common import SetEnableCommand, _GetEnableCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetAdvancedMode(_GetEnableCommand):
+class GetAdvancedMode(GetEnableCommand):
     """Get advanced mode command."""
 
     name = "getAdvancedMode"

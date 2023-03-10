@@ -3,12 +3,12 @@ import asyncio
 import time
 from collections.abc import Callable, Mapping
 from typing import Any
+from urllib.parse import urljoin
 
-from aiohttp import hdrs
+from aiohttp import ClientResponseError, hdrs
 
-from ._api_client import _InternalApiClient
 from .const import REALM
-from .exceptions import AuthenticationError, InvalidAuthenticationError
+from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
 from .util import md5
@@ -34,6 +34,12 @@ _META = {
     "channel": "google_play",
     "deviceType": "1",
 }
+MAX_RETRIES = 3
+
+
+def _get_portal_url(config: Configuration, path: str) -> str:
+    subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
+    return urljoin(f"https://{subdomain}.ecouser.net/api/", path)
 
 
 class _AuthClient:
@@ -42,12 +48,10 @@ class _AuthClient:
     def __init__(
         self,
         config: Configuration,
-        internal_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,
     ):
         self._config = config
-        self._api_client = internal_api_client
         self._account_id = account_id
         self._password_hash = password_hash
         self._tld = "com" if self._config.country != "cn" else "cn"
@@ -190,7 +194,7 @@ class _AuthClient:
         }
 
         for i in range(3):
-            resp = await self._api_client.post(_PATH_USERS_USER, data)
+            resp = await self.post(_PATH_USERS_USER, data)
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
@@ -205,6 +209,89 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
+    async def post(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
+        credentials: Credentials | None = None,
+    ) -> dict[str, Any]:
+        """Perform a post request."""
+        url = _get_portal_url(self._config, path)
+        logger_requst_params = f"url={url}, params={query_params}, json={json}"
+
+        if credentials is not None:
+            json.update(
+                {
+                    "auth": {
+                        "with": "users",
+                        "userid": credentials.user_id,
+                        "realm": REALM,
+                        "token": credentials.token,
+                        "resource": self._config.device_id,
+                    }
+                }
+            )
+
+        for i in range(MAX_RETRIES):
+            _LOGGER.debug(
+                "Calling api(%d/%d): %s",
+                i + 1,
+                MAX_RETRIES,
+                logger_requst_params,
+            )
+
+            try:
+                async with self._config.session.post(
+                    url,
+                    json=json,
+                    params=query_params,
+                    headers=headers,
+                    timeout=60,
+                    ssl=self._config.verify_ssl,
+                ) as res:
+                    if res.status == 200:
+                        response_data: dict[str, Any] = await res.json()
+                        _LOGGER.debug(
+                            "Success calling api %s, response=%s",
+                            logger_requst_params,
+                            response_data,
+                        )
+                        return response_data
+
+                    _LOGGER.debug(
+                        "Error calling api %s, response=%s", logger_requst_params, res
+                    )
+                    raise ClientResponseError(
+                        res.request_info,
+                        res.history,
+                        status=res.status,
+                        message=str(res.reason),
+                        headers=res.headers,
+                    )
+            except asyncio.TimeoutError as ex:
+                _LOGGER.warning(
+                    "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
+                )
+                raise ApiError("Timeout reached") from ex
+            except ClientResponseError as ex:
+                _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
+                if ex.status == 502:
+                    seconds_to_sleep = 10
+                    _LOGGER.info(
+                        "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
+                        seconds_to_sleep,
+                    )
+
+                    await asyncio.sleep(seconds_to_sleep)
+                    continue
+
+                raise ApiError from ex
+
+        raise ApiError("Unknown error occurred")
+
 
 class Authenticator:
     """Authenticator."""
@@ -212,13 +299,11 @@ class Authenticator:
     def __init__(
         self,
         config: Configuration,
-        ecovacs_api_client: _InternalApiClient,
         account_id: str,
         password_hash: str,
     ):
         self._auth_client = _AuthClient(
             config,
-            ecovacs_api_client,
             account_id,
             password_hash,
         )
@@ -283,3 +368,20 @@ class Authenticator:
                 )
 
         asyncio.create_task(refresh())
+
+    async def post_authenticated(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[str, Any] | None = None,
+    ) -> dict[str, Any]:
+        """Perform an authenticated post request."""
+        return await self._auth_client.post(
+            path,
+            json,
+            query_params=query_params,
+            headers=headers,
+            credentials=await self.authenticate(),
+        )
