@@ -3,7 +3,7 @@ import asyncio
 import json
 import ssl
 from collections.abc import MutableMapping
-from dataclasses import dataclass
+from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
 from cachetools import TTLCache
@@ -38,17 +38,51 @@ def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
     ]
 
 
+def _default_ssl_context() -> ssl.SSLContext:
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    return ssl_ctx
+
+
+@dataclass(frozen=True)
+class MqttConnectionConfig:
+    """Mqtt connection properties."""
+
+    config: InitVar[Configuration]
+    port: int = 443
+    hostname: str = "mq.ecouser.net"
+    ssl_context: ssl.SSLContext | bool = field(default_factory=_default_ssl_context)
+
+    def __post_init__(self, config: Configuration) -> None:
+        for _field in fields(self):
+            # If there is a default and the value of the field is none we can assign a value
+            if (
+                not isinstance(_field.default, _MISSING_TYPE)
+                and getattr(self, _field.name) is None
+            ):
+                object.__setattr__(self, _field.name, _field.default)
+
+        if (
+            self.hostname == MqttConnectionConfig.hostname
+            and config.country.lower() != "cn"
+        ):
+            object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
+
+
 class MqttClient:
     """MQTT client."""
 
-    def __init__(self, config: Configuration, authenticator: Authenticator):
+    def __init__(
+        self,
+        config: Configuration,
+        authenticator: Authenticator,
+        connection_config: MqttConnectionConfig,
+    ):
         self._config = config
         self._authenticator = authenticator
         self._subscribers: MutableMapping[str, SubscriberInfo] = {}
-        self._port = 443
-        self._hostname = f"mq-{config.continent}.ecouser.net"
-        if config.country.lower() == "cn":
-            self._hostname = "mq.ecouser.net"
+        self._connection_config = connection_config
 
         self._client: Client | None = None
         self._received_p2p_commands: MutableMapping[
@@ -108,11 +142,11 @@ class MqttClient:
 
         self._client.on_connect = on_connect
 
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
         await self._client.connect(
-            self._hostname, self._port, ssl=ssl_ctx, version=MQTTv311
+            self._connection_config.hostname,
+            self._connection_config.port,
+            ssl=self._connection_config.ssl_context,
+            version=MQTTv311,
         )
 
     def subscribe(self, vacuum_bot: VacuumBot) -> None:

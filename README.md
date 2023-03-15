@@ -29,7 +29,7 @@ from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
 from deebot_client.events import BatteryEvent
 from deebot_client.models import Configuration
-from deebot_client.mqtt_client import MqttClient
+from deebot_client.mqtt_client import MqttClient, MqttConnectionConfig
 from deebot_client.util import md5
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -54,7 +54,8 @@ async def main():
 
     bot = VacuumBot(devices_[0], authenticator)
 
-    mqtt = MqttClient(config, authenticator)
+    mqtt_config = MqttConnectionConfig(config=config)
+    mqtt = MqttClient(config, authenticator, mqtt_config)
     await mqtt.initialize()
     await mqtt.subscribe(bot)
 
