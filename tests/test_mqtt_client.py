@@ -5,6 +5,7 @@ from unittest.mock import Mock, patch
 import pytest
 from aiohttp import ClientSession
 
+from deebot_client.exceptions import NotInitializedError
 from deebot_client.models import Configuration, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConnectionConfig
 from deebot_client.vacuum_bot import VacuumBot
@@ -103,3 +104,50 @@ def test_MqttConnectionConfig(
 
     mqtt = MqttConnectionConfig(**args)
     assert mqtt.hostname == expected_hostname
+
+
+def test_MqttConnectionConfig_hostname_none(config: Configuration) -> None:
+    mqtt = MqttConnectionConfig(config=config, hostname=None)  # type: ignore[arg-type]
+    assert mqtt.hostname == "mq-eu.ecouser.net"
+
+
+async def test_client_raise_error_on_subscribe_without_init(
+    mqtt_client: MqttClient, device_info: DeviceInfo
+) -> None:
+    with pytest.raises(NotInitializedError):
+        bot = Mock(spec=VacuumBot)
+        bot.device_info = device_info
+        mqtt_client.subscribe(bot)
+
+
+async def test_client_bot_subscription(
+    mqtt_client: MqttClient, device_info: DeviceInfo
+) -> None:
+    await mqtt_client.initialize()
+    assert mqtt_client._client is not None
+    assert mqtt_client._client.is_connected
+
+    bot = Mock(spec=VacuumBot)
+    bot.device_info = device_info
+    mqtt_client.subscribe(bot)
+
+    async def verify_subscribe(num: int, expected_called: bool) -> None:
+        command = "test"
+        data = {"test": num}
+        topic = f"iot/atr/{command}/{device_info.did}/{device_info.get_class}/{device_info.resource}/j"
+        assert mqtt_client._client is not None
+        mqtt_client._client.publish(topic, data)
+
+        await asyncio.sleep(0.1)
+        if expected_called:
+            bot.handle_message.assert_called_with(command, data)
+        else:
+            bot.handle_message.assert_not_called()
+
+        bot.handle_message.reset_mock()
+
+    await verify_subscribe(1, True)
+
+    mqtt_client.unsubscribe(bot)
+
+    await verify_subscribe(2, False)
