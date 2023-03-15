@@ -168,8 +168,8 @@ class MqttClient:
         """Unsubscribe given vacuum."""
         device_info = vacuum_bot.device_info
 
-        if self._subscribers.pop(device_info.did, None) and self._client:
-            for subscription in _get_subscriptions(device_info):
+        if (info := self._subscribers.pop(device_info.did, None)) and self._client:
+            for subscription in info.subscriptions:
                 self._client.unsubscribe(subscription.topic)
 
     async def reconnect(self) -> None:
