@@ -4,6 +4,8 @@ from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 import pytest
+from gmqtt import Client
+from gmqtt.mqtt.constants import MQTTv311
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
@@ -65,12 +67,30 @@ def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConnectio
 
 
 @pytest.fixture
-def mqtt_client(
+async def mqtt_client(
     config: Configuration,
     authenticator: Authenticator,
     mqtt_config: MqttConnectionConfig,
 ) -> MqttClient:
-    return MqttClient(config, authenticator, mqtt_config)
+    client = MqttClient(config, authenticator, mqtt_config)
+    await client.connect()
+    assert client._client is not None
+    assert client._client.is_connected
+    return client
+
+
+@pytest.fixture
+async def test_mqtt_client(mqtt_config: MqttConnectionConfig) -> Client:
+    client = Client(client_id="Test-helper")
+    await client.connect(
+        mqtt_config.hostname,
+        mqtt_config.port,
+        ssl=mqtt_config.ssl_context,
+        version=MQTTv311,
+    )
+    assert client is not None
+    assert client.is_connected
+    return client
 
 
 @pytest.fixture

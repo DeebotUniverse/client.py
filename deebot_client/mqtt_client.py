@@ -12,7 +12,6 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
-from .exceptions import NotInitializedError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
@@ -112,7 +111,7 @@ class MqttClient:
                 self._client.set_auth_credentials(
                     credentials.user_id, credentials.token
                 )
-                asyncio.create_task(self.reconnect())
+                asyncio.create_task(self.connect())
 
         authenticator.subscribe(on_credentials_changed)
 
@@ -121,11 +120,10 @@ class MqttClient:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
 
-    async def initialize(self) -> None:
-        """Initialize MQTT."""
+    async def connect(self) -> None:
+        """Connect to the mqtt broker."""
         if self._client:
-            await self.reconnect()
-            return
+            await self.disconnect()
 
         credentials = await self._authenticator.authenticate()
         client_id = f"{credentials.user_id}@ecouser/{self._config.device_id}"
@@ -149,10 +147,11 @@ class MqttClient:
             version=MQTTv311,
         )
 
-    def subscribe(self, vacuum_bot: VacuumBot) -> None:
+    async def subscribe(self, vacuum_bot: VacuumBot) -> None:
         """Subscribe for messages for given vacuum."""
         if self._client is None:
-            raise NotInitializedError
+            await self.connect()
+            assert self._client is not None
 
         device_info = vacuum_bot.device_info
         sub_info = self._subscribers.setdefault(
@@ -172,16 +171,10 @@ class MqttClient:
             for subscription in info.subscriptions:
                 self._client.unsubscribe(subscription.topic)
 
-    async def reconnect(self) -> None:
-        """Reconnect."""
-        if self._client:
-            await self._client.reconnect()
-
     async def disconnect(self) -> None:
         """Disconnect from MQTT."""
         if self._client:
             await self._client.disconnect()
-        self._subscribers.clear()
 
     async def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
         try:
