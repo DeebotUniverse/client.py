@@ -149,7 +149,7 @@ class MqttClient:
 
     async def subscribe(self, vacuum_bot: VacuumBot) -> None:
         """Subscribe for messages for given vacuum."""
-        if self._client is None:
+        if self._client is None or not self._client.is_connected:
             await self.connect()
             assert self._client is not None
 

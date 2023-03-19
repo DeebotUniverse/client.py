@@ -71,16 +71,19 @@ async def mqtt_client(
     config: Configuration,
     authenticator: Authenticator,
     mqtt_config: MqttConnectionConfig,
-) -> MqttClient:
+) -> AsyncGenerator[MqttClient, None]:
     client = MqttClient(config, authenticator, mqtt_config)
     await client.connect()
     assert client._client is not None
     assert client._client.is_connected
-    return client
+    yield client
+    await client.disconnect()
 
 
 @pytest.fixture
-async def test_mqtt_client(mqtt_config: MqttConnectionConfig) -> Client:
+async def test_mqtt_client(
+    mqtt_config: MqttConnectionConfig,
+) -> AsyncGenerator[Client, None]:
     client = Client(client_id="Test-helper")
     await client.connect(
         mqtt_config.hostname,
@@ -90,7 +93,8 @@ async def test_mqtt_client(mqtt_config: MqttConnectionConfig) -> Client:
     )
     assert client is not None
     assert client.is_connected
-    return client
+    yield client
+    await client.disconnect()
 
 
 @pytest.fixture
