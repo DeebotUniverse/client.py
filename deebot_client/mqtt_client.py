@@ -1,7 +1,9 @@
 """MQTT module."""
+import asyncio
 import json
 import ssl
 from collections.abc import MutableMapping
+from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
 from cachetools import TTLCache
@@ -10,7 +12,6 @@ from gmqtt.mqtt.constants import MQTTv311
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
-from .exceptions import NotInitializedError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 from .vacuum_bot import VacuumBot
@@ -36,17 +37,51 @@ def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
     ]
 
 
+def _default_ssl_context() -> ssl.SSLContext:
+    ssl_ctx = ssl.create_default_context()
+    ssl_ctx.check_hostname = False
+    ssl_ctx.verify_mode = ssl.CERT_NONE
+    return ssl_ctx
+
+
+@dataclass(frozen=True)
+class MqttConnectionConfig:
+    """Mqtt connection properties."""
+
+    config: InitVar[Configuration]
+    port: int = 443
+    hostname: str = "mq.ecouser.net"
+    ssl_context: ssl.SSLContext | bool = field(default_factory=_default_ssl_context)
+
+    def __post_init__(self, config: Configuration) -> None:
+        for _field in fields(self):
+            # If there is a default and the value of the field is none we can assign a value
+            if (
+                not isinstance(_field.default, _MISSING_TYPE)
+                and getattr(self, _field.name) is None
+            ):
+                object.__setattr__(self, _field.name, _field.default)
+
+        if (
+            self.hostname == MqttConnectionConfig.hostname
+            and config.country.lower() != "cn"
+        ):
+            object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
+
+
 class MqttClient:
     """MQTT client."""
 
-    def __init__(self, config: Configuration, authenticator: Authenticator):
+    def __init__(
+        self,
+        config: Configuration,
+        authenticator: Authenticator,
+        connection_config: MqttConnectionConfig,
+    ):
         self._config = config
         self._authenticator = authenticator
-        self._subscribers: MutableMapping[str, VacuumBot] = {}
-        self._port = 443
-        self._hostname = f"mq-{config.continent}.ecouser.net"
-        if config.country.lower() == "cn":
-            self._hostname = "mq.ecouser.net"
+        self._subscribers: MutableMapping[str, SubscriberInfo] = {}
+        self._connection_config = connection_config
 
         self._client: Client | None = None
         self._received_p2p_commands: MutableMapping[
@@ -76,6 +111,7 @@ class MqttClient:
                 self._client.set_auth_credentials(
                     credentials.user_id, credentials.token
                 )
+                asyncio.create_task(self.connect())
 
         authenticator.subscribe(on_credentials_changed)
 
@@ -84,8 +120,8 @@ class MqttClient:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
 
-    async def initialize(self) -> None:
-        """Initialize MQTT."""
+    async def connect(self) -> None:
+        """Connect to the mqtt broker."""
         if self._client:
             await self.disconnect()
 
@@ -95,42 +131,57 @@ class MqttClient:
         self._client.on_message = self._on_message
         self._client.set_auth_credentials(credentials.user_id, credentials.token)
 
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
+        # pylint: disable=unused-argument
+        def on_connect(client: Client, flags: int, code: int, properties: dict) -> None:
+            if self._subscribers:
+                _LOGGER.debug("Subscribe again to all previous subscriptions")
+                for _, info in self._subscribers.items():
+                    client.subscribe(info.subscriptions)
+
+        self._client.on_connect = on_connect
+
         await self._client.connect(
-            self._hostname, self._port, ssl=ssl_ctx, version=MQTTv311
+            self._connection_config.hostname,
+            self._connection_config.port,
+            ssl=self._connection_config.ssl_context,
+            version=MQTTv311,
         )
 
     async def subscribe(self, vacuum_bot: VacuumBot) -> None:
         """Subscribe for messages for given vacuum."""
-        if self._client is None:
-            raise NotInitializedError
+        if self._client is None or not self._client.is_connected:
+            await self.connect()
+            assert self._client is not None
 
         device_info = vacuum_bot.device_info
-        self._client.subscribe(_get_subscriptions(device_info))
-        self._subscribers[device_info.did] = vacuum_bot
+        sub_info = self._subscribers.setdefault(
+            device_info.did,
+            SubscriberInfo(
+                bot=vacuum_bot, subscriptions=_get_subscriptions(device_info)
+            ),
+        )
+
+        self._client.subscribe(sub_info.subscriptions)
 
     def unsubscribe(self, vacuum_bot: VacuumBot) -> None:
         """Unsubscribe given vacuum."""
         device_info = vacuum_bot.device_info
 
-        if self._subscribers.pop(device_info.did, None) and self._client:
-            for subscription in _get_subscriptions(device_info):
+        if (info := self._subscribers.pop(device_info.did, None)) and self._client:
+            for subscription in info.subscriptions:
                 self._client.unsubscribe(subscription.topic)
 
     async def disconnect(self) -> None:
         """Disconnect from MQTT."""
         if self._client:
             await self._client.disconnect()
-        self._subscribers.clear()
 
     async def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
         try:
-            bot = self._subscribers.get(topic_split[3])
-            if bot:
+            sub_info = self._subscribers.get(topic_split[3])
+            if sub_info:
                 data = json.loads(payload)
-                await bot.handle_message(topic_split[2], data)
+                await sub_info.bot.handle_message(topic_split[2], data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling atr message", exc_info=True
@@ -170,11 +221,19 @@ class MqttClient:
                     )
                     return
 
-                bot = self._subscribers.get(topic_split[3])
-                if bot:
+                sub_info = self._subscribers.get(topic_split[3])
+                if sub_info:
                     data = json.loads(payload)
-                    command.handle_mqtt_p2p(bot.events, data)
+                    command.handle_mqtt_p2p(sub_info.bot.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling p2p message", exc_info=True
             )
+
+
+@dataclass(frozen=True)
+class SubscriberInfo:
+    """Subscriber information."""
+
+    bot: VacuumBot
+    subscriptions: list[Subscription]

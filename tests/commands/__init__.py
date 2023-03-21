@@ -31,7 +31,7 @@ async def assert_command(
             "nick": "nick",
             "resource": "resource",
             "deviceName": "device_name",
-            "status": "status",
+            "status": 1,
             "class": "get_class",
         }
     )

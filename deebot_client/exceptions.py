@@ -19,7 +19,3 @@ class ApiError(DeebotError):
 
 class MapError(DeebotError):
     """Map error."""
-
-
-class NotInitializedError(DeebotError):
-    """Thrown when not class was not initialized correctly."""
