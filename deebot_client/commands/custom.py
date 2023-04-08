@@ -41,3 +41,10 @@ class CustomCommand(Command):
 
     def __hash__(self) -> int:
         return super().__hash__() + hash(self._name)
+
+
+class CustomPayloadCommand(CustomCommand):
+    """Custom command, where args is the raw payload."""
+
+    def _get_payload(self) -> dict[str, Any] | list:
+        return self._args

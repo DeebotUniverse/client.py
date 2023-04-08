@@ -91,9 +91,7 @@ class Command(ABC):
             )
         return result
 
-    async def _execute_api_request(
-        self, authenticator: Authenticator, device_info: DeviceInfo
-    ) -> dict[str, Any]:
+    def _get_payload(self) -> dict[str, Any] | list:
         payload = {
             "header": {
                 "pri": "1",
@@ -106,9 +104,14 @@ class Command(ABC):
         if len(self._args) > 0:
             payload["body"] = {"data": self._args}
 
+        return payload
+
+    async def _execute_api_request(
+        self, authenticator: Authenticator, device_info: DeviceInfo
+    ) -> dict[str, Any]:
         json = {
             "cmdName": self.name,
-            "payload": payload,
+            "payload": self._get_payload(),
             "payloadType": "j",
             "td": "q",
             "toId": device_info.did,
