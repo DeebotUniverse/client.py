@@ -1,5 +1,6 @@
 import asyncio
 import datetime
+import ssl
 from typing import Any
 from unittest.mock import Mock, patch
 
@@ -8,7 +9,7 @@ from aiohttp import ClientSession
 from gmqtt import Client
 
 from deebot_client.models import Configuration, DeviceInfo
-from deebot_client.mqtt_client import MqttClient, MqttConnectionConfig
+from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.vacuum_bot import VacuumBot
 
 from .fixtures.mqtt_server import MqttServer
@@ -81,7 +82,7 @@ async def test_client_reconnect_on_broker_error(
     pytest.fail("Reconnect failed")
 
 
-_test_MqttConnectionConfig_data = [
+_test_MqttConfiguration_data = [
     ("cn", None, "mq.ecouser.net"),
     ("cn", "localhost", "localhost"),
     ("it", None, "mq-eu.ecouser.net"),
@@ -89,34 +90,41 @@ _test_MqttConnectionConfig_data = [
 ]
 
 
-@pytest.mark.parametrize("ssl", [None, False])
+@pytest.mark.parametrize("ssl_context", [None, False])
 @pytest.mark.parametrize(
-    "country,hostname,expected_hostname", _test_MqttConnectionConfig_data
+    "country,hostname,expected_hostname", _test_MqttConfiguration_data
 )
-def test_MqttConnectionConfig(
-    ssl: None | bool,
+@pytest.mark.parametrize("device_id", ["test", "123"])
+def test_MqttConfiguration(
+    ssl_context: None | bool,
     country: str,
     hostname: str | None,
     expected_hostname: str,
     session: ClientSession,
+    device_id: str,
 ) -> None:
     args: dict[str, Any] = {
         "config": Configuration(
-            session, device_id="test", country=country, continent="eu"
+            session, device_id=device_id, country=country, continent="eu"
         )
     }
-    if ssl is not None:
-        args["ssl_context"] = ssl
+    if ssl_context is not None:
+        args["ssl_context"] = ssl_context
 
     if hostname is not None:
         args["hostname"] = hostname
 
-    mqtt = MqttConnectionConfig(**args)
+    mqtt = MqttConfiguration(**args)
     assert mqtt.hostname == expected_hostname
+    assert mqtt.device_id == device_id
+    if ssl_context is None:
+        assert isinstance(mqtt.ssl_context, ssl.SSLContext)
+    else:
+        assert mqtt.ssl_context == ssl_context
 
 
-def test_MqttConnectionConfig_hostname_none(config: Configuration) -> None:
-    mqtt = MqttConnectionConfig(config=config, hostname=None)  # type: ignore[arg-type]
+def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
+    mqtt = MqttConfiguration(config=config, hostname=None)  # type: ignore[arg-type]
     assert mqtt.hostname == "mq-eu.ecouser.net"
 
 

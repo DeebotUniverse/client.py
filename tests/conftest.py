@@ -10,7 +10,7 @@ from gmqtt.mqtt.constants import MQTTv311
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.models import Configuration, Credentials, DeviceInfo
-from deebot_client.mqtt_client import MqttClient, MqttConnectionConfig
+from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 from .fixtures.mqtt_server import MqttServer
 
@@ -57,8 +57,8 @@ def mqtt_server() -> Generator[MqttServer, None, None]:
 
 
 @pytest.fixture
-def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConnectionConfig:
-    return MqttConnectionConfig(
+def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConfiguration:
+    return MqttConfiguration(
         config=config,
         hostname="localhost",
         port=int(mqtt_server.get_port()),
@@ -68,11 +68,10 @@ def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConnectio
 
 @pytest.fixture
 async def mqtt_client(
-    config: Configuration,
     authenticator: Authenticator,
-    mqtt_config: MqttConnectionConfig,
+    mqtt_config: MqttConfiguration,
 ) -> AsyncGenerator[MqttClient, None]:
-    client = MqttClient(config, authenticator, mqtt_config)
+    client = MqttClient(mqtt_config, authenticator)
     await client.connect()
     assert client._client is not None
     assert client._client.is_connected
@@ -82,7 +81,7 @@ async def mqtt_client(
 
 @pytest.fixture
 async def test_mqtt_client(
-    mqtt_config: MqttConnectionConfig,
+    mqtt_config: MqttConfiguration,
 ) -> AsyncGenerator[Client, None]:
     client = Client(client_id="Test-helper")
     await client.connect(

@@ -45,13 +45,14 @@ def _default_ssl_context() -> ssl.SSLContext:
 
 
 @dataclass(frozen=True)
-class MqttConnectionConfig:
-    """Mqtt connection properties."""
+class MqttConfiguration:
+    """Mqtt configuration."""
 
     config: InitVar[Configuration]
     port: int = 443
     hostname: str = "mq.ecouser.net"
     ssl_context: ssl.SSLContext | bool = field(default_factory=_default_ssl_context)
+    device_id: str = field(init=False)
 
     def __post_init__(self, config: Configuration) -> None:
         for _field in fields(self):
@@ -62,8 +63,10 @@ class MqttConnectionConfig:
             ):
                 object.__setattr__(self, _field.name, _field.default)
 
+        object.__setattr__(self, "device_id", config.device_id)
+
         if (
-            self.hostname == MqttConnectionConfig.hostname
+            self.hostname == MqttConfiguration.hostname
             and config.country.lower() != "cn"
         ):
             object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
@@ -74,14 +77,12 @@ class MqttClient:
 
     def __init__(
         self,
-        config: Configuration,
+        config: MqttConfiguration,
         authenticator: Authenticator,
-        connection_config: MqttConnectionConfig,
     ):
         self._config = config
         self._authenticator = authenticator
         self._subscribers: MutableMapping[str, SubscriberInfo] = {}
-        self._connection_config = connection_config
 
         self._client: Client | None = None
         self._received_p2p_commands: MutableMapping[
@@ -141,9 +142,9 @@ class MqttClient:
         self._client.on_connect = on_connect
 
         await self._client.connect(
-            self._connection_config.hostname,
-            self._connection_config.port,
-            ssl=self._connection_config.ssl_context,
+            self._config.hostname,
+            self._config.port,
+            ssl=self._config.ssl_context,
             version=MQTTv311,
         )
 
