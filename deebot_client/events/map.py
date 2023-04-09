@@ -87,3 +87,11 @@ class MapSubsetEvent(Event):
     type: MapSetType
     coordinates: str
     name: str | None = None
+
+
+@dataclass(frozen=True)
+class CachedMapInfoEvent(Event):
+    """Cached map info event."""
+
+    name: str
+    active: bool

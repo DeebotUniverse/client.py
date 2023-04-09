@@ -12,6 +12,7 @@ from deebot_client.events import (
     MapSubsetEvent,
     MapTraceEvent,
 )
+from deebot_client.events.map import CachedMapInfoEvent
 from tests.commands import assert_command
 from tests.helpers import get_request_json
 
@@ -69,6 +70,7 @@ async def test_getMapSubSet_living_room() -> None:
 
 async def test_getCachedMapInfo() -> None:
     expected_mid = "199390082"
+    expected_name = "Erdgeschoss"
     json = get_request_json(
         {
             "enable": 1,
@@ -79,7 +81,7 @@ async def test_getCachedMapInfo() -> None:
                     "status": 1,
                     "using": 1,
                     "built": 1,
-                    "name": "Erdgeschoss",
+                    "name": expected_name,
                 },
                 {
                     "mid": "722607162",
@@ -95,7 +97,7 @@ async def test_getCachedMapInfo() -> None:
     await assert_command(
         GetCachedMapInfo(),
         json,
-        None,
+        CachedMapInfoEvent(expected_name, True),
         # todo check requested command be called
         # CommandResult(
         #    HandlingState.SUCCESS,

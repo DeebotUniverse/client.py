@@ -11,6 +11,7 @@ from ..events import (
     MinorMapEvent,
 )
 from ..events.event_bus import EventBus
+from ..events.map import CachedMapInfoEvent
 from ..message import HandlingResult, HandlingState, MessageBodyDataDict
 from .common import CommandResult, CommandWithMessageHandling
 
@@ -30,6 +31,10 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
         """
         for map_status in data["info"]:
             if map_status["using"] == 1:
+                event_bus.notify(
+                    CachedMapInfoEvent(name=map_status.get("name", ""), active=True)
+                )
+
                 return HandlingResult(
                     HandlingState.SUCCESS, {"map_id": map_status["mid"]}
                 )

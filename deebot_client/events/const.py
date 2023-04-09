@@ -51,6 +51,7 @@ from . import (
     WaterInfoEvent,
 )
 from .map import (
+    CachedMapInfoEvent,
     MajorMapEvent,
     MapSetEvent,
     MapSubsetEvent,
@@ -61,6 +62,7 @@ from .map import (
 EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
+    CachedMapInfoEvent: [GetCachedMapInfo()],
     CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
     CleanLogEvent: [GetCleanLogs()],
     CleanCountEvent: [GetCleanCount()],
