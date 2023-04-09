@@ -1,4 +1,4 @@
-"""Constatns module."""
+"""Constants module."""
 
 REALM = "ecouser.net"
 PATH_API_APPSVR_APP = "appsvr/app.do"
