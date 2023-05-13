@@ -94,14 +94,15 @@ class MqttClient:
         async def __on_message(
             client: Client, topic: str, payload: bytes, qos: int, properties: dict
         ) -> None:
-            _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload.decode())
+            payload_str = payload.decode(errors="ignore")
+            _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload_str)
             self._last_message_received_at = datetime.now()
 
             topic_split = topic.split("/")
             if topic.startswith("iot/atr"):
-                await self._handle_atr(topic_split, payload)
+                await self._handle_atr(topic_split, payload_str)
             elif topic.startswith("iot/p2p"):
-                self._handle_p2p(topic_split, payload)
+                self._handle_p2p(topic_split, payload_str)
             else:
                 _LOGGER.debug("Got unsupported topic: %s", topic)
 
@@ -177,7 +178,7 @@ class MqttClient:
         if self._client:
             await self._client.disconnect()
 
-    async def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
+    async def _handle_atr(self, topic_split: list[str], payload: str) -> None:
         try:
             sub_info = self._subscribers.get(topic_split[3])
             if sub_info:
@@ -188,7 +189,7 @@ class MqttClient:
                 "An exception occurred during handling atr message", exc_info=True
             )
 
-    def _handle_p2p(self, topic_split: list[str], payload: bytes) -> None:
+    def _handle_p2p(self, topic_split: list[str], payload: str) -> None:
         try:
             command_name = topic_split[2]
             command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(command_name, None)
