@@ -12,10 +12,10 @@ _LOGGER = get_logger(__name__)
 class CustomCommand(Command):
     """Custom command, used when user wants to execute a command, which is not part of this library."""
 
-    name = "CustomCommand"
+    name: str = "CustomCommand"
 
     def __init__(self, name: str, args: dict | list | None = None) -> None:
-        self._name = name
+        self.name = name
         super().__init__(args)
 
     def _handle_response(
@@ -27,20 +27,20 @@ class CustomCommand(Command):
         """
         if response.get("ret") == "ok":
             data = response.get("resp", response)
-            event_bus.notify(CustomCommandEvent(self._name, data))
+            event_bus.notify(CustomCommandEvent(self.name, data))
             return CommandResult.success()
 
-        _LOGGER.warning('Command "%s" was not successfully: %s', self._name, response)
+        _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
         return CommandResult(HandlingState.FAILED)
 
     def __eq__(self, obj: object) -> bool:
         if super().__eq__(obj) and isinstance(obj, CustomCommand):
-            return self._name == obj._name
+            return self.name == obj.name
 
         return False
 
     def __hash__(self) -> int:
-        return super().__hash__() + hash(self._name)
+        return super().__hash__() + hash(self.name)
 
 
 class CustomPayloadCommand(CustomCommand):
