@@ -46,11 +46,9 @@ def get_message(message_name: str) -> type[Message] | None:
         converted_name,
     )
 
-    from ..commands import (  # pylint: disable=import-outside-toplevel
-        COMMANDS_WITH_HANDLING,
-    )
+    from ..commands import COMMANDS  # pylint: disable=import-outside-toplevel
 
-    if found_command := COMMANDS_WITH_HANDLING.get(converted_name, None):
+    if found_command := COMMANDS.get(converted_name, None):
         if issubclass(found_command, Message):
             _LOGGER.debug("Falling back to old handling way for %s", message_name)
             return found_command

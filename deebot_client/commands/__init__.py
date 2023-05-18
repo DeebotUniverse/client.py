@@ -99,12 +99,12 @@ _COMMANDS: list[type[Command]] = [
 ]
 # fmt: on
 
-COMMANDS_WITH_HANDLING: dict[str, type[Command]] = {
+COMMANDS: dict[str, type[Command]] = {
     cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
 }
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandHandlingMqttP2P]] = {
     cmd_name: cmd
-    for (cmd_name, cmd) in COMMANDS_WITH_HANDLING.items()
+    for (cmd_name, cmd) in COMMANDS.items()
     if issubclass(cmd, CommandHandlingMqttP2P)
 }
