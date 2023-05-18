@@ -1,36 +1,47 @@
 import asyncio
 import datetime
+import json
 import ssl
 from typing import Any
-from unittest.mock import Mock, patch
+from unittest.mock import MagicMock, Mock, patch
 
 import pytest
 from aiohttp import ClientSession
-from gmqtt import Client
+from asyncio_mqtt import Client, Message
+from testfixtures import LogCapture
 
+from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Configuration, DeviceInfo
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration
-from deebot_client.vacuum_bot import VacuumBot
+from deebot_client.mqtt_client import MqttClient, MqttConfiguration, SubscriberInfo
 
 from .fixtures.mqtt_server import MqttServer
 
+_WAITING_AFTER_RESTART = 30
+
 
 async def _verify_subscribe(
-    test_client: Client, bot: Mock, expected_called: bool
+    test_client: Client, device_info: DeviceInfo, expected_called: bool, mock: Mock
 ) -> None:
-    device_info = bot.device_info
     command = "test"
-    data = {"test": str(datetime.datetime.now())}
+    data = json.dumps({"test": str(datetime.datetime.now())}).encode("utf-8")
     topic = f"iot/atr/{command}/{device_info.did}/{device_info.get_class}/{device_info.resource}/j"
-    test_client.publish(topic, data)
+    await test_client.publish(topic, data)
 
     await asyncio.sleep(0.1)
     if expected_called:
-        bot.handle_message.assert_called_with(command, data)
+        mock.assert_called_with(command, data)
     else:
-        bot.handle_message.assert_not_called()
+        mock.assert_not_called()
 
-    bot.handle_message.reset_mock()
+    mock.reset_mock()
+
+
+async def _subscribe(mqtt_client: MqttClient, device_info: DeviceInfo) -> Mock:
+    events = Mock(spec=EventBus)
+    callback = MagicMock()
+    await mqtt_client.subscribe(SubscriberInfo(device_info, events, callback))
+    await asyncio.sleep(0.1)
+    return callback
 
 
 async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
@@ -43,12 +54,9 @@ async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
         dt.now.return_value = expected
 
         # Simulate message received
-        await mqtt_client._on_message(None, "/test", b"", 0, {})
+        mqtt_client._handle_message(Message("/test", b"", 0, False, 1, None))
 
         assert mqtt_client.last_message_received_at == expected
-
-
-_WAITING_AFTER_RESTART = 30
 
 
 @pytest.mark.timeout(_WAITING_AFTER_RESTART + 10)
@@ -56,28 +64,57 @@ async def test_client_reconnect_on_broker_error(
     mqtt_client: MqttClient,
     mqtt_server: MqttServer,
     device_info: DeviceInfo,
-    test_mqtt_client: Client,
+    mqtt_config: MqttConfiguration,
 ) -> None:
-    assert mqtt_client._client is not None
-    bot = Mock(spec=VacuumBot)
-    bot.device_info = device_info
-    await mqtt_client.subscribe(bot)
+    callback = await _subscribe(mqtt_client, device_info)
+    async with Client(
+        hostname=mqtt_config.hostname,
+        port=mqtt_config.port,
+        client_id="Test-helper",
+        tls_context=mqtt_config.ssl_context,
+    ) as client:
+        # test client cannot be used as we restart the broker in this test
+        await _verify_subscribe(client, device_info, True, callback)
 
-    await _verify_subscribe(test_mqtt_client, bot, True)
+    with LogCapture() as log:
+        mqtt_server.stop()
+        await asyncio.sleep(0.1)
 
-    mqtt_server.stop()
-    await asyncio.sleep(0.1)
-    assert not mqtt_client._client.is_connected
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "WARNING",
+                "Connection lost; Reconnecting in 5 seconds ...",
+            )
+        )
+        log.clear()
 
-    mqtt_server.run()
+        mqtt_server.run()
 
-    for i in range(_WAITING_AFTER_RESTART):
-        print(f"Wait for success reconnect... {i}/{_WAITING_AFTER_RESTART}")
-        if mqtt_client._client.is_connected:
-            await _verify_subscribe(test_mqtt_client, bot, True)
-            return
+        for i in range(_WAITING_AFTER_RESTART):
+            print(f"Wait for success reconnect... {i}/{_WAITING_AFTER_RESTART}")
+            try:
+                log.check_present(
+                    (
+                        "deebot_client.mqtt_client",
+                        "DEBUG",
+                        "All mqtt tasks created",
+                    )
+                )
+            except AssertionError:
+                pass  # Client was not yet connected
+            else:
+                async with Client(
+                    hostname=mqtt_config.hostname,
+                    port=mqtt_config.port,
+                    client_id="Test-helper",
+                    tls_context=mqtt_config.ssl_context,
+                ) as client:
+                    # test client cannot be used as we restart the broker in this test
+                    await _verify_subscribe(client, device_info, True, callback)
+                return
 
-        await asyncio.sleep(1)
+            await asyncio.sleep(1)
 
     pytest.fail("Reconnect failed")
 
@@ -90,13 +127,13 @@ _test_MqttConfiguration_data = [
 ]
 
 
-@pytest.mark.parametrize("ssl_context", [None, False])
+@pytest.mark.parametrize("set_ssl_context", [True, False])
 @pytest.mark.parametrize(
     "country,hostname,expected_hostname", _test_MqttConfiguration_data
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
 def test_MqttConfiguration(
-    ssl_context: None | bool,
+    set_ssl_context: bool,
     country: str,
     hostname: str | None,
     expected_hostname: str,
@@ -108,8 +145,8 @@ def test_MqttConfiguration(
             session, device_id=device_id, country=country, continent="eu"
         )
     }
-    if ssl_context is not None:
-        args["ssl_context"] = ssl_context
+    if set_ssl_context:
+        args["ssl_context"] = None
 
     if hostname is not None:
         args["hostname"] = hostname
@@ -117,10 +154,10 @@ def test_MqttConfiguration(
     mqtt = MqttConfiguration(**args)
     assert mqtt.hostname == expected_hostname
     assert mqtt.device_id == device_id
-    if ssl_context is None:
-        assert isinstance(mqtt.ssl_context, ssl.SSLContext)
+    if set_ssl_context:
+        assert mqtt.ssl_context is None
     else:
-        assert mqtt.ssl_context == ssl_context
+        assert isinstance(mqtt.ssl_context, ssl.SSLContext)
 
 
 def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
@@ -131,28 +168,27 @@ def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
 async def test_client_bot_subscription(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    bot = Mock(spec=VacuumBot)
-    bot.device_info = device_info
-    await mqtt_client.subscribe(bot)
+    callback = await _subscribe(mqtt_client, device_info)
 
-    await _verify_subscribe(test_mqtt_client, bot, True)
+    await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
-    mqtt_client.unsubscribe(bot)
+    mqtt_client.unsubscribe(device_info)
+    await asyncio.sleep(0.1)
 
-    await _verify_subscribe(test_mqtt_client, bot, False)
+    await _verify_subscribe(test_mqtt_client, device_info, False, callback)
 
 
 async def test_client_reconnect_manual(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    bot = Mock(spec=VacuumBot)
-    bot.device_info = device_info
-    await mqtt_client.subscribe(bot)
+    callback = await _subscribe(mqtt_client, device_info)
 
-    await _verify_subscribe(test_mqtt_client, bot, True)
+    await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
     await mqtt_client.disconnect()
-    await _verify_subscribe(test_mqtt_client, bot, False)
+    await _verify_subscribe(test_mqtt_client, device_info, False, callback)
 
     await mqtt_client.connect()
-    await _verify_subscribe(test_mqtt_client, bot, True)
+    await asyncio.sleep(0.1)
+
+    await _verify_subscribe(test_mqtt_client, device_info, True, callback)

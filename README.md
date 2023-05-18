@@ -56,8 +56,7 @@ async def main():
 
     mqtt_config = MqttConfiguration(config=config)
     mqtt = MqttClient(mqtt_config, authenticator)
-    await mqtt.connect()
-    await mqtt.subscribe(bot)
+    await bot.subscribe_to(mqtt)
 
     async def on_battery(event: BatteryEvent):
       # Do stuff on battery event

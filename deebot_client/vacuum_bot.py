@@ -1,12 +1,13 @@
 """Vacuum bot module."""
 import asyncio
 import inspect
-import re
+import json
 from typing import Any, Final
+
+from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 
 from .authentication import Authenticator
 from .command import Command
-from .commands import COMMANDS_WITH_HANDLING
 from .events import (
     CleanLogEvent,
     CustomCommandEvent,
@@ -20,14 +21,10 @@ from .events import (
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
-from .message import Message
-from .messages import MESSAGES
+from .messages import get_message
 from .models import DeviceInfo, VacuumState
 
 _LOGGER = get_logger(__name__)
-
-_COMMAND_REPLACE_PATTERN = "^((on)|(off)|(report))"
-_COMMAND_REPLACE_REPLACEMENT = "get"
 
 
 class VacuumBot:
@@ -90,7 +87,7 @@ class VacuumBot:
         self.events.subscribe(StatsEvent, on_stats)
 
         async def on_custom_command(event: CustomCommandEvent) -> None:
-            await self.handle_message(event.name, event.response)
+            self._handle_message(event.name, event.response)
 
         self.events.subscribe(CustomCommandEvent, on_custom_command)
 
@@ -99,13 +96,19 @@ class VacuumBot:
         async with self._semaphore:
             await command.execute(self._authenticator, self.device_info, self.events)
 
+    async def subscribe_to(self, client: MqttClient) -> None:
+        """Subscribe bot to mqtt."""
+        await client.subscribe(
+            SubscriberInfo(self.device_info, self.events, self._handle_message)
+        )
+
     def set_available(self, available: bool) -> None:
         """Set available."""
         status = StatusEvent(available, self._status.state)
         self.events.notify(status)
 
-    async def handle_message(
-        self, message_name: str, message_data: dict[str, Any]
+    def _handle_message(
+        self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]
     ) -> None:
         """Handle the given message.
 
@@ -113,37 +116,21 @@ class VacuumBot:
         :param message_data: message data
         :return: None
         """
-        _LOGGER.debug("Handle message %s: %s", message_name, message_data)
-        fw_version = message_data.get("header", {}).get("fwVer", None)
-        if fw_version:
-            self.fw_version = fw_version
+        try:
+            _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-        message_type = MESSAGES.get(message_name, None)
-        if message_type:
-            message_type.handle(self.events, message_data)
-            return
+            if message := get_message(message_name):
+                if isinstance(message_data, dict):
+                    data = message_data
+                else:
+                    data = json.loads(message_data)
 
-        # Handle message starting with "on","off","report" the same as "get" commands
-        converted_name = re.sub(
-            _COMMAND_REPLACE_PATTERN,
-            _COMMAND_REPLACE_REPLACEMENT,
-            message_name,
-        )
+                message.handle(self.events, data)
 
-        # T8 series and newer
-        if converted_name.endswith("_V2"):
-            converted_name = converted_name[:-3]
-
-        found_command = MESSAGES.get(
-            converted_name, COMMANDS_WITH_HANDLING.get(converted_name, None)
-        )
-        if found_command:
-            if issubclass(found_command, Message):
-                _LOGGER.debug("Falling back to old handling way for %s", message_name)
-                found_command.handle(self.events, message_data)
-            else:
-                _LOGGER.debug(
-                    'Command "%s" doesn\'t support message handling', converted_name
-                )
-        else:
-            _LOGGER.debug('Unknown message "%s" with %s', message_name, message_data)
+                fw_version = data.get("header", {}).get("fwVer", None)
+                if fw_version:
+                    self.fw_version = fw_version
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.error(
+                "An exception occurred during handling message", exc_info=True
+            )

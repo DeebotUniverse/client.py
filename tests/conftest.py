@@ -4,8 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 import pytest
-from gmqtt import Client
-from gmqtt.mqtt.constants import MQTTv311
+from asyncio_mqtt import Client
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
@@ -62,7 +61,7 @@ def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConfigura
         config=config,
         hostname="localhost",
         port=int(mqtt_server.get_port()),
-        ssl_context=False,
+        ssl_context=None,
     )
 
 
@@ -72,9 +71,6 @@ async def mqtt_client(
     mqtt_config: MqttConfiguration,
 ) -> AsyncGenerator[MqttClient, None]:
     client = MqttClient(mqtt_config, authenticator)
-    await client.connect()
-    assert client._client is not None
-    assert client._client.is_connected
     yield client
     await client.disconnect()
 
@@ -83,17 +79,13 @@ async def mqtt_client(
 async def test_mqtt_client(
     mqtt_config: MqttConfiguration,
 ) -> AsyncGenerator[Client, None]:
-    client = Client(client_id="Test-helper")
-    await client.connect(
-        mqtt_config.hostname,
-        mqtt_config.port,
-        ssl=mqtt_config.ssl_context,
-        version=MQTTv311,
-    )
-    assert client is not None
-    assert client.is_connected
-    yield client
-    await client.disconnect()
+    async with Client(
+        hostname=mqtt_config.hostname,
+        port=mqtt_config.port,
+        client_id="Test-helper",
+        tls_context=mqtt_config.ssl_context,
+    ) as client:
+        yield client
 
 
 @pytest.fixture

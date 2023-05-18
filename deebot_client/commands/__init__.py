@@ -1,6 +1,4 @@
 """Commands module."""
-from typing import Dict, Type
-
 from ..command import Command
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
