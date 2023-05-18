@@ -36,14 +36,14 @@ def get_message(message_name: str) -> type[Message] | None:
     if converted_name.endswith("_V2"):
         converted_name = converted_name[:-3]
 
-    if message_type := MESSAGES.get(message_name, None):
+    if message_type := MESSAGES.get(converted_name, None):
         return message_type
 
     # Handle message starting with "on","off","report" the same as "get" commands
     converted_name = re.sub(
         "^((on)|(off)|(report))",
         "get",
-        message_name,
+        converted_name,
     )
 
     from ..commands import (  # pylint: disable=import-outside-toplevel
