@@ -240,8 +240,7 @@ class MqttClient:
         self, topic_split: list[str], payload: str | bytes | bytearray
     ) -> None:
         try:
-            sub_info = self._subscribtions.get(topic_split[3])
-            if sub_info:
+            if sub_info := self._subscribtions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
@@ -255,7 +254,9 @@ class MqttClient:
             command_name = topic_split[2]
             command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(command_name, None)
             if command_type is None:
-                # command does not support p2p handling (yet)
+                _LOGGER.debug(
+                    "Command %s does not support p2p handling (yet)", command_name
+                )
                 return
 
             is_request = topic_split[9] == "q"
@@ -275,19 +276,16 @@ class MqttClient:
 
                 self._received_p2p_commands[request_id] = command_type(**data)
             else:
-                command = self._received_p2p_commands.get(request_id, None)
-                if not command:
+                if command := self._received_p2p_commands.pop(request_id, None):
+                    if sub_info := self._subscribtions.get(topic_split[3]):
+                        data = json.loads(payload)
+                        command.handle_mqtt_p2p(sub_info.events, data)
+                else:
                     _LOGGER.debug(
                         "Response to command came in probably to late. requestId=%s, commandName=%s",
                         request_id,
                         command_name,
                     )
-                    return
-
-                sub_info = self._subscribtions.get(topic_split[3])
-                if sub_info:
-                    data = json.loads(payload)
-                    command.handle_mqtt_p2p(sub_info.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling p2p message", exc_info=True

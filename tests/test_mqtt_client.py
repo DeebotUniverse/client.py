@@ -8,8 +8,11 @@ from unittest.mock import MagicMock, Mock, patch
 import pytest
 from aiohttp import ClientSession
 from asyncio_mqtt import Client, Message
+from cachetools import TTLCache
 from testfixtures import LogCapture
 
+from deebot_client.commands.battery import GetBattery
+from deebot_client.commands.volume import SetVolume
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Configuration, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, SubscriberInfo
@@ -36,12 +39,14 @@ async def _verify_subscribe(
     mock.reset_mock()
 
 
-async def _subscribe(mqtt_client: MqttClient, device_info: DeviceInfo) -> Mock:
+async def _subscribe(
+    mqtt_client: MqttClient, device_info: DeviceInfo
+) -> tuple[Mock, Mock]:
     events = Mock(spec=EventBus)
     callback = MagicMock()
     await mqtt_client.subscribe(SubscriberInfo(device_info, events, callback))
     await asyncio.sleep(0.1)
-    return callback
+    return (events, callback)
 
 
 async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
@@ -66,7 +71,7 @@ async def test_client_reconnect_on_broker_error(
     device_info: DeviceInfo,
     mqtt_config: MqttConfiguration,
 ) -> None:
-    callback = await _subscribe(mqtt_client, device_info)
+    (_, callback) = await _subscribe(mqtt_client, device_info)
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
@@ -168,7 +173,7 @@ def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
 async def test_client_bot_subscription(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    callback = await _subscribe(mqtt_client, device_info)
+    (_, callback) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
@@ -181,7 +186,7 @@ async def test_client_bot_subscription(
 async def test_client_reconnect_manual(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    callback = await _subscribe(mqtt_client, device_info)
+    (_, callback) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
@@ -192,3 +197,156 @@ async def test_client_reconnect_manual(
     await asyncio.sleep(0.1)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
+
+
+async def _publish_p2p(
+    command_name: str,
+    device_info: DeviceInfo,
+    data: dict[str, Any],
+    is_request: bool,
+    request_id: str,
+    test_mqtt_client: Client,
+) -> None:
+    data_bytes = json.dumps(data).encode("utf-8")
+    if is_request:
+        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/j"
+    else:
+        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/j"
+
+    await test_mqtt_client.publish(topic, data_bytes)
+    await asyncio.sleep(0.1)
+
+
+async def test_p2p_success(
+    mqtt_client: MqttClient,
+    device_info: DeviceInfo,
+    test_mqtt_client: Client,
+) -> None:
+    """Test p2p workflow on SetVolume."""
+    (events, _) = await _subscribe(mqtt_client, device_info)
+    assert len(mqtt_client._received_p2p_commands) == 0
+
+    command_object = Mock(spec=SetVolume)
+    command_name = SetVolume.name
+    command_type = Mock(spec=SetVolume, return_value=command_object)
+    with patch.dict(
+        "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
+        {command_name: command_type},
+    ):
+        request_id = "req"
+        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
+        await _publish_p2p(
+            command_name, device_info, data, True, request_id, test_mqtt_client
+        )
+
+        command_type.assert_called_with(**(data["body"]["data"]))
+        assert len(mqtt_client._received_p2p_commands) == 1
+        assert mqtt_client._received_p2p_commands[request_id] == command_object
+
+        data = {"body": {"data": {"ret": "ok"}}}
+        await _publish_p2p(
+            command_name, device_info, data, False, request_id, test_mqtt_client
+        )
+
+        command_object.handle_mqtt_p2p.assert_called_with(events, data)
+        assert request_id not in mqtt_client._received_p2p_commands
+        assert len(mqtt_client._received_p2p_commands) == 0
+
+
+async def test_p2p_not_supported(
+    mqtt_client: MqttClient,
+    device_info: DeviceInfo,
+    test_mqtt_client: Client,
+) -> None:
+    """Test that unsupported command will be logged."""
+    await _subscribe(mqtt_client, device_info)
+    command_name: str = GetBattery.name
+
+    with LogCapture() as log:
+        await _publish_p2p(command_name, device_info, {}, True, "req", test_mqtt_client)
+
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "DEBUG",
+                f"Command {command_name} does not support p2p handling (yet)",
+            )
+        )
+
+
+async def test_p2p_to_late(
+    mqtt_client: MqttClient,
+    device_info: DeviceInfo,
+    test_mqtt_client: Client,
+) -> None:
+    """Test p2p when response comes in to late."""
+    # reduce ttl to 1 seconds
+    mqtt_client._received_p2p_commands = TTLCache(maxsize=60 * 60, ttl=1)
+    await _subscribe(mqtt_client, device_info)
+    assert len(mqtt_client._received_p2p_commands) == 0
+
+    command_object = Mock(spec=SetVolume)
+    command_name = SetVolume.name
+    command_type = Mock(spec=SetVolume, return_value=command_object)
+    with patch.dict(
+        "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
+        {command_name: command_type},
+    ):
+        request_id = "req"
+        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
+        await _publish_p2p(
+            command_name, device_info, data, True, request_id, test_mqtt_client
+        )
+
+        command_type.assert_called_with(**(data["body"]["data"]))
+        assert len(mqtt_client._received_p2p_commands) == 1
+        assert mqtt_client._received_p2p_commands[request_id] == command_object
+
+    with LogCapture() as log:
+        await asyncio.sleep(1.1)
+
+        data = {"body": {"data": {"ret": "ok"}}}
+        await _publish_p2p(
+            command_name, device_info, data, False, request_id, test_mqtt_client
+        )
+
+        command_object.handle_mqtt_p2p.assert_not_called()
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "DEBUG",
+                f"Response to command came in probably to late. requestId={request_id}, commandName={command_name}",
+            )
+        )
+
+
+async def test_p2p_parse_error(
+    mqtt_client: MqttClient,
+    device_info: DeviceInfo,
+    test_mqtt_client: Client,
+) -> None:
+    """Test p2p parse error."""
+    await _subscribe(mqtt_client, device_info)
+
+    command_object = Mock(spec=SetVolume)
+    command_name = SetVolume.name
+    command_type = Mock(spec=SetVolume, return_value=command_object)
+    with patch.dict(
+        "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
+        {command_name: command_type},
+    ):
+        request_id = "req"
+        data: dict[str, Any] = {"volume": 1}
+
+    with LogCapture() as log:
+        await _publish_p2p(
+            command_name, device_info, data, True, request_id, test_mqtt_client
+        )
+
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "WARNING",
+                f"Could not parse p2p payload: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={data}",
+            )
+        )
