@@ -2,38 +2,34 @@
 import asyncio
 import json
 import ssl
-from collections.abc import MutableMapping
+from collections.abc import Callable, MutableMapping
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
+from asyncio_mqtt import Client, Message, MqttError
 from cachetools import TTLCache
-from gmqtt import Client, Subscription
-from gmqtt.mqtt.constants import MQTTv311
+
+from deebot_client.events.event_bus import EventBus
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
-from .vacuum_bot import VacuumBot
+
+RECONNECT_INTERVAL = 5  # seconds
 
 _LOGGER = get_logger(__name__)
 
 
-def _get_subscriptions(device_info: DeviceInfo) -> list[Subscription]:
+def _get_topics(device_info: DeviceInfo) -> list[str]:
     return [
         # iot/atr/[command]]/[did]]/[class]]/[resource]/j
-        Subscription(
-            f"iot/atr/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/j"
-        ),
+        f"iot/atr/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/j",
         # iot/p2p/[command]]/[sender did]/[sender class]]/[sender resource]
-        # /[receiver did]/[receiver class]]/[receiver resource]/[q|p/[request id/j
+        # /[receiver did]/[receiver class]]/[receiver resource]/[q|p]/[request id]/j
         # [q|p] q-> request p-> response
-        Subscription(
-            f"iot/p2p/+/+/+/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/+/j"
-        ),
-        Subscription(
-            f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j"
-        ),
+        f"iot/p2p/+/+/+/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/+/j",
+        f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j",
     ]
 
 
@@ -51,7 +47,7 @@ class MqttConfiguration:
     config: InitVar[Configuration]
     port: int = 443
     hostname: str = "mq.ecouser.net"
-    ssl_context: ssl.SSLContext | bool = field(default_factory=_default_ssl_context)
+    ssl_context: ssl.SSLContext | None = field(default_factory=_default_ssl_context)
     device_id: str = field(init=False)
 
     def __post_init__(self, config: Configuration) -> None:
@@ -72,6 +68,15 @@ class MqttConfiguration:
             object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
 
 
+@dataclass(frozen=True)
+class SubscriberInfo:
+    """Subscriber information."""
+
+    device_info: DeviceInfo
+    events: EventBus
+    callback: Callable[[str, str | bytes | bytearray], None]
+
+
 class MqttClient:
     """MQTT client."""
 
@@ -82,118 +87,176 @@ class MqttClient:
     ):
         self._config = config
         self._authenticator = authenticator
-        self._subscribers: MutableMapping[str, SubscriberInfo] = {}
 
-        self._client: Client | None = None
+        self._subscribtions: MutableMapping[str, SubscriberInfo] = {}
+        self._subscribtion_changes: asyncio.Queue[
+            tuple[SubscriberInfo | DeviceInfo, bool]
+        ] = asyncio.Queue()
+        self._mqtt_task: asyncio.Task | None = None
+
         self._received_p2p_commands: MutableMapping[
             str, CommandHandlingMqttP2P
         ] = TTLCache(maxsize=60 * 60, ttl=60)
         self._last_message_received_at: datetime | None = None
 
-        # pylint: disable=unused-argument
-        async def __on_message(
-            client: Client, topic: str, payload: bytes, qos: int, properties: dict
-        ) -> None:
-            _LOGGER.debug("Got message: topic=%s; payload=%s;", topic, payload.decode())
-            self._last_message_received_at = datetime.now()
-
-            topic_split = topic.split("/")
-            if topic.startswith("iot/atr"):
-                await self._handle_atr(topic_split, payload)
-            elif topic.startswith("iot/p2p"):
-                self._handle_p2p(topic_split, payload)
-            else:
-                _LOGGER.debug("Got unsupported topic: %s", topic)
-
-        self._on_message = __on_message
-
-        def on_credentials_changed(credentials: Credentials) -> None:
-            if self._client:
-                self._client.set_auth_credentials(
-                    credentials.user_id, credentials.token
-                )
-                asyncio.create_task(self.connect())
+        def on_credentials_changed(_: Credentials) -> None:
+            asyncio.create_task(self._create_mqtt_task())
 
         authenticator.subscribe(on_credentials_changed)
+        asyncio.create_task(self._create_mqtt_task())
 
     @property
     def last_message_received_at(self) -> datetime | None:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
 
-    async def connect(self) -> None:
-        """Connect to the mqtt broker."""
-        if self._client:
-            await self.disconnect()
-
+    async def _get_client(self) -> Client:
         credentials = await self._authenticator.authenticate()
         client_id = f"{credentials.user_id}@ecouser/{self._config.device_id}"
-        self._client = Client(client_id)
-        self._client.on_message = self._on_message
-        self._client.set_auth_credentials(credentials.user_id, credentials.token)
-
-        # pylint: disable=unused-argument
-        def on_connect(client: Client, flags: int, code: int, properties: dict) -> None:
-            if self._subscribers:
-                _LOGGER.debug("Subscribe again to all previous subscriptions")
-                for _, info in self._subscribers.items():
-                    client.subscribe(info.subscriptions)
-
-        self._client.on_connect = on_connect
-
-        await self._client.connect(
-            self._config.hostname,
-            self._config.port,
-            ssl=self._config.ssl_context,
-            version=MQTTv311,
+        return Client(
+            hostname=self._config.hostname,
+            port=self._config.port,
+            username=credentials.user_id,
+            password=credentials.token,
+            client_id=client_id,
+            tls_context=self._config.ssl_context,
         )
 
-    async def subscribe(self, vacuum_bot: VacuumBot) -> None:
-        """Subscribe for messages for given vacuum."""
-        if self._client is None or not self._client.is_connected:
-            await self.connect()
-            assert self._client is not None
+    async def _cancel_mqtt_task(self) -> None:
+        if self._mqtt_task is not None and self._mqtt_task.cancel():
+            # Wait for the task to be cancelled
+            try:
+                await self._mqtt_task
+            except asyncio.CancelledError:
+                pass
 
-        device_info = vacuum_bot.device_info
-        sub_info = self._subscribers.setdefault(
-            device_info.did,
-            SubscriberInfo(
-                bot=vacuum_bot, subscriptions=_get_subscriptions(device_info)
-            ),
+    async def _create_mqtt_task(self) -> None:
+        async def mqtt() -> None:
+            while True:
+                try:
+                    async with (await self._get_client()) as client:
+                        _LOGGER.debug("Subscribe to all previous subscriptions")
+                        for _, info in self._subscribtions.items():
+                            for topic in _get_topics(info.device_info):
+                                await client.subscribe(topic)
+
+                        async def listen() -> None:
+                            async with client.messages() as messages:
+                                async for message in messages:
+                                    self._handle_message(message)
+
+                        tasks = [
+                            asyncio.create_task(listen()),
+                            asyncio.create_task(
+                                self._pending_subscriptions_worker(client)
+                            ),
+                        ]
+                        try:
+                            _LOGGER.debug("All mqtt tasks created")
+                            await asyncio.wait(
+                                tasks, return_when=asyncio.FIRST_COMPLETED
+                            )
+                        finally:
+                            for task in tasks:
+                                task.cancel()
+
+                except MqttError:
+                    _LOGGER.warning(
+                        "Connection lost; Reconnecting in %d seconds ...",
+                        RECONNECT_INTERVAL,
+                        exc_info=True,
+                    )
+                    await asyncio.sleep(RECONNECT_INTERVAL)
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.error("An exception occurred", exc_info=True)
+
+        await self._cancel_mqtt_task()
+        self._mqtt_task = asyncio.create_task(mqtt())
+
+    def _handle_message(self, message: Message) -> None:
+        _LOGGER.debug(
+            "Got message: topic=%s, payload=%s", message.topic, message.payload
         )
+        self._last_message_received_at = datetime.now()
 
-        self._client.subscribe(sub_info.subscriptions)
+        if message.payload is None or isinstance(message.payload, (int, float)):
+            _LOGGER.warning(
+                "Unexpected message: tpoic=%s, payload=%s",
+                message.topic,
+                message.payload,
+            )
+            return
 
-    def unsubscribe(self, vacuum_bot: VacuumBot) -> None:
+        topic_split = message.topic.value.split("/")
+        if message.topic.matches("iot/atr/#"):
+            self._handle_atr(topic_split, message.payload)
+        elif message.topic.matches("iot/p2p/#"):
+            self._handle_p2p(topic_split, message.payload)
+        else:
+            _LOGGER.debug("Got unsupported topic: %s", message.topic)
+
+    async def _pending_subscriptions_worker(self, client: Client) -> None:
+        while True:
+            (info, add) = await self._subscribtion_changes.get()
+
+            if isinstance(info, SubscriberInfo):
+                device_info = info.device_info
+            else:
+                device_info = info
+                add = False
+
+            for topic in _get_topics(device_info):
+                if add:
+                    await client.subscribe(topic)
+                else:
+                    await client.unsubscribe(topic)
+
+            if add and isinstance(info, SubscriberInfo):
+                self._subscribtions[device_info.did] = info
+            else:
+                self._subscribtions.pop(device_info.did, None)
+
+            self._subscribtion_changes.task_done()
+
+    async def subscribe(self, info: SubscriberInfo) -> None:
+        """Subscribe for messages from given vacuum."""
+        await self.connect()
+        self._subscribtion_changes.put_nowait((info, True))
+
+    def unsubscribe(self, device_info: DeviceInfo) -> None:
         """Unsubscribe given vacuum."""
-        device_info = vacuum_bot.device_info
+        self._subscribtion_changes.put_nowait((device_info, False))
 
-        if (info := self._subscribers.pop(device_info.did, None)) and self._client:
-            for subscription in info.subscriptions:
-                self._client.unsubscribe(subscription.topic)
+    async def connect(self) -> None:
+        """Connect to MQTT."""
+        if self._mqtt_task is None or self._mqtt_task.done():
+            await self._create_mqtt_task()
 
     async def disconnect(self) -> None:
         """Disconnect from MQTT."""
-        if self._client:
-            await self._client.disconnect()
+        await self._cancel_mqtt_task()
 
-    async def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
+    def _handle_atr(
+        self, topic_split: list[str], payload: str | bytes | bytearray
+    ) -> None:
         try:
-            sub_info = self._subscribers.get(topic_split[3])
-            if sub_info:
-                data = json.loads(payload)
-                await sub_info.bot.handle_message(topic_split[2], data)
+            if sub_info := self._subscribtions.get(topic_split[3]):
+                sub_info.callback(topic_split[2], payload)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling atr message", exc_info=True
             )
 
-    def _handle_p2p(self, topic_split: list[str], payload: bytes) -> None:
+    def _handle_p2p(
+        self, topic_split: list[str], payload: str | bytes | bytearray
+    ) -> None:
         try:
             command_name = topic_split[2]
             command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(command_name, None)
             if command_type is None:
-                # command does not support p2p handling (yet)
+                _LOGGER.debug(
+                    "Command %s does not support p2p handling (yet)", command_name
+                )
                 return
 
             is_request = topic_split[9] == "q"
@@ -213,28 +276,17 @@ class MqttClient:
 
                 self._received_p2p_commands[request_id] = command_type(**data)
             else:
-                command = self._received_p2p_commands.get(request_id, None)
-                if not command:
+                if command := self._received_p2p_commands.pop(request_id, None):
+                    if sub_info := self._subscribtions.get(topic_split[3]):
+                        data = json.loads(payload)
+                        command.handle_mqtt_p2p(sub_info.events, data)
+                else:
                     _LOGGER.debug(
                         "Response to command came in probably to late. requestId=%s, commandName=%s",
                         request_id,
                         command_name,
                     )
-                    return
-
-                sub_info = self._subscribers.get(topic_split[3])
-                if sub_info:
-                    data = json.loads(payload)
-                    command.handle_mqtt_p2p(sub_info.bot.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling p2p message", exc_info=True
             )
-
-
-@dataclass(frozen=True)
-class SubscriberInfo:
-    """Subscriber information."""
-
-    bot: VacuumBot
-    subscriptions: list[Subscription]
