@@ -10,6 +10,7 @@ from asyncio_mqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.events.event_bus import EventBus
+from deebot_client.exceptions import AuthenticationError
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
@@ -122,6 +123,9 @@ class MqttClient:
     async def connect(self) -> None:
         """Connect to MQTT."""
         if self._mqtt_task is None or self._mqtt_task.done():
+            # call authenticator to verify that we have valid credentials
+            await self._authenticator.authenticate()
+
             await self._create_mqtt_task()
 
     async def disconnect(self) -> None:
@@ -184,9 +188,17 @@ class MqttClient:
                         RECONNECT_INTERVAL,
                         exc_info=True,
                     )
-                    await asyncio.sleep(RECONNECT_INTERVAL)
+                except AuthenticationError:
+                    _LOGGER.error(
+                        "Could not authenticate. Please check your credentials",
+                        exc_info=True,
+                    )
+                    return
                 except Exception:  # pylint: disable=broad-except
                     _LOGGER.error("An exception occurred", exc_info=True)
+                    return
+
+                await asyncio.sleep(RECONNECT_INTERVAL)
 
         await self._cancel_mqtt_task()
         self._mqtt_task = asyncio.create_task(mqtt())
