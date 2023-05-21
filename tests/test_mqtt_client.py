@@ -2,6 +2,7 @@ import asyncio
 import datetime
 import json
 import ssl
+from collections.abc import Callable
 from typing import Any
 from unittest.mock import MagicMock, Mock, patch
 
@@ -41,12 +42,14 @@ async def _verify_subscribe(
 
 async def _subscribe(
     mqtt_client: MqttClient, device_info: DeviceInfo
-) -> tuple[Mock, Mock]:
+) -> tuple[Mock, Mock, Callable[[], None]]:
     events = Mock(spec=EventBus)
     callback = MagicMock()
-    await mqtt_client.subscribe(SubscriberInfo(device_info, events, callback))
+    unsubscribe = await mqtt_client.subscribe(
+        SubscriberInfo(device_info, events, callback)
+    )
     await asyncio.sleep(0.1)
-    return (events, callback)
+    return (events, callback, unsubscribe)
 
 
 async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
@@ -71,7 +74,7 @@ async def test_client_reconnect_on_broker_error(
     device_info: DeviceInfo,
     mqtt_config: MqttConfiguration,
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, _) = await _subscribe(mqtt_client, device_info)
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
@@ -173,11 +176,11 @@ def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
 async def test_client_bot_subscription(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, unsubscribe) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
-    mqtt_client.unsubscribe(device_info)
+    unsubscribe()
     await asyncio.sleep(0.1)
 
     await _verify_subscribe(test_mqtt_client, device_info, False, callback)
@@ -186,7 +189,7 @@ async def test_client_bot_subscription(
 async def test_client_reconnect_manual(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, _) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
@@ -223,7 +226,7 @@ async def test_p2p_success(
     test_mqtt_client: Client,
 ) -> None:
     """Test p2p workflow on SetVolume."""
-    (events, _) = await _subscribe(mqtt_client, device_info)
+    (events, _, _) = await _subscribe(mqtt_client, device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)

@@ -1,7 +1,7 @@
 """Base command."""
 import asyncio
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, final
 
@@ -19,7 +19,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] | None = None
+    requested_commands: list["Command"] = field(default_factory=lambda: [])
 
     @classmethod
     def success(cls) -> "CommandResult":
@@ -35,6 +35,8 @@ class CommandResult(HandlingResult):
 class Command(ABC):
     """Abstract command object."""
 
+    _targets_bot: bool = True
+
     def __init__(self, args: dict | list | None = None) -> None:
         if args is None:
             args = {}
@@ -49,11 +51,16 @@ class Command(ABC):
     @final
     async def execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
-    ) -> None:
-        """Execute command."""
+    ) -> bool:
+        """Execute command.
+
+        Returns:
+            bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
+                                This value is not indicating if the command was executed successfully.
+        """
         try:
             result = await self._execute(authenticator, device_info, event_bus)
-            if result.state == HandlingState.SUCCESS and result.requested_commands:
+            if result.state == HandlingState.SUCCESS:
                 # Execute command which are requested by the handler
                 tasks = []
                 for requested_command in result.requested_commands:
@@ -66,12 +73,15 @@ class Command(ABC):
                     )
 
                 await asyncio.gather(*tasks)
+
+                return self._targets_bot
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning(
                 "Could not execute command %s",
                 self.name,
                 exc_info=True,
             )
+        return False
 
     async def _execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus

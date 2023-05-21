@@ -2,8 +2,11 @@
 import asyncio
 import inspect
 import json
+from collections.abc import Callable
+from datetime import datetime
 from typing import Any, Final
 
+from deebot_client.commands.battery import GetBattery
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 
 from .authentication import Authenticator
@@ -40,6 +43,9 @@ class VacuumBot:
 
         self._semaphore = asyncio.Semaphore(3)
         self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
+        self._last_time_available: datetime = datetime.now()
+        self._available_task: asyncio.Task | None = None
+        self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
         self.events: Final[EventBus] = EventBus(self.execute_command)
@@ -93,17 +99,55 @@ class VacuumBot:
 
     async def execute_command(self, command: Command) -> None:
         """Execute given command."""
-        async with self._semaphore:
-            await command.execute(self._authenticator, self.device_info, self.events)
+        await self._execute_command(command)
 
-    async def subscribe_to(self, client: MqttClient) -> None:
-        """Subscribe bot to mqtt."""
-        await client.subscribe(
+    async def initialize(self, client: MqttClient) -> None:
+        """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
+        self._unsubscribe = await client.subscribe(
             SubscriberInfo(self.device_info, self.events, self._handle_message)
         )
+        self._available_task = asyncio.create_task(self._available_task_worker())
 
-    def set_available(self, available: bool) -> None:
+    async def teardown(self) -> None:
+        """Tear down bot including stopping task and unsubscribing."""
+        if self._unsubscribe:
+            self._unsubscribe()
+
+        if self._available_task and self._available_task.cancel():
+            try:
+                await self._available_task
+            except asyncio.CancelledError:
+                pass
+
+    async def _available_task_worker(self) -> None:
+        while True:
+            if (datetime.now() - self._last_time_available).total_seconds() > 60:
+                # request GetBattery to check availability
+                try:
+                    self._set_available(await self._execute_command(GetBattery()))
+                except Exception:  # pylint: disable=broad-exception-caught
+                    _LOGGER.debug(
+                        "An exception occurred during the available check",
+                        exc_info=True,
+                    )
+            await asyncio.sleep(60)
+
+    async def _execute_command(self, command: Command) -> bool:
+        """Execute given command."""
+        async with self._semaphore:
+            if await command.execute(
+                self._authenticator, self.device_info, self.events
+            ):
+                self._set_available(True)
+                return True
+
+        return False
+
+    def _set_available(self, available: bool) -> None:
         """Set available."""
+        if available:
+            self._last_time_available = datetime.now()
+
         status = StatusEvent(available, self._status.state)
         self.events.notify(status)
 
@@ -116,6 +160,8 @@ class VacuumBot:
         :param message_data: message data
         :return: None
         """
+        self._set_available(True)
+
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
