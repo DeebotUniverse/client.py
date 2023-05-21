@@ -99,8 +99,8 @@ class MqttClient:
         ] = TTLCache(maxsize=60 * 60, ttl=60)
         self._last_message_received_at: datetime | None = None
 
-        def on_credentials_changed(_: Credentials) -> None:
-            asyncio.create_task(self._create_mqtt_task())
+        async def on_credentials_changed(_: Credentials) -> None:
+            await self._create_mqtt_task()
 
         authenticator.subscribe(on_credentials_changed)
 
