@@ -190,7 +190,7 @@ class MqttClient:
                     )
                 except AuthenticationError:
                     _LOGGER.error(
-                        "Could not authenticate. Please check your credentials",
+                        "Could not authenticate. Please check your credentials and afterwards reload the integration.",
                         exc_info=True,
                     )
                     return

@@ -4,7 +4,7 @@ import json
 import ssl
 from collections.abc import Callable
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 import pytest
 from aiohttp import ClientSession
@@ -12,9 +12,11 @@ from asyncio_mqtt import Client, Message
 from cachetools import TTLCache
 from testfixtures import LogCapture
 
+from deebot_client.authentication import Authenticator
 from deebot_client.commands.battery import GetBattery
 from deebot_client.commands.volume import SetVolume
 from deebot_client.events.event_bus import EventBus
+from deebot_client.exceptions import AuthenticationError
 from deebot_client.models import Configuration, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, SubscriberInfo
 
@@ -353,3 +355,46 @@ async def test_p2p_parse_error(
                 f"Could not parse p2p payload: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={data}",
             )
         )
+
+
+@pytest.mark.parametrize(
+    "exception_to_raise, expected_log_message",
+    [
+        (
+            AuthenticationError,
+            "Could not authenticate. Please check your credentials and afterwards reload the integration.",
+        ),
+        (RuntimeError, "An exception occurred"),
+    ],
+)
+async def test_mqtt_task_exceptions(
+    authenticator: Authenticator,
+    mqtt_config: MqttConfiguration,
+    exception_to_raise: Exception,
+    expected_log_message: str,
+) -> None:
+    with patch(
+        "deebot_client.mqtt_client.Client",
+        MagicMock(side_effect=[exception_to_raise, DEFAULT]),
+    ):
+        with LogCapture() as log:
+            mqtt_client = MqttClient(mqtt_config, authenticator)
+
+            await mqtt_client.connect()
+            await asyncio.sleep(0.1)
+
+            log.check_present(
+                (
+                    "deebot_client.mqtt_client",
+                    "ERROR",
+                    expected_log_message,
+                )
+            )
+
+            assert mqtt_client._mqtt_task
+            assert mqtt_client._mqtt_task.done()
+
+            await mqtt_client.connect()
+            await asyncio.sleep(0.1)
+
+            assert not mqtt_client._mqtt_task.done()
