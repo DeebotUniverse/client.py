@@ -28,6 +28,7 @@ from .messages import get_message
 from .models import DeviceInfo, VacuumState
 
 _LOGGER = get_logger(__name__)
+_AVAILABLE_CHECK_INTERVAL = 60
 
 
 class VacuumBot:
@@ -121,7 +122,9 @@ class VacuumBot:
 
     async def _available_task_worker(self) -> None:
         while True:
-            if (datetime.now() - self._last_time_available).total_seconds() > 60:
+            if (datetime.now() - self._last_time_available).total_seconds() > (
+                _AVAILABLE_CHECK_INTERVAL - 1
+            ):
                 # request GetBattery to check availability
                 try:
                     self._set_available(await self._execute_command(GetBattery()))
@@ -130,7 +133,7 @@ class VacuumBot:
                         "An exception occurred during the available check",
                         exc_info=True,
                     )
-            await asyncio.sleep(60)
+            await asyncio.sleep(_AVAILABLE_CHECK_INTERVAL)
 
     async def _execute_command(self, command: Command) -> bool:
         """Execute given command."""
@@ -171,11 +174,11 @@ class VacuumBot:
                 else:
                     data = json.loads(message_data)
 
-                message.handle(self.events, data)
-
                 fw_version = data.get("header", {}).get("fwVer", None)
                 if fw_version:
                     self.fw_version = fw_version
+
+                message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.error(
                 "An exception occurred during handling message", exc_info=True

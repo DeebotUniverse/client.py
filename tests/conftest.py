@@ -10,6 +10,7 @@ from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.models import Configuration, Credentials, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
+from deebot_client.vacuum_bot import VacuumBot
 
 from .fixtures.mqtt_server import MqttServer
 
@@ -102,3 +103,14 @@ def device_info() -> DeviceInfo:
             "class": "get_class",
         }
     )
+
+
+@pytest.fixture
+async def vacuum_bot(
+    device_info: DeviceInfo, authenticator: Authenticator
+) -> AsyncGenerator[VacuumBot, None]:
+    mqtt = Mock(spec_set=MqttClient)
+    bot = VacuumBot(device_info, authenticator)
+    await bot.initialize(mqtt)
+    yield bot
+    await bot.teardown()
