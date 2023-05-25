@@ -1,7 +1,7 @@
 """Authentication module."""
 import asyncio
 import time
-from collections.abc import Callable, Mapping
+from collections.abc import Awaitable, Callable, Mapping
 from typing import Any
 from urllib.parse import urljoin
 
@@ -309,9 +309,11 @@ class Authenticator:
         )
 
         self._lock = asyncio.Lock()
-        self._on_credentials_changed: set[Callable[[Credentials], None]] = set()
+        self._on_credentials_changed: set[
+            Callable[[Credentials], Awaitable[None]]
+        ] = set()
         self._credentials: Credentials | None = None
-        self._refresh_task: asyncio.TimerHandle | None = None
+        self._refresh_handle: asyncio.TimerHandle | None = None
 
     async def authenticate(self, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
@@ -326,48 +328,25 @@ class Authenticator:
 
             if should_login:
                 self._credentials = await self._auth_client.login()
-                if self._refresh_task:
-                    self._refresh_task.cancel()
-
+                self._cancel_refresh_task()
                 self._create_refresh_task()
 
                 for on_changed in self._on_credentials_changed:
-                    on_changed(self._credentials)
+                    await on_changed(self._credentials)
 
             assert self._credentials is not None
             return self._credentials
 
-    def subscribe(self, callback: Callable[[Credentials], None]) -> None:
-        """Add callback on new credentials."""
-        self._on_credentials_changed.add(callback)
+    def subscribe(
+        self, callback: Callable[[Credentials], Awaitable[None]]
+    ) -> Callable[[], None]:
+        """Add callback on new credentials and return subscribe callback."""
 
-    def unsubscribe(self, callback: Callable[[Credentials], None]) -> None:
-        """Remove callback on new credentials."""
-        if callback in self._on_credentials_changed:
+        def unsubscribe() -> None:
             self._on_credentials_changed.remove(callback)
 
-    def _create_refresh_task(self) -> None:
-        # refresh at 99% of validity
-        assert self._credentials is not None
-        validity = (self._credentials.expires_at - time.time()) * 0.99
-
-        self._refresh_task = asyncio.get_event_loop().call_later(
-            validity, self._auto_refresh_task
-        )
-
-    def _auto_refresh_task(self) -> None:
-        _LOGGER.debug("Refresh token")
-
-        async def refresh() -> None:
-            try:
-                self._refresh_task = None
-                await self.authenticate(True)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.error(
-                    "An exception occurred during refreshing token", exc_info=True
-                )
-
-        asyncio.create_task(refresh())
+        self._on_credentials_changed.add(callback)
+        return unsubscribe
 
     async def post_authenticated(
         self,
@@ -385,3 +364,32 @@ class Authenticator:
             headers=headers,
             credentials=await self.authenticate(),
         )
+
+    async def teardown(self) -> None:
+        """Teardown authenticator."""
+        self._cancel_refresh_task()
+
+    def _cancel_refresh_task(self) -> None:
+        if self._refresh_handle and not self._refresh_handle.cancelled():
+            self._refresh_handle.cancel()
+
+    def _create_refresh_task(self) -> None:
+        # refresh at 99% of validity
+        def refresh() -> None:
+            _LOGGER.debug("Refresh token")
+
+            async def async_refresh() -> None:
+                try:
+                    await self.authenticate(True)
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.error(
+                        "An exception occurred during refreshing token", exc_info=True
+                    )
+
+            asyncio.create_task(async_refresh())
+            self._refresh_handle = None
+
+        assert self._credentials is not None
+        validity = (self._credentials.expires_at - time.time()) * 0.99
+
+        self._refresh_handle = asyncio.get_event_loop().call_later(validity, refresh)

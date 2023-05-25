@@ -3,6 +3,7 @@ import asyncio
 import json
 import ssl
 from collections.abc import Callable, MutableMapping
+from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
@@ -10,6 +11,7 @@ from asyncio_mqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.events.event_bus import EventBus
+from deebot_client.exceptions import AuthenticationError
 
 from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
@@ -90,7 +92,7 @@ class MqttClient:
 
         self._subscribtions: MutableMapping[str, SubscriberInfo] = {}
         self._subscribtion_changes: asyncio.Queue[
-            tuple[SubscriberInfo | DeviceInfo, bool]
+            tuple[SubscriberInfo, bool]
         ] = asyncio.Queue()
         self._mqtt_task: asyncio.Task | None = None
 
@@ -99,16 +101,37 @@ class MqttClient:
         ] = TTLCache(maxsize=60 * 60, ttl=60)
         self._last_message_received_at: datetime | None = None
 
-        def on_credentials_changed(_: Credentials) -> None:
-            asyncio.create_task(self._create_mqtt_task())
+        async def on_credentials_changed(_: Credentials) -> None:
+            await self._create_mqtt_task()
 
         authenticator.subscribe(on_credentials_changed)
-        asyncio.create_task(self._create_mqtt_task())
 
     @property
     def last_message_received_at(self) -> datetime | None:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
+
+    async def subscribe(self, info: SubscriberInfo) -> Callable[[], None]:
+        """Subscribe for messages from given vacuum."""
+        await self.connect()
+        self._subscribtion_changes.put_nowait((info, True))
+
+        def unsubscribe() -> None:
+            self._subscribtion_changes.put_nowait((info, False))
+
+        return unsubscribe
+
+    async def connect(self) -> None:
+        """Connect to MQTT."""
+        if self._mqtt_task is None or self._mqtt_task.done():
+            # call authenticator to verify that we have valid credentials
+            await self._authenticator.authenticate()
+
+            await self._create_mqtt_task()
+
+    async def disconnect(self) -> None:
+        """Disconnect from MQTT."""
+        await self._cancel_mqtt_task()
 
     async def _get_client(self) -> Client:
         credentials = await self._authenticator.authenticate()
@@ -125,10 +148,8 @@ class MqttClient:
     async def _cancel_mqtt_task(self) -> None:
         if self._mqtt_task is not None and self._mqtt_task.cancel():
             # Wait for the task to be cancelled
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._mqtt_task
-            except asyncio.CancelledError:
-                pass
 
     async def _create_mqtt_task(self) -> None:
         async def mqtt() -> None:
@@ -166,9 +187,17 @@ class MqttClient:
                         RECONNECT_INTERVAL,
                         exc_info=True,
                     )
-                    await asyncio.sleep(RECONNECT_INTERVAL)
+                except AuthenticationError:
+                    _LOGGER.error(
+                        "Could not authenticate. Please check your credentials and afterwards reload the integration.",
+                        exc_info=True,
+                    )
+                    return
                 except Exception:  # pylint: disable=broad-except
                     _LOGGER.error("An exception occurred", exc_info=True)
+                    return
+
+                await asyncio.sleep(RECONNECT_INTERVAL)
 
         await self._cancel_mqtt_task()
         self._mqtt_task = asyncio.create_task(mqtt())
@@ -199,42 +228,19 @@ class MqttClient:
         while True:
             (info, add) = await self._subscribtion_changes.get()
 
-            if isinstance(info, SubscriberInfo):
-                device_info = info.device_info
-            else:
-                device_info = info
-                add = False
-
+            device_info = info.device_info
             for topic in _get_topics(device_info):
                 if add:
                     await client.subscribe(topic)
                 else:
                     await client.unsubscribe(topic)
 
-            if add and isinstance(info, SubscriberInfo):
+            if add:
                 self._subscribtions[device_info.did] = info
             else:
                 self._subscribtions.pop(device_info.did, None)
 
             self._subscribtion_changes.task_done()
-
-    async def subscribe(self, info: SubscriberInfo) -> None:
-        """Subscribe for messages from given vacuum."""
-        await self.connect()
-        self._subscribtion_changes.put_nowait((info, True))
-
-    def unsubscribe(self, device_info: DeviceInfo) -> None:
-        """Unsubscribe given vacuum."""
-        self._subscribtion_changes.put_nowait((device_info, False))
-
-    async def connect(self) -> None:
-        """Connect to MQTT."""
-        if self._mqtt_task is None or self._mqtt_task.done():
-            await self._create_mqtt_task()
-
-    async def disconnect(self) -> None:
-        """Disconnect from MQTT."""
-        await self._cancel_mqtt_task()
 
     def _handle_atr(
         self, topic_split: list[str], payload: str | bytes | bytearray

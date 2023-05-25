@@ -15,6 +15,7 @@ _LOGGER = get_logger(__name__)
 class GetCleanLogs(Command):
     """Get clean logs command."""
 
+    _targets_bot: bool = False
     name = "GetCleanLogs"
 
     def __init__(self, count: int = 0) -> None:

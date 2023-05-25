@@ -2,8 +2,9 @@ import asyncio
 import datetime
 import json
 import ssl
+from collections.abc import Callable
 from typing import Any
-from unittest.mock import MagicMock, Mock, patch
+from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 import pytest
 from aiohttp import ClientSession
@@ -11,9 +12,11 @@ from asyncio_mqtt import Client, Message
 from cachetools import TTLCache
 from testfixtures import LogCapture
 
+from deebot_client.authentication import Authenticator
 from deebot_client.commands.battery import GetBattery
 from deebot_client.commands.volume import SetVolume
 from deebot_client.events.event_bus import EventBus
+from deebot_client.exceptions import AuthenticationError
 from deebot_client.models import Configuration, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, SubscriberInfo
 
@@ -41,12 +44,14 @@ async def _verify_subscribe(
 
 async def _subscribe(
     mqtt_client: MqttClient, device_info: DeviceInfo
-) -> tuple[Mock, Mock]:
+) -> tuple[Mock, Mock, Callable[[], None]]:
     events = Mock(spec=EventBus)
     callback = MagicMock()
-    await mqtt_client.subscribe(SubscriberInfo(device_info, events, callback))
+    unsubscribe = await mqtt_client.subscribe(
+        SubscriberInfo(device_info, events, callback)
+    )
     await asyncio.sleep(0.1)
-    return (events, callback)
+    return (events, callback, unsubscribe)
 
 
 async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
@@ -71,7 +76,7 @@ async def test_client_reconnect_on_broker_error(
     device_info: DeviceInfo,
     mqtt_config: MqttConfiguration,
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, _) = await _subscribe(mqtt_client, device_info)
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
@@ -173,11 +178,11 @@ def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
 async def test_client_bot_subscription(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, unsubscribe) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
-    mqtt_client.unsubscribe(device_info)
+    unsubscribe()
     await asyncio.sleep(0.1)
 
     await _verify_subscribe(test_mqtt_client, device_info, False, callback)
@@ -186,7 +191,7 @@ async def test_client_bot_subscription(
 async def test_client_reconnect_manual(
     mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback) = await _subscribe(mqtt_client, device_info)
+    (_, callback, _) = await _subscribe(mqtt_client, device_info)
 
     await _verify_subscribe(test_mqtt_client, device_info, True, callback)
 
@@ -223,7 +228,7 @@ async def test_p2p_success(
     test_mqtt_client: Client,
 ) -> None:
     """Test p2p workflow on SetVolume."""
-    (events, _) = await _subscribe(mqtt_client, device_info)
+    (events, _, _) = await _subscribe(mqtt_client, device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
@@ -350,3 +355,46 @@ async def test_p2p_parse_error(
                 f"Could not parse p2p payload: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={data}",
             )
         )
+
+
+@pytest.mark.parametrize(
+    "exception_to_raise, expected_log_message",
+    [
+        (
+            AuthenticationError,
+            "Could not authenticate. Please check your credentials and afterwards reload the integration.",
+        ),
+        (RuntimeError, "An exception occurred"),
+    ],
+)
+async def test_mqtt_task_exceptions(
+    authenticator: Authenticator,
+    mqtt_config: MqttConfiguration,
+    exception_to_raise: Exception,
+    expected_log_message: str,
+) -> None:
+    with patch(
+        "deebot_client.mqtt_client.Client",
+        MagicMock(side_effect=[exception_to_raise, DEFAULT]),
+    ):
+        with LogCapture() as log:
+            mqtt_client = MqttClient(mqtt_config, authenticator)
+
+            await mqtt_client.connect()
+            await asyncio.sleep(0.1)
+
+            log.check_present(
+                (
+                    "deebot_client.mqtt_client",
+                    "ERROR",
+                    expected_log_message,
+                )
+            )
+
+            assert mqtt_client._mqtt_task
+            assert mqtt_client._mqtt_task.done()
+
+            await mqtt_client.connect()
+            await asyncio.sleep(0.1)
+
+            assert not mqtt_client._mqtt_task.done()
