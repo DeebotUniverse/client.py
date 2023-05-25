@@ -375,15 +375,19 @@ class Authenticator:
 
     def _create_refresh_task(self) -> None:
         # refresh at 99% of validity
-        async def refresh() -> None:
+        def refresh() -> None:
             _LOGGER.debug("Refresh token")
-            try:
-                self._refresh_handle = None
-                await self.authenticate(True)
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.error(
-                    "An exception occurred during refreshing token", exc_info=True
-                )
+
+            async def async_refresh() -> None:
+                try:
+                    await self.authenticate(True)
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.error(
+                        "An exception occurred during refreshing token", exc_info=True
+                    )
+
+            asyncio.create_task(async_refresh())
+            self._refresh_handle = None
 
         assert self._credentials is not None
         validity = (self._credentials.expires_at - time.time()) * 0.99
