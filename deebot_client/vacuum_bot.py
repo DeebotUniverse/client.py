@@ -3,6 +3,7 @@ import asyncio
 import inspect
 import json
 from collections.abc import Callable
+from contextlib import suppress
 from datetime import datetime
 from typing import Any, Final
 
@@ -115,10 +116,8 @@ class VacuumBot:
             self._unsubscribe()
 
         if self._available_task and self._available_task.cancel():
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._available_task
-            except asyncio.CancelledError:
-                pass
 
     async def _available_task_worker(self) -> None:
         while True:

@@ -3,6 +3,7 @@ import asyncio
 import json
 import ssl
 from collections.abc import Callable, MutableMapping
+from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
@@ -147,10 +148,8 @@ class MqttClient:
     async def _cancel_mqtt_task(self) -> None:
         if self._mqtt_task is not None and self._mqtt_task.cancel():
             # Wait for the task to be cancelled
-            try:
+            with suppress(asyncio.CancelledError):
                 await self._mqtt_task
-            except asyncio.CancelledError:
-                pass
 
     async def _create_mqtt_task(self) -> None:
         async def mqtt() -> None:
