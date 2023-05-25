@@ -1,7 +1,7 @@
 import asyncio
 import json
 from collections.abc import Callable
-from unittest.mock import AsyncMock, Mock, patch
+from unittest.mock import Mock, patch
 
 from deebot_client.authentication import Authenticator
 from deebot_client.events import StatusEvent
@@ -12,9 +12,9 @@ from deebot_client.vacuum_bot import VacuumBot
 
 @patch("deebot_client.vacuum_bot._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
 @patch(
-    "deebot_client.events.const.EVENT_DTO_REFRESH_COMMANDS", {StatusEvent: []}
-)  # disable refresh on subscription
-async def test_available_check(
+    "deebot_client.events.const.EVENT_DTO_REFRESH_COMMANDS", {}
+)  # disable refresh on event subscription
+async def test_available_check_and_teardown(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
     """Test the available check including if the status Event is fired correctly."""
@@ -29,8 +29,7 @@ async def test_available_check(
 
     with patch("deebot_client.vacuum_bot.GetBattery", spec_set=True) as battery_command:
         # prepare mocks
-        execute_mock = AsyncMock()
-        battery_command.return_value.execute = execute_mock
+        execute_mock = battery_command.return_value.execute
 
         # prepare bot and mock mqtt
         bot = VacuumBot(device_info, authenticator)
@@ -55,21 +54,21 @@ async def test_available_check(
         # Wait longer than the interval to be sure task will be executed
         await asyncio.sleep(2.1)
         # Verify command call for available check
-        execute_mock.assert_called_once()
+        execute_mock.assert_awaited_once()
         await assert_received_status(False)
 
         # Simulate bot reached by returning True
         execute_mock.return_value = True
 
         await asyncio.sleep(2)
-        execute_mock.call_count = 2
+        execute_mock.await_count = 2
         await assert_received_status(True)
 
         # reset mock for easier handling
         battery_command.reset_mock()
 
         # Simulate message over mqtt and therefore available is not needed
-        await asyncio.sleep(1.1)
+        await asyncio.sleep(0.8)
         data = {
             "header": {
                 "pri": 1,
@@ -88,3 +87,10 @@ async def test_available_check(
         # As the last message is not more than (interval-1) old, we skip the available check
         execute_mock.assert_not_called()
         assert received_statuses.empty()
+
+        # teardown bot and verify that bot was unsubscribed from mqtt and available task was canceled.
+        await bot.teardown()
+        await asyncio.sleep(0.1)
+
+        unsubscribe_mock.assert_called()
+        assert bot._available_task.done()

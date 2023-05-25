@@ -105,15 +105,19 @@ class VacuumBot:
 
     async def initialize(self, client: MqttClient) -> None:
         """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
-        self._unsubscribe = await client.subscribe(
-            SubscriberInfo(self.device_info, self.events, self._handle_message)
-        )
-        self._available_task = asyncio.create_task(self._available_task_worker())
+        if self._unsubscribe is None:
+            self._unsubscribe = await client.subscribe(
+                SubscriberInfo(self.device_info, self.events, self._handle_message)
+            )
+
+        if self._available_task is None or self._available_task.done():
+            self._available_task = asyncio.create_task(self._available_task_worker())
 
     async def teardown(self) -> None:
         """Tear down bot including stopping task and unsubscribing."""
         if self._unsubscribe:
             self._unsubscribe()
+            self._unsubscribe = None
 
         if self._available_task and self._available_task.cancel():
             with suppress(asyncio.CancelledError):
