@@ -1,7 +1,7 @@
 """Error commands."""
 from typing import Any
 
-from ..events import ErrorEvent, StatusEvent
+from ..events import ErrorEvent, StateEvent
 from ..message import HandlingResult, MessageBodyDataDict
 from ..models import VacuumState
 from .common import EventBus, NoArgsCommand
@@ -28,7 +28,7 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
             if error is not None:
                 description = _ERROR_CODES.get(error)
                 if error != 0:
-                    event_bus.notify(StatusEvent(True, VacuumState.ERROR))
+                    event_bus.notify(StateEvent(VacuumState.ERROR))
                 event_bus.notify(ErrorEvent(error, description))
                 return HandlingResult.success()
 

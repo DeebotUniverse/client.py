@@ -28,6 +28,7 @@ from ..commands import (
 )
 from . import (
     AdvancedModeEvent,
+    AvailableEvent,
     BatteryEvent,
     CarpetAutoFanBoostEvent,
     CleanCountEvent,
@@ -43,8 +44,8 @@ from . import (
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
+    StateEvent,
     StatsEvent,
-    StatusEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
@@ -60,6 +61,7 @@ from .map import (
 )
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
+    AvailableEvent: [],
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CachedMapInfoEvent: [GetCachedMapInfo()],
@@ -82,7 +84,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     ReportStatsEvent: [],  # ReportStats cannot be pulled
     RoomsEvent: [GetCachedMapInfo()],
     StatsEvent: [GetStats()],
-    StatusEvent: [GetChargeState(), GetCleanInfo()],
+    StateEvent: [GetChargeState(), GetCleanInfo()],
     TotalStatsEvent: [GetTotalStats()],
     TrueDetectEvent: [GetTrueDetect()],
     VolumeEvent: [GetVolume()],

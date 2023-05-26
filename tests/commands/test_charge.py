@@ -4,7 +4,7 @@ import pytest
 from testfixtures import LogCapture
 
 from deebot_client.commands import Charge
-from deebot_client.events import StatusEvent
+from deebot_client.events import StateEvent
 from deebot_client.models import VacuumState
 from tests.commands import assert_command
 from tests.helpers import get_request_json
@@ -24,11 +24,11 @@ def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
 @pytest.mark.parametrize(
     "json, expected",
     [
-        (get_request_json(None), StatusEvent(True, VacuumState.RETURNING)),
-        (_prepare_json(30007), StatusEvent(True, VacuumState.DOCKED)),
+        (get_request_json(None), StateEvent(VacuumState.RETURNING)),
+        (_prepare_json(30007), StateEvent(VacuumState.DOCKED)),
     ],
 )
-async def test_Charge(json: dict[str, Any], expected: StatusEvent) -> None:
+async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
     await assert_command(Charge(), json, expected)
 
 

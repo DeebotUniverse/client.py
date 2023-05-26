@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from deebot_client.commands import GetChargeState
-from deebot_client.events import StatusEvent
+from deebot_client.events import StateEvent
 from tests.commands import assert_command
 from tests.helpers import get_request_json
 
@@ -15,6 +15,6 @@ from tests.helpers import get_request_json
     ],
 )
 async def test_GetChargeState(
-    json: dict[str, Any], expected: StatusEvent | None
+    json: dict[str, Any], expected: StateEvent | None
 ) -> None:
     await assert_command(GetChargeState(), json, expected)

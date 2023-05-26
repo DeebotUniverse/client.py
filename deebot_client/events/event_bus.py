@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 from ..logging_filter import get_logger
 from ..models import VacuumState
 from ..util import cancel, create_task
-from . import Event, StatusEvent
+from . import AvailableEvent, Event, StateEvent
 
 if TYPE_CHECKING:
     from ..command import Command
@@ -101,20 +101,29 @@ class EventBus:
         """Notify subscriber with given event representation."""
         event_processing_data = self._get_or_create_event_processing_data(type(event))
 
+        if event == event_processing_data.last_event:
+            _LOGGER.debug("Event is the same! Skipping (%s)", event)
+            return False
+
         if (
-            isinstance(event, StatusEvent)
+            isinstance(event, StateEvent)
             and event.state == VacuumState.IDLE
             and event_processing_data.last_event
-            and event_processing_data.last_event.available == event.available  # type: ignore[attr-defined]
             and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore[attr-defined]
         ):
             # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
             # Problem getCleanInfo will return state=idle, when bot is charging
-            event = StatusEvent(event.available, VacuumState.DOCKED)  # type: ignore[assignment]
-
-        if event == event_processing_data.last_event:
-            _LOGGER.debug("Event is the same! Skipping (%s)", event)
-            return False
+            event = StateEvent(VacuumState.DOCKED)  # type: ignore[assignment]
+        elif (
+            isinstance(event, AvailableEvent)
+            and event.available
+            and event_processing_data.last_event
+            and not event_processing_data.last_event.available  # type: ignore[attr-defined]
+        ):
+            # unavailable -> available: refresh everything
+            for event_type, _ in self._event_processing_dict.items():
+                if event_type != AvailableEvent:
+                    self.request_refresh(event_type)
 
         event_processing_data.last_event = event
         if event_processing_data.subscribers:
