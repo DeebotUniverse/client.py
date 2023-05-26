@@ -11,6 +11,9 @@ from typing import TYPE_CHECKING, Any, SupportsIndex, TypeVar, overload
 if TYPE_CHECKING:
     from _typeshed import SupportsKeysAndGetItem
 
+_T = TypeVar("_T")
+_S = TypeVar("_S")
+
 
 def md5(text: str) -> str:
     """Hash text using md5."""
@@ -18,12 +21,13 @@ def md5(text: str) -> str:
 
 
 def create_task(
-    tasks: set[asyncio.Future[Any]], target: Coroutine[Any, Any, None]
-) -> None:
+    tasks: set[asyncio.Future[Any]], target: Coroutine[Any, Any, _T]
+) -> asyncio.Task[_T]:
     """Create task with done callback to remove it from tasks and add it to tasks."""
     task = asyncio.create_task(target)
     tasks.add(task)
     task.add_done_callback(tasks.remove)
+    return task
 
 
 async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
@@ -83,10 +87,6 @@ class DisplayNameIntEnum(IntEnum):
 
     def __hash__(self) -> int:
         return hash(self._value_)
-
-
-_T = TypeVar("_T")
-_S = TypeVar("_S")
 
 
 class OnChangedList(list[_T]):
