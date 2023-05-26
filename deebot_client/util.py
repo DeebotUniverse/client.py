@@ -1,18 +1,44 @@
 """Util module."""
 from __future__ import annotations
 
+import asyncio
 import hashlib
-from collections.abc import Callable, Iterable, Mapping
+from collections.abc import Callable, Coroutine, Iterable, Mapping
+from contextlib import suppress
 from enum import IntEnum, unique
-from typing import TYPE_CHECKING, SupportsIndex, TypeVar, overload
+from typing import TYPE_CHECKING, Any, SupportsIndex, TypeVar, overload
 
 if TYPE_CHECKING:
     from _typeshed import SupportsKeysAndGetItem
+
+_T = TypeVar("_T")
+_S = TypeVar("_S")
 
 
 def md5(text: str) -> str:
     """Hash text using md5."""
     return hashlib.md5(bytes(str(text), "utf8")).hexdigest()
+
+
+def create_task(
+    tasks: set[asyncio.Future[Any]], target: Coroutine[Any, Any, _T]
+) -> asyncio.Task[_T]:
+    """Create task with done callback to remove it from tasks and add it to tasks."""
+    task = asyncio.create_task(target)
+    tasks.add(task)
+    task.add_done_callback(tasks.remove)
+    return task
+
+
+async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
+    """Cancel all tasks and wait for their completion."""
+    tasks_to_wait = set()
+    for task in tasks:
+        if task.cancel():
+            tasks_to_wait.add(task)
+
+    with suppress(asyncio.CancelledError):
+        await asyncio.gather(*tasks_to_wait)
 
 
 @unique
@@ -61,10 +87,6 @@ class DisplayNameIntEnum(IntEnum):
 
     def __hash__(self) -> int:
         return hash(self._value_)
-
-
-_T = TypeVar("_T")
-_S = TypeVar("_S")
 
 
 class OnChangedList(list[_T]):

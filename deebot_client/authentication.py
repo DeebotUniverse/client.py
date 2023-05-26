@@ -1,7 +1,7 @@
 """Authentication module."""
 import asyncio
 import time
-from collections.abc import Awaitable, Callable, Mapping
+from collections.abc import Callable, Coroutine, Mapping
 from typing import Any
 from urllib.parse import urljoin
 
@@ -11,7 +11,7 @@ from .const import REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
-from .util import md5
+from .util import cancel, create_task, md5
 
 _LOGGER = get_logger(__name__)
 
@@ -310,10 +310,11 @@ class Authenticator:
 
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
-            Callable[[Credentials], Awaitable[None]]
+            Callable[[Credentials], Coroutine[Any, Any, None]]
         ] = set()
         self._credentials: Credentials | None = None
         self._refresh_handle: asyncio.TimerHandle | None = None
+        self._tasks: set[asyncio.Future[Any]] = set()
 
     async def authenticate(self, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
@@ -332,13 +333,13 @@ class Authenticator:
                 self._create_refresh_task()
 
                 for on_changed in self._on_credentials_changed:
-                    await on_changed(self._credentials)
+                    create_task(self._tasks, on_changed(self._credentials))
 
             assert self._credentials is not None
             return self._credentials
 
     def subscribe(
-        self, callback: Callable[[Credentials], Awaitable[None]]
+        self, callback: Callable[[Credentials], Coroutine[Any, Any, None]]
     ) -> Callable[[], None]:
         """Add callback on new credentials and return subscribe callback."""
 
@@ -368,6 +369,7 @@ class Authenticator:
     async def teardown(self) -> None:
         """Teardown authenticator."""
         self._cancel_refresh_task()
+        await cancel(self._tasks)
 
     def _cancel_refresh_task(self) -> None:
         if self._refresh_handle and not self._refresh_handle.cancelled():
@@ -386,7 +388,7 @@ class Authenticator:
                         "An exception occurred during refreshing token", exc_info=True
                     )
 
-            asyncio.create_task(async_refresh())
+            create_task(self._tasks, async_refresh())
             self._refresh_handle = None
 
         assert self._credentials is not None
