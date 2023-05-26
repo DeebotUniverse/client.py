@@ -123,6 +123,9 @@ class VacuumBot:
             with suppress(asyncio.CancelledError):
                 await self._available_task
 
+        await self.events.teardown()
+        await self.map.teardown()
+
     async def _available_task_worker(self) -> None:
         while True:
             if (datetime.now() - self._last_time_available).total_seconds() > (

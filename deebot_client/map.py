@@ -32,7 +32,7 @@ from .events.event_bus import EventBus, EventListener
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .util import OnChangedDict, OnChangedList
+from .util import OnChangedDict, OnChangedList, cancel, create_task
 
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
@@ -144,6 +144,7 @@ class Map:
         self._amount_rooms: int = 0
         self._last_image: LastImage | None = None
         self._listeners: list[EventListener] = []
+        self._tasks: set[asyncio.Future[Any]] = set()
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
@@ -229,7 +230,7 @@ class Map:
         if self._listeners:
             return
 
-        asyncio.create_task(self._execute_command(GetCachedMapInfo()))
+        create_task(self._tasks, self._execute_command(GetCachedMapInfo()))
 
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.positions = event.positions
@@ -366,6 +367,11 @@ class Map:
         _LOGGER.debug("[get_base64_map] Finish")
 
         return base64_image
+
+    async def teardown(self) -> None:
+        """Teardown map."""
+        self.disable()
+        await cancel(self._tasks)
 
 
 class MapPiece:

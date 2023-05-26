@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
 from ..logging_filter import get_logger
 from ..models import VacuumState
+from ..util import cancel, create_task
 from . import Event, StatusEvent
 
 if TYPE_CHECKING:
@@ -62,6 +63,8 @@ class EventBus:
     ):
         self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
+        self._tasks: set[asyncio.Future[Any]] = set()
+
         self._execute_command: Final = execute_command
 
     def has_subscribers(self, event: type[T]) -> bool:
@@ -85,7 +88,9 @@ class EventBus:
 
         if event_processing_data.last_event:
             # Notify subscriber directly with the last event
-            asyncio.create_task(listener.callback(event_processing_data.last_event))
+            create_task(
+                self._tasks, listener.callback(event_processing_data.last_event)
+            )
         elif len(event_processing_data.subscribers) == 1:
             # first subscriber therefore do refresh
             self.request_refresh(event_type)
@@ -115,7 +120,7 @@ class EventBus:
         if event_processing_data.subscribers:
             _LOGGER.debug("Notify subscribers with %s", event)
             for subscriber in event_processing_data.subscribers:
-                asyncio.create_task(subscriber.callback(event))
+                create_task(self._tasks, subscriber.callback(event))
             return True
 
         _LOGGER.debug("No subscribers... Discharging %s", event)
@@ -124,7 +129,11 @@ class EventBus:
     def request_refresh(self, event_class: type[T]) -> None:
         """Request manual refresh."""
         if self.has_subscribers(event_class):
-            asyncio.create_task(self._call_refresh_function(event_class))
+            create_task(self._tasks, self._call_refresh_function(event_class))
+
+    async def teardown(self) -> None:
+        """Teardown eventbus."""
+        await cancel(self._tasks)
 
     async def _call_refresh_function(self, event_class: type[T]) -> None:
         semaphore = self._event_processing_dict[event_class].semaphore
