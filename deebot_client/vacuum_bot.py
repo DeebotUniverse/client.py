@@ -73,12 +73,12 @@ class VacuumBot:
 
         self.events.subscribe(PositionsEvent, on_pos)
 
-        async def on_status(event: StateEvent) -> None:
+        async def on_state(event: StateEvent) -> None:
             if event.state == VacuumState.DOCKED:
                 self.events.request_refresh(CleanLogEvent)
                 self.events.request_refresh(TotalStatsEvent)
 
-        self.events.subscribe(StateEvent, on_status)
+        self.events.subscribe(StateEvent, on_state)
 
         async def on_stats(_: StatsEvent) -> None:
             self.events.request_refresh(LifeSpanEvent)
