@@ -28,7 +28,7 @@ from ..commands import (
 )
 from . import (
     AdvancedModeEvent,
-    AvailableEvent,
+    AvailabilityEvent,
     BatteryEvent,
     CarpetAutoFanBoostEvent,
     CleanCountEvent,
@@ -61,7 +61,7 @@ from .map import (
 )
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
-    AvailableEvent: [],
+    AvailabilityEvent: [],
     AdvancedModeEvent: [GetAdvancedMode()],
     BatteryEvent: [GetBattery()],
     CachedMapInfoEvent: [GetCachedMapInfo()],

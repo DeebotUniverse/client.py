@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 from ..logging_filter import get_logger
 from ..models import VacuumState
 from ..util import cancel, create_task
-from . import AvailableEvent, Event, StateEvent
+from . import AvailabilityEvent, Event, StateEvent
 
 if TYPE_CHECKING:
     from ..command import Command
@@ -115,14 +115,14 @@ class EventBus:
             # Problem getCleanInfo will return state=idle, when bot is charging
             event = StateEvent(VacuumState.DOCKED)  # type: ignore[assignment]
         elif (
-            isinstance(event, AvailableEvent)
+            isinstance(event, AvailabilityEvent)
             and event.available
             and event_processing_data.last_event
             and not event_processing_data.last_event.available  # type: ignore[attr-defined]
         ):
             # unavailable -> available: refresh everything
             for event_type, _ in self._event_processing_dict.items():
-                if event_type != AvailableEvent:
+                if event_type != AvailabilityEvent:
                     self.request_refresh(event_type)
 
         event_processing_data.last_event = event

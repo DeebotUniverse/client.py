@@ -12,7 +12,7 @@ from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from .authentication import Authenticator
 from .command import Command
 from .events import (
-    AvailableEvent,
+    AvailabilityEvent,
     CleanLogEvent,
     CustomCommandEvent,
     LifeSpanEvent,
@@ -148,7 +148,7 @@ class VacuumBot:
         if available:
             self._last_time_available = datetime.now()
 
-        self.events.notify(AvailableEvent(available))
+        self.events.notify(AvailabilityEvent(available))
 
     def _handle_message(
         self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]

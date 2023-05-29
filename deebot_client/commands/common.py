@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..command import Command, CommandResult
-from ..events import AvailableEvent, EnableEvent
+from ..events import AvailabilityEvent, EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message, MessageBodyDataDict
@@ -37,7 +37,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
                     _LOGGER.info(
                         'Vacuum is offline. Could not execute command "%s"', self.name
                     )
-                    event_bus.notify(AvailableEvent(False))
+                    event_bus.notify(AvailabilityEvent(False))
                     return CommandResult(HandlingState.FAILED)
                 case 500:
                     if self._is_available_check:

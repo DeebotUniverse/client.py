@@ -141,8 +141,8 @@ class TotalStatsEvent(Event):
 
 
 @dataclass(frozen=True)
-class AvailableEvent(Event):
-    """Available event."""
+class AvailabilityEvent(Event):
+    """Availability event."""
 
     available: bool
 

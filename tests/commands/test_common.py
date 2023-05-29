@@ -8,7 +8,7 @@ from testfixtures import LogCapture
 from deebot_client.commands import GetBattery
 from deebot_client.commands.common import CommandWithMessageHandling
 from deebot_client.commands.map import GetCachedMapInfo
-from deebot_client.events import AvailableEvent
+from deebot_client.events import AvailabilityEvent
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import DeviceInfo
 
@@ -28,7 +28,7 @@ def _assert_false_and_not_called(available: bool, event_bus: Mock) -> None:
 
 def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> None:
     assert available is False
-    event_bus.notify.assert_called_with(AvailableEvent(False))
+    event_bus.notify.assert_called_with(AvailabilityEvent(False))
 
 
 @pytest.mark.parametrize(

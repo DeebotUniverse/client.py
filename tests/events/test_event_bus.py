@@ -3,7 +3,7 @@ from unittest.mock import AsyncMock, call
 
 import pytest
 
-from deebot_client.events import AvailableEvent, BatteryEvent, StateEvent
+from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
 from deebot_client.events.const import EVENT_DTO_REFRESH_COMMANDS
 from deebot_client.events.event_bus import EventBus, EventListener
@@ -52,7 +52,7 @@ async def test_refresh_when_coming_back_online() -> None:
     available_mock = AsyncMock()
 
     async def notify(available: bool) -> None:
-        event = AvailableEvent(available)
+        event = AvailabilityEvent(available)
         event_bus.notify(event)
         await asyncio.sleep(0.1)
         available_mock.assert_awaited_with(event)
@@ -69,7 +69,7 @@ async def test_refresh_when_coming_back_online() -> None:
 
     event_bus.subscribe(BatteryEvent, AsyncMock())
     event_bus.subscribe(StateEvent, AsyncMock())
-    event_bus.subscribe(AvailableEvent, available_mock)
+    event_bus.subscribe(AvailabilityEvent, available_mock)
     await asyncio.sleep(0.1)
 
     # Only calls made after coming back online are of interest
@@ -80,4 +80,4 @@ async def test_refresh_when_coming_back_online() -> None:
 
     verify(BatteryEvent, True)
     verify(StateEvent, True)
-    verify(AvailableEvent, False)
+    verify(AvailabilityEvent, False)
