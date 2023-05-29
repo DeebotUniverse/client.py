@@ -101,10 +101,6 @@ class EventBus:
         """Notify subscriber with given event representation."""
         event_processing_data = self._get_or_create_event_processing_data(type(event))
 
-        if event == event_processing_data.last_event:
-            _LOGGER.debug("Event is the same! Skipping (%s)", event)
-            return False
-
         if (
             isinstance(event, StateEvent)
             and event.state == VacuumState.IDLE
@@ -124,6 +120,10 @@ class EventBus:
             for event_type, _ in self._event_processing_dict.items():
                 if event_type != AvailabilityEvent:
                     self.request_refresh(event_type)
+
+        if event == event_processing_data.last_event:
+            _LOGGER.debug("Event is the same! Skipping (%s)", event)
+            return False
 
         event_processing_data.last_event = event
         if event_processing_data.subscribers:
