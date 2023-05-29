@@ -124,7 +124,7 @@ class VacuumBot:
             ):
                 # request GetBattery to check availability
                 try:
-                    self._set_available(await self._execute_command(GetBattery()))
+                    self._set_available(await self._execute_command(GetBattery(True)))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
