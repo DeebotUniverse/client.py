@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncGenerator, Generator
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import Mock
 
 import aiohttp
 import pytest
@@ -35,11 +35,23 @@ async def config(session: aiohttp.ClientSession) -> AsyncGenerator:
 
 
 @pytest.fixture
-def authenticator(config: Configuration) -> Authenticator:
+def authenticator() -> Authenticator:
     authenticator = Mock(spec_set=Authenticator)
-    authenticator.authenticate = AsyncMock(
-        return_value=Credentials("token", "user_id", 9999)
-    )
+    authenticator.authenticate.return_value = Credentials("token", "user_id", 9999)
+    authenticator.post_authenticated.return_value = {
+        "header": {
+            "pri": 1,
+            "tzm": 480,
+            "ts": "1304623069888",
+            "ver": "0.0.1",
+            "fwVer": "1.8.2",
+            "hwVer": "0.1.1",
+        },
+        "body": {
+            "code": 500,
+            "msg": "fail",
+        },
+    }
     return authenticator
 
 

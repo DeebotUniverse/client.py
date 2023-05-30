@@ -4,7 +4,7 @@ from collections.abc import Mapping
 from typing import Any
 
 from ..command import Command, CommandResult
-from ..events import EnableEvent
+from ..events import AvailabilityEvent, EnableEvent
 from ..events.event_bus import EventBus
 from ..logging_filter import get_logger
 from ..message import HandlingResult, HandlingState, Message, MessageBodyDataDict
@@ -15,6 +15,8 @@ _LOGGER = get_logger(__name__)
 
 class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
+
+    _is_available_check: bool = False
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -28,8 +30,30 @@ class CommandWithMessageHandling(Command, Message, ABC):
             result = self.handle(event_bus, data)
             return CommandResult(result.state, result.args)
 
-        _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
-        return CommandResult(HandlingState.FAILED)
+        if errno := response.get("errno", None):
+            match errno:
+                case 4200:
+                    # bot offline
+                    _LOGGER.info(
+                        'Vacuum is offline. Could not execute command "%s"', self.name
+                    )
+                    event_bus.notify(AvailabilityEvent(False))
+                    return CommandResult(HandlingState.FAILED)
+                case 500:
+                    if self._is_available_check:
+                        _LOGGER.info(
+                            'No response received for command "%s" during availability-check.',
+                            self.name,
+                        )
+                    else:
+                        _LOGGER.warning(
+                            'No response received for command "%s". This can happen if the vacuum has network issues or does not support the command',
+                            self.name,
+                        )
+                    return CommandResult(HandlingState.FAILED)
+
+        _LOGGER.warning('Command "%s" was not successfully.', self.name)
+        return CommandResult(HandlingState.ANALYSE)
 
 
 class CommandHandlingMqttP2P(CommandWithMessageHandling, ABC):

@@ -1,6 +1,5 @@
 """Vacuum bot module."""
 import asyncio
-import inspect
 import json
 from collections.abc import Callable
 from contextlib import suppress
@@ -13,13 +12,14 @@ from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from .authentication import Authenticator
 from .command import Command
 from .events import (
+    AvailabilityEvent,
     CleanLogEvent,
     CustomCommandEvent,
     LifeSpanEvent,
     PositionsEvent,
     PositionType,
+    StateEvent,
     StatsEvent,
-    StatusEvent,
     TotalStatsEvent,
 )
 from .events.event_bus import EventBus
@@ -44,7 +44,7 @@ class VacuumBot:
         self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
-        self._status: StatusEvent = StatusEvent(device_info.status == 1, None)
+        self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now()
         self._available_task: asyncio.Task | None = None
         self._unsubscribe: Callable[[], None] | None = None
@@ -55,7 +55,7 @@ class VacuumBot:
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
         async def on_pos(event: PositionsEvent) -> None:
-            if self._status == StatusEvent(True, VacuumState.DOCKED):
+            if self._state == StateEvent(VacuumState.DOCKED):
                 return
 
             deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
@@ -69,25 +69,16 @@ class VacuumBot:
                 )
                 if on_charger:
                     # deebot on charger so the status should be docked... Checking
-                    self.events.request_refresh(StatusEvent)
+                    self.events.request_refresh(StateEvent)
 
         self.events.subscribe(PositionsEvent, on_pos)
 
-        async def on_status(event: StatusEvent) -> None:
-            last_status = self._status
-            self._status = event
-            if (not last_status.available) and event.available:
-                # bot was unavailable
-                for name, obj in inspect.getmembers(
-                    self.events, lambda obj: isinstance(obj, EventBus)
-                ):
-                    if name != "status":
-                        obj.request_refresh()
-            elif event.state == VacuumState.DOCKED:
+        async def on_state(event: StateEvent) -> None:
+            if event.state == VacuumState.DOCKED:
                 self.events.request_refresh(CleanLogEvent)
                 self.events.request_refresh(TotalStatsEvent)
 
-        self.events.subscribe(StatusEvent, on_status)
+        self.events.subscribe(StateEvent, on_state)
 
         async def on_stats(_: StatsEvent) -> None:
             self.events.request_refresh(LifeSpanEvent)
@@ -133,7 +124,7 @@ class VacuumBot:
             ):
                 # request GetBattery to check availability
                 try:
-                    self._set_available(await self._execute_command(GetBattery()))
+                    self._set_available(await self._execute_command(GetBattery(True)))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
@@ -157,8 +148,7 @@ class VacuumBot:
         if available:
             self._last_time_available = datetime.now()
 
-        status = StatusEvent(available, self._status.state)
-        self.events.notify(status)
+        self.events.notify(AvailabilityEvent(available))
 
     def _handle_message(
         self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]

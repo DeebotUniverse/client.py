@@ -141,11 +141,17 @@ class TotalStatsEvent(Event):
 
 
 @dataclass(frozen=True)
-class StatusEvent(Event):
-    """Status event representation."""
+class AvailabilityEvent(Event):
+    """Availability event."""
 
     available: bool
-    state: VacuumState | None
+
+
+@dataclass(frozen=True)
+class StateEvent(Event):
+    """State event representation."""
+
+    state: VacuumState
 
 
 @dataclass(frozen=True)

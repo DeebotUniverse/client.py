@@ -1,7 +1,7 @@
 """Charge state commands."""
 from typing import Any
 
-from ..events import StatusEvent
+from ..events import StateEvent
 from ..message import HandlingResult, MessageBodyDataDict
 from ..models import VacuumState
 from .common import EventBus, NoArgsCommand
@@ -22,7 +22,7 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         :return: A message response
         """
         if data.get("isCharging") == 1:
-            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
+            event_bus.notify(StateEvent(VacuumState.DOCKED))
         return HandlingResult.success()
 
     @classmethod
@@ -41,7 +41,7 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
                 status = VacuumState.ERROR
 
         if status:
-            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
+            event_bus.notify(StateEvent(VacuumState.DOCKED))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

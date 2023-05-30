@@ -4,7 +4,7 @@ from collections.abc import Callable
 from unittest.mock import Mock, patch
 
 from deebot_client.authentication import Authenticator
-from deebot_client.events import StatusEvent
+from deebot_client.events import AvailabilityEvent
 from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.vacuum_bot import VacuumBot
@@ -18,9 +18,9 @@ async def test_available_check_and_teardown(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
     """Test the available check including if the status Event is fired correctly."""
-    received_statuses: asyncio.Queue[StatusEvent] = asyncio.Queue()
+    received_statuses: asyncio.Queue[AvailabilityEvent] = asyncio.Queue()
 
-    async def on_status(event: StatusEvent) -> None:
+    async def on_status(event: AvailabilityEvent) -> None:
         received_statuses.put_nowait(event)
 
     async def assert_received_status(expected: bool) -> None:
@@ -38,7 +38,7 @@ async def test_available_check_and_teardown(
         mqtt_client.subscribe.return_value = unsubscribe_mock
         await bot.initialize(mqtt_client)
 
-        bot.events.subscribe(StatusEvent, on_status)
+        bot.events.subscribe(AvailabilityEvent, on_status)
 
         # verify mqtt was subscribed and available task was started
         mqtt_client.subscribe.assert_called_once()

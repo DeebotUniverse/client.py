@@ -57,7 +57,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
   "image": "mcr.microsoft.com/devcontainers/python:3",
-  "name": "Deebot client Devcontainer",
+  "name": "Deebot client",
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.

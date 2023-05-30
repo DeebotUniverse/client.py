@@ -54,7 +54,10 @@ async def _subscribe(
     return (events, callback, unsubscribe)
 
 
-async def test_last_message_received_at(mqtt_client: MqttClient) -> None:
+async def test_last_message_received_at(
+    config: Configuration, authenticator: Authenticator
+) -> None:
+    mqtt_client = MqttClient(MqttConfiguration(config), authenticator)
     assert mqtt_client.last_message_received_at is None
     await asyncio.sleep(4)
 

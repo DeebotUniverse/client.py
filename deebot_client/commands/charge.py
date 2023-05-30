@@ -1,7 +1,7 @@
 """Charge commands."""
 from typing import Any
 
-from ..events import StatusEvent
+from ..events import StateEvent
 from ..logging_filter import get_logger
 from ..message import HandlingResult
 from ..models import VacuumState
@@ -27,12 +27,12 @@ class Charge(ExecuteCommand):
         """
         code = int(body.get(CODE, -1))
         if code == 0:
-            event_bus.notify(StatusEvent(True, VacuumState.RETURNING))
+            event_bus.notify(StateEvent(VacuumState.RETURNING))
             return HandlingResult.success()
 
         if code == 30007:
             # bot is already charging
-            event_bus.notify(StatusEvent(True, VacuumState.DOCKED))
+            event_bus.notify(StateEvent(VacuumState.DOCKED))
             return HandlingResult.success()
 
         return super()._handle_body(event_bus, body)

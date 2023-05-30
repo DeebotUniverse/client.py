@@ -4,7 +4,7 @@ from typing import Any
 
 from ..authentication import Authenticator
 from ..command import CommandResult
-from ..events import StatusEvent
+from ..events import StateEvent
 from ..logging_filter import get_logger
 from ..message import HandlingResult, MessageBodyDataDict
 from ..models import DeviceInfo, VacuumState
@@ -44,16 +44,16 @@ class Clean(ExecuteCommand):
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         """Execute command."""
-        status = event_bus.get_last_event(StatusEvent)
-        if status and isinstance(self._args, dict):
+        state = event_bus.get_last_event(StateEvent)
+        if state and isinstance(self._args, dict):
             if (
                 self._args["act"] == CleanAction.RESUME.value
-                and status.state != VacuumState.PAUSED
+                and state.state != VacuumState.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.START)
             elif (
                 self._args["act"] == CleanAction.START.value
-                and status.state == VacuumState.PAUSED
+                and state.state == VacuumState.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.RESUME)
 
@@ -126,7 +126,7 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
             status = VacuumState.IDLE
 
         if status:
-            event_bus.notify(StatusEvent(True, status))
+            event_bus.notify(StateEvent(status))
             return HandlingResult.success()
 
         return HandlingResult.analyse()
