@@ -7,7 +7,7 @@ from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 
-from asyncio_mqtt import Client, Message, MqttError
+from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.events.event_bus import EventBus
@@ -21,6 +21,7 @@ from .models import Configuration, Credentials, DeviceInfo
 RECONNECT_INTERVAL = 5  # seconds
 
 _LOGGER = get_logger(__name__)
+_CLIENT_LOGGER = get_logger(f"{__name__}.client")
 
 
 def _get_topics(device_info: DeviceInfo) -> list[str]:
@@ -141,6 +142,7 @@ class MqttClient:
             port=self._config.port,
             username=credentials.user_id,
             password=credentials.token,
+            logger=_CLIENT_LOGGER,
             client_id=client_id,
             tls_context=self._config.ssl_context,
         )
@@ -180,7 +182,6 @@ class MqttClient:
                         finally:
                             for task in tasks:
                                 task.cancel()
-
                 except MqttError:
                     _LOGGER.warning(
                         "Connection lost; Reconnecting in %d seconds ...",

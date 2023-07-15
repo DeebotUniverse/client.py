@@ -8,7 +8,7 @@ from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 import pytest
 from aiohttp import ClientSession
-from asyncio_mqtt import Client, Message
+from aiomqtt import Client, Message
 from cachetools import TTLCache
 from testfixtures import LogCapture
 
