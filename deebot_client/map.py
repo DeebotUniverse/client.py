@@ -8,11 +8,14 @@ import math
 import struct
 import zlib
 from collections.abc import Callable, Coroutine
+from datetime import datetime, timedelta
 from io import BytesIO
 from typing import Any, Final
 
 from numpy import ndarray, reshape, zeros
 from PIL import Image, ImageDraw, ImageOps
+
+from deebot_client.events.map import MapChangedEvent
 
 from .command import Command
 from .commands import GetCachedMapInfo, GetMinorMap
@@ -140,7 +143,7 @@ class Map:
         self._execute_command = execute_command
         self._event_bus = event_bus
 
-        self._map_data: Final[MapData] = MapData()
+        self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
         self._last_image: LastImage | None = None
         self._unsubscribers: list[Callable[[], None]] = []
@@ -347,9 +350,7 @@ class Map:
             )
             new_size = (width, height)
         elif cropped.size[0] > 400 or cropped.size[1] > 400:
-            _LOGGER.debug(
-                "[get_base64_map] Resize disabled.. map over 400 and image width was passed"
-            )
+            _LOGGER.debug("[get_base64_map] Resize disabled.. map over 400")
         else:
             resize_factor = Map.RESIZE_FACTOR
             _LOGGER.debug("[get_base64_map] Resize factor: %d", resize_factor)
@@ -533,11 +534,16 @@ class LastImage:
 class MapData:
     """Map data."""
 
-    def __init__(self) -> None:
+    def __init__(self, event_bus: EventBus) -> None:
         self._changed: bool = False
 
         def on_change() -> None:
             self._changed = True
+            now = datetime.utcnow()
+            last_event = event_bus.get_last_event(MapChangedEvent)
+            if last_event is None or (now - last_event.when) > timedelta(seconds=1):
+                # throttle notify to ones a second
+                event_bus.notify(MapChangedEvent(now))
 
         self._on_change = on_change
         self._map_pieces: OnChangedList[MapPiece] = OnChangedList(
