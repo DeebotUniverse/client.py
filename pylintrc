@@ -29,7 +29,7 @@ extension-pkg-whitelist=ciso8601,
 
 
 [BASIC]
-good-names=i,j,k,ex,_,T,x,y,id
+good-names=i,j,k,ex,_,T,x,y,id,tg
 
 [MESSAGES CONTROL]
 # Reasons disabled:

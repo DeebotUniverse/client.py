@@ -62,17 +62,13 @@ class Command(ABC):
             result = await self._execute(authenticator, device_info, event_bus)
             if result.state == HandlingState.SUCCESS:
                 # Execute command which are requested by the handler
-                tasks = []
-                for requested_command in result.requested_commands:
-                    tasks.append(
-                        asyncio.create_task(
+                async with asyncio.TaskGroup() as tg:
+                    for requested_command in result.requested_commands:
+                        tg.create_task(
                             requested_command.execute(
                                 authenticator, device_info, event_bus
                             )
                         )
-                    )
-
-                await asyncio.gather(*tasks)
 
                 return self._targets_bot
         except Exception:  # pylint: disable=broad-except
