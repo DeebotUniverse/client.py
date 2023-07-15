@@ -17,41 +17,17 @@ _LOGGER = get_logger(__name__)
 T = TypeVar("T", bound=Event)
 
 
-class EventListener(Generic[T]):
-    """Object that allows event consumers to easily unsubscribe from event bus."""
-
-    def __init__(
-        self,
-        event_processing_data: "_EventProcessingData",
-        callback: Callable[[T], Coroutine[Any, Any, None]],
-    ) -> None:
-        self._event_processing_data: Final = event_processing_data
-        self.callback: Final = callback
-
-    def unsubscribe(self) -> None:
-        """Unsubscribe from event bus."""
-        self._event_processing_data.subscribers.remove(self)
-
-
 class _EventProcessingData(Generic[T]):
     """Data class, which holds all needed data per EventDto."""
 
     def __init__(self) -> None:
         super().__init__()
 
-        self._subscribers: Final[list[EventListener[T]]] = []
-        self._semaphore: Final = asyncio.Semaphore(1)
+        self.subscriber_callbacks: Final[
+            list[Callable[[T], Coroutine[Any, Any, None]]]
+        ] = []
+        self.semaphore: Final = asyncio.Semaphore(1)
         self.last_event: T | None = None
-
-    @property
-    def subscribers(self) -> list[EventListener[T]]:
-        """Return subscribers."""
-        return self._subscribers
-
-    @property
-    def semaphore(self) -> asyncio.Semaphore:
-        """Return semaphore."""
-        return self._semaphore
 
 
 class EventBus:
@@ -70,7 +46,7 @@ class EventBus:
     def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
         return (
-            len(self._event_processing_dict[event].subscribers) > 0
+            len(self._event_processing_dict[event].subscriber_callbacks) > 0
             if event in self._event_processing_dict
             else False
         )
@@ -79,23 +55,23 @@ class EventBus:
         self,
         event_type: type[T],
         callback: Callable[[T], Coroutine[Any, Any, None]],
-    ) -> EventListener[T]:
+    ) -> Callable[[], None]:
         """Subscribe to event."""
         event_processing_data = self._get_or_create_event_processing_data(event_type)
 
-        listener = EventListener(event_processing_data, callback)
-        event_processing_data.subscribers.append(listener)
+        def unsubscribe() -> None:
+            event_processing_data.subscriber_callbacks.remove(callback)
+
+        event_processing_data.subscriber_callbacks.append(callback)
 
         if event_processing_data.last_event:
             # Notify subscriber directly with the last event
-            create_task(
-                self._tasks, listener.callback(event_processing_data.last_event)
-            )
-        elif len(event_processing_data.subscribers) == 1:
+            create_task(self._tasks, callback(event_processing_data.last_event))
+        elif len(event_processing_data.subscriber_callbacks) == 1:
             # first subscriber therefore do refresh
             self.request_refresh(event_type)
 
-        return listener
+        return unsubscribe
 
     def notify(self, event: T) -> bool:
         """Notify subscriber with given event representation."""
@@ -126,10 +102,10 @@ class EventBus:
             return False
 
         event_processing_data.last_event = event
-        if event_processing_data.subscribers:
+        if event_processing_data.subscriber_callbacks:
             _LOGGER.debug("Notify subscribers with %s", event)
-            for subscriber in event_processing_data.subscribers:
-                create_task(self._tasks, subscriber.callback(event))
+            for callback in event_processing_data.subscriber_callbacks:
+                create_task(self._tasks, callback(event))
             return True
 
         _LOGGER.debug("No subscribers... Discharging %s", event)

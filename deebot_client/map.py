@@ -28,7 +28,7 @@ from .events import (
     PositionType,
     RoomsEvent,
 )
-from .events.event_bus import EventBus, EventListener
+from .events.event_bus import EventBus
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
@@ -143,37 +143,8 @@ class Map:
         self._map_data: Final[MapData] = MapData()
         self._amount_rooms: int = 0
         self._last_image: LastImage | None = None
-        self._listeners: list[EventListener] = []
+        self._unsubscribers: list[Callable[[], None]] = []
         self._tasks: set[asyncio.Future[Any]] = set()
-
-        async def on_map_set(event: MapSetEvent) -> None:
-            if event.type == MapSetType.ROOMS:
-                self._amount_rooms = len(event.subsets)
-                for room_id, _ in self._map_data.rooms.copy().items():
-                    if room_id not in event.subsets:
-                        self._map_data.rooms.pop(room_id, None)
-            else:
-                for subset_id, subset in self._map_data.map_subsets.copy().items():
-                    if subset.type == event.type and subset_id not in event.subsets:
-                        self._map_data.map_subsets.pop(subset_id, None)
-
-        self._event_bus.subscribe(MapSetEvent, on_map_set)
-
-        async def on_map_subset(event: MapSubsetEvent) -> None:
-            if event.type == MapSetType.ROOMS and event.name:
-                room = Room(event.name, event.id, event.coordinates)
-                if self._map_data.rooms.get(event.id, None) != room:
-                    self._map_data.rooms[room.id] = room
-
-                    if len(self._map_data.rooms) == self._amount_rooms:
-                        self._event_bus.notify(
-                            RoomsEvent(list(self._map_data.rooms.values()))
-                        )
-
-            elif self._map_data.map_subsets.get(event.id, None) != event:
-                self._map_data.map_subsets[event.id] = event
-
-        self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
 
     # ---------------------------- METHODS ----------------------------
 
@@ -227,15 +198,48 @@ class Map:
 
     def enable(self) -> None:
         """Enable map."""
-        if self._listeners:
+        if self._unsubscribers:
             return
 
         create_task(self._tasks, self._execute_command(GetCachedMapInfo()))
 
+        async def on_map_set(event: MapSetEvent) -> None:
+            if event.type == MapSetType.ROOMS:
+                self._amount_rooms = len(event.subsets)
+                for room_id, _ in self._map_data.rooms.copy().items():
+                    if room_id not in event.subsets:
+                        self._map_data.rooms.pop(room_id, None)
+            else:
+                for subset_id, subset in self._map_data.map_subsets.copy().items():
+                    if subset.type == event.type and subset_id not in event.subsets:
+                        self._map_data.map_subsets.pop(subset_id, None)
+
+        self._unsubscribers.append(self._event_bus.subscribe(MapSetEvent, on_map_set))
+
+        async def on_map_subset(event: MapSubsetEvent) -> None:
+            if event.type == MapSetType.ROOMS and event.name:
+                room = Room(event.name, event.id, event.coordinates)
+                if self._map_data.rooms.get(event.id, None) != room:
+                    self._map_data.rooms[room.id] = room
+
+                    if len(self._map_data.rooms) == self._amount_rooms:
+                        self._event_bus.notify(
+                            RoomsEvent(list(self._map_data.rooms.values()))
+                        )
+
+            elif self._map_data.map_subsets.get(event.id, None) != event:
+                self._map_data.map_subsets[event.id] = event
+
+        self._unsubscribers.append(
+            self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
+        )
+
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.positions = event.positions
 
-        self._listeners.append(self._event_bus.subscribe(PositionsEvent, on_position))
+        self._unsubscribers.append(
+            self._event_bus.subscribe(PositionsEvent, on_position)
+        )
 
         async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
@@ -243,7 +247,9 @@ class Map:
 
             self._update_trace_points(event.data)
 
-        self._listeners.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+        self._unsubscribers.append(
+            self._event_bus.subscribe(MapTraceEvent, on_map_trace)
+        )
 
         async def on_major_map(event: MajorMapEvent) -> None:
             tasks = []
@@ -263,23 +269,27 @@ class Map:
             if tasks:
                 await asyncio.gather(*tasks)
 
-        self._listeners.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
+        self._unsubscribers.append(
+            self._event_bus.subscribe(MajorMapEvent, on_major_map)
+        )
 
         async def on_minor_map(event: MinorMapEvent) -> None:
             self._map_data.map_pieces[event.index].update_points(event.value)
 
-        self._listeners.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
+        self._unsubscribers.append(
+            self._event_bus.subscribe(MinorMapEvent, on_minor_map)
+        )
 
     def disable(self) -> None:
         """Disable map."""
-        listeners = self._listeners
-        self._listeners.clear()
-        for listener in listeners:
-            listener.unsubscribe()
+        unsubscribers = self._unsubscribers
+        self._unsubscribers.clear()
+        for unsubscribe in unsubscribers:
+            unsubscribe()
 
     def refresh(self) -> None:
         """Manually refresh map."""
-        if not self._listeners:
+        if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
         # todo make it nice pylint: disable=fixme
@@ -289,7 +299,7 @@ class Map:
 
     def get_base64_map(self, width: int | None = None) -> bytes:
         """Return map as base64 image string."""
-        if not self._listeners:
+        if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
         if (

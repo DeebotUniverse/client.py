@@ -1,6 +1,6 @@
 import logging
 from collections.abc import AsyncGenerator, Generator
-from unittest.mock import Mock
+from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 import pytest
@@ -8,6 +8,7 @@ from asyncio_mqtt import Client
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
+from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Configuration, Credentials, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.vacuum_bot import VacuumBot
@@ -126,3 +127,13 @@ async def vacuum_bot(
     await bot.initialize(mqtt)
     yield bot
     await bot.teardown()
+
+
+@pytest.fixture
+def execute_mock() -> AsyncMock:
+    return AsyncMock()
+
+
+@pytest.fixture
+def event_bus(execute_mock: AsyncMock) -> EventBus:
+    return EventBus(execute_mock)
