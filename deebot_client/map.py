@@ -252,22 +252,17 @@ class Map:
         )
 
         async def on_major_map(event: MajorMapEvent) -> None:
-            tasks = []
-            for idx, value in enumerate(event.values):
-                if (
-                    self._map_data.map_pieces[idx].crc32_indicates_update(value)
-                    and event.requested
-                ):
-                    tasks.append(
-                        asyncio.create_task(
+            async with asyncio.TaskGroup() as tg:
+                for idx, value in enumerate(event.values):
+                    if (
+                        self._map_data.map_pieces[idx].crc32_indicates_update(value)
+                        and event.requested
+                    ):
+                        tg.create_task(
                             self._execute_command(
                                 GetMinorMap(map_id=event.map_id, piece_index=idx)
                             )
                         )
-                    )
-
-            if tasks:
-                await asyncio.gather(*tasks)
 
         self._unsubscribers.append(
             self._event_bus.subscribe(MajorMapEvent, on_major_map)
