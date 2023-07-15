@@ -5,6 +5,7 @@ import pytest
 
 from deebot_client.events.map import MapChangedEvent, Position, PositionType
 from deebot_client.map import MapData, _calc_point
+from deebot_client.models import Room
 
 _test_calc_point_data = [
     (0, 10, None, (0, 10)),
@@ -44,6 +45,7 @@ def test_MapData() -> None:
     def test_cycle() -> None:
         for x in range(4):
             map_data.positions.append(Position(PositionType.DEEBOT, x, x))
+            map_data.rooms[x] = Room("test", x, "1,2")
 
         assert event_bus.notify.call_count == 1
 
