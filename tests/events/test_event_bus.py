@@ -118,13 +118,16 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
 @pytest.mark.parametrize(
     "last, actual, expected",
     [
-        (VacuumState.DOCKED, VacuumState.IDLE, VacuumState.DOCKED),
+        (VacuumState.DOCKED, VacuumState.IDLE, None),
         (VacuumState.CLEANING, VacuumState.IDLE, VacuumState.IDLE),
         (VacuumState.IDLE, VacuumState.DOCKED, VacuumState.DOCKED),
     ],
 )
 async def test_StateEvent(
-    event_bus: EventBus, last: VacuumState, actual: VacuumState, expected: VacuumState
+    event_bus: EventBus,
+    last: VacuumState,
+    actual: VacuumState,
+    expected: VacuumState | None,
 ) -> None:
     async def notify(state: VacuumState) -> None:
         event_bus.notify(StateEvent(state))
@@ -134,7 +137,12 @@ async def test_StateEvent(
 
     mock = AsyncMock()
     event_bus.subscribe(StateEvent, mock)
+    mock.assert_called_once_with(StateEvent(last))
+    mock.reset_mock()
 
     await notify(actual)
 
-    mock.assert_called_once_with(StateEvent(expected))
+    if expected:
+        mock.assert_called_once_with(StateEvent(expected))
+    else:
+        assert event_bus.get_last_event(StateEvent) == StateEvent(last)
