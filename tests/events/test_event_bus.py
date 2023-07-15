@@ -8,6 +8,7 @@ from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
 from deebot_client.events.const import EVENT_DTO_REFRESH_COMMANDS
 from deebot_client.events.event_bus import EventBus
+from deebot_client.models import VacuumState
 
 
 def _verify_event_command_called(
@@ -98,3 +99,42 @@ async def test_get_last_event(event_bus: EventBus) -> None:
     assert event_bus.get_last_event(BatteryEvent) == event
 
     notify(10)
+
+
+async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> None:
+    event = BatteryEvent
+    event_bus.request_refresh(event)
+    _verify_event_command_called(execute_mock, event, False)
+
+    event_bus.subscribe(event, AsyncMock())
+    execute_mock.reset_mock()
+
+    event_bus.request_refresh(event)
+
+    await asyncio.sleep(0.1)
+    _verify_event_command_called(execute_mock, event, True)
+
+
+@pytest.mark.parametrize(
+    "last, actual, expected",
+    [
+        (VacuumState.DOCKED, VacuumState.IDLE, VacuumState.DOCKED),
+        (VacuumState.CLEANING, VacuumState.IDLE, VacuumState.IDLE),
+        (VacuumState.IDLE, VacuumState.DOCKED, VacuumState.DOCKED),
+    ],
+)
+async def test_StateEvent(
+    event_bus: EventBus, last: VacuumState, actual: VacuumState, expected: VacuumState
+) -> None:
+    async def notify(state: VacuumState) -> None:
+        event_bus.notify(StateEvent(state))
+        await asyncio.sleep(0.1)
+
+    await notify(last)
+
+    mock = AsyncMock()
+    event_bus.subscribe(StateEvent, mock)
+
+    await notify(actual)
+
+    mock.assert_called_once_with(StateEvent(expected))
