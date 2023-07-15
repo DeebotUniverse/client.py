@@ -72,6 +72,7 @@ async def test_last_message_received_at(
         assert mqtt_client.last_message_received_at == expected
 
 
+@pytest.mark.skip(reason="Wait for sbtinstruments/aiomqtt#232 be merged")
 @pytest.mark.timeout(_WAITING_AFTER_RESTART + 10)
 async def test_client_reconnect_on_broker_error(
     mqtt_client: MqttClient,
