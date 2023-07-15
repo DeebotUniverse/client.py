@@ -1,5 +1,6 @@
 """Map event module."""
 from dataclasses import dataclass
+from datetime import datetime
 from enum import Enum, unique
 from typing import Any
 
@@ -95,3 +96,10 @@ class CachedMapInfoEvent(Event):
 
     name: str
     active: bool
+
+
+@dataclass(frozen=True)
+class MapChangedEvent(Event):
+    """Map changed event."""
+
+    when: datetime = datetime.utcnow()
