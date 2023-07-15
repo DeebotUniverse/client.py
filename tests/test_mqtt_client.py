@@ -8,7 +8,7 @@ from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 import pytest
 from aiohttp import ClientSession
-from asyncio_mqtt import Client, Message
+from aiomqtt import Client, Message
 from cachetools import TTLCache
 from testfixtures import LogCapture
 
@@ -72,6 +72,7 @@ async def test_last_message_received_at(
         assert mqtt_client.last_message_received_at == expected
 
 
+@pytest.mark.skip(reason="Wait for sbtinstruments/aiomqtt#232 be merged")
 @pytest.mark.timeout(_WAITING_AFTER_RESTART + 10)
 async def test_client_reconnect_on_broker_error(
     mqtt_client: MqttClient,

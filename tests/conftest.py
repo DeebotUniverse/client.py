@@ -4,7 +4,7 @@ from unittest.mock import AsyncMock, Mock
 
 import aiohttp
 import pytest
-from asyncio_mqtt import Client
+from aiomqtt import Client
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
@@ -74,7 +74,7 @@ def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConfigura
     return MqttConfiguration(
         config=config,
         hostname="localhost",
-        port=int(mqtt_server.get_port()),
+        port=mqtt_server.get_port(),
         ssl_context=None,
     )
 
