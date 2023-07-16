@@ -359,7 +359,7 @@ class Map:
             )
 
         if new_size is not None:
-            cropped = cropped.resize(new_size, Image.NEAREST)
+            cropped = cropped.resize(new_size, Image.Resampling.NEAREST)
 
         _LOGGER.debug("[get_base64_map] Saving to buffer")
         buffered = BytesIO()
