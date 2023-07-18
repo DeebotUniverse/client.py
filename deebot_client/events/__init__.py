@@ -7,6 +7,7 @@ from typing import Any, Optional
 from ..events.base import Event
 from ..models import Room, VacuumState
 from ..util import DisplayNameIntEnum
+from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     MajorMapEvent,
     MapSetEvent,
@@ -79,13 +80,6 @@ class ErrorEvent(Event):
 
     code: int
     description: str | None
-
-
-@dataclass(frozen=True)
-class FanSpeedEvent(Event):
-    """Fan speed event representation."""
-
-    speed: str
 
 
 @unique

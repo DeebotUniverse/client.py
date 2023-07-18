@@ -2,20 +2,9 @@
 from collections.abc import Mapping
 from typing import Any
 
-from ..events import FanSpeedEvent
+from ..events import FanSpeedEvent, FanSpeedLevel
 from ..message import HandlingResult, MessageBodyDataDict
-from ..util import DisplayNameIntEnum
 from .common import EventBus, NoArgsCommand, SetCommand
-
-
-class FanSpeedLevel(DisplayNameIntEnum):
-    """Enum class for all possible fan speed levels."""
-
-    # Values should be sort from low to high on their meanings
-    QUIET = 1000
-    NORMAL = 0
-    MAX = 1
-    MAX_PLUS = 2, "max+"
 
 
 class GetFanSpeed(NoArgsCommand, MessageBodyDataDict):
@@ -31,7 +20,7 @@ class GetFanSpeed(NoArgsCommand, MessageBodyDataDict):
 
         :return: A message response
         """
-        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(data["speed"])).display_name))
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(data["speed"]))))
         return HandlingResult.success()
 
 
