@@ -12,11 +12,12 @@ def test_FanSpeedLevel_unique() -> None:
 
 async def test_GetFanSpeed() -> None:
     json = get_request_json({"speed": 2})
-    await assert_command(GetFanSpeed(), json, FanSpeedEvent("max+"))
+    await assert_command(GetFanSpeed(), json, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
 
 
 @pytest.mark.parametrize(
-    "value, expected", [("quiet", 1000), ("max+", 2), (0, 0), (FanSpeedLevel.MAX, 1)]
+    "value, expected",
+    [("quiet", 1000), ("max_plus", 2), (0, 0), (FanSpeedLevel.MAX, 1)],
 )
 def test_SetFanSpeed(value: str | int | FanSpeedLevel, expected: int) -> None:
     command = SetFanSpeed(value)
