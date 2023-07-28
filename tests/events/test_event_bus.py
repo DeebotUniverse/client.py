@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Callable
-from unittest.mock import AsyncMock, call
+from datetime import datetime, timezone
+from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
@@ -8,6 +9,7 @@ from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
 from deebot_client.events.const import EVENT_DTO_REFRESH_COMMANDS
 from deebot_client.events.event_bus import EventBus
+from deebot_client.events.map import MapChangedEvent
 from deebot_client.models import VacuumState
 
 
@@ -146,3 +148,68 @@ async def test_StateEvent(
         mock.assert_called_once_with(StateEvent(expected))
     else:
         assert event_bus.get_last_event(StateEvent) == StateEvent(last)
+
+
+@pytest.mark.parametrize(
+    "debounce_time",
+    [-1, 0, 1],
+)
+async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
+    async def notify(event: MapChangedEvent, debounce_time: float) -> None:
+        event_bus.notify(event, debounce_time=debounce_time)
+        await asyncio.sleep(0.1)
+
+    mock = AsyncMock()
+    event_bus.subscribe(MapChangedEvent, mock)
+
+    with patch("deebot_client.events.event_bus.asyncio", wraps=asyncio) as aio:
+
+        async def test_cycle() -> MapChangedEvent:
+            event = MapChangedEvent(datetime.now(timezone.utc))
+            await notify(event, debounce_time)
+            if debounce_time > 0:
+                aio.get_running_loop.assert_called()
+                mock.assert_not_called()
+            else:
+                aio.get_running_loop.assert_not_called()
+                mock.assert_called_once_with(event)
+                mock.reset_mock()
+
+            return event
+
+        for _ in range(2):
+            await test_cycle()
+            event = await test_cycle()
+
+            if debounce_time > 0:
+                await asyncio.sleep(debounce_time)
+                mock.assert_called_once_with(event)
+                mock.reset_mock()
+
+
+async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
+    # setup
+    async def wait() -> None:
+        await asyncio.sleep(1000)
+
+    execute_mock.side_effect = wait
+
+    mock = AsyncMock()
+    event_bus.subscribe(BatteryEvent, mock)
+
+    event_bus.notify(BatteryEvent(100), debounce_time=10000)
+    event_bus.request_refresh(BatteryEvent)
+
+    # verify tasks/handle still running
+    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    assert handle is not None
+    assert handle.cancelled() is False
+    assert len(event_bus._tasks) > 0
+
+    # test
+    await event_bus.teardown()
+
+    # verify
+    assert handle is not None
+    assert handle.cancelled() is True
+    assert len(event_bus._tasks) == 0

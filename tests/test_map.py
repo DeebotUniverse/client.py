@@ -1,8 +1,9 @@
-from time import sleep
-from unittest.mock import Mock
+import asyncio
+from unittest.mock import AsyncMock
 
 import pytest
 
+from deebot_client.events.event_bus import EventBus
 from deebot_client.events.map import MapChangedEvent, Position, PositionType
 from deebot_client.map import MapData, _calc_point
 from deebot_client.models import Room
@@ -25,33 +26,26 @@ def test_calc_point(
     assert result == expected
 
 
-def test_MapData() -> None:
-    last_event: MapChangedEvent | None = None
-
-    def get_last_event(_: type[MapChangedEvent]) -> MapChangedEvent | None:
-        nonlocal last_event
-        return last_event
-
-    def notify(event: MapChangedEvent) -> None:
-        nonlocal last_event
-        last_event = event
-
-    event_bus = Mock()
-    event_bus.get_last_event.side_effect = get_last_event
-    event_bus.notify.side_effect = notify
+async def test_MapData(event_bus: EventBus) -> None:
+    mock = AsyncMock()
+    event_bus.subscribe(MapChangedEvent, mock)
 
     map_data = MapData(event_bus)
 
-    def test_cycle() -> None:
-        for x in range(4):
+    async def test_cycle() -> None:
+        for x in range(10000):
             map_data.positions.append(Position(PositionType.DEEBOT, x, x))
             map_data.rooms[x] = Room("test", x, "1,2")
 
-        assert event_bus.notify.call_count == 1
+        assert map_data.changed is True
+        mock.assert_not_called()
 
-    test_cycle()
+        await asyncio.sleep(1.1)
+        mock.assert_called_once()
 
-    event_bus.reset_mock()
-    sleep(1.1)
+    await test_cycle()
 
-    test_cycle()
+    mock.reset_mock()
+    map_data.reset_changed()
+
+    await test_cycle()

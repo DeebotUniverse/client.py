@@ -102,4 +102,4 @@ class CachedMapInfoEvent(Event):
 class MapChangedEvent(Event):
     """Map changed event."""
 
-    when: datetime = datetime.utcnow()
+    when: datetime
