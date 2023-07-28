@@ -28,6 +28,7 @@ class _EventProcessingData(Generic[T]):
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
         self.last_event: T | None = None
+        self.notify_handle: asyncio.TimerHandle | None = None
 
 
 class EventBus:
@@ -73,43 +74,56 @@ class EventBus:
 
         return unsubscribe
 
-    def notify(self, event: T) -> bool:
+    def notify(self, event: T, *, debounce_time: float = 0) -> None:
         """Notify subscriber with given event representation."""
         event_processing_data = self._get_or_create_event_processing_data(type(event))
 
         if (
-            isinstance(event, StateEvent)
-            and event.state == VacuumState.IDLE
-            and event_processing_data.last_event
-            and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore[attr-defined]
-        ):
-            # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
-            # Problem getCleanInfo will return state=idle, when bot is charging
-            event = StateEvent(VacuumState.DOCKED)  # type: ignore[assignment]
-        elif (
-            isinstance(event, AvailabilityEvent)
-            and event.available
-            and event_processing_data.last_event
-            and not event_processing_data.last_event.available  # type: ignore[attr-defined]
-        ):
-            # unavailable -> available: refresh everything
-            for event_type, _ in self._event_processing_dict.items():
-                if event_type != AvailabilityEvent:
-                    self.request_refresh(event_type)
+            handle := event_processing_data.notify_handle
+        ) is not None and not handle.cancelled():
+            handle.cancel()
 
-        if event == event_processing_data.last_event:
-            _LOGGER.debug("Event is the same! Skipping (%s)", event)
-            return False
+        def _notify(event: T) -> None:
+            event_processing_data.notify_handle = None
 
-        event_processing_data.last_event = event
-        if event_processing_data.subscriber_callbacks:
-            _LOGGER.debug("Notify subscribers with %s", event)
-            for callback in event_processing_data.subscriber_callbacks:
-                create_task(self._tasks, callback(event))
-            return True
+            if (
+                isinstance(event, StateEvent)
+                and event.state == VacuumState.IDLE
+                and event_processing_data.last_event
+                and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore[attr-defined]
+            ):
+                # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
+                # Problem getCleanInfo will return state=idle, when bot is charging
+                event = StateEvent(VacuumState.DOCKED)  # type: ignore[assignment]
+            elif (
+                isinstance(event, AvailabilityEvent)
+                and event.available
+                and event_processing_data.last_event
+                and not event_processing_data.last_event.available  # type: ignore[attr-defined]
+            ):
+                # unavailable -> available: refresh everything
+                for event_type, _ in self._event_processing_dict.items():
+                    if event_type != AvailabilityEvent:
+                        self.request_refresh(event_type)
 
-        _LOGGER.debug("No subscribers... Discharging %s", event)
-        return False
+            if event == event_processing_data.last_event:
+                _LOGGER.debug("Event is the same! Skipping (%s)", event)
+                return
+
+            event_processing_data.last_event = event
+            if event_processing_data.subscriber_callbacks:
+                _LOGGER.debug("Notify subscribers with %s", event)
+                for callback in event_processing_data.subscriber_callbacks:
+                    create_task(self._tasks, callback(event))
+            else:
+                _LOGGER.debug("No subscribers... Discharging %s", event)
+
+        if debounce_time > 0:
+            event_processing_data.notify_handle = asyncio.get_running_loop().call_later(
+                debounce_time, _notify, event
+            )
+        else:
+            _notify(event)
 
     def request_refresh(self, event_class: type[T]) -> None:
         """Request manual refresh."""
@@ -119,6 +133,9 @@ class EventBus:
     async def teardown(self) -> None:
         """Teardown eventbus."""
         await cancel(self._tasks)
+        for data in self._event_processing_dict.values():
+            if handle := data.notify_handle:
+                handle.cancel()
 
     async def _call_refresh_function(self, event_class: type[T]) -> None:
         semaphore = self._event_processing_dict[event_class].semaphore

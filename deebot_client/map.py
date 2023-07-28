@@ -8,7 +8,7 @@ import math
 import struct
 import zlib
 from collections.abc import Callable, Coroutine
-from datetime import datetime, timedelta
+from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Final
 
@@ -539,11 +539,9 @@ class MapData:
 
         def on_change() -> None:
             self._changed = True
-            now = datetime.utcnow()
-            last_event = event_bus.get_last_event(MapChangedEvent)
-            if last_event is None or (now - last_event.when) > timedelta(seconds=1):
-                # throttle notify to ones a second
-                event_bus.notify(MapChangedEvent(now))
+            event_bus.notify(
+                MapChangedEvent(datetime.now(timezone.utc)), debounce_time=1
+            )
 
         self._on_change = on_change
         self._map_pieces: OnChangedList[MapPiece] = OnChangedList(
