@@ -185,3 +185,31 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
                 await asyncio.sleep(debounce_time)
                 mock.assert_called_once_with(event)
                 mock.reset_mock()
+
+
+async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
+    # setup
+    async def wait() -> None:
+        await asyncio.sleep(1000)
+
+    execute_mock.side_effect = wait
+
+    mock = AsyncMock()
+    event_bus.subscribe(BatteryEvent, mock)
+
+    event_bus.notify(BatteryEvent(100), debounce_time=10000)
+    event_bus.request_refresh(BatteryEvent)
+
+    # verify tasks/handle still running
+    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    assert handle is not None
+    assert handle.cancelled() is False
+    assert len(event_bus._tasks) > 0
+
+    # test
+    await event_bus.teardown()
+
+    # verify
+    assert handle is not None
+    assert handle.cancelled() is True
+    assert len(event_bus._tasks) == 0
