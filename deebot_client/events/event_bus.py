@@ -2,6 +2,7 @@
 import asyncio
 import threading
 from collections.abc import Callable, Coroutine
+from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
 from ..logging_filter import get_logger
@@ -28,6 +29,7 @@ class _EventProcessingData(Generic[T]):
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
         self.last_event: T | None = None
+        self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=timezone.utc)
         self.notify_handle: asyncio.TimerHandle | None = None
 
 
@@ -84,6 +86,7 @@ class EventBus:
             handle.cancel()
 
         def _notify(event: T) -> None:
+            event_processing_data.last_event_time = datetime.now(timezone.utc)
             event_processing_data.notify_handle = None
 
             if (
@@ -118,12 +121,15 @@ class EventBus:
             else:
                 _LOGGER.debug("No subscribers... Discharging %s", event)
 
-        if debounce_time > 0:
+        now = datetime.now(timezone.utc)
+        if debounce_time <= 0 or (
+            now - event_processing_data.last_event_time
+        ) > timedelta(seconds=debounce_time):
+            _notify(event)
+        else:
             event_processing_data.notify_handle = asyncio.get_running_loop().call_later(
                 debounce_time, _notify, event
             )
-        else:
-            _notify(event)
 
     def request_refresh(self, event_class: type[T]) -> None:
         """Request manual refresh."""
