@@ -164,22 +164,30 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
 
     with patch("deebot_client.events.event_bus.asyncio", wraps=asyncio) as aio:
 
-        async def test_cycle() -> MapChangedEvent:
+        async def test_cycle(call_expected: bool) -> MapChangedEvent:
             event = MapChangedEvent(datetime.now(timezone.utc))
             await notify(event, debounce_time)
-            if debounce_time > 0:
-                aio.get_running_loop.assert_called()
-                mock.assert_not_called()
-            else:
+            if call_expected:
                 aio.get_running_loop.assert_not_called()
                 mock.assert_called_once_with(event)
                 mock.reset_mock()
+            else:
+                aio.get_running_loop.assert_called()
+                aio.get_running_loop.reset_mock()
+                mock.assert_not_called()
 
             return event
 
-        for _ in range(2):
-            await test_cycle()
-            event = await test_cycle()
+        sleep_time = debounce_time / 3 if debounce_time > 0 else 0
+
+        for i in range(2):
+            if i > 0:
+                await asyncio.sleep(debounce_time)
+            await test_cycle(True)
+            await asyncio.sleep(sleep_time)
+            event = await test_cycle(debounce_time <= 0)
+            await asyncio.sleep(sleep_time)
+            event = await test_cycle(debounce_time <= 0)
 
             if debounce_time > 0:
                 await asyncio.sleep(debounce_time)
@@ -202,14 +210,19 @@ async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
 
     # verify tasks/handle still running
     handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    assert handle is None
+    assert len(event_bus._tasks) > 0
+
+    event_bus.notify(BatteryEvent(100), debounce_time=10000)
+    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
     assert handle is not None
     assert handle.cancelled() is False
-    assert len(event_bus._tasks) > 0
 
     # test
     await event_bus.teardown()
 
     # verify
+    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
     assert handle is not None
     assert handle.cancelled() is True
     assert len(event_bus._tasks) == 0

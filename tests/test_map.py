@@ -38,14 +38,15 @@ async def test_MapData(event_bus: EventBus) -> None:
             map_data.rooms[x] = Room("test", x, "1,2")
 
         assert map_data.changed is True
-        mock.assert_not_called()
+        mock.assert_called_once()
 
         await asyncio.sleep(1.1)
-        mock.assert_called_once()
+        assert mock.call_count == 2
 
     await test_cycle()
 
     mock.reset_mock()
     map_data.reset_changed()
+    await asyncio.sleep(1.1)
 
     await test_cycle()
