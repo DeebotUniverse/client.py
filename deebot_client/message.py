@@ -41,13 +41,13 @@ class HandlingResult:
 
 
 def _handle_error_or_analyse(
-    func: Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]
+        func: Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]
 ) -> Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
-        cls: type["Message"], event_bus: EventBus, data: dict[str, Any]
+            cls: type["Message"], event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
@@ -73,7 +73,7 @@ class Message(ABC):
 
     @classmethod
     @abstractmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -93,6 +93,11 @@ class Message(ABC):
 
         :return: A message response
         """
+
+        # This basically means an XML message
+        if isinstance(message, str):
+            return cls._handle_body(event_bus, message)
+
         data_body = message.get("body", message)
         return cls.__handle_body(event_bus, data_body)
 
@@ -103,7 +108,7 @@ class MessageBodyData(Message):
     @classmethod
     @abstractmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+            cls, event_bus: EventBus, data: dict[str, Any] | list
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -113,7 +118,7 @@ class MessageBodyData(Message):
     @classmethod
     @final
     def __handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+            cls, event_bus: EventBus, data: dict[str, Any] | list
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
@@ -126,12 +131,16 @@ class MessageBodyData(Message):
             return HandlingResult(HandlingState.ERROR)
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | Any) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
         """
-        data = body.get("data", body)
+        if isinstance(body, str):
+            data = body
+        else:
+            data = body.get("data", body)
+
         return cls.__handle_body_data(event_bus, data)
 
 
@@ -141,7 +150,7 @@ class MessageBodyDataDict(MessageBodyData):
     @classmethod
     @abstractmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+            cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -150,7 +159,7 @@ class MessageBodyDataDict(MessageBodyData):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+            cls, event_bus: EventBus, data: dict[str, Any] | list | Any
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -159,7 +168,17 @@ class MessageBodyDataDict(MessageBodyData):
         if isinstance(data, dict):
             return cls._handle_body_data_dict(event_bus, data)
 
+        if isinstance(data, str):
+            return cls._handle_body_data_xml(event_bus, data)
+
         return super()._handle_body_data(event_bus, data)
+
+    @classmethod
+    @abstractmethod
+    def _handle_body_data_xml(
+            cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
+        return cls._handle_body_data_xml(event_bus, xml_message)
 
 
 class MessageBodyDataList(MessageBodyData):
@@ -175,7 +194,7 @@ class MessageBodyDataList(MessageBodyData):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+            cls, event_bus: EventBus, data: dict[str, Any] | list
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
