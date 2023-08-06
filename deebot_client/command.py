@@ -1,10 +1,10 @@
 """Base command."""
 import asyncio
-from xml.etree import ElementTree
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import Any, final
+from xml.etree import ElementTree
 
 from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
@@ -120,7 +120,7 @@ class Command(ABC):
         return payload
 
     def _get_xml_payload(self) -> str:
-        ctl_element = ElementTree.Element('ctl')
+        ctl_element = ElementTree.Element("ctl")
 
         if len(self._args) > 0:
             action_element = ElementTree.SubElement(ctl_element, self.xml_name.lower())
@@ -128,7 +128,7 @@ class Command(ABC):
             for key in self._args:
                 action_element.set(key, self._args[key])
 
-        return ElementTree.tostring(ctl_element, 'unicode')
+        return ElementTree.tostring(ctl_element, "unicode")
 
         # return '<ctl/>'
 

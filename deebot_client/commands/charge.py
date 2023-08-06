@@ -6,7 +6,7 @@ from ..command import CommandResult
 from ..events import StateEvent
 from ..logging_filter import get_logger
 from ..message import HandlingResult
-from ..models import VacuumState, DeviceInfo
+from ..models import DeviceInfo, VacuumState
 from .common import EventBus, ExecuteCommand
 from .const import CODE
 
@@ -39,9 +39,8 @@ class Charge(ExecuteCommand):
         return super()._handle_body(event_bus, body)
 
     async def _execute(
-            self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
-
         if device_info.uses_xml_protocol:
             self._args["type"] = "go"
 

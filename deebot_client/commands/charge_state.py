@@ -28,7 +28,7 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.success()
 
     def _handle_body_data_xml(
-            cls, event_bus: EventBus, xml_message: str
+        cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
         return HandlingResult.success()
 
