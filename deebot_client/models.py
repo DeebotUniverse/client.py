@@ -1,7 +1,7 @@
 """Models module."""
 import os
 from dataclasses import dataclass
-from enum import IntEnum, unique
+from enum import IntEnum, unique, Enum
 
 from aiohttp import ClientSession
 
@@ -48,7 +48,11 @@ class DeviceInfo(dict):
     def get_class(self) -> str:
         """Return device class."""
         return str(self["class"])
-
+    @property
+    def uses_xml_protocol(self) -> bool:
+        # ls1ok3 is the class for the Deebot 900 which uses MQTT + XML
+        # This is based on https://github.com/mrbungle64/ecovacs-deebot.js/blob/41d0b84c6bad5186147a84f2bd2443029ce889ed/library/models.js#L130-L131
+        return self.get_class == 'ls1ok3'
 
 @dataclass(frozen=True)
 class Room:
@@ -104,13 +108,13 @@ class Configuration:
     """Configuration representation."""
 
     def __init__(
-        self,
-        session: ClientSession,
-        *,
-        device_id: str,
-        country: str,
-        continent: str,
-        verify_ssl: bool | str = True,
+            self,
+            session: ClientSession,
+            *,
+            device_id: str,
+            country: str,
+            continent: str,
+            verify_ssl: bool | str = True,
     ):
         self._session = session
         self._device_id = device_id
