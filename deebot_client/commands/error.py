@@ -12,6 +12,8 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
 
     name = "getError"
 
+    xml_name = "GetError"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]

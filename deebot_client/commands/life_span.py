@@ -16,6 +16,8 @@ class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
 
     name = "getLifeSpan"
 
+    xml_name = "GetLifeSpan"
+
     def __init__(self) -> None:
         args = [life_span.value for life_span in LifeSpan]
         super().__init__(args)

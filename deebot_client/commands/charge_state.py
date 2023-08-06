@@ -13,6 +13,8 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
 
     name = "getChargeState"
 
+    xml_name = "GetChargeState"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -23,6 +25,11 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         """
         if data.get("isCharging") == 1:
             event_bus.notify(StateEvent(VacuumState.DOCKED))
+        return HandlingResult.success()
+
+    def _handle_body_data_xml(
+            cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         return HandlingResult.success()
 
     @classmethod

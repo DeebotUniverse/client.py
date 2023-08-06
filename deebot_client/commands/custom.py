@@ -46,5 +46,5 @@ class CustomCommand(Command):
 class CustomPayloadCommand(CustomCommand):
     """Custom command, where args is the raw payload."""
 
-    def _get_payload(self) -> dict[str, Any] | list:
+    def _get_json_payload(self) -> dict[str, Any] | list:
         return self._args
