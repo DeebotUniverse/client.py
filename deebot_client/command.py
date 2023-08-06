@@ -1,5 +1,6 @@
 """Base command."""
 import asyncio
+from xml.etree import ElementTree
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -46,6 +47,12 @@ class Command(ABC):
     @classmethod
     @abstractmethod
     def name(cls) -> str:
+        """Command name."""
+
+    @property  # type: ignore[misc]
+    @classmethod
+    @abstractmethod
+    def xml_name(cls) -> str:
         """Command name."""
 
     @final
@@ -97,7 +104,7 @@ class Command(ABC):
             )
         return result
 
-    def _get_payload(self) -> dict[str, Any] | list:
+    def _get_json_payload(self) -> dict[str, Any] | list:
         payload = {
             "header": {
                 "pri": "1",
@@ -112,24 +119,32 @@ class Command(ABC):
 
         return payload
 
+    def _get_xml_payload(self) -> str:
+        ctl_element = ElementTree.Element('ctl')
+
+        if len(self._args) > 0:
+            action_element = ElementTree.SubElement(ctl_element, self.xml_name.lower())
+
+            for key in self._args:
+                action_element.set(key, self._args[key])
+
+        return ElementTree.tostring(ctl_element, 'unicode')
+
+        # return '<ctl/>'
+
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: DeviceInfo
     ) -> dict[str, Any]:
-        json = {
-            "cmdName": self.name,
-            "payload": self._get_payload(),
-            "payloadType": "j",
-            "td": "q",
-            "toId": device_info.did,
-            "toRes": device_info.resource,
-            "toType": device_info.get_class,
-        }
+        if device_info.uses_xml_protocol:
+            payload = self._generate_xml_payload(device_info)
+        else:
+            payload = self._generate_xml_payload(device_info)
 
         credentials = await authenticator.authenticate()
         query_params = {
-            "mid": json["toType"],
-            "did": json["toId"],
-            "td": json["td"],
+            "mid": payload["toType"],
+            "did": payload["toId"],
+            "td": payload["td"],
             "u": credentials.user_id,
             "cv": "1.67.3",
             "t": "a",
@@ -138,10 +153,32 @@ class Command(ABC):
 
         return await authenticator.post_authenticated(
             PATH_API_IOT_DEVMANAGER,
-            json,
+            payload,
             query_params=query_params,
             headers=REQUEST_HEADERS,
         )
+
+    def _generate_json_payload(self, device_info: DeviceInfo):
+        return {
+            "cmdName": self.name,
+            "payload": self._get_json_payload(),
+            "payloadType": "j",
+            "td": "q",
+            "toId": device_info.did,
+            "toRes": device_info.resource,
+            "toType": device_info.get_class,
+        }
+
+    def _generate_xml_payload(self, device_info: DeviceInfo):
+        return {
+            "cmdName": self.xml_name,
+            "payload": self._get_xml_payload(),
+            "payloadType": "x",
+            "td": "q",
+            "toId": device_info.did,
+            "toRes": device_info.resource,
+            "toType": device_info.get_class,
+        }
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
