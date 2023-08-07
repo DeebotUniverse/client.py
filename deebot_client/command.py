@@ -55,6 +55,10 @@ class Command(ABC):
     def xml_name(cls) -> str:
         """Command name."""
 
+    @classmethod
+    def xml_has_own_element(cls) -> bool:
+        return cls.xml_has_own_element or False
+
     @final
     async def execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
@@ -119,18 +123,23 @@ class Command(ABC):
 
         return payload
 
+    @property
     def _get_xml_payload(self) -> str:
         ctl_element = ElementTree.Element("ctl")
 
+        import pprint
+        pprint.pprint(self._args)
+
         if len(self._args) > 0:
-            action_element = ElementTree.SubElement(ctl_element, self.xml_name.lower())
+            action_element = ElementTree.SubElement(ctl_element, self.xml_name.lower()) if self.xml_has_own_element() else ctl_element
 
             for key in self._args:
                 action_element.set(key, self._args[key])
 
-        return ElementTree.tostring(ctl_element, "unicode")
+        pprint.pprint("element")
+        pprint.pprint(ElementTree.tostring(ctl_element, "unicode"))
 
-        # return '<ctl/>'
+        return ElementTree.tostring(ctl_element, "unicode")
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: DeviceInfo
@@ -172,7 +181,7 @@ class Command(ABC):
     def _generate_xml_payload(self, device_info: DeviceInfo):
         return {
             "cmdName": self.xml_name,
-            "payload": self._get_xml_payload(),
+            "payload": self._get_xml_payload,
             "payloadType": "x",
             "td": "q",
             "toId": device_info.did,
