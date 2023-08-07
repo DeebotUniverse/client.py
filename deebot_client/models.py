@@ -1,7 +1,7 @@
 """Models module."""
 import os
 from dataclasses import dataclass
-from enum import Enum, IntEnum, unique
+from enum import IntEnum, unique
 
 from aiohttp import ClientSession
 
@@ -51,6 +51,7 @@ class DeviceInfo(dict):
 
     @property
     def uses_xml_protocol(self) -> bool:
+        """Return if a device uses MQTT + XML"""
         # ls1ok3 is the class for the Deebot 900 which uses MQTT + XML
         # This is based on https://github.com/mrbungle64/ecovacs-deebot.js/blob/41d0b84c6bad5186147a84f2bd2443029ce889ed/library/models.js#L130-L131
         return self.get_class == "ls1ok3"
