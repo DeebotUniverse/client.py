@@ -57,6 +57,12 @@ class Command(ABC):
 
     @classmethod
     def xml_has_own_element(cls) -> bool:
+        """Returns whether or not an XML command should use an inner element.
+
+         A good example of this is the Clean command.
+         This is the required XML for that.
+         <ctl><clean type='auto' speed='standard' act='p'/></ctl>
+         """
         return cls.xml_has_own_element or False
 
     @final
