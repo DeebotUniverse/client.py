@@ -1,6 +1,7 @@
 """Life span commands."""
 from typing import Any
 
+from ..authentication import Authenticator
 from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult, HandlingState, MessageBodyDataList
 from .common import (
@@ -9,6 +10,7 @@ from .common import (
     EventBus,
     ExecuteCommand,
 )
+from ..models import DeviceInfo
 
 
 class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
@@ -16,11 +18,25 @@ class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
 
     name = "getLifeSpan"
 
+    # TODO A different approach needs to be made for this, because the MQTT + XML API
+    # Doesn't accept an array of all consumables we want to get the life span from
     xml_name = "GetLifeSpan"
 
     def __init__(self) -> None:
         args = [life_span.value for life_span in LifeSpan]
         super().__init__(args)
+
+    async def _execute_api_request(
+        self, authenticator: Authenticator, device_info: DeviceInfo
+    ) -> dict[str, Any]:
+        if not device_info.uses_xml_protocol:
+            return await super()._execute_api_request(authenticator, device_info)
+
+        # Probably need to do something with iterating over all args and then
+        # firing N-number of requests for all LifeSpan enum fields except for 'heap'
+        # because that one doesn't exist on the MQTT + API version
+
+        raise NotImplementedError
 
     @classmethod
     def _handle_body_data_list(cls, event_bus: EventBus, data: list) -> HandlingResult:
