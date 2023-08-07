@@ -1,8 +1,9 @@
 """Charge state commands."""
 from typing import Any
+from xml.etree import ElementTree
 
 from ..events import StateEvent
-from ..message import HandlingResult, MessageBodyDataDict
+from ..message import HandlingResult, MessageBodyDataDict, HandlingState
 from ..models import VacuumState
 from .common import EventBus, NoArgsCommand
 from .const import CODE
@@ -31,8 +32,18 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
-        raise NotImplementedError
+        tree = ElementTree.fromstring(xml_message)
 
+        element = tree.find("charge")
+
+        if element is None:
+            return HandlingResult(HandlingState.ERROR)
+
+        # <charge type='Idle' g='0'/>
+        # g='0' appears to be docked ?
+        # Needs further investigation
+
+        event_bus.notify(StateEvent(VacuumState.DOCKED))
         return HandlingResult.success()
 
     @classmethod
