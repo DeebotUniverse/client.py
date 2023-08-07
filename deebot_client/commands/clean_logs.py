@@ -18,6 +18,8 @@ class GetCleanLogs(Command):
     _targets_bot: bool = False
     name = "GetCleanLogs"
 
+    xml_name = "GetCleanLogs"
+
     def __init__(self, count: int = 0) -> None:
         super().__init__({"count": count})
 
