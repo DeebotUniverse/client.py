@@ -53,6 +53,8 @@ class Clean(ExecuteCommand):
 
     xml_name = "Clean"
 
+    xml_has_own_element = True
+
     def __init__(self, action: CleanAction) -> None:
         super().__init__(self.__get_args(action))
 
@@ -90,7 +92,8 @@ class Clean(ExecuteCommand):
             elif self._args["act"] == CleanAction.STOP.value:
                 self._args["act"] = str(CleanAction.HALT.value)[0]
 
-            self._args["speed"] = CleanSpeed.STANDARD.value
+            if "speed" not in self._args:
+                self._args["speed"] = CleanSpeed.STANDARD.value
 
         return await super()._execute(authenticator, device_info, event_bus)
 
@@ -119,6 +122,8 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"
+
+    xml_name = "GetCleanState"
 
     @classmethod
     def _handle_body_data_dict(
@@ -165,3 +170,9 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+    @classmethod
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ):
+        raise NotImplementedError
