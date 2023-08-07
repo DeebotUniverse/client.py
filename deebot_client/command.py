@@ -128,10 +128,15 @@ class Command(ABC):
         ctl_element = ElementTree.Element("ctl")
 
         import pprint
+
         pprint.pprint(self._args)
 
         if len(self._args) > 0:
-            action_element = ElementTree.SubElement(ctl_element, self.xml_name.lower()) if self.xml_has_own_element() else ctl_element
+            action_element = (
+                ElementTree.SubElement(ctl_element, self.xml_name.lower())
+                if self.xml_has_own_element()
+                else ctl_element
+            )
 
             for key in self._args:
                 action_element.set(key, self._args[key])

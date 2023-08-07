@@ -4,13 +4,13 @@ from typing import Any
 from ..authentication import Authenticator
 from ..events import LifeSpan, LifeSpanEvent
 from ..message import HandlingResult, HandlingState, MessageBodyDataList
+from ..models import DeviceInfo
 from .common import (
     CommandHandlingMqttP2P,
     CommandWithMessageHandling,
     EventBus,
     ExecuteCommand,
 )
-from ..models import DeviceInfo
 
 
 class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):

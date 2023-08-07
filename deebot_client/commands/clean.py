@@ -172,7 +172,5 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.analyse()
 
     @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
         raise NotImplementedError
