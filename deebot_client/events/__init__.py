@@ -90,6 +90,9 @@ class LifeSpan(str, Enum):
     BRUSH = "brush"
     FILTER = "heap"
 
+    # Currently only being used for the Deebot 900
+    FILTER_XML = "DustCaseHeap"
+
 
 @dataclass(frozen=True)
 class LifeSpanEvent(Event):
