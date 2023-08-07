@@ -37,6 +37,7 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
+# NEED TO FIGURE OUT CODE 8
 # from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.js
 _ERROR_CODES = {
     -3: "Error parsing response data",
@@ -45,6 +46,7 @@ _ERROR_CODES = {
     0: "NoError: Robot is operational",
     3: "RequestOAuthError: Authentication error",
     7: "log data is not found",
+    8: "TODO: Something with the MQTT + XML API",
     100: "NoError: Robot is operational",
     101: "BatteryLow: Low battery",
     102: "HostHang: Robot is off the floor",
