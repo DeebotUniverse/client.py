@@ -3,7 +3,7 @@ from typing import Any
 from xml.etree import ElementTree
 
 from ..events import StateEvent
-from ..message import HandlingResult, MessageBodyDataDict, HandlingState
+from ..message import HandlingResult, HandlingState, MessageBodyDataDict
 from ..models import VacuumState
 from .common import EventBus, NoArgsCommand
 from .const import CODE
