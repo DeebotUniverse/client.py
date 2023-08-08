@@ -16,14 +16,13 @@ async def test_GetFanSpeed() -> None:
     await assert_command(GetFanSpeed(), json, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
 
 
-@pytest.mark.parametrize("fan_speed", ['strong', 'standard'])
+@pytest.mark.parametrize("fan_speed", ["strong", "standard"])
 async def test_GetFanSpeedXml(fan_speed: str) -> None:
-    data = {
-        "ret": "ok",
-        "resp": f"<ctl ret='ok' speed='{fan_speed}' />"
-    }
+    data = {"ret": "ok", "resp": f"<ctl ret='ok' speed='{fan_speed}' />"}
 
-    await assert_command(GetFanSpeed(), data, FanSpeedEvent(FanSpeedLevelXml(fan_speed)))
+    await assert_command(
+        GetFanSpeed(), data, FanSpeedEvent(FanSpeedLevelXml(fan_speed))
+    )
 
 
 @pytest.mark.parametrize(

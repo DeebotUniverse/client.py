@@ -19,8 +19,8 @@ class FanSpeedLevel(DisplayNameIntEnum):
 
 class FanSpeedLevelXml(Enum):
     # Currently used for the Deebot 900 / MQTT + XML based devices
-    STRONG = 'strong'
-    STANDARD = 'standard'
+    STRONG = "strong"
+    STANDARD = "standard"
 
 
 @dataclass(frozen=True)

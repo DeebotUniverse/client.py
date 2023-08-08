@@ -29,14 +29,15 @@ class GetFanSpeed(NoArgsCommand, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_xml(
-            cls, event_bus: EventBus, xml_message: str
+        cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
         tree = ElementTree.fromstring(xml_message)
         if tree is None or len(tree.attrib) == 0:
             return HandlingResult.analyse()
 
-        event_bus.notify(FanSpeedEvent(FanSpeedLevelXml(str(tree.attrib['speed']))))
+        event_bus.notify(FanSpeedEvent(FanSpeedLevelXml(str(tree.attrib["speed"]))))
         return HandlingResult.success()
+
 
 class SetFanSpeed(SetCommand):
     """Set fan speed command."""
