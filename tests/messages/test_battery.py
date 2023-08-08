@@ -33,7 +33,10 @@ def test_getBattery_xml(percentage: int) -> None:
             "fwVer": "1.8.2",
             "hwVer": "0.1.1",
         },
-        "body": {"resp": f"<ctl ret='ok'><battery power='{percentage}'/></ctl>"},
+        "body": {
+            "ret": "ok",
+            "resp": f"<ctl ret='ok'><battery power='{percentage}'/></ctl>"
+        },
     }
 
     assert_message(OnBattery, data, BatteryEvent(percentage))

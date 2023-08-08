@@ -18,6 +18,8 @@ class FanSpeedLevel(DisplayNameIntEnum):
 
 
 class FanSpeedLevelXml(Enum):
+    """Enum class for fan speed levels for the MQTT + XML based models."""
+
     # Currently used for the Deebot 900 / MQTT + XML based devices
     STRONG = "strong"
     STANDARD = "standard"
