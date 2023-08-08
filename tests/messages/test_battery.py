@@ -35,7 +35,7 @@ def test_getBattery_xml(percentage: int) -> None:
         },
         "body": {
             "ret": "ok",
-            "resp": f"<ctl ret='ok'><battery power='{percentage}'/></ctl>"
+            "resp": f"<ctl ret='ok'><battery power='{percentage}'/></ctl>",
         },
     }
 
