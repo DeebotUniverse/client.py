@@ -24,7 +24,9 @@ class OnBattery(MessageBodyDataDict):
         return HandlingResult.success()
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml: str) -> HandlingResult:
+    def _handle_body_data_xml(
+            cls, event_bus: EventBus, xml: str
+    ) -> HandlingResult:
         tree = ElementTree.fromstring(xml)
         element = tree.find("battery")
 
