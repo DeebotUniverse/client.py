@@ -13,6 +13,8 @@ class GetVolume(NoArgsCommand, MessageBodyDataDict):
 
     name = "getVolume"
 
+    xml_name = "GetVolume"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
