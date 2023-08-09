@@ -31,5 +31,5 @@ class OnBattery(MessageBodyDataDict):
         if element is None:
             return HandlingResult(HandlingState.ERROR)
 
-        event_bus.notify(BatteryEvent(int(element.attrib["power"])))
+        event_bus.notify(BatteryEvent(int(element.attrib.get("power"))))
         return HandlingResult.success()
