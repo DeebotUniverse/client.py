@@ -63,7 +63,7 @@ class Command(ABC):
         This is the required XML for that.
         <ctl><clean type='auto' speed='standard' act='p'/></ctl>
         """
-        return cls.xml_has_own_element or False
+        return cls.xml_has_own_element == True
 
     @final
     async def execute(
@@ -132,11 +132,6 @@ class Command(ABC):
     @property
     def _get_xml_payload(self) -> str:
         ctl_element = ElementTree.Element("ctl")
-
-        import pprint
-
-        pprint.pprint(self._args)
-
         if len(self._args) > 0:
             action_element = (
                 ElementTree.SubElement(ctl_element, self.xml_name.lower())
@@ -146,9 +141,6 @@ class Command(ABC):
 
             for key in self._args:
                 action_element.set(key, self._args[key])
-
-        pprint.pprint("element")
-        pprint.pprint(ElementTree.tostring(ctl_element, "unicode"))
 
         return ElementTree.tostring(ctl_element, "unicode")
 
