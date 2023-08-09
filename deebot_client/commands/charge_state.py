@@ -39,9 +39,9 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         if element is None:
             return HandlingResult(HandlingState.ERROR)
 
-        # <charge type='Idle' g='0'/>
-        # g='0' appears to be docked ?
-        # Needs further investigation
+        # "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>" == docked and charging
+        # "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"" == Idle (Potentially already fully charged?)
+        # Needs further investigation, for example, when it's in "stuck state"
 
         event_bus.notify(StateEvent(VacuumState.DOCKED))
         return HandlingResult.success()
