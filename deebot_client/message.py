@@ -84,13 +84,13 @@ class Message(ABC):
     @classmethod
     @_handle_error_or_analyse
     @final
-    def __handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def __handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
         return cls._handle_body(event_bus, body)
 
     @classmethod
     @_handle_error_or_analyse
     @final
-    def handle(cls, event_bus: EventBus, message: dict[str, Any]) -> HandlingResult:
+    def handle(cls, event_bus: EventBus, message: dict[str, Any] | str) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
@@ -98,7 +98,7 @@ class Message(ABC):
 
         # This basically means an XML message
         if isinstance(message, str):
-            return cls._handle_body(event_bus, message)
+            return cls.__handle_body(event_bus, message)
 
         data_body = message.get("body", message)
         return cls.__handle_body(event_bus, data_body)
