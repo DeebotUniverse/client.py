@@ -76,7 +76,9 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
+    def _handle_body(
+        cls, event_bus: EventBus, body: dict[str, Any] | str
+    ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -84,7 +86,7 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
         # Success events from the XML api looks like <ctl ret='ok'/>
         if isinstance(body, str):
             element = ElementTree.fromstring(body)
-            if element.attrib.get('ret') == 'ok':
+            if element.attrib.get("ret") == "ok":
                 return HandlingResult.success()
 
         # Success event looks like { "code": 0, "msg": "ok" }
