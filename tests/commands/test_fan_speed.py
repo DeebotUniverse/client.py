@@ -33,3 +33,12 @@ def test_SetFanSpeed(value: str | int | FanSpeedLevel, expected: int) -> None:
     command = SetFanSpeed(value)
     assert command.name == "setSpeed"
     assert command._args == {"speed": expected}
+
+@pytest.mark.parametrize(
+    "value, expected",
+    [(FanSpeedLevelXml.STRONG, 'strong'), (FanSpeedLevelXml.STANDARD, 'standard')],
+)
+def test_SetFanSpeedXml(value: str | int | FanSpeedLevel, expected: int) -> None:
+    command = SetFanSpeed(value)
+    assert command.name == "setSpeed"
+    assert command._args == {"speed": expected}
