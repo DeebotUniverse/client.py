@@ -21,7 +21,7 @@ class Charge(ExecuteCommand):
     xml_name = "Charge"
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
