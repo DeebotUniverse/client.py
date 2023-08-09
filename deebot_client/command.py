@@ -63,7 +63,7 @@ class Command(ABC):
         This is the required XML for that.
         <ctl><clean type='auto' speed='standard' act='p'/></ctl>
         """
-        return cls.xml_has_own_element == True
+        return cls.xml_has_own_element is True
 
     @final
     async def execute(
