@@ -39,12 +39,22 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         if element is None:
             return HandlingResult(HandlingState.ERROR)
 
+        type = element.attrib['type']
+
         # "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>" == docked and charging
         # "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"" == Idle (Potentially already fully charged?)
-        # Needs further investigation, for example, when it's in "stuck state"
 
-        event_bus.notify(StateEvent(VacuumState.DOCKED))
-        return HandlingResult.success()
+        status: VacuumState | None = None
+        if type == 'Idle':
+            status = VacuumState.DOCKED
+        elif type == 'SlotCharging':
+            status = VacuumState.DOCKED
+
+        if status:
+            event_bus.notify(StateEvent(status))
+            return HandlingResult.success()
+
+        return HandlingResult.analyse()
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
