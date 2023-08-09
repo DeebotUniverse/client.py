@@ -49,11 +49,13 @@ class SetFanSpeed(SetCommand):
     get_command = GetFanSpeed
 
     def __init__(
-        self, speed: str | int | FanSpeedLevel, **kwargs: Mapping[str, Any]
+        self, speed: str | int | FanSpeedLevel | FanSpeedLevelXml, **kwargs: Mapping[str, Any]
     ) -> None:
         if isinstance(speed, str):
             speed = FanSpeedLevel.get(speed)
         if isinstance(speed, FanSpeedLevel):
+            speed = speed.value
+        if isinstance(speed, FanSpeedLevelXml):
             speed = speed.value
 
         super().__init__({"speed": speed}, **kwargs)
