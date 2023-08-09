@@ -186,6 +186,11 @@ class MessageBodyDataDict(MessageBodyData):
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
         return cls._handle_body_data_xml(event_bus, xml_message)
 
 
