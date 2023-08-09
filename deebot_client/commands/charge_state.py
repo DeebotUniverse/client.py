@@ -39,7 +39,7 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         if element is None:
             return HandlingResult(HandlingState.ERROR)
 
-        type = element.attrib["type"]
+        type = element.attrib.get('type')
 
         # "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>" == docked and charging
         # "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"" == Idle (Potentially already fully charged?)
