@@ -25,6 +25,10 @@ def get_request_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
     return {"id": "ALZf", "ret": "ok", "resp": get_message_json(data)}
 
 
+def get_request_xml(data: str | None) -> dict[str, Any]:
+    return {"id": "ALZf", "ret": "ok", "resp": data, "payloadType": "xx"}
+
+
 def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
     json = {
         "header": {
