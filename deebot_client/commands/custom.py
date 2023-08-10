@@ -14,6 +14,8 @@ class CustomCommand(Command):
 
     name: str = "CustomCommand"
 
+    xml_name: str = "CustomCommand"
+
     def __init__(self, name: str, args: dict | list | None = None) -> None:
         self.name = name
         super().__init__(args)
