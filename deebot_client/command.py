@@ -57,7 +57,7 @@ class Command(ABC):
 
     @classmethod
     def xml_has_own_element(cls) -> bool:
-        """Returns whether an XML command should use an inner element.
+        """Returns if an XML command should have its own inner element.
 
         A good example of this is the Clean command.
         This is the required XML for that.
@@ -72,7 +72,7 @@ class Command(ABC):
         """Execute command.
 
         Returns:
-            bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
+            bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """
         try:

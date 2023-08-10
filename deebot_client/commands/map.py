@@ -21,6 +21,9 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getCachedMapInfo"
 
+    # TODO Potentially not available on XML based models?
+    xml_name = "GetCachedMapInfo"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -40,6 +43,11 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
                 )
 
         return HandlingResult.analyse()
+
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
+        raise NotImplementedError
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
