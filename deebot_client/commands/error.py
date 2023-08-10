@@ -1,5 +1,7 @@
 """Error commands."""
+import pprint
 from typing import Any
+from xml.etree import ElementTree
 
 from ..events import ErrorEvent, StateEvent
 from ..message import HandlingResult, MessageBodyDataDict
@@ -36,9 +38,29 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
 
         return HandlingResult.analyse()
 
+    @classmethod
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
+        element = ElementTree.fromstring(xml_message)
 
-# NEED TO FIGURE OUT CODE 8
-# from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.js
+        error_code = element.attrib.get('errs')
+
+        if error_code is '':
+            event_bus.notify(ErrorEvent(0, _ERROR_CODES.get(0)))
+            return HandlingResult.success()
+
+        error_code = int(error_code)
+
+        if error_code != 0:
+            event_bus.notify(StateEvent(VacuumState.ERROR))
+
+        description = _ERROR_CODES.get(error_code)
+        event_bus.notify(ErrorEvent(error_code, description))
+        return HandlingResult.success()
+
+
+# from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.json
 _ERROR_CODES = {
     -3: "Error parsing response data",
     -2: "Internal error",
@@ -46,7 +68,6 @@ _ERROR_CODES = {
     0: "NoError: Robot is operational",
     3: "RequestOAuthError: Authentication error",
     7: "log data is not found",
-    8: "TODO: Something with the MQTT + XML API",
     100: "NoError: Robot is operational",
     101: "BatteryLow: Low battery",
     102: "HostHang: Robot is off the floor",
