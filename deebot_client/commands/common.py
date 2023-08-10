@@ -20,7 +20,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
     _is_available_check: bool = False
 
     def _handle_response(
-            self, event_bus: EventBus, response: dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a command.
 
@@ -77,7 +77,7 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
 
     @classmethod
     def _handle_body(
-            cls, event_bus: EventBus, body: dict[str, Any] | str
+        cls, event_bus: EventBus, body: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
@@ -104,9 +104,9 @@ class SetCommand(ExecuteCommand, CommandHandlingMqttP2P, ABC):
     """
 
     def __init__(
-            self,
-            args: dict | list | None,
-            **kwargs: Mapping[str, Any],
+        self,
+        args: dict | list | None,
+        **kwargs: Mapping[str, Any],
     ) -> None:
         if kwargs:
             _LOGGER.debug("Following passed parameters will be ignored: %s", kwargs)
@@ -137,7 +137,7 @@ class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
 
     @classmethod
     def _handle_body_data_dict(
-            cls, event_bus: EventBus, data: dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -148,7 +148,7 @@ class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
         return HandlingResult.success()
 
     def _handle_body_data_xml(
-            cls, event_bus: EventBus, xml_message: str
+        cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
         raise NotImplementedError
 
@@ -162,6 +162,6 @@ class SetEnableCommand(SetCommand, ABC):
         super().__init__({"enable": enable}, **kwargs)
 
     def _handle_body_data_xml(
-            cls, event_bus: EventBus, xml_message: str
+        cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
         raise NotImplementedError
