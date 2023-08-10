@@ -44,9 +44,9 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
     ) -> HandlingResult:
         element = ElementTree.fromstring(xml_message)
 
-        error_code = element.attrib.get('errs')
+        error_code = element.attrib.get("errs")
 
-        if error_code is '':
+        if error_code == "":
             event_bus.notify(ErrorEvent(0, _ERROR_CODES.get(0)))
             return HandlingResult.success()
 

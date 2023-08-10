@@ -6,4 +6,6 @@ from tests.helpers import get_request_xml
 
 async def test_getErrorsXml() -> None:
     json = get_request_xml("<ctl ret='ok' errs=''/>")
-    await assert_command(GetError(), json, ErrorEvent(0, "NoError: Robot is operational"))
+    await assert_command(
+        GetError(), json, ErrorEvent(0, "NoError: Robot is operational")
+    )
