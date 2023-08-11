@@ -25,7 +25,7 @@ class Charge(ExecuteCommand):
 
     @classmethod
     def _handle_body(
-            cls, event_bus: EventBus, body: dict[str, Any] | str
+        cls, event_bus: EventBus, body: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
@@ -48,20 +48,19 @@ class Charge(ExecuteCommand):
         return super()._handle_body(event_bus, body)
 
     @classmethod
-    def _handle_xml_response(
-            self, event_bus: EventBus, body: str
-    ) -> HandlingResult:
-
+    def _handle_xml_response(self, event_bus: EventBus, body: str) -> HandlingResult:
         tree = ElementTree.fromstring(body)
         attributes = tree.attrib.keys()
 
         # "resp": "<ctl ret='ok'/>", == returning
-        if 'ret' in attributes and tree.attrib.get('ret') == 'ok':
+        if "ret" in attributes and tree.attrib.get("ret") == "ok":
             event_bus.notify(StateEvent(VacuumState.RETURNING))
             return HandlingResult.success()
 
         # "<ctl ret='fail' errno='8'/>", == already charging
-        is_already_charging = 'errno' in attributes and int(tree.attrib.get('errno')) == 8
+        is_already_charging = (
+            "errno" in attributes and int(tree.attrib.get("errno")) == 8
+        )
         if is_already_charging:
             # bot is already charging
             event_bus.notify(StateEvent(VacuumState.DOCKED))
@@ -70,7 +69,7 @@ class Charge(ExecuteCommand):
         return HandlingResult.success()
 
     async def _execute(
-            self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         if device_info.uses_xml_protocol:
             self._args["type"] = "go"

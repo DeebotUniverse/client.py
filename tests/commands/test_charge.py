@@ -41,9 +41,8 @@ async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
     [
         # Bot is returning to charging station.
         (_prepare_xml("<ctl ret='ok'/>"), StateEvent(VacuumState.RETURNING)),
-
         # Bot is already charging.
-        (_prepare_xml("<ctl ret='fail' errno='8'/>"),StateEvent(VacuumState.DOCKED)),
+        (_prepare_xml("<ctl ret='fail' errno='8'/>"), StateEvent(VacuumState.DOCKED)),
     ],
 )
 async def test_Charge_xml(json, expected: StateEvent) -> None:
