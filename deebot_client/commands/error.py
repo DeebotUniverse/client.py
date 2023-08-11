@@ -1,5 +1,4 @@
 """Error commands."""
-import pprint
 from typing import Any
 from xml.etree import ElementTree
 
