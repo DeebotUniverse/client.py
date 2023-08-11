@@ -41,9 +41,6 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
 
         type = element.attrib.get("type")
 
-        # "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>" == docked and charging
-        # "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"" == Idle (Potentially already fully charged?)
-
         status: VacuumState | None = None
         if type == "Idle":
             status = VacuumState.DOCKED
@@ -57,8 +54,8 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.analyse()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
-        if body.get(CODE, 0) == 0:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
+        if isinstance(body, str) or body.get(CODE, 0) == 0:
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
