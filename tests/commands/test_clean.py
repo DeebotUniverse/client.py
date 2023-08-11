@@ -25,24 +25,33 @@ from tests.helpers import get_request_json, get_request_xml
 async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
     await assert_command(GetCleanInfo(), json, expected)
 
+
 @pytest.mark.parametrize(
     "response, expected",
     [
         (
-            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='1' s='1691787964' tr=''/></ctl>"),
+            get_request_xml(
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='1' s='1691787964' tr=''/></ctl>"
+            ),
             StateEvent(VacuumState.IDLE),
         ),
         (
-            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='p' t='27' a='0' s='1691787964' tr=''/></ctl>"),
+            get_request_xml(
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='p' t='27' a='0' s='1691787964' tr=''/></ctl>"
+            ),
             StateEvent(VacuumState.PAUSED),
         ),
         (
-            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='s' t='40' a='0' s='1691787964' tr=''/></ctl>"),
-            StateEvent(VacuumState.CLEANING)
+            get_request_xml(
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='s' t='40' a='0' s='1691787964' tr=''/></ctl>"
+            ),
+            StateEvent(VacuumState.CLEANING),
         ),
         (
-            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='0' s='1691787964' tr=''/></ctl>"),
-            StateEvent(VacuumState.RETURNING)
+            get_request_xml(
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='0' s='1691787964' tr=''/></ctl>"
+            ),
+            StateEvent(VacuumState.RETURNING),
         ),
     ],
 )

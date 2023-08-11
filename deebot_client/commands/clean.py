@@ -60,31 +60,31 @@ class Clean(ExecuteCommand):
         super().__init__(self.__get_args(action))
 
     async def _execute(
-            self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict) and not device_info.uses_xml_protocol:
             if (
-                    self._args["act"] == CleanAction.RESUME.value
-                    and state.state != VacuumState.PAUSED
+                self._args["act"] == CleanAction.RESUME.value
+                and state.state != VacuumState.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.START)
             elif (
-                    self._args["act"] == CleanAction.START.value
-                    and state.state == VacuumState.PAUSED
+                self._args["act"] == CleanAction.START.value
+                and state.state == VacuumState.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.RESUME)
 
         if state and isinstance(self._args, dict) and device_info.uses_xml_protocol:
             if (
-                    self._args["act"] == CleanAction.RESUME.value
-                    and state.state != VacuumState.PAUSED
+                self._args["act"] == CleanAction.RESUME.value
+                and state.state != VacuumState.PAUSED
             ):
                 self._args = str(self.__get_args(CleanAction.START))[0]
             elif (
-                    self._args["act"] == CleanAction.START.value
-                    and state.state == VacuumState.PAUSED
+                self._args["act"] == CleanAction.START.value
+                and state.state == VacuumState.PAUSED
             ):
                 self._args = str(self.__get_args(CleanAction.RESUME))[0]
             elif self._args["act"] == CleanAction.START.value:
@@ -128,7 +128,7 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-            cls, event_bus: EventBus, data: dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
