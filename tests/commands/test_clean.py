@@ -31,7 +31,7 @@ async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
     [
         (
             get_request_xml(
-                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='1' s='1691787964' tr=''/></ctl>"
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='0' s='1691787964' tr=''/></ctl>"
             ),
             StateEvent(VacuumState.IDLE),
         ),
@@ -49,7 +49,7 @@ async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
         ),
         (
             get_request_xml(
-                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='0' s='1691787964' tr=''/></ctl>"
+                "<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='1' s='1691787964' tr=''/></ctl>"
             ),
             StateEvent(VacuumState.RETURNING),
         ),

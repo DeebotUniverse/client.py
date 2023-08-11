@@ -181,13 +181,13 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
         raw_state = element.attrib.get("st")
         a = element.attrib.get("a")  # Action ?
 
-        if raw_state == "h" and a == "1":
+        if raw_state == "h" and a == "0":
             status = VacuumState.IDLE
         elif raw_state == "p" and a == "0":
             status = VacuumState.PAUSED
         elif raw_state == "s" and a == "0":
             status = VacuumState.CLEANING
-        elif raw_state == "h" and a == "0":
+        elif raw_state == "h" and a == "1":
             status = VacuumState.RETURNING
 
         if status:
