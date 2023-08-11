@@ -135,7 +135,7 @@ class Command(ABC):
         if len(self._args) > 0:
             action_element = (
                 ElementTree.SubElement(ctl_element, self.xml_name.lower())
-                if self.xml_has_own_element()
+                if self.xml_has_own_element
                 else ctl_element
             )
 

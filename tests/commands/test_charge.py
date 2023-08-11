@@ -7,7 +7,7 @@ from deebot_client.commands import Charge
 from deebot_client.events import StateEvent
 from deebot_client.models import VacuumState
 from tests.commands import assert_command
-from tests.helpers import get_request_json
+from tests.helpers import get_request_json, get_request_xml
 
 
 def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
@@ -21,6 +21,10 @@ def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
     return json
 
 
+def _prepare_xml(xml: str) -> dict[str, Any]:
+    return get_request_xml(xml)
+
+
 @pytest.mark.parametrize(
     "json, expected",
     [
@@ -29,6 +33,20 @@ def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
     ],
 )
 async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
+    await assert_command(Charge(), json, expected)
+
+
+@pytest.mark.parametrize(
+    "json, expected",
+    [
+        # Bot is returning to charging station.
+        (_prepare_xml("<ctl ret='ok'/>"), StateEvent(VacuumState.RETURNING)),
+
+        # Bot is already charging.
+        (_prepare_xml("<ctl ret='fail' errno='8'/>"),StateEvent(VacuumState.DOCKED)),
+    ],
+)
+async def test_Charge_xml(json, expected: StateEvent) -> None:
     await assert_command(Charge(), json, expected)
 
 
