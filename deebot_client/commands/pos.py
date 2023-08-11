@@ -12,6 +12,8 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getPos"
 
+    xml_name = "GetPos"
+
     def __init__(self) -> None:
         super().__init__(["chargePos", "deebotPos"])
 
