@@ -16,7 +16,7 @@ from tests.helpers import get_request_json, get_request_xml
     ],
 )
 async def test_GetChargeState(
-        json: dict[str, Any], expected: StateEvent | None
+    json: dict[str, Any], expected: StateEvent | None
 ) -> None:
     await assert_command(GetChargeState(), json, expected)
 
@@ -25,18 +25,16 @@ async def test_GetChargeState(
     "response, expected",
     [
         (
-                get_request_xml(
-                    "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>"
-                ),
-                StateEvent(VacuumState.DOCKED)
+            get_request_xml("<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>"),
+            StateEvent(VacuumState.DOCKED),
         ),
         (
-                get_request_xml(
-                    "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"
-                ),
-                StateEvent(VacuumState.DOCKED)
+            get_request_xml("<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"),
+            StateEvent(VacuumState.DOCKED),
         ),
     ],
 )
-async def test_GetChargeStateXml(response: dict[str, Any], expected: StateEvent) -> None:
+async def test_GetChargeStateXml(
+    response: dict[str, Any], expected: StateEvent
+) -> None:
     await assert_command(GetChargeState(), response, expected)

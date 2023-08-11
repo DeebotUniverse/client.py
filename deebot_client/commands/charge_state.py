@@ -54,7 +54,9 @@ class GetChargeState(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.analyse()
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any] | str) -> HandlingResult:
+    def _handle_body(
+        cls, event_bus: EventBus, body: dict[str, Any] | str
+    ) -> HandlingResult:
         if isinstance(body, str) or body.get(CODE, 0) == 0:
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
