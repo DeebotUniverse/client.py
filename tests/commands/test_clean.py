@@ -10,7 +10,7 @@ from deebot_client.events import StateEvent
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import DeviceInfo, VacuumState
 from tests.commands import assert_command
-from tests.helpers import get_request_json
+from tests.helpers import get_request_json, get_request_xml
 
 
 @pytest.mark.parametrize(
@@ -24,6 +24,30 @@ from tests.helpers import get_request_json
 )
 async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
     await assert_command(GetCleanInfo(), json, expected)
+
+@pytest.mark.parametrize(
+    "response, expected",
+    [
+        (
+            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='1' s='1691787964' tr=''/></ctl>"),
+            StateEvent(VacuumState.IDLE),
+        ),
+        (
+            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='p' t='27' a='0' s='1691787964' tr=''/></ctl>"),
+            StateEvent(VacuumState.PAUSED),
+        ),
+        (
+            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='s' t='40' a='0' s='1691787964' tr=''/></ctl>"),
+            StateEvent(VacuumState.CLEANING)
+        ),
+        (
+            get_request_xml("<ctl ret='ok'><clean type='auto' speed='standard' st='h' t='134' a='0' s='1691787964' tr=''/></ctl>"),
+            StateEvent(VacuumState.RETURNING)
+        ),
+    ],
+)
+async def test_GetCleanInfoXml(response: dict[str, Any], expected: StateEvent) -> None:
+    await assert_command(GetCleanInfo(), response, expected)
 
 
 @pytest.mark.parametrize(
