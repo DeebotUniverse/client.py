@@ -176,7 +176,8 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
         status: VacuumState | None = None
 
-        element = ElementTree.fromstring(xml_message).find("clean")
+        tree = ElementTree.fromstring(xml_message)
+        element = tree.find("clean")
         raw_state = element.attrib.get("st")
         a = element.attrib.get("a")  # Action ?
 
