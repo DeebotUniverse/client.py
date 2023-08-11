@@ -17,7 +17,7 @@ class GetVolume(NoArgsCommand, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+            cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -28,6 +28,12 @@ class GetVolume(NoArgsCommand, MessageBodyDataDict):
             VolumeEvent(volume=data["volume"], maximum=data.get("total", None))
         )
         return HandlingResult.success()
+
+    @classmethod
+    def _handle_body_data_xml(
+            cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
+        raise NotImplementedError
 
 
 class SetVolume(SetCommand):
