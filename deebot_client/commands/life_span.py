@@ -4,7 +4,12 @@ from xml.etree import ElementTree
 
 from ..authentication import Authenticator
 from ..events import LifeSpan, LifeSpanEvent
-from ..message import HandlingResult, HandlingState, MessageBodyDataList, MessageBodyDataDict
+from ..message import (
+    HandlingResult,
+    HandlingState,
+    MessageBodyDataDict,
+    MessageBodyDataList,
+)
 from ..models import DeviceInfo
 from .common import (
     CommandHandlingMqttP2P,
@@ -26,12 +31,14 @@ class GetLifeSpanBrush(CommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-            self, event_bus: EventBus, data: dict[str, Any]
+        self, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         element = ElementTree.fromstring(xml_message)
 
         if element.attrib.get("ret") != "ok":
@@ -61,12 +68,14 @@ class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-            self, event_bus: EventBus, data: dict[str, Any]
+        self, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         element = ElementTree.fromstring(xml_message)
 
         if element.attrib.get("ret") != "ok":
@@ -83,6 +92,7 @@ class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
 
         return HandlingResult.success()
 
+
 class GetLifeSpanHeap(CommandWithMessageHandling, MessageBodyDataDict):
     # As far as I know, there is no non-XML implementation for this
     name = "GetLifeSpanSideBrush"
@@ -95,12 +105,14 @@ class GetLifeSpanHeap(CommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-            self, event_bus: EventBus, data: dict[str, Any]
+        self, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         element = ElementTree.fromstring(xml_message)
 
         if element.attrib.get("ret") != "ok":
@@ -167,7 +179,7 @@ class ResetLifeSpan(ExecuteCommand, CommandHandlingMqttP2P):
     name = "resetLifeSpan"
 
     def __init__(
-            self, type: str | LifeSpan  # pylint: disable=redefined-builtin
+        self, type: str | LifeSpan  # pylint: disable=redefined-builtin
     ) -> None:
         if isinstance(type, LifeSpan):
             type = type.value

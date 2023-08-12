@@ -6,8 +6,8 @@ from ..authentication import Authenticator
 from ..command import CommandResult
 from ..events import Position, PositionsEvent, PositionType
 from ..message import HandlingResult, MessageBodyDataDict
-from .common import CommandWithMessageHandling, EventBus
 from ..models import DeviceInfo
+from .common import CommandWithMessageHandling, EventBus
 
 
 class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
@@ -21,7 +21,7 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
         super().__init__(["chargePos", "deebotPos"])
 
     async def _execute(
-            self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         if not device_info.uses_xml_protocol:
             return await super()._execute(authenticator, device_info, event_bus)
@@ -32,7 +32,7 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-            cls, event_bus: EventBus, data: dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -79,9 +79,13 @@ class GetChargerPos(CommandWithMessageHandling, MessageBodyDataDict):
     xml_name = "GetChargerPos"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: dict[str, Any]) -> HandlingResult:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         pass

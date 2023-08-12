@@ -108,6 +108,7 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
     def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
         raise NotImplementedError
 
+
 class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
@@ -205,7 +206,6 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
 
     xml_name = "GetMapSubSet"
 
-
     def __init__(
         self,
         *,
@@ -263,6 +263,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
     @classmethod
     def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
         raise NotImplementedError
+
 
 class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""

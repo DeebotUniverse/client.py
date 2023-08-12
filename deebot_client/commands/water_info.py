@@ -33,6 +33,7 @@ class GetWaterInfo(NoArgsCommand, MessageBodyDataDict):
     def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
         raise NotImplementedError
 
+
 class SetWaterInfo(SetCommand):
     """Set water info command."""
 
