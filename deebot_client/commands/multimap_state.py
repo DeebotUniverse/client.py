@@ -19,6 +19,6 @@ class SetMultimapState(SetEnableCommand):
 
     name = "setMultiMapState"
 
-    xml = "SetMultiMapState"
+    xml_name = "SetMultiMapState"
 
     get_command = GetMultimapState
