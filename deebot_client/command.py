@@ -129,13 +129,12 @@ class Command(ABC):
 
         return payload
 
-    @property
     def _get_xml_payload(self) -> str:
         ctl_element = ElementTree.Element("ctl")
         if len(self._args) > 0:
             action_element = (
                 ElementTree.SubElement(ctl_element, self.xml_name.lower())
-                if self.xml_has_own_element
+                if self.xml_has_own_element()
                 else ctl_element
             )
 
@@ -150,7 +149,7 @@ class Command(ABC):
         if device_info.uses_xml_protocol:
             payload = self._generate_xml_payload(device_info)
         else:
-            payload = self._generate_xml_payload(device_info)
+            payload = self._generate_json_payload(device_info)
 
         credentials = await authenticator.authenticate()
         query_params = {
@@ -184,7 +183,7 @@ class Command(ABC):
     def _generate_xml_payload(self, device_info: DeviceInfo):
         return {
             "cmdName": self.xml_name,
-            "payload": self._get_xml_payload,
+            "payload": self._get_xml_payload(),
             "payloadType": "x",
             "td": "q",
             "toId": device_info.did,

@@ -167,32 +167,32 @@ class MessageBodyDataDict(MessageBodyData):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list | Any
+        cls, event_bus: EventBus, data: dict[str, Any] | list | str
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
+        if isinstance(data, str) or isinstance(data.get('resp'), str):
+            # data = data.get('resp') if isinstance(data.get('resp', {}), str) else data
+            data = data if isinstance(data, str) else data.get('resp')
+
+            return cls._handle_body_data_xml(event_bus, data)
+
         if isinstance(data, dict):
             return cls._handle_body_data_dict(event_bus, data)
-
-        if isinstance(data, str):
-            return cls._handle_body_data_xml(event_bus, data)
 
         return super()._handle_body_data(event_bus, data)
 
     @classmethod
     @abstractmethod
     def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
+        cls, event_bus: EventBus, data: str
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
-
-        return cls._handle_body_data_xml(event_bus, xml_message)
-
 
 class MessageBodyDataList(MessageBodyData):
     """Message with handling body->data->list code."""
