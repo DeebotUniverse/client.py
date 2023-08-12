@@ -12,6 +12,8 @@ class GetWaterInfo(NoArgsCommand, MessageBodyDataDict):
 
     name = "getWaterInfo"
 
+    xml_name = "GetWaterInfo"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -27,11 +29,17 @@ class GetWaterInfo(NoArgsCommand, MessageBodyDataDict):
         event_bus.notify(WaterInfoEvent(mop_attached, WaterAmount(int(data["amount"]))))
         return HandlingResult.success()
 
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
 
 class SetWaterInfo(SetCommand):
     """Set water info command."""
 
     name = "setWaterInfo"
+
+    xml_name = "SetWaterInfo"
+
     get_command = GetWaterInfo
 
     def __init__(
@@ -46,3 +54,7 @@ class SetWaterInfo(SetCommand):
             amount = amount.value
 
         super().__init__({"amount": amount}, **kwargs)
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError

@@ -161,6 +161,7 @@ class SetEnableCommand(SetCommand, ABC):
             enable = 1 if enable else 0
         super().__init__({"enable": enable}, **kwargs)
 
+    @classmethod
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:

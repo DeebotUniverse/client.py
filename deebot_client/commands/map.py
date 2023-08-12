@@ -72,6 +72,8 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getMajorMap"
 
+    xml_name = "GetMajorMap"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -102,6 +104,9 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
 
         return result
 
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
 
 class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
@@ -112,6 +117,8 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     _ARGS_SUBSETS = "subsets"
 
     name = "getMapSet"
+
+    xml_name = "GetMapSet"
 
     def __init__(
         self,
@@ -143,6 +150,10 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
 
         event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
         return HandlingResult(HandlingState.SUCCESS, args)
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -191,6 +202,9 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
     }
 
     name = "getMapSubSet"
+
+    xml_name = "GetMapSubSet"
+
 
     def __init__(
         self,
@@ -246,6 +260,9 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
 
         return HandlingResult.analyse()
 
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
 
 class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
@@ -253,6 +270,8 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
     _TRACE_POINT_COUNT = 200
 
     name = "getMapTrace"
+
+    xml_name = "GetMapTrace"
 
     def __init__(self, trace_start: int = 0) -> None:
         super().__init__(
@@ -278,6 +297,10 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
             MapTraceEvent(start=start, total=total, data=data["traceValue"])
         )
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]

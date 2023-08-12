@@ -11,6 +11,8 @@ class GetStats(NoArgsCommand, MessageBodyDataDict):
 
     name = "getStats"
 
+    xml_name = "GetStats"
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -27,11 +29,17 @@ class GetStats(NoArgsCommand, MessageBodyDataDict):
         event_bus.notify(stats_event)
         return HandlingResult.success()
 
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
+
 
 class GetTotalStats(NoArgsCommand, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getTotalStats"
+
+    xml_name = "GetTotalStats"
 
     @classmethod
     def _handle_body_data_dict(
@@ -44,3 +52,7 @@ class GetTotalStats(NoArgsCommand, MessageBodyDataDict):
         stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
         event_bus.notify(stats_event)
         return HandlingResult.success()
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+        raise NotImplementedError
