@@ -59,6 +59,7 @@ from .map import (
     MapTraceEvent,
     MinorMapEvent,
 )
+from ..commands.life_span import GetLifeSpanBrush, GetLifeSpanSideBrush, GetLifeSpanHeap
 
 EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     AvailabilityEvent: [],
@@ -73,7 +74,7 @@ EVENT_DTO_REFRESH_COMMANDS: Mapping[type[Event], list[Command]] = {
     CustomCommandEvent: [],
     ErrorEvent: [GetError()],
     FanSpeedEvent: [GetFanSpeed()],
-    LifeSpanEvent: [GetLifeSpan()],
+    LifeSpanEvent: [GetLifeSpan(), GetLifeSpanBrush(), GetLifeSpanSideBrush(), GetLifeSpanHeap()],
     MajorMapEvent: [GetMajorMap()],
     MapSetEvent: [],
     MapSubsetEvent: [],

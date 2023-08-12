@@ -1,9 +1,10 @@
 """Life span commands."""
 from typing import Any
+from xml.etree import ElementTree
 
 from ..authentication import Authenticator
 from ..events import LifeSpan, LifeSpanEvent
-from ..message import HandlingResult, HandlingState, MessageBodyDataList
+from ..message import HandlingResult, HandlingState, MessageBodyDataList, MessageBodyDataDict
 from ..models import DeviceInfo
 from .common import (
     CommandHandlingMqttP2P,
@@ -13,13 +14,115 @@ from .common import (
 )
 
 
+class GetLifeSpanBrush(CommandWithMessageHandling, MessageBodyDataDict):
+    # As far as I know, there is no non-XML implementation for this
+    name = "GetLifeSpanBrush"
+
+    xml_name = "GetLifeSpan"
+
+    def __init__(self) -> None:
+        args = {"type": "Brush"}
+        super().__init__(args)
+
+    @classmethod
+    def _handle_body_data_dict(
+            self, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        raise NotImplementedError
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+        element = ElementTree.fromstring(xml_message)
+
+        if element.attrib.get("ret") != "ok":
+            return HandlingResult.analyse()
+
+        left = int(element.attrib.get("left"))
+        total = int(element.attrib.get("total"))
+
+        if total < 0:
+            raise ValueError("total is not positive!")
+
+        percentage = round((left / total) * 100, 2)
+        event_bus.notify(LifeSpanEvent(LifeSpan.BRUSH, percentage, left))
+
+        return HandlingResult.success()
+
+
+class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
+    # As far as I know, there is no non-XML implementation for this
+    name = "GetLifeSpanSideBrush"
+
+    xml_name = "GetLifeSpan"
+
+    def __init__(self) -> None:
+        args = {"type": "SideBrush"}
+        super().__init__(args)
+
+    @classmethod
+    def _handle_body_data_dict(
+            self, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        raise NotImplementedError
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+        element = ElementTree.fromstring(xml_message)
+
+        if element.attrib.get("ret") != "ok":
+            return HandlingResult.analyse()
+
+        left = int(element.attrib.get("left"))
+        total = int(element.attrib.get("total"))
+
+        if total < 0:
+            raise ValueError("total is not positive!")
+
+        percentage = round((left / total) * 100, 2)
+        event_bus.notify(LifeSpanEvent(LifeSpan.SIDE_BRUSH, percentage, left))
+
+        return HandlingResult.success()
+
+class GetLifeSpanHeap(CommandWithMessageHandling, MessageBodyDataDict):
+    # As far as I know, there is no non-XML implementation for this
+    name = "GetLifeSpanSideBrush"
+
+    xml_name = "GetLifeSpan"
+
+    def __init__(self) -> None:
+        args = {"type": "DustCaseHeap"}
+        super().__init__(args)
+
+    @classmethod
+    def _handle_body_data_dict(
+            self, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        raise NotImplementedError
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+        element = ElementTree.fromstring(xml_message)
+
+        if element.attrib.get("ret") != "ok":
+            return HandlingResult.analyse()
+
+        left = int(element.attrib.get("left"))
+        total = int(element.attrib.get("total"))
+
+        if total < 0:
+            raise ValueError("total is not positive!")
+
+        percentage = round((left / total) * 100, 2)
+        event_bus.notify(LifeSpanEvent(LifeSpan.FILTER, percentage, left))
+
+        return HandlingResult.success()
+
+
 class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
     """Get life span command."""
 
     name = "getLifeSpan"
 
-    # TODO A different approach needs to be made for this, because the MQTT + XML API
-    # Doesn't accept an array of all consumables we want to get the life span from
     xml_name = "GetLifeSpan"
 
     def __init__(self) -> None:
@@ -64,7 +167,7 @@ class ResetLifeSpan(ExecuteCommand, CommandHandlingMqttP2P):
     name = "resetLifeSpan"
 
     def __init__(
-        self, type: str | LifeSpan  # pylint: disable=redefined-builtin
+            self, type: str | LifeSpan  # pylint: disable=redefined-builtin
     ) -> None:
         if isinstance(type, LifeSpan):
             type = type.value
