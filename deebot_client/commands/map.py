@@ -44,6 +44,7 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
 
         return HandlingResult.analyse()
 
+    @classmethod
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
@@ -105,7 +106,7 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
 class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
@@ -152,7 +153,7 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult(HandlingState.SUCCESS, args)
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
     def _handle_response(
@@ -261,7 +262,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
 class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
@@ -299,7 +300,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
     def _handle_response(
@@ -323,6 +324,8 @@ class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getMinorMap"
 
+    xml_name = "GetMinorMap"
+
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
 
@@ -340,3 +343,7 @@ class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+    @classmethod
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+        raise NotImplementedError

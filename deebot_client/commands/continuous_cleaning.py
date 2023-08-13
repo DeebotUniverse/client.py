@@ -9,8 +9,7 @@ class GetContinuousCleaning(GetEnableCommand):
 
     name = "getBreakPoint"
 
-    # TODO
-    xml_name = ""
+    xml_name = "GetBreakPoint"
 
     event_type = ContinuousCleaningEvent
 
@@ -20,7 +19,6 @@ class SetContinuousCleaning(SetEnableCommand):
 
     name = "setBreakPoint"
 
-    # TODO
-    xml_name = ""
+    xml_name = "SetBreakPoint"
 
     get_command = GetContinuousCleaning

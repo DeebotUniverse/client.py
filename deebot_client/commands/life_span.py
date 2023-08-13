@@ -37,8 +37,8 @@ class GetLifeSpanBrush(CommandWithMessageHandling, MessageBodyDataDict):
         if element.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        left = int(element.attrib.get("left"))
-        total = int(element.attrib.get("total"))
+        left = int(element.attrib.get("left", -1))
+        total = int(element.attrib.get("total", -1))
 
         if total < 0:
             raise ValueError("total is not positive!")
@@ -72,8 +72,8 @@ class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
         if element.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        left = int(element.attrib.get("left"))
-        total = int(element.attrib.get("total"))
+        left = int(element.attrib.get("left", -1))
+        total = int(element.attrib.get("total", -1))
 
         if total < 0:
             raise ValueError("total is not positive!")
@@ -106,8 +106,8 @@ class GetLifeSpanHeap(CommandWithMessageHandling, MessageBodyDataDict):
         if element.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        left = int(element.attrib.get("left"))
-        total = int(element.attrib.get("total"))
+        left = int(element.attrib.get("left", -1))
+        total = int(element.attrib.get("total", -1))
 
         if total < 0:
             raise ValueError("total is not positive!")
@@ -165,6 +165,8 @@ class ResetLifeSpan(ExecuteCommand, CommandHandlingMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"
+
+    xml_name = "ResetLifeSpan"
 
     def __init__(
             self, type: str | LifeSpan  # pylint: disable=redefined-builtin

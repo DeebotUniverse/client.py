@@ -5,13 +5,13 @@ from typing import Any
 from ..authentication import Authenticator
 from ..command import CommandResult
 from ..events import Position, PositionsEvent, PositionType
-from ..message import HandlingResult, MessageBodyDataDict
+from ..message import HandlingResult, MessageBodyDataDict, HandlingState
 from .common import CommandWithMessageHandling, EventBus
 from ..models import DeviceInfo
 
 
 class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
-    """Get volume command."""
+    """Get pos command."""
 
     name = "getPos"
 
@@ -26,8 +26,12 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
         if not device_info.uses_xml_protocol:
             return await super()._execute(authenticator, device_info, event_bus)
 
+        return CommandResult(
+            HandlingState.ANALYSE_LOGGED,
+        )
+
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
@@ -84,4 +88,4 @@ class GetChargerPos(CommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
-        pass
+        raise NotImplementedError

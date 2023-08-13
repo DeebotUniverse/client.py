@@ -30,7 +30,7 @@ class GetWaterInfo(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.success()
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError
 
 class SetWaterInfo(SetCommand):
@@ -56,5 +56,5 @@ class SetWaterInfo(SetCommand):
         super().__init__({"amount": amount}, **kwargs)
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         raise NotImplementedError

@@ -114,7 +114,7 @@ class MessageBodyData(Message):
     @classmethod
     @abstractmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+        cls, event_bus: EventBus, data: dict[str, Any] | list | str
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -124,7 +124,7 @@ class MessageBodyData(Message):
     @classmethod
     @final
     def __handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+        cls, event_bus: EventBus, data: dict[str, Any] | list | str
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
@@ -138,7 +138,7 @@ class MessageBodyData(Message):
 
     @classmethod
     def _handle_body(
-        cls, event_bus: EventBus, body: dict[str, Any] | Any
+        cls, event_bus: EventBus, body: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
@@ -177,7 +177,7 @@ class MessageBodyDataDict(MessageBodyData):
             # data = data.get('resp') if isinstance(data.get('resp', {}), str) else data
             data = data if isinstance(data, str) else data.get('resp')
 
-            return cls._handle_body_data_xml(event_bus, data)
+            return cls._handle_body_data_xml(event_bus, str(data))
 
         if isinstance(data, dict):
             return cls._handle_body_data_dict(event_bus, data)
@@ -187,7 +187,7 @@ class MessageBodyDataDict(MessageBodyData):
     @classmethod
     @abstractmethod
     def _handle_body_data_xml(
-        cls, event_bus: EventBus, data: str
+        cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

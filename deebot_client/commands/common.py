@@ -90,7 +90,7 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
                 return HandlingResult.success()
 
         # Success event looks like { "code": 0, "msg": "ok" }
-        if body.get(CODE, -1) == 0:
+        if isinstance(body, dict) and body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
@@ -147,6 +147,7 @@ class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
         event_bus.notify(event)
         return HandlingResult.success()
 
+    @classmethod
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:

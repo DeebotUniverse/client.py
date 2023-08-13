@@ -40,6 +40,9 @@ class SetVolume(SetCommand):
     """Set volume command."""
 
     name = "setVolume"
+
+    xml_name = "SetVolume"
+
     get_command = GetVolume
 
     def __init__(self, volume: int, **kwargs: Mapping[str, Any]) -> None:

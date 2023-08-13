@@ -173,11 +173,15 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.analyse()
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str):
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
         status: VacuumState | None = None
 
         tree = ElementTree.fromstring(xml_message)
+
         element = tree.find("clean")
+        if element is None:
+            return HandlingResult.analyse()
+
         raw_state = element.attrib.get("st")
         a = element.attrib.get("a")  # Action ?
 
