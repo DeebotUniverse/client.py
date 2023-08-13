@@ -173,9 +173,9 @@ class MessageBodyDataDict(MessageBodyData):
 
         :return: A message response
         """
-        if isinstance(data, str) or isinstance(data.get('resp'), str):
+        if isinstance(data, str) or isinstance(data.get("resp"), str):
             # data = data.get('resp') if isinstance(data.get('resp', {}), str) else data
-            data = data if isinstance(data, str) else data.get('resp')
+            data = data if isinstance(data, str) else data.get("resp")
 
             return cls._handle_body_data_xml(event_bus, str(data))
 
@@ -186,13 +186,12 @@ class MessageBodyDataDict(MessageBodyData):
 
     @classmethod
     @abstractmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
+    def _handle_body_data_xml(cls, event_bus: EventBus, data: str) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
+
 
 class MessageBodyDataList(MessageBodyData):
     """Message with handling body->data->list code."""
