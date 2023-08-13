@@ -5,7 +5,7 @@ from typing import Any
 from ..authentication import Authenticator
 from ..command import CommandResult
 from ..events import Position, PositionsEvent, PositionType
-from ..message import HandlingResult, MessageBodyDataDict, HandlingState
+from ..message import HandlingResult, HandlingState, MessageBodyDataDict
 from ..models import DeviceInfo
 from .common import CommandWithMessageHandling, EventBus
 
