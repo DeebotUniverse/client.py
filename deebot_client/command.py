@@ -55,6 +55,7 @@ class Command(ABC):
     def xml_name(cls) -> str:
         """Command name."""
 
+    @property
     @classmethod
     def xml_has_own_element(cls) -> bool:
         """Return if an XML command should have its own inner element.
