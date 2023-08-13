@@ -39,5 +39,7 @@ class ReportStats(MessageBodyDataDict):
         return HandlingResult.success()
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         raise NotImplementedError

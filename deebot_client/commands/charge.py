@@ -25,7 +25,7 @@ class Charge(ExecuteCommand):
 
     @classmethod
     def _handle_body(
-            cls, event_bus: EventBus, body: dict[str, Any] | str
+        cls, event_bus: EventBus, body: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
@@ -62,7 +62,7 @@ class Charge(ExecuteCommand):
 
         # "<ctl ret='fail' errno='8'/>", == already charging
         is_already_charging = (
-                "errno" in attributes and int(tree.attrib.get("errno")) == 8
+            "errno" in attributes and int(tree.attrib.get("errno")) == 8
         )
         if is_already_charging:
             # bot is already charging
@@ -72,7 +72,7 @@ class Charge(ExecuteCommand):
         return HandlingResult.success()
 
     async def _execute(
-            self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         if isinstance(self._args, dict) and device_info.uses_xml_protocol:
             self._args.update({"type": "go"})

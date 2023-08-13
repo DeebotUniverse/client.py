@@ -31,7 +31,9 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
         )
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
@@ -83,9 +85,13 @@ class GetChargerPos(CommandWithMessageHandling, MessageBodyDataDict):
     xml_name = "GetChargerPos"
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: dict[str, Any]) -> HandlingResult:
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
         raise NotImplementedError
 
     @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml_message: str) -> HandlingResult:
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
         raise NotImplementedError
