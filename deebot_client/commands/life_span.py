@@ -20,6 +20,8 @@ from .common import (
 
 
 class GetLifeSpanBrush(CommandWithMessageHandling, MessageBodyDataDict):
+    """Get life span for brush."""
+
     # As far as I know, there is no non-XML implementation for this
     name = "GetLifeSpanBrush"
 
@@ -57,6 +59,8 @@ class GetLifeSpanBrush(CommandWithMessageHandling, MessageBodyDataDict):
 
 
 class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
+    """Get life span for sidebrush."""
+
     # As far as I know, there is no non-XML implementation for this
     name = "GetLifeSpanSideBrush"
 
@@ -94,6 +98,8 @@ class GetLifeSpanSideBrush(CommandWithMessageHandling, MessageBodyDataDict):
 
 
 class GetLifeSpanHeap(CommandWithMessageHandling, MessageBodyDataDict):
+    """Get life span for DustCaseHeap (aka. filter)."""
+
     # As far as I know, there is no non-XML implementation for this
     name = "GetLifeSpanSideBrush"
 
