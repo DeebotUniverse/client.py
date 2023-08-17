@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import Any, final
+from typing import Any, TypeVar, final
 
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
@@ -40,14 +40,17 @@ class HandlingResult:
         return HandlingResult(HandlingState.ANALYSE)
 
 
+_MessageT = TypeVar("_MessageT", bound="Message")
+
+
 def _handle_error_or_analyse(
-    func: Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]
-) -> Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]:
+    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]
+) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
-        cls: type["Message"], event_bus: EventBus, data: dict[str, Any]
+        cls: type[_MessageT], event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
@@ -73,6 +76,57 @@ class Message(ABC):
 
     @classmethod
     @abstractmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        return cls._handle(event_bus, message)
+
+
+class MessageStr(Message):
+    """Message with handling string message code."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if isinstance(message, str):
+            return cls._handle_str(event_bus, message)
+
+        return super()._handle(event_bus, message)
+
+
+class MessageDict(Message):
+    """Message with handling dict message code."""
+
+    @classmethod
+    @abstractmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
@@ -86,18 +140,21 @@ class Message(ABC):
         return cls._handle_body(event_bus, body)
 
     @classmethod
-    @_handle_error_or_analyse
-    @final
-    def handle(cls, event_bus: EventBus, message: dict[str, Any]) -> HandlingResult:
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
         """
-        data_body = message.get("body", message)
-        return cls.__handle_body(event_bus, data_body)
+        if isinstance(message, dict):
+            data_body = message.get("body", message)
+            return cls.__handle_body(event_bus, data_body)
+
+        return super()._handle(event_bus, message)
 
 
-class MessageBodyData(Message):
+class MessageBodyData(MessageDict):
     """Message with handling body->data code."""
 
     @classmethod

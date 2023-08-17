@@ -3,32 +3,29 @@
 
 import re
 
+from deebot_client.const import DataType
+
 from ..logging_filter import get_logger
 from ..message import Message
-from .battery import OnBattery
-from .stats import ReportStats
+from .json import MESSAGES as JSON_MESSAGES
+from .xml import MESSAGES as XML_MESSAGES
 
 _LOGGER = get_logger(__name__)
 
-# fmt: off
-# ordered by file asc
-_MESSAGES: list[type[Message]] = [
-    OnBattery,
-
-    ReportStats
-]
-# fmt: on
-
-MESSAGES: dict[str, type[Message]] = {message.name: message for message in _MESSAGES}  # type: ignore[misc]
+MESSAGES = {
+    DataType.JSON: JSON_MESSAGES,
+    DataType.XML: XML_MESSAGES,
+}
 
 
-def get_message(message_name: str) -> type[Message] | None:
+def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     """Try to find the message for the given name.
 
-    If there exists no exact match, some conversations are performed on the name to get message object simalr to the name.
+    If there exists no exact match, some conversations are performed on the name to get message object similar to the name.
     """
+    messages = MESSAGES[data_type]
 
-    if message_type := MESSAGES.get(message_name, None):
+    if message_type := messages.get(message_name, None):
         return message_type
 
     converted_name = message_name
@@ -36,7 +33,7 @@ def get_message(message_name: str) -> type[Message] | None:
     if converted_name.endswith("_V2"):
         converted_name = converted_name[:-3]
 
-    if message_type := MESSAGES.get(converted_name, None):
+    if message_type := messages.get(converted_name, None):
         return message_type
 
     # Handle message starting with "on","off","report" the same as "get" commands

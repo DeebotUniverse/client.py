@@ -1,9 +1,9 @@
 """Battery messages."""
 from typing import Any
 
-from ..events import BatteryEvent
-from ..events.event_bus import EventBus
-from ..message import HandlingResult, MessageBodyDataDict
+from deebot_client.events import BatteryEvent
+from deebot_client.events.event_bus import EventBus
+from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 
 class OnBattery(MessageBodyDataDict):
