@@ -1,12 +1,12 @@
 import pytest
 
 from deebot_client.events import BatteryEvent
-from deebot_client.messages import OnBattery
+from deebot_client.messages.json import OnBattery
 from tests.messages import assert_message
 
 
 @pytest.mark.parametrize("percentage", [0, 49, 100])
-def test_getBattery(percentage: int) -> None:
+def test_onBattery(percentage: int) -> None:
     data = {
         "header": {
             "pri": 1,

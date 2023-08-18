@@ -3,7 +3,7 @@ from typing import Any
 import pytest
 
 from deebot_client.events import CleanJobStatus, ReportStatsEvent
-from deebot_client.messages import ReportStats
+from deebot_client.messages.json import ReportStats
 from tests.messages import assert_message
 
 
