@@ -261,7 +261,7 @@ class MqttClient:
     ) -> None:
         try:
             if (data_type := DataType.get(topic_split[11])) is None:
-                _LOGGER.debug("Unsupported data type: %s", topic_split[11])
+                _LOGGER.warning('Unsupported data type: "%s"', topic_split[11])
                 return
 
             command_name = topic_split[2]

@@ -216,12 +216,13 @@ async def _publish_p2p(
     is_request: bool,
     request_id: str,
     test_mqtt_client: Client,
+    data_type: str = "j",
 ) -> None:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
-        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/j"
+        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/{data_type}"
     else:
-        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/j"
+        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/{data_type}"
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)
@@ -280,6 +281,37 @@ async def test_p2p_not_supported(
                 "deebot_client.mqtt_client",
                 "DEBUG",
                 f"Command {command_name} does not support p2p handling (yet)",
+            )
+        )
+
+
+async def test_p2p_data_type_not_supported(
+    mqtt_client: MqttClient,
+) -> None:
+    """Test that unsupported command will be logged."""
+    topic_split = [
+        "iot",
+        "p2p",
+        "getBattery",
+        "test",
+        "test",
+        "test",
+        "did",
+        "get_class",
+        "resource",
+        "q",
+        "req",
+        "z",
+    ]
+
+    with LogCapture() as log:
+        mqtt_client._handle_p2p(topic_split, "")
+
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "WARNING",
+                'Unsupported data type: "z"',
             )
         )
 
