@@ -13,8 +13,9 @@ from cachetools import TTLCache
 from testfixtures import LogCapture
 
 from deebot_client.authentication import Authenticator
-from deebot_client.commands.battery import GetBattery
-from deebot_client.commands.volume import SetVolume
+from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.volume import SetVolume
+from deebot_client.const import DataType
 from deebot_client.events.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 from deebot_client.models import Configuration, DeviceInfo
@@ -240,7 +241,7 @@ async def test_p2p_success(
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {command_name: command_type},
+        {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
@@ -299,7 +300,7 @@ async def test_p2p_to_late(
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {command_name: command_type},
+        {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}

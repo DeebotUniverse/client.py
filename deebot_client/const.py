@@ -1,6 +1,7 @@
 """Constants module."""
 
 from enum import StrEnum
+from typing import Self
 
 REALM = "ecouser.net"
 PATH_API_APPSVR_APP = "appsvr/app.do"
@@ -17,3 +18,11 @@ class DataType(StrEnum):
 
     JSON = "j"
     XML = "x"
+
+    @classmethod
+    def get(cls, value: str) -> Self | None:
+        """Return DataType or None for given value."""
+        try:
+            return cls(value.lower())
+        except ValueError:
+            return None

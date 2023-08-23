@@ -57,6 +57,8 @@ def _handle_error_or_analyse(
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.name, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
+            if response.state == HandlingState.ERROR:
+                _LOGGER.warning("Could not parse %s: %s", cls.name, data)
             return response
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning("Could not parse %s: %s", cls.name, data, exc_info=True)
@@ -66,7 +68,7 @@ def _handle_error_or_analyse(
 
 
 class Message(ABC):
-    """Message with handling code."""
+    """Message."""
 
     @property  # type: ignore[misc]
     @classmethod
@@ -97,33 +99,8 @@ class Message(ABC):
         return cls._handle(event_bus, message)
 
 
-class MessageStr(Message):
-    """Message with handling string message code."""
-
-    @classmethod
-    @abstractmethod
-    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
-        """Handle message and notify the correct event subscribers.
-
-        :return: A message response
-        """
-
-    @classmethod
-    def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
-    ) -> HandlingResult:
-        """Handle message and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        if isinstance(message, str):
-            return cls._handle_str(event_bus, message)
-
-        return super()._handle(event_bus, message)
-
-
-class MessageDict(Message):
-    """Message with handling dict message code."""
+class MessageBody(Message):
+    """Dict message with body attribute."""
 
     @classmethod
     @abstractmethod
@@ -154,8 +131,8 @@ class MessageDict(Message):
         return super()._handle(event_bus, message)
 
 
-class MessageBodyData(MessageDict):
-    """Message with handling body->data code."""
+class MessageBodyData(MessageBody):
+    """Dict message with body->data attribute."""
 
     @classmethod
     @abstractmethod
@@ -193,7 +170,7 @@ class MessageBodyData(MessageDict):
 
 
 class MessageBodyDataDict(MessageBodyData):
-    """Message with handling body->data->dict code."""
+    """Dict message with body->data attribute as dict."""
 
     @classmethod
     @abstractmethod
@@ -220,7 +197,7 @@ class MessageBodyDataDict(MessageBodyData):
 
 
 class MessageBodyDataList(MessageBodyData):
-    """Message with handling body->data->list code."""
+    """Dict message with body->data attribute as list."""
 
     @classmethod
     @abstractmethod

@@ -18,7 +18,7 @@ from PIL import Image, ImageDraw, ImageOps
 from deebot_client.events.map import MapChangedEvent
 
 from .command import Command
-from .commands import GetCachedMapInfo, GetMinorMap
+from .commands.json import GetCachedMapInfo, GetMinorMap
 from .events import (
     MajorMapEvent,
     MapSetEvent,

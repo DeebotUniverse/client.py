@@ -6,7 +6,7 @@ from contextlib import suppress
 from datetime import datetime
 from typing import Any, Final
 
-from deebot_client.commands.battery import GetBattery
+from deebot_client.commands.json.battery import GetBattery
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 
 from .authentication import Authenticator
@@ -164,7 +164,7 @@ class VacuumBot:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            if message := get_message(message_name):
+            if message := get_message(message_name, self.device_info.data_type):
                 if isinstance(message_data, dict):
                     data = message_data
                 else:

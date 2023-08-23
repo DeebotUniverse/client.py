@@ -8,13 +8,11 @@ from deebot_client.const import DataType
 from ..logging_filter import get_logger
 from ..message import Message
 from .json import MESSAGES as JSON_MESSAGES
-from .xml import MESSAGES as XML_MESSAGES
 
 _LOGGER = get_logger(__name__)
 
 MESSAGES = {
     DataType.JSON: JSON_MESSAGES,
-    DataType.XML: XML_MESSAGES,
 }
 
 
@@ -23,7 +21,10 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
 
     If there exists no exact match, some conversations are performed on the name to get message object similar to the name.
     """
-    messages = MESSAGES[data_type]
+    messages = MESSAGES.get(data_type)
+    if messages is None:
+        _LOGGER.warning("Datatype %s is not supported.", data_type)
+        return None
 
     if message_type := messages.get(message_name, None):
         return message_type
@@ -45,7 +46,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
 
     from ..commands import COMMANDS  # pylint: disable=import-outside-toplevel
 
-    if found_command := COMMANDS.get(converted_name, None):
+    if found_command := COMMANDS.get(data_type, {}).get(converted_name, None):
         if issubclass(found_command, Message):
             _LOGGER.debug("Falling back to old handling way for %s", message_name)
             return found_command

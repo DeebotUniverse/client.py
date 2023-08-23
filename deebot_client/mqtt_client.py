@@ -10,11 +10,13 @@ from datetime import datetime
 from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
+from deebot_client.command import CommandMqttP2P
+from deebot_client.const import DataType
 from deebot_client.events.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 
 from .authentication import Authenticator
-from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING, CommandHandlingMqttP2P
+from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
 
@@ -97,9 +99,9 @@ class MqttClient:
         ] = asyncio.Queue()
         self._mqtt_task: asyncio.Task | None = None
 
-        self._received_p2p_commands: MutableMapping[
-            str, CommandHandlingMqttP2P
-        ] = TTLCache(maxsize=60 * 60, ttl=60)
+        self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(
+            maxsize=60 * 60, ttl=60
+        )
         self._last_message_received_at: datetime | None = None
 
         async def on_credentials_changed(_: Credentials) -> None:
@@ -258,8 +260,14 @@ class MqttClient:
         self, topic_split: list[str], payload: str | bytes | bytearray
     ) -> None:
         try:
+            if (data_type := DataType.get(topic_split[11])) is None:
+                _LOGGER.debug("Unsupported data type: %s", topic_split[11])
+                return
+
             command_name = topic_split[2]
-            command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(command_name, None)
+            command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(data_type, {}).get(
+                command_name, None
+            )
             if command_type is None:
                 _LOGGER.debug(
                     "Command %s does not support p2p handling (yet)", command_name
