@@ -76,8 +76,8 @@ expected-line-ending-format=LF
 
 # Exceptions that will emit a warning when being caught. Defaults to
 # "BaseException, Exception".
-overgeneral-exceptions=BaseException,
-                       Exception
+overgeneral-exceptions=builtins.BaseException,
+                       builtins.Exception
 
 [DESIGN]
-max-parents=8
+max-parents=10

@@ -5,6 +5,8 @@ from enum import IntEnum, unique
 
 from aiohttp import ClientSession
 
+from deebot_client.const import DataType
+
 
 class DeviceInfo(dict):
     """Class holds all values, which we get from api. Common values can be accessed through properties."""
@@ -48,6 +50,11 @@ class DeviceInfo(dict):
     def get_class(self) -> str:
         """Return device class."""
         return str(self["class"])
+
+    @property
+    def data_type(self) -> DataType:
+        """Return data type."""
+        return DataType.JSON
 
 
 @dataclass(frozen=True)

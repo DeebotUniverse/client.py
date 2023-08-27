@@ -2,11 +2,10 @@
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, final
 
 from .authentication import Authenticator
-from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
+from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState
@@ -47,6 +46,16 @@ class Command(ABC):
     @abstractmethod
     def name(cls) -> str:
         """Command name."""
+
+    @property  # type: ignore[misc]
+    @classmethod
+    @abstractmethod
+    def data_type(cls) -> DataType:
+        """Data type."""  # noqa: D401
+
+    @abstractmethod
+    def _get_payload(self) -> dict[str, Any] | list | str:
+        """Get the payload for the rest call."""
 
     @final
     async def execute(
@@ -95,30 +104,17 @@ class Command(ABC):
                 result.args,
                 result.requested_commands,
             )
+        if result.state == HandlingState.ERROR:
+            _LOGGER.warning("Could not parse %s: %s", self.name, response)
         return result
-
-    def _get_payload(self) -> dict[str, Any] | list:
-        payload = {
-            "header": {
-                "pri": "1",
-                "ts": datetime.now().timestamp(),
-                "tzm": 480,
-                "ver": "0.0.50",
-            }
-        }
-
-        if len(self._args) > 0:
-            payload["body"] = {"data": self._args}
-
-        return payload
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: DeviceInfo
     ) -> dict[str, Any]:
-        json = {
+        payload = {
             "cmdName": self.name,
             "payload": self._get_payload(),
-            "payloadType": "j",
+            "payloadType": self.data_type.value,
             "td": "q",
             "toId": device_info.did,
             "toRes": device_info.resource,
@@ -127,9 +123,9 @@ class Command(ABC):
 
         credentials = await authenticator.authenticate()
         query_params = {
-            "mid": json["toType"],
-            "did": json["toId"],
-            "td": json["td"],
+            "mid": payload["toType"],
+            "did": payload["toId"],
+            "td": payload["td"],
             "u": credentials.user_id,
             "cv": "1.67.3",
             "t": "a",
@@ -138,7 +134,7 @@ class Command(ABC):
 
         return await authenticator.post_authenticated(
             PATH_API_IOT_DEVMANAGER,
-            json,
+            payload,
             query_params=query_params,
             headers=REQUEST_HEADERS,
         )
@@ -188,3 +184,11 @@ class Command(ABC):
 
     def __hash__(self) -> int:
         return hash(self.name) + hash(self._args)
+
+
+class CommandMqttP2P(Command, ABC):
+    """Command which can handle mqtt p2p messages."""
+
+    @abstractmethod
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""

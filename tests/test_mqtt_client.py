@@ -13,8 +13,9 @@ from cachetools import TTLCache
 from testfixtures import LogCapture
 
 from deebot_client.authentication import Authenticator
-from deebot_client.commands.battery import GetBattery
-from deebot_client.commands.volume import SetVolume
+from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.volume import SetVolume
+from deebot_client.const import DataType
 from deebot_client.events.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 from deebot_client.models import Configuration, DeviceInfo
@@ -215,12 +216,13 @@ async def _publish_p2p(
     is_request: bool,
     request_id: str,
     test_mqtt_client: Client,
+    data_type: str = "j",
 ) -> None:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
-        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/j"
+        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/{data_type}"
     else:
-        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/j"
+        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/{data_type}"
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)
@@ -240,7 +242,7 @@ async def test_p2p_success(
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {command_name: command_type},
+        {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
@@ -283,6 +285,37 @@ async def test_p2p_not_supported(
         )
 
 
+async def test_p2p_data_type_not_supported(
+    mqtt_client: MqttClient,
+) -> None:
+    """Test that unsupported command will be logged."""
+    topic_split = [
+        "iot",
+        "p2p",
+        "getBattery",
+        "test",
+        "test",
+        "test",
+        "did",
+        "get_class",
+        "resource",
+        "q",
+        "req",
+        "z",
+    ]
+
+    with LogCapture() as log:
+        mqtt_client._handle_p2p(topic_split, "")
+
+        log.check_present(
+            (
+                "deebot_client.mqtt_client",
+                "WARNING",
+                'Unsupported data type: "z"',
+            )
+        )
+
+
 async def test_p2p_to_late(
     mqtt_client: MqttClient,
     device_info: DeviceInfo,
@@ -299,7 +332,7 @@ async def test_p2p_to_late(
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {command_name: command_type},
+        {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
