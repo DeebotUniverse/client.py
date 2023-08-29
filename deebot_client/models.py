@@ -5,6 +5,8 @@ from enum import IntEnum, unique
 
 from aiohttp import ClientSession
 
+from deebot_client.const import DataType
+
 
 class DeviceInfo(dict):
     """Class holds all values, which we get from api. Common values can be accessed through properties."""
@@ -50,11 +52,9 @@ class DeviceInfo(dict):
         return str(self["class"])
 
     @property
-    def uses_xml_protocol(self) -> bool:
-        """Return if a device uses MQTT + XML."""
-        # ls1ok3 is the class for the Deebot 900 which uses MQTT + XML
-        # This is based on https://github.com/mrbungle64/ecovacs-deebot.js/blob/41d0b84c6bad5186147a84f2bd2443029ce889ed/library/models.js#L130-L131
-        return self.get_class == "ls1ok3"
+    def data_type(self) -> DataType:
+        """Return data type."""
+        return DataType.JSON
 
 
 @dataclass(frozen=True)

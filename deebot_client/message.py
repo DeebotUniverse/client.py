@@ -4,7 +4,7 @@ from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
-from typing import Any, final
+from typing import Any, TypeVar, final
 
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
@@ -40,20 +40,25 @@ class HandlingResult:
         return HandlingResult(HandlingState.ANALYSE)
 
 
+_MessageT = TypeVar("_MessageT", bound="Message")
+
+
 def _handle_error_or_analyse(
-    func: Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]
-) -> Callable[[type["Message"], EventBus, dict[str, Any]], HandlingResult]:
+    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]
+) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
-        cls: type["Message"], event_bus: EventBus, data: dict[str, Any]
+        cls: type[_MessageT], event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.name, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
+            if response.state == HandlingState.ERROR:
+                _LOGGER.warning("Could not parse %s: %s", cls.name, data)
             return response
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning("Could not parse %s: %s", cls.name, data, exc_info=True)
@@ -63,13 +68,65 @@ def _handle_error_or_analyse(
 
 
 class Message(ABC):
-    """Message with handling code."""
+    """Message."""
 
     @property  # type: ignore[misc]
     @classmethod
     @abstractmethod
     def name(cls) -> str:
         """Command name."""
+
+    @classmethod
+    @abstractmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        return cls._handle(event_bus, message)
+
+
+class MessageBody(Message):
+    """Dict message with body attribute."""
+
+    @classmethod
+    @abstractmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        return cls._handle(event_bus, message)
+
+
+class MessageBody(Message):
+    """Dict message with body attribute."""
 
     @classmethod
     @abstractmethod
@@ -90,9 +147,7 @@ class Message(ABC):
         return cls._handle_body(event_bus, body)
 
     @classmethod
-    @_handle_error_or_analyse
-    @final
-    def handle(
+    def _handle(
         cls, event_bus: EventBus, message: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
@@ -104,12 +159,15 @@ class Message(ABC):
         if isinstance(message, str):
             return cls.__handle_body(event_bus, message)
 
-        data_body = message.get("body", message)
-        return cls.__handle_body(event_bus, data_body)
+        if isinstance(message, dict):
+            data_body = message.get("body", message)
+            return cls.__handle_body(event_bus, data_body)
+
+        return super()._handle(event_bus, message)
 
 
-class MessageBodyData(Message):
-    """Message with handling body->data code."""
+class MessageBodyData(MessageBody):
+    """Dict message with body->data attribute."""
 
     @classmethod
     @abstractmethod
@@ -153,7 +211,7 @@ class MessageBodyData(Message):
 
 
 class MessageBodyDataDict(MessageBodyData):
-    """Message with handling body->data->dict code."""
+    """Dict message with body->data attribute as dict."""
 
     @classmethod
     @abstractmethod
@@ -194,7 +252,7 @@ class MessageBodyDataDict(MessageBodyData):
 
 
 class MessageBodyDataList(MessageBodyData):
-    """Message with handling body->data->list code."""
+    """Dict message with body->data attribute as list."""
 
     @classmethod
     @abstractmethod

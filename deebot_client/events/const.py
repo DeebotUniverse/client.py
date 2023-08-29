@@ -2,7 +2,7 @@
 from collections.abc import Mapping
 
 from ..command import Command
-from ..commands import (
+from ..commands.json import (
     GetAdvancedMode,
     GetBattery,
     GetCachedMapInfo,

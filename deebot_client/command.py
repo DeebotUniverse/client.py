@@ -2,12 +2,11 @@
 import asyncio
 from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
-from datetime import datetime
 from typing import Any, final
 from xml.etree import ElementTree
 
 from .authentication import Authenticator
-from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS
+from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState
@@ -52,19 +51,12 @@ class Command(ABC):
     @property  # type: ignore[misc]
     @classmethod
     @abstractmethod
-    def xml_name(cls) -> str:
-        """Command name."""
+    def data_type(cls) -> DataType:
+        """Data type."""  # noqa: D401
 
-    @property
-    @classmethod
-    def xml_has_own_element(cls) -> bool:
-        """Return if an XML command should have its own inner element.
-
-        A good example of this is the Clean command.
-        This is the required XML for that.
-        <ctl><clean type='auto' speed='standard' act='p'/></ctl>
-        """
-        return cls.xml_has_own_element is True
+    @abstractmethod
+    def _get_payload(self) -> dict[str, Any] | list | str:
+        """Get the payload for the rest call."""
 
     @final
     async def execute(
@@ -113,44 +105,22 @@ class Command(ABC):
                 result.args,
                 result.requested_commands,
             )
+        if result.state == HandlingState.ERROR:
+            _LOGGER.warning("Could not parse %s: %s", self.name, response)
         return result
-
-    def _get_json_payload(self) -> dict[str, Any] | list:
-        payload = {
-            "header": {
-                "pri": "1",
-                "ts": datetime.now().timestamp(),
-                "tzm": 480,
-                "ver": "0.0.50",
-            }
-        }
-
-        if len(self._args) > 0:
-            payload["body"] = {"data": self._args}
-
-        return payload
-
-    def _get_xml_payload(self) -> str:
-        ctl_element = ElementTree.Element("ctl")
-        if len(self._args) > 0:
-            action_element = (
-                ElementTree.SubElement(ctl_element, self.xml_name.lower())
-                if self.xml_has_own_element()
-                else ctl_element
-            )
-
-            for key in self._args:
-                action_element.set(key, self._args[key])
-
-        return ElementTree.tostring(ctl_element, "unicode")
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: DeviceInfo
     ) -> dict[str, Any]:
-        if device_info.uses_xml_protocol:
-            payload = self._generate_xml_payload(device_info)
-        else:
-            payload = self._generate_json_payload(device_info)
+        payload = {
+            "cmdName": self.name,
+            "payload": self._get_payload(),
+            "payloadType": self.data_type.value,
+            "td": "q",
+            "toId": device_info.did,
+            "toRes": device_info.resource,
+            "toType": device_info.get_class,
+        }
 
         credentials = await authenticator.authenticate()
         query_params = {
@@ -237,3 +207,11 @@ class Command(ABC):
 
     def __hash__(self) -> int:
         return hash(self.name) + hash(self._args)
+
+
+class CommandMqttP2P(Command, ABC):
+    """Command which can handle mqtt p2p messages."""
+
+    @abstractmethod
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
