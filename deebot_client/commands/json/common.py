@@ -85,13 +85,6 @@ class CommandWithMessageHandling(JsonCommand, MessageBody, ABC):
         return CommandResult(HandlingState.ANALYSE)
 
 
-class NoArgsCommand(CommandWithMessageHandling, ABC):
-    """Command without args."""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-
 class ExecuteCommand(CommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
@@ -138,7 +131,7 @@ class SetCommand(ExecuteCommand, CommandMqttP2P, ABC):
             self.get_command.handle(event_bus, self._args)
 
 
-class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
+class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
 
     @property  # type: ignore[misc]

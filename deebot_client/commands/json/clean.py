@@ -9,7 +9,7 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import DeviceInfo, VacuumState
 
-from .common import EventBus, ExecuteCommand, NoArgsCommand
+from .common import CommandWithMessageHandling, EventBus, ExecuteCommand
 
 _LOGGER = get_logger(__name__)
 
@@ -81,7 +81,7 @@ class CleanArea(Clean):
         self._args["count"] = cleanings
 
 
-class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
+class GetCleanInfo(CommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"

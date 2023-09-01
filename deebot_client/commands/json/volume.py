@@ -6,10 +6,10 @@ from typing import Any
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand, SetCommand
+from .common import CommandWithMessageHandling, EventBus, SetCommand
 
 
-class GetVolume(NoArgsCommand, MessageBodyDataDict):
+class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"

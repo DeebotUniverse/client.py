@@ -6,10 +6,10 @@ from typing import Any
 from deebot_client.events import CleanCountEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand, SetCommand
+from .common import CommandWithMessageHandling, EventBus, SetCommand
 
 
-class GetCleanCount(NoArgsCommand, MessageBodyDataDict):
+class GetCleanCount(CommandWithMessageHandling, MessageBodyDataDict):
     """Get clean count command."""
 
     name = "getCleanCount"

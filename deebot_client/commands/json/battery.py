@@ -1,10 +1,10 @@
 """Battery commands."""
 from deebot_client.messages.json import OnBattery
 
-from .common import NoArgsCommand
+from .common import CommandWithMessageHandling
 
 
-class GetBattery(OnBattery, NoArgsCommand):
+class GetBattery(OnBattery, CommandWithMessageHandling):
     """Get battery command."""
 
     name = "getBattery"

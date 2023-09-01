@@ -5,10 +5,10 @@ from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import VacuumState
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling, EventBus
 
 
-class GetError(NoArgsCommand, MessageBodyDataDict):
+class GetError(CommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"
