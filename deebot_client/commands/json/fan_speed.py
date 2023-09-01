@@ -5,10 +5,10 @@ from typing import Any
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand, SetCommand
+from .common import CommandWithMessageHandling, EventBus, SetCommand
 
 
-class GetFanSpeed(NoArgsCommand, MessageBodyDataDict):
+class GetFanSpeed(CommandWithMessageHandling, MessageBodyDataDict):
     """Get fan speed command."""
 
     name = "getSpeed"

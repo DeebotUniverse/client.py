@@ -5,11 +5,11 @@ from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import VacuumState
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling, EventBus
 from .const import CODE
 
 
-class GetChargeState(NoArgsCommand, MessageBodyDataDict):
+class GetChargeState(CommandWithMessageHandling, MessageBodyDataDict):
     """Get charge state command."""
 
     name = "getChargeState"

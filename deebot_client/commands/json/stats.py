@@ -4,10 +4,10 @@ from typing import Any
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling, EventBus
 
 
-class GetStats(NoArgsCommand, MessageBodyDataDict):
+class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getStats"
@@ -29,7 +29,7 @@ class GetStats(NoArgsCommand, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class GetTotalStats(NoArgsCommand, MessageBodyDataDict):
+class GetTotalStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getTotalStats"
