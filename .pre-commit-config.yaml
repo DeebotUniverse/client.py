@@ -65,8 +65,8 @@ repos:
     hooks:
       - id: prettier
         additional_dependencies:
-          - prettier@2.8.8
-          - prettier-plugin-sort-json@1.0.0
+          - prettier@3.0.3
+          - prettier-plugin-sort-json@3.0.1
         exclude_types:
           - python
   - repo: https://github.com/adrienverge/yamllint.git
