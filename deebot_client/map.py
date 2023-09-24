@@ -147,7 +147,41 @@ class Map:
         self._amount_rooms: int = 0
         self._last_image: LastImage | None = None
         self._unsubscribers: list[Callable[[], None]] = []
+        self._unsubscribers_internal: list[Callable[[], None]] = []
         self._tasks: set[asyncio.Future[Any]] = set()
+
+        async def on_map_set(event: MapSetEvent) -> None:
+            if event.type == MapSetType.ROOMS:
+                self._amount_rooms = len(event.subsets)
+                for room_id, _ in self._map_data.rooms.copy().items():
+                    if room_id not in event.subsets:
+                        self._map_data.rooms.pop(room_id, None)
+            else:
+                for subset_id, subset in self._map_data.map_subsets.copy().items():
+                    if subset.type == event.type and subset_id not in event.subsets:
+                        self._map_data.map_subsets.pop(subset_id, None)
+
+        self._unsubscribers_internal.append(
+            self._event_bus.subscribe(MapSetEvent, on_map_set)
+        )
+
+        async def on_map_subset(event: MapSubsetEvent) -> None:
+            if event.type == MapSetType.ROOMS and event.name:
+                room = Room(event.name, event.id, event.coordinates)
+                if self._map_data.rooms.get(event.id, None) != room:
+                    self._map_data.rooms[room.id] = room
+
+                    if len(self._map_data.rooms) == self._amount_rooms:
+                        self._event_bus.notify(
+                            RoomsEvent(list(self._map_data.rooms.values()))
+                        )
+
+            elif self._map_data.map_subsets.get(event.id, None) != event:
+                self._map_data.map_subsets[event.id] = event
+
+        self._unsubscribers_internal.append(
+            self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
+        )
 
     # ---------------------------- METHODS ----------------------------
 
@@ -206,37 +240,6 @@ class Map:
 
         create_task(self._tasks, self._execute_command(GetCachedMapInfo()))
 
-        async def on_map_set(event: MapSetEvent) -> None:
-            if event.type == MapSetType.ROOMS:
-                self._amount_rooms = len(event.subsets)
-                for room_id, _ in self._map_data.rooms.copy().items():
-                    if room_id not in event.subsets:
-                        self._map_data.rooms.pop(room_id, None)
-            else:
-                for subset_id, subset in self._map_data.map_subsets.copy().items():
-                    if subset.type == event.type and subset_id not in event.subsets:
-                        self._map_data.map_subsets.pop(subset_id, None)
-
-        self._unsubscribers.append(self._event_bus.subscribe(MapSetEvent, on_map_set))
-
-        async def on_map_subset(event: MapSubsetEvent) -> None:
-            if event.type == MapSetType.ROOMS and event.name:
-                room = Room(event.name, event.id, event.coordinates)
-                if self._map_data.rooms.get(event.id, None) != room:
-                    self._map_data.rooms[room.id] = room
-
-                    if len(self._map_data.rooms) == self._amount_rooms:
-                        self._event_bus.notify(
-                            RoomsEvent(list(self._map_data.rooms.values()))
-                        )
-
-            elif self._map_data.map_subsets.get(event.id, None) != event:
-                self._map_data.map_subsets[event.id] = event
-
-        self._unsubscribers.append(
-            self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
-        )
-
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.positions = event.positions
 
@@ -280,10 +283,12 @@ class Map:
 
     def disable(self) -> None:
         """Disable map."""
-        unsubscribers = self._unsubscribers
-        self._unsubscribers.clear()
+        self._unsubscribe_from(self._unsubscribers)
+
+    def _unsubscribe_from(self, unsubscribers: list[Callable[[], None]]) -> None:
         for unsubscribe in unsubscribers:
             unsubscribe()
+        unsubscribers.clear()
 
     def refresh(self) -> None:
         """Manually refresh map."""
@@ -377,6 +382,7 @@ class Map:
     async def teardown(self) -> None:
         """Teardown map."""
         self.disable()
+        self._unsubscribe_from(self._unsubscribers_internal)
         await cancel(self._tasks)
 
 

@@ -137,3 +137,8 @@ def execute_mock() -> AsyncMock:
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock) -> EventBus:
     return EventBus(execute_mock)
+
+
+@pytest.fixture
+def event_bus_mock() -> Mock:
+    return Mock(spec_set=EventBus)
