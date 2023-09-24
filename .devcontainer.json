@@ -5,6 +5,7 @@
     // Configure properties specific to VS Code.
     "vscode": {
       "extensions": [
+        "eamodio.gitlens",
         "github.vscode-pull-request-github",
         "ms-python.python",
         "ms-python.vscode-pylance",
