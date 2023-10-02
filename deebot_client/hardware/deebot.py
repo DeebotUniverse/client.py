@@ -53,6 +53,7 @@ from deebot_client.hardware.device_capabilities import (
 )
 
 _DEVICES: Mapping[str, AbstractDeviceCapabilities] = {
+    "vi829v": DeviceCapabilitiesRef("Deebot Ozmo 920", "yna5x1"),
     "yna5x1": DeviceCapabilities(
         "Deebot Ozmo 950",
         {
@@ -80,7 +81,6 @@ _DEVICES: Mapping[str, AbstractDeviceCapabilities] = {
             WaterInfoEvent: [GetWaterInfo()],
         },
     ),
-    "vi829v": DeviceCapabilitiesRef("Deebot Ozmo 920", "yna5x1"),
 }
 
 DEVICES: Mapping[str, DeviceCapabilities] = {
