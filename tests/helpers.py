@@ -1,5 +1,12 @@
+from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import Command
+from deebot_client.events.base import Event
+from deebot_client.hardware.device_capabilities import (
+    _REQUIRED_EVENTS,
+    DeviceCapabilities,
+)
 from deebot_client.util import DisplayNameIntEnum
 
 
@@ -43,3 +50,15 @@ def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
     if data:
         json["body"]["data"] = data
     return json
+
+
+def get_device_capabilities(
+    events: Mapping[type[Event], list[Command]] | None = None
+) -> DeviceCapabilities:
+    """Get test device capabilities."""
+    _events = {**events} if events else {}
+    for event in _REQUIRED_EVENTS:
+        if event not in _events:
+            _events[event] = []
+
+    return DeviceCapabilities("test", _events)

@@ -12,6 +12,7 @@ from . import AvailabilityEvent, Event, StateEvent
 
 if TYPE_CHECKING:
     from ..command import Command
+    from ..hardware.device_capabilities import DeviceCapabilities
 
 _LOGGER = get_logger(__name__)
 
@@ -39,12 +40,14 @@ class EventBus:
     def __init__(
         self,
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
+        device_capabilities: "DeviceCapabilities",
     ):
         self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 
         self._execute_command: Final = execute_command
+        self._device_capabilities = device_capabilities
 
     def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
@@ -150,11 +153,7 @@ class EventBus:
             return
 
         async with semaphore:
-            from deebot_client.events.const import (  # pylint: disable=import-outside-toplevel
-                EVENT_DTO_REFRESH_COMMANDS,
-            )
-
-            commands = EVENT_DTO_REFRESH_COMMANDS.get(event_class, [])
+            commands = self._device_capabilities.get_refresh_commands(event_class)
             if not commands:
                 return
 

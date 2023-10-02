@@ -6,8 +6,9 @@ from contextlib import suppress
 from datetime import datetime
 from typing import Any, Final
 
-from deebot_client.commands.json.battery import GetBattery
+from deebot_client.hardware import get_device_capabilities
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
+from deebot_client.util import cancel
 
 from .authentication import Authenticator
 from .command import Command
@@ -43,6 +44,7 @@ class VacuumBot:
         self.device_info: Final[DeviceInfo] = device_info
         self._authenticator = authenticator
 
+        self._device_capabilities = get_device_capabilities(device_info.get_class)
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now()
@@ -50,7 +52,9 @@ class VacuumBot:
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
-        self.events: Final[EventBus] = EventBus(self.execute_command)
+        self.events: Final[EventBus] = EventBus(
+            self.execute_command, self._device_capabilities
+        )
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
@@ -122,14 +126,21 @@ class VacuumBot:
             if (datetime.now() - self._last_time_available).total_seconds() > (
                 _AVAILABLE_CHECK_INTERVAL - 1
             ):
-                # request GetBattery to check availability
+                tasks: set[asyncio.Future[Any]] = set()
                 try:
-                    self._set_available(await self._execute_command(GetBattery(True)))
+                    for command in self._device_capabilities.get_refresh_commands(
+                        AvailabilityEvent
+                    ):
+                        tasks.add(asyncio.create_task(self._execute_command(command)))
+
+                    result = await asyncio.gather(*tasks)
+                    self._set_available(all(result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
                         exc_info=True,
                     )
+                    await cancel(tasks)
             await asyncio.sleep(_AVAILABLE_CHECK_INTERVAL)
 
     async def _execute_command(self, command: Command) -> bool:
