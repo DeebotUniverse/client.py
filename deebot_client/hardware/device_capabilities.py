@@ -35,8 +35,7 @@ class DeviceCapabilities(_BaseDeviceCapabilities):
         for event in _COMMON_NO_POLL_EVENTS:
             events.setdefault(event, [])
 
-        if events != self.events:
-            object.__setattr__(self, "capabilities", events)
+        object.__setattr__(self, "capabilities", events)
 
         for event in _REQUIRED_EVENTS:
             if event not in events:
