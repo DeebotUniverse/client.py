@@ -1,4 +1,5 @@
 """Device module."""
+from abc import ABC
 from collections.abc import Mapping
 from dataclasses import dataclass
 
@@ -6,7 +7,11 @@ from deebot_client.command import Command
 from deebot_client.events import AvailabilityEvent, CustomCommandEvent, ReportStatsEvent
 from deebot_client.events.base import Event
 from deebot_client.events.map import MapSetEvent, MapSubsetEvent, MinorMapEvent
-from deebot_client.exceptions import DeebotError
+from deebot_client.exceptions import (
+    DeviceCapabilitiesRefNotFoundError,
+    InvalidDeviceCapabilitiesError,
+    RequiredEventMissingError,
+)
 
 _COMMON_NO_POLL_EVENTS = [
     CustomCommandEvent,
@@ -20,12 +25,14 @@ _REQUIRED_EVENTS = [AvailabilityEvent]
 
 
 @dataclass(frozen=True)
-class _BaseDeviceCapabilities:
+class AbstractDeviceCapabilities(ABC):
+    """Abstract device capabilities."""
+
     name: str
 
 
 @dataclass(frozen=True)
-class DeviceCapabilities(_BaseDeviceCapabilities):
+class DeviceCapabilities(AbstractDeviceCapabilities):
     """Device capabilities."""
 
     events: Mapping[type[Event], list[Command]]
@@ -51,28 +58,31 @@ class DeviceCapabilities(_BaseDeviceCapabilities):
 
 
 @dataclass(frozen=True)
-class DeviceCapabilitiesRef(_BaseDeviceCapabilities):
+class DeviceCapabilitiesRef(AbstractDeviceCapabilities):
     """Device capabilitie referring another device."""
 
     ref: str
 
-    def create(self, devices: Mapping[str, DeviceCapabilities]) -> DeviceCapabilities:
+    def create(
+        self, devices: Mapping[str, AbstractDeviceCapabilities]
+    ) -> DeviceCapabilities:
         """Create and return device capbabilities."""
-        if device := devices.get(self.ref):
+        if (device := devices.get(self.ref)) and isinstance(device, DeviceCapabilities):
             return DeviceCapabilities(self.name, device.events)
 
-        raise ReferanceNotFoundError(self.ref)
+        raise DeviceCapabilitiesRefNotFoundError(self.ref)
 
 
-class ReferanceNotFoundError(DeebotError):
-    """Device reference not found error."""
+def convert(
+    _class: str,
+    device: AbstractDeviceCapabilities,
+    devices: Mapping[str, AbstractDeviceCapabilities],
+) -> DeviceCapabilities:
+    """Convert the device into a device capbabilities."""
+    if isinstance(device, DeviceCapabilities):
+        return device
 
-    def __init__(self, ref: str) -> None:
-        super().__init__(f'Device ref: "{ref}" not found')
+    if isinstance(device, DeviceCapabilitiesRef):
+        return device.create(devices)
 
-
-class RequiredEventMissingError(DeebotError):
-    """Required event missing error."""
-
-    def __init__(self, event: type[Event]) -> None:
-        super().__init__(f'Required event "{event.__name__}" is missing.')
+    raise InvalidDeviceCapabilitiesError(_class, device)

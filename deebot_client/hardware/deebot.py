@@ -45,9 +45,14 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.hardware.device_capabilities import DeviceCapabilities
+from deebot_client.hardware.device_capabilities import (
+    AbstractDeviceCapabilities,
+    DeviceCapabilities,
+    DeviceCapabilitiesRef,
+    convert,
+)
 
-DEVICES: Mapping[str, DeviceCapabilities] = {
+_DEVICES: Mapping[str, AbstractDeviceCapabilities] = {
     "yna5x1": DeviceCapabilities(
         "Deebot Ozmo 950",
         {
@@ -74,5 +79,10 @@ DEVICES: Mapping[str, DeviceCapabilities] = {
             VolumeEvent: [GetVolume()],
             WaterInfoEvent: [GetWaterInfo()],
         },
-    )
+    ),
+    "vi829v": DeviceCapabilitiesRef("Deebot Ozmo 920", "yna5x1"),
+}
+
+DEVICES: Mapping[str, DeviceCapabilities] = {
+    _class: convert(_class, device, _DEVICES) for _class, device in _DEVICES.items()
 }
