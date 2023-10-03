@@ -49,10 +49,6 @@ class DeviceCapabilities(AbstractDeviceCapabilities):
             if event not in events:
                 raise RequiredEventMissingError(event)
 
-    def is_supported(self, event: type[Event]) -> bool:
-        """Return True if event is supported."""
-        return event in self.events
-
     def get_refresh_commands(self, event: type[Event]) -> list[Command]:
         """Return refresh command for given event."""
         return self.events.get(event, [])
