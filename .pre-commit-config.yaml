@@ -10,19 +10,19 @@ default_language_version:
 
 repos:
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.9.0
+    rev: v3.14.0
     hooks:
       - id: pyupgrade
         args:
           - --py311-plus
   - repo: https://github.com/psf/black
-    rev: 23.7.0
+    rev: 23.9.1
     hooks:
       - id: black
         args:
           - --quiet
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.2.5
+    rev: v2.2.6
     hooks:
       - id: codespell
         args:
@@ -33,7 +33,7 @@ repos:
           - csv
           - json
   - repo: https://github.com/PyCQA/flake8
-    rev: 6.0.0
+    rev: 6.1.0
     hooks:
       - id: flake8
         additional_dependencies:
@@ -61,12 +61,12 @@ repos:
         args: [--branch, main, --branch, dev]
       - id: requirements-txt-fixer
   - repo: https://github.com/pre-commit/mirrors-prettier
-    rev: v3.0.0
+    rev: v3.0.3
     hooks:
       - id: prettier
         additional_dependencies:
-          - prettier@2.8.8
-          - prettier-plugin-sort-json@1.0.0
+          - prettier@3.0.3
+          - prettier-plugin-sort-json@3.0.1
         exclude_types:
           - python
   - repo: https://github.com/adrienverge/yamllint.git

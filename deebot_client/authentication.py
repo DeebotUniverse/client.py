@@ -271,7 +271,7 @@ class _AuthClient:
                         message=str(res.reason),
                         headers=res.headers,
                     )
-            except asyncio.TimeoutError as ex:
+            except TimeoutError as ex:
                 _LOGGER.warning(
                     "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
                 )
