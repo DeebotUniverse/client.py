@@ -63,7 +63,7 @@ class DeviceCapabilitiesRef(AbstractDeviceCapabilities):
     def create(
         self, devices: Mapping[str, AbstractDeviceCapabilities]
     ) -> DeviceCapabilities:
-        """Create and return device capbabilities."""
+        """Create and return device capabilities."""
         if (device := devices.get(self.ref)) and isinstance(device, DeviceCapabilities):
             return DeviceCapabilities(self.name, device.events)
 
@@ -75,7 +75,7 @@ def convert(
     device: AbstractDeviceCapabilities,
     devices: Mapping[str, AbstractDeviceCapabilities],
 ) -> DeviceCapabilities:
-    """Convert the device into a device capbabilities."""
+    """Convert the device into a device capabilities."""
     if isinstance(device, DeviceCapabilities):
         return device
 
