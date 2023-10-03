@@ -7,7 +7,8 @@ from deebot_client.command import Command
 from deebot_client.events import AvailabilityEvent, CustomCommandEvent, ReportStatsEvent
 from deebot_client.events.base import Event
 from deebot_client.events.map import MapSetEvent, MapSubsetEvent, MinorMapEvent
-from deebot_client.exceptions import (
+
+from .exceptions import (
     DeviceCapabilitiesRefNotFoundError,
     InvalidDeviceCapabilitiesError,
     RequiredEventMissingError,

@@ -3,16 +3,16 @@
 
 import pytest
 
-from deebot_client.exceptions import (
-    DeviceCapabilitiesRefNotFoundError,
-    InvalidDeviceCapabilitiesError,
-    RequiredEventMissingError,
-)
 from deebot_client.hardware.device_capabilities import (
     AbstractDeviceCapabilities,
     DeviceCapabilities,
     DeviceCapabilitiesRef,
     convert,
+)
+from deebot_client.hardware.exceptions import (
+    DeviceCapabilitiesRefNotFoundError,
+    InvalidDeviceCapabilitiesError,
+    RequiredEventMissingError,
 )
 from tests.helpers import get_device_capabilities
 
