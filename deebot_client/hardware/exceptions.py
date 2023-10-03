@@ -1,8 +1,13 @@
 """Deebot hardware exception module."""
 
 
+from typing import TYPE_CHECKING
+
 from deebot_client.events.base import Event
 from deebot_client.exceptions import DeebotError
+
+if TYPE_CHECKING:
+    from deebot_client.hardware.device_capabilities import DeviceCapabilities
 
 
 class HardwareError(DeebotError):
@@ -26,7 +31,7 @@ class RequiredEventMissingError(HardwareError):
 class InvalidDeviceCapabilitiesError(HardwareError):
     """Invalid device capabilities error."""
 
-    def __init__(self, _class: str, device_cababilities: object) -> None:
+    def __init__(self, _class: str, device_cababilities: "DeviceCapabilities") -> None:
         super().__init__(
             f'The class "{_class} has a invalid device capabilities "{device_cababilities.__class__.__name__}"'
         )
