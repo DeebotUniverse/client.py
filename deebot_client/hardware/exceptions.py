@@ -3,7 +3,6 @@
 
 from deebot_client.events.base import Event
 from deebot_client.exceptions import DeebotError
-from deebot_client.hardware.device_capabilities import AbstractDeviceCapabilities
 
 
 class HardwareError(DeebotError):
@@ -27,9 +26,7 @@ class RequiredEventMissingError(HardwareError):
 class InvalidDeviceCapabilitiesError(HardwareError):
     """Invalid device capabilities error."""
 
-    def __init__(
-        self, _class: str, device_cababilities: "AbstractDeviceCapabilities"
-    ) -> None:
+    def __init__(self, _class: str, device_cababilities: object) -> None:
         super().__init__(
             f'The class "{_class} has a invalid device capabilities "{device_cababilities.__class__.__name__}"'
         )
