@@ -7,20 +7,20 @@ import pytest
 
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
-from deebot_client.events.const import EVENT_DTO_REFRESH_COMMANDS
 from deebot_client.events.event_bus import EventBus
 from deebot_client.events.map import MapChangedEvent
+from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import VacuumState
 
 
 def _verify_event_command_called(
-    execute_mock: AsyncMock, event: type[Event], expected_call: bool
+    execute_mock: AsyncMock,
+    event: type[Event],
+    expected_call: bool,
+    event_bus: EventBus,
 ) -> None:
-    for command in EVENT_DTO_REFRESH_COMMANDS[event]:
-        if expected_call:
-            assert call(command) in execute_mock.call_args_list
-        else:
-            execute_mock.assert_not_called()
+    for command in event_bus._device_capabilities.get_refresh_commands(event):
+        assert (call(command) in execute_mock.call_args_list) == expected_call
 
 
 async def _subscribeAndVerify(
@@ -32,7 +32,7 @@ async def _subscribeAndVerify(
     unsubscribe = event_bus.subscribe(to_subscribe, AsyncMock())
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, to_subscribe, expected_call)
+    _verify_event_command_called(execute_mock, to_subscribe, expected_call, event_bus)
 
     execute_mock.reset_mock()
     return unsubscribe
@@ -70,7 +70,7 @@ async def test_refresh_when_coming_back_online(
         await asyncio.sleep(0.1)
         available_mock.assert_awaited_with(event)
 
-    event_bus.subscribe(BatteryEvent, AsyncMock())
+    event_bus.subscribe(WaterInfoEvent, AsyncMock())
     event_bus.subscribe(StateEvent, AsyncMock())
     event_bus.subscribe(AvailabilityEvent, available_mock)
     await asyncio.sleep(0.1)
@@ -81,9 +81,9 @@ async def test_refresh_when_coming_back_online(
     await notify(False)
     await notify(True)
 
-    _verify_event_command_called(execute_mock, BatteryEvent, True)
-    _verify_event_command_called(execute_mock, StateEvent, True)
-    _verify_event_command_called(execute_mock, AvailabilityEvent, False)
+    _verify_event_command_called(execute_mock, WaterInfoEvent, True, event_bus)
+    _verify_event_command_called(execute_mock, StateEvent, True, event_bus)
+    _verify_event_command_called(execute_mock, AvailabilityEvent, False, event_bus)
 
 
 async def test_get_last_event(event_bus: EventBus) -> None:
@@ -106,7 +106,7 @@ async def test_get_last_event(event_bus: EventBus) -> None:
 async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> None:
     event = BatteryEvent
     event_bus.request_refresh(event)
-    _verify_event_command_called(execute_mock, event, False)
+    _verify_event_command_called(execute_mock, event, False, event_bus)
 
     event_bus.subscribe(event, AsyncMock())
     execute_mock.reset_mock()
@@ -114,7 +114,7 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
     event_bus.request_refresh(event)
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, event, True)
+    _verify_event_command_called(execute_mock, event, True, event_bus)
 
 
 @pytest.mark.parametrize(

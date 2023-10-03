@@ -4,16 +4,15 @@ from collections.abc import Callable
 from unittest.mock import Mock, patch
 
 from deebot_client.authentication import Authenticator
+from deebot_client.commands.json.battery import GetBattery
 from deebot_client.events import AvailabilityEvent
 from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.vacuum_bot import VacuumBot
+from tests.helpers import get_device_capabilities
 
 
 @patch("deebot_client.vacuum_bot._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
-@patch(
-    "deebot_client.events.const.EVENT_DTO_REFRESH_COMMANDS", {}
-)  # disable refresh on event subscription
 async def test_available_check_and_teardown(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
@@ -27,9 +26,15 @@ async def test_available_check_and_teardown(
         await asyncio.sleep(0.1)
         assert received_statuses.get_nowait().available is expected
 
-    with patch("deebot_client.vacuum_bot.GetBattery", spec_set=True) as battery_command:
+    with patch(
+        "deebot_client.vacuum_bot.get_device_capabilities"
+    ) as get_device_capabilities_patch:
         # prepare mocks
-        execute_mock = battery_command.return_value.execute
+        battery_mock = Mock(spec_set=GetBattery)
+        get_device_capabilities_patch.return_value = get_device_capabilities(
+            {AvailabilityEvent: [battery_mock]}
+        )
+        execute_mock = battery_mock.execute
 
         # prepare bot and mock mqtt
         bot = VacuumBot(device_info, authenticator)
@@ -37,6 +42,9 @@ async def test_available_check_and_teardown(
         unsubscribe_mock = Mock(spec=Callable[[], None])
         mqtt_client.subscribe.return_value = unsubscribe_mock
         await bot.initialize(mqtt_client)
+
+        # deactivate refresh event subscribe refresh calls
+        bot.events._device_capabilities = get_device_capabilities()
 
         bot.events.subscribe(AvailabilityEvent, on_status)
 
@@ -65,7 +73,7 @@ async def test_available_check_and_teardown(
         await assert_received_status(True)
 
         # reset mock for easier handling
-        battery_command.reset_mock()
+        battery_mock.reset_mock()
 
         # Simulate message over mqtt and therefore available is not needed
         await asyncio.sleep(0.8)
