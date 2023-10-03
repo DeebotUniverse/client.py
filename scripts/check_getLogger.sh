@@ -1,5 +1,5 @@
 #!/bin/bash
-# Dummy script to check if getLogger is somewhere called execpt in logging_filter.py
+# Dummy script to check if getLogger is somewhere called except in logging_filter.py
 
 # LIST='list\|of\|words\|split\|by\|slash\|and\|pipe'
 LIST="getLogger\|logging"
