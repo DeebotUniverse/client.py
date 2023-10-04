@@ -1,4 +1,4 @@
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from typing import Any
 
 from deebot_client.command import Command
@@ -53,12 +53,14 @@ def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
 
 
 def get_device_capabilities(
-    events: Mapping[type[Event], list[Command]] | None = None
+    events: Mapping[
+        type[Event], list[Command | Callable[["DeviceCapabilities"], Command]]
+    ]
+    | None = None
 ) -> DeviceCapabilities:
     """Get test device capabilities."""
     _events = {**events} if events else {}
     for event in _REQUIRED_EVENTS:
-        if event not in _events:
-            _events[event] = []
+        _events.setdefault(event, [])
 
     return DeviceCapabilities("test", _events)

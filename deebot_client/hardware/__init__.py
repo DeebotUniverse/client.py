@@ -30,6 +30,7 @@ from deebot_client.events import (
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     ErrorEvent,
+    LifeSpan,
     LifeSpanEvent,
     MultimapStateEvent,
     RoomsEvent,
@@ -68,7 +69,7 @@ _DEFAULT = DeviceCapabilities(
         ContinuousCleaningEvent: [GetContinuousCleaning()],
         ErrorEvent: [GetError()],
         FanSpeedEvent: [GetFanSpeed()],
-        LifeSpanEvent: [GetLifeSpan()],
+        LifeSpanEvent: [(lambda dc: GetLifeSpan(dc.capabilities[LifeSpan]))],
         MajorMapEvent: [GetMajorMap()],
         MapTraceEvent: [GetMapTrace()],
         MultimapStateEvent: [GetMultimapState()],
@@ -81,6 +82,7 @@ _DEFAULT = DeviceCapabilities(
         VolumeEvent: [GetVolume()],
         WaterInfoEvent: [GetWaterInfo()],
     },
+    {LifeSpan: list(LifeSpan)},
 )
 
 

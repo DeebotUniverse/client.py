@@ -136,3 +136,6 @@ class OnChangedDict(dict[_KT, _VT]):
         if __name in OnChangedDict._MODIFING_FUNCTIONS:
             self._on_change()
         return super().__getattribute__(__name)
+
+
+LST = list[_T] | set[_T] | tuple[_T, ...]

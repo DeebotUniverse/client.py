@@ -10,9 +10,10 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    "command, json, expected",
     [
         (
+            GetLifeSpan({LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH}),
             get_request_json(
                 [
                     {"type": "sideBrush", "left": 8977, "total": 9000},
@@ -28,5 +29,7 @@ from . import assert_command
         ),
     ],
 )
-async def test_GetLifeSpan(json: dict[str, Any], expected: list[LifeSpanEvent]) -> None:
-    await assert_command(GetLifeSpan(), json, expected)
+async def test_GetLifeSpan(
+    command: GetLifeSpan, json: dict[str, Any], expected: list[LifeSpanEvent]
+) -> None:
+    await assert_command(command, json, expected)

@@ -1,12 +1,16 @@
 """Device module."""
 from abc import ABC
-from collections.abc import Mapping
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass
+from typing import Any, TypeVar
+
+from attr import field
 
 from deebot_client.command import Command
 from deebot_client.events import AvailabilityEvent, CustomCommandEvent, ReportStatsEvent
 from deebot_client.events.base import Event
 from deebot_client.events.map import MapSetEvent, MapSubsetEvent, MinorMapEvent
+from deebot_client.util import LST
 
 from .exceptions import (
     DeviceCapabilitiesRefNotFoundError,
@@ -24,6 +28,10 @@ _COMMON_NO_POLL_EVENTS = [
 
 _REQUIRED_EVENTS = [AvailabilityEvent]
 
+_T = TypeVar("_T")
+
+CapabilitiesDict = dict[type[_T], LST[_T]]
+
 
 @dataclass(frozen=True)
 class AbstractDeviceCapabilities(ABC):
@@ -36,7 +44,10 @@ class AbstractDeviceCapabilities(ABC):
 class DeviceCapabilities(AbstractDeviceCapabilities):
     """Device capabilities."""
 
-    events: Mapping[type[Event], list[Command]]
+    events: Mapping[
+        type[Event], list[Command | Callable[["DeviceCapabilities"], Command]]
+    ]
+    capabilities: CapabilitiesDict[Any] = field(factory=dict)
 
     def __post_init__(self) -> None:
         events = {**self.events}
@@ -51,7 +62,13 @@ class DeviceCapabilities(AbstractDeviceCapabilities):
 
     def get_refresh_commands(self, event: type[Event]) -> list[Command]:
         """Return refresh command for given event."""
-        return self.events.get(event, [])
+        commands = []
+        for command in self.events.get(event, []):
+            if callable(command):
+                commands.append(command(self))
+            else:
+                commands.append(command)
+        return commands
 
 
 @dataclass(frozen=True)
