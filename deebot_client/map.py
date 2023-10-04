@@ -447,7 +447,6 @@ class MapPiece:
 class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
     """Class extend ImageDraw by dashed line."""
 
-    # pylint: disable=invalid-name
     # Copied from https://stackoverflow.com/a/65893631 Credits ands
 
     def _thick_line(
