@@ -3,7 +3,11 @@ import pytest
 from deebot_client.commands.json import GetFanSpeed, SetFanSpeed
 from deebot_client.events import FanSpeedEvent
 from deebot_client.events.fan_speed import FanSpeedLevel
-from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
+from tests.helpers import (
+    get_request_json,
+    get_success_body,
+    verify_DisplayNameEnum_unique,
+)
 
 from . import assert_command
 
@@ -13,7 +17,7 @@ def test_FanSpeedLevel_unique() -> None:
 
 
 async def test_GetFanSpeed() -> None:
-    json = get_request_json({"speed": 2})
+    json = get_request_json(get_success_body({"speed": 2}))
     await assert_command(GetFanSpeed(), json, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
 
 

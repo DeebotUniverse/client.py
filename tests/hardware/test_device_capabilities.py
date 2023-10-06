@@ -3,6 +3,11 @@
 
 import pytest
 
+from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.charge_state import GetChargeState
+from deebot_client.commands.json.clean import GetCleanInfo
+from deebot_client.commands.json.life_span import GetLifeSpan
+from deebot_client.events import AvailabilityEvent, LifeSpan, LifeSpanEvent, StateEvent
 from deebot_client.hardware.device_capabilities import (
     AbstractDeviceCapabilities,
     DeviceCapabilities,
@@ -54,3 +59,26 @@ def test_DeviceCapabilites_check_for_required_events() -> None:
         match=r'Required event "AvailabilityEvent" is missing.',
     ):
         DeviceCapabilities("test", {})
+
+
+def test_get_refresh_commands() -> None:
+    device_capabilites = DeviceCapabilities(
+        "Test",
+        {
+            AvailabilityEvent: [GetBattery(True)],
+            LifeSpanEvent: [(lambda dc: GetLifeSpan(dc.capabilities[LifeSpan]))],
+            StateEvent: [GetChargeState(), GetCleanInfo()],
+        },
+        {LifeSpan: {LifeSpan.BRUSH, LifeSpan.SIDE_BRUSH}},
+    )
+
+    assert device_capabilites.get_refresh_commands(AvailabilityEvent) == [
+        GetBattery(True)
+    ]
+    assert device_capabilites.get_refresh_commands(LifeSpanEvent) == [
+        GetLifeSpan({LifeSpan.BRUSH, LifeSpan.SIDE_BRUSH})
+    ]
+    assert device_capabilites.get_refresh_commands(StateEvent) == [
+        GetChargeState(),
+        GetCleanInfo(),
+    ]
