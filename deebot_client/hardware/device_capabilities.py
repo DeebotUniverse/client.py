@@ -83,7 +83,7 @@ class DeviceCapabilitiesRef(AbstractDeviceCapabilities):
     ) -> DeviceCapabilities:
         """Create and return device capabilities."""
         if (device := devices.get(self.ref)) and isinstance(device, DeviceCapabilities):
-            return DeviceCapabilities(self.name, device.events)
+            return DeviceCapabilities(self.name, device.events, device.capabilities)
 
         raise DeviceCapabilitiesRefNotFoundError(self.ref)
 
