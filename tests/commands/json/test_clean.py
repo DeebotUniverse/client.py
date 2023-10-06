@@ -9,7 +9,7 @@ from deebot_client.commands.json.clean import Clean, CleanAction
 from deebot_client.events import StateEvent
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import DeviceInfo, VacuumState
-from tests.helpers import get_request_json
+from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
 
@@ -18,7 +18,7 @@ from . import assert_command
     "json, expected",
     [
         (
-            get_request_json({"trigger": "none", "state": "idle"}),
+            get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
             StateEvent(VacuumState.IDLE),
         ),
     ],

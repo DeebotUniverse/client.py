@@ -28,12 +28,23 @@ def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]) -> None:
             names.add(display_name)
 
 
-def get_request_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
-    return {"id": "ALZf", "ret": "ok", "resp": get_message_json(data)}
+def get_request_json(body: dict[str, Any]) -> dict[str, Any]:
+    return {"id": "ALZf", "ret": "ok", "resp": get_message_json(body)}
 
 
-def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
-    json = {
+def get_success_body(data: dict[str, Any] | None | list[Any] = None) -> dict[str, Any]:
+    body = {
+        "code": 0,
+        "msg": "ok",
+    }
+    if data:
+        body["data"] = data
+
+    return body
+
+
+def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
+    return {
         "header": {
             "pri": 1,
             "tzm": 480,
@@ -42,14 +53,8 @@ def get_message_json(data: dict[str, Any] | None | list[Any]) -> dict[str, Any]:
             "fwVer": "1.8.2",
             "hwVer": "0.1.1",
         },
-        "body": {
-            "code": 0,
-            "msg": "ok",
-        },
+        "body": body,
     }
-    if data:
-        json["body"]["data"] = data
-    return json
 
 
 def get_device_capabilities(
