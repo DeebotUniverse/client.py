@@ -64,10 +64,11 @@ class DeviceCapabilities(AbstractDeviceCapabilities):
         """Return refresh command for given event."""
         commands = []
         for command in self.events.get(event, []):
-            if callable(command):
-                commands.append(command(self))
-            else:
+            if isinstance(command, Command):
                 commands.append(command)
+            else:
+                commands.append(command(self))
+
         return commands
 
 
