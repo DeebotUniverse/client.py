@@ -55,9 +55,7 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
 
     name = "resetLifeSpan"
 
-    def __init__(
-        self, type: str | LifeSpan  # pylint: disable=redefined-builtin
-    ) -> None:
+    def __init__(self, type: LifeSpanType) -> None:  # pylint: disable=redefined-builtin
         super().__init__({"type": _get_str(type)})
 
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:

@@ -3,10 +3,11 @@ from typing import Any
 import pytest
 
 from deebot_client.commands.json import GetLifeSpan
+from deebot_client.commands.json.life_span import LifeSpanType, ResetLifeSpan
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from tests.helpers import get_request_json, get_success_body
 
-from . import assert_command
+from . import assert_command, assert_execute_command
 
 
 @pytest.mark.parametrize(
@@ -49,3 +50,14 @@ async def test_GetLifeSpan(
     command: GetLifeSpan, json: dict[str, Any], expected: list[LifeSpanEvent]
 ) -> None:
     await assert_command(command, json, expected)
+
+
+@pytest.mark.parametrize(
+    "_type, args",
+    [
+        (LifeSpan.FILTER, {"type": LifeSpan.FILTER.value}),
+        ("brush", {"type": LifeSpan.BRUSH.value}),
+    ],
+)
+async def test_ResetLifeSpan(_type: LifeSpanType, args: dict[str, str]) -> None:
+    await assert_execute_command(ResetLifeSpan(_type), args)
