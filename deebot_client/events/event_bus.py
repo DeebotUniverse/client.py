@@ -22,8 +22,8 @@ T = TypeVar("T", bound=Event)
 class _EventProcessingData(Generic[T]):
     """Data class, which holds all needed data per EventDto."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, refresh_commands: list["Command"]) -> None:
+        self.refresh_commands: Final = refresh_commands
 
         self.subscriber_callbacks: Final[
             list[Callable[[T], Coroutine[Any, Any, None]]]
@@ -147,13 +147,14 @@ class EventBus:
                 handle.cancel()
 
     async def _call_refresh_function(self, event_class: type[T]) -> None:
-        semaphore = self._event_processing_dict[event_class].semaphore
+        processing_data = self._event_processing_dict[event_class]
+        semaphore = processing_data.semaphore
         if semaphore.locked():
             _LOGGER.debug("Already refresh function running. Skipping...")
             return
 
         async with semaphore:
-            commands = self._device_capabilities.get_refresh_commands(event_class)
+            commands = processing_data.refresh_commands
             if not commands:
                 return
 
@@ -171,7 +172,9 @@ class EventBus:
             event_processing_data = self._event_processing_dict.get(event_class, None)
 
             if event_processing_data is None:
-                event_processing_data = _EventProcessingData()
+                event_processing_data = _EventProcessingData(
+                    self._device_capabilities.get_refresh_commands(event_class)
+                )
                 self._event_processing_dict[event_class] = event_processing_data
 
             return event_processing_data
