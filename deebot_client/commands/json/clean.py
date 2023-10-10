@@ -15,6 +15,7 @@ from .common import EventBus, ExecuteCommand, NoArgsCommand
 _LOGGER = get_logger(__name__)
 
 
+# TODO, move to a generic directory?
 @unique
 class CleanAction(str, Enum):
     """Enum class for all possible clean actions."""
@@ -28,6 +29,7 @@ class CleanAction(str, Enum):
     HALT = "halt"
 
 
+# TODO, move to a generic directory?
 @unique
 class CleanMode(str, Enum):
     """Enum class for all possible clean modes."""
@@ -37,35 +39,21 @@ class CleanMode(str, Enum):
     CUSTOM_AREA = "customArea"
 
 
-@unique
-class CleanSpeed(str, Enum):
-    """Enum class for all possible clean speeds.
-
-    Currently only used for the Deebot 900.
-    """
-
-    STANDARD = "standard"
-    STRONG = "strong"
-
-
 class Clean(ExecuteCommand):
     """Clean command."""
 
     name = "clean"
 
-    xml_name = "Clean"
-
-    xml_has_own_element = True
-
     def __init__(self, action: CleanAction) -> None:
         super().__init__(self.__get_args(action))
 
     async def _execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, event_bus: EventBus
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
-        if state and isinstance(self._args, dict) and not device_info.uses_xml_protocol:
+
+        if state and isinstance(self._args, dict) :
             if (
                 self._args["act"] == CleanAction.RESUME.value
                 and state.state != VacuumState.PAUSED
@@ -77,27 +65,7 @@ class Clean(ExecuteCommand):
             ):
                 self._args = self.__get_args(CleanAction.RESUME)
 
-        if state and isinstance(self._args, dict) and device_info.uses_xml_protocol:
-            if (
-                self._args["act"] == CleanAction.RESUME.value
-                and state.state != VacuumState.PAUSED
-            ):
-                self._args = str(self.__get_args(CleanAction.START))[0]
-            elif (
-                self._args["act"] == CleanAction.START.value
-                and state.state == VacuumState.PAUSED
-            ):
-                self._args = str(self.__get_args(CleanAction.RESUME))[0]
-            elif self._args["act"] == CleanAction.START.value:
-                self._args["act"] = str(CleanAction.START.value)[0]
-
-            elif self._args["act"] == CleanAction.STOP.value:
-                self._args["act"] = str(CleanAction.HALT.value)[0]
-
-            if "speed" not in self._args:
-                self._args["speed"] = CleanSpeed.STANDARD.value
-
-        return await super()._execute(authenticator, device_info, event_bus)
+        return await super()._execute(authenticator, event_bus)
 
     @staticmethod
     def __get_args(action: CleanAction) -> dict[str, Any]:
@@ -124,8 +92,6 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"
-
-    xml_name = "GetCleanState"
 
     @classmethod
     def _handle_body_data_dict(
@@ -166,36 +132,6 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
             status = VacuumState.RETURNING
         elif state == "idle":
             status = VacuumState.IDLE
-
-        if status:
-            event_bus.notify(StateEvent(status))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        status: VacuumState | None = None
-
-        tree = ElementTree.fromstring(xml_message)
-
-        element = tree.find("clean")
-        if element is None:
-            return HandlingResult.analyse()
-
-        raw_state = element.attrib.get("st")
-        a = element.attrib.get("a")  # Action ?
-
-        if raw_state == "h" and a == "0":
-            status = VacuumState.IDLE
-        elif raw_state == "p" and a == "0":
-            status = VacuumState.PAUSED
-        elif raw_state == "s" and a == "0":
-            status = VacuumState.CLEANING
-        elif raw_state == "h" and a == "1":
-            status = VacuumState.RETURNING
 
         if status:
             event_bus.notify(StateEvent(status))
