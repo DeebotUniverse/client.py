@@ -1,8 +1,8 @@
 """Clean count command module."""
 
-from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import InitParam
 from deebot_client.events import CleanCountEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
@@ -32,6 +32,7 @@ class SetCleanCount(SetCommand):
 
     name = "setCleanCount"
     get_command = GetCleanCount
+    _mqtt_params = {"count": InitParam("count", int)}
 
-    def __init__(self, count: int, **kwargs: Mapping[str, Any]) -> None:
-        super().__init__({"count": count}, **kwargs)
+    def __init__(self, count: int) -> None:
+        super().__init__({"count": count})

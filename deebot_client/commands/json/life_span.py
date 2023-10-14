@@ -1,21 +1,12 @@
 """Life span commands."""
 from typing import Any
 
-from deebot_client.command import CommandMqttP2P
+from deebot_client.command import CommandMqttP2P, InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 from deebot_client.util import LST
 
 from .common import CommandWithMessageHandling, EventBus, ExecuteCommand
-
-LifeSpanType = LifeSpan | str
-
-
-def _get_str(_type: LifeSpanType) -> str:
-    if isinstance(_type, LifeSpan):
-        return _type.value
-
-    return _type
 
 
 class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
@@ -23,11 +14,8 @@ class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
 
     name = "getLifeSpan"
 
-    def __init__(self, _types: LifeSpanType | LST[LifeSpanType]) -> None:
-        if isinstance(_types, LifeSpanType):  # type: ignore[misc, arg-type]
-            _types = set(_types)
-
-        args = [_get_str(life_span) for life_span in _types]
+    def __init__(self, life_spans: LST[LifeSpan]) -> None:
+        args = [life_span.value for life_span in life_spans]
         super().__init__(args)
 
     @classmethod
@@ -54,9 +42,10 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"
+    _mqtt_params = {"life_span": InitParam("type", LifeSpan)}
 
-    def __init__(self, type: LifeSpanType) -> None:  # pylint: disable=redefined-builtin
-        super().__init__({"type": _get_str(type)})
+    def __init__(self, life_span: LifeSpan) -> None:
+        super().__init__({"type": life_span.value})
 
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""

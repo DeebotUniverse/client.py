@@ -4,7 +4,7 @@ from deebot_client.commands.json import GetContinuousCleaning, SetContinuousClea
 from deebot_client.events import ContinuousCleaningEvent
 from tests.helpers import get_request_json, get_success_body
 
-from . import assert_command, assert_set_command
+from . import assert_command, assert_set_enable_command
 
 
 @pytest.mark.parametrize("value", [False, True])
@@ -15,7 +15,6 @@ async def test_GetContinuousCleaning(value: bool) -> None:
 
 @pytest.mark.parametrize("value", [False, True])
 async def test_SetContinuousCleaning(value: bool) -> None:
-    args = {"enable": 1 if value else 0}
-    await assert_set_command(
-        SetContinuousCleaning(value), args, ContinuousCleaningEvent(value)
+    await assert_set_enable_command(
+        SetContinuousCleaning(value), value, ContinuousCleaningEvent
     )
