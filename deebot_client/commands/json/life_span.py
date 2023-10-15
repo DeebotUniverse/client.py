@@ -42,7 +42,7 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"
-    _mqtt_params = {"life_span": InitParam(LifeSpan, "type")}
+    _mqtt_params = {"type": InitParam(LifeSpan, "life_span")}
 
     def __init__(self, life_span: LifeSpan) -> None:
         super().__init__({"type": life_span.value})
