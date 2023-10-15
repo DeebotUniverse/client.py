@@ -227,8 +227,12 @@ class CommandMqttP2P(Command, ABC):
 
 def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
     try:
-        return type_(data.pop(name))
+        value = data.pop(name)
     except KeyError as err:
         raise DeebotError(f'"{name}" is missing in {data}') from err
+    try:
+        return type_(value)
     except ValueError as err:
-        raise DeebotError(f"Could not convert field into {name}") from err
+        raise DeebotError(
+            f'Could not convert "{value}" of {name} into {type_}'
+        ) from err
