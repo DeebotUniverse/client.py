@@ -289,7 +289,9 @@ class MqttClient:
                     )
                     return
 
-                self._received_p2p_commands[request_id] = command_type(**data)
+                self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
+                    data
+                )
             else:
                 if command := self._received_p2p_commands.pop(request_id, None):
                     if sub_info := self._subscribtions.get(topic_split[3]):

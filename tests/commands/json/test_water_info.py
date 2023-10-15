@@ -30,24 +30,7 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> N
     await assert_command(GetWaterInfo(), json, expected)
 
 
-@pytest.mark.parametrize(
-    "value, exptected_args_amount, expected",
-    [
-        ("low", 1, WaterInfoEvent(None, WaterAmount.LOW)),
-        (WaterAmount.MEDIUM, 2, WaterInfoEvent(None, WaterAmount.MEDIUM)),
-        ({"amount": 3, "enable": 1}, 3, WaterInfoEvent(None, WaterAmount.HIGH)),
-        (4, 4, WaterInfoEvent(None, WaterAmount.ULTRAHIGH)),
-    ],
-)
-async def test_SetWaterInfo(
-    value: str | int | WaterAmount | dict,
-    exptected_args_amount: int,
-    expected: WaterInfoEvent,
-) -> None:
-    if isinstance(value, dict):
-        command = SetWaterInfo(**value)
-    else:
-        command = SetWaterInfo(value)
-
-    args = {"amount": exptected_args_amount}
-    await assert_set_command(command, args, expected)
+async def test_SetWaterInfo() -> None:
+    command = SetWaterInfo(WaterAmount.MEDIUM)
+    args = {"amount": 2}
+    await assert_set_command(command, args, WaterInfoEvent(None, WaterAmount.MEDIUM))

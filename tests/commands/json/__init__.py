@@ -6,8 +6,12 @@ from testfixtures import LogCapture
 
 from deebot_client.authentication import Authenticator
 from deebot_client.command import Command
-from deebot_client.commands.json.common import ExecuteCommand, SetCommand
-from deebot_client.events import Event
+from deebot_client.commands.json.common import (
+    ExecuteCommand,
+    SetCommand,
+    SetEnableCommand,
+)
+from deebot_client.events import EnableEvent, Event
 from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Credentials, DeviceInfo
 from tests.helpers import get_message_json, get_request_json, get_success_body
@@ -78,7 +82,7 @@ async def assert_execute_command(
 
 async def assert_set_command(
     command: SetCommand,
-    args: dict | list | None,
+    args: dict,
     expected_get_command_event: Event,
 ) -> None:
     await assert_execute_command(command, args)
@@ -98,3 +102,15 @@ async def assert_set_command(
     # Success
     command.handle_mqtt_p2p(event_bus, get_message_json(get_success_body()))
     event_bus.notify.assert_called_once_with(expected_get_command_event)
+
+    mqtt_command = command.create_from_mqtt(args)
+    assert mqtt_command == command
+
+
+async def assert_set_enable_command(
+    command: SetEnableCommand,
+    enabled: bool,
+    expected_get_command_event: type[EnableEvent],
+) -> None:
+    args = {"enable": 1 if enabled else 0}
+    await assert_set_command(command, args, expected_get_command_event(enabled))

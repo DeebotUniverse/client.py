@@ -1,7 +1,7 @@
 """Water info commands."""
-from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import InitParam
 from deebot_client.events import WaterAmount, WaterInfoEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
@@ -34,16 +34,10 @@ class SetWaterInfo(SetCommand):
 
     name = "setWaterInfo"
     get_command = GetWaterInfo
+    _mqtt_params = {
+        "amount": InitParam(WaterAmount),
+        "enable": None,  # Remove it as we don't can set it (App includes it)
+    }
 
-    def __init__(
-        self, amount: str | int | WaterAmount, **kwargs: Mapping[str, Any]
-    ) -> None:
-        # removing "enable" as we don't can set it
-        kwargs.pop("enable", None)
-
-        if isinstance(amount, str):
-            amount = WaterAmount.get(amount)
-        if isinstance(amount, WaterAmount):
-            amount = amount.value
-
-        super().__init__({"amount": amount}, **kwargs)
+    def __init__(self, amount: WaterAmount) -> None:
+        super().__init__({"amount": amount.value})

@@ -239,7 +239,9 @@ async def test_p2p_success(
 
     command_object = Mock(spec=SetVolume)
     command_name = SetVolume.name
-    command_type = Mock(spec=SetVolume, return_value=command_object)
+    command_type = Mock(spec=SetVolume)
+    create_from_mqtt = command_type.create_from_mqtt
+    create_from_mqtt.return_value = command_object
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
         {DataType.JSON: {command_name: command_type}},
@@ -250,7 +252,7 @@ async def test_p2p_success(
             command_name, device_info, data, True, request_id, test_mqtt_client
         )
 
-        command_type.assert_called_with(**(data["body"]["data"]))
+        create_from_mqtt.assert_called_with(data["body"]["data"])
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 
@@ -329,7 +331,9 @@ async def test_p2p_to_late(
 
     command_object = Mock(spec=SetVolume)
     command_name = SetVolume.name
-    command_type = Mock(spec=SetVolume, return_value=command_object)
+    command_type = Mock(spec=SetVolume)
+    create_from_mqtt = command_type.create_from_mqtt
+    create_from_mqtt.return_value = command_object
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
         {DataType.JSON: {command_name: command_type}},
@@ -340,7 +344,7 @@ async def test_p2p_to_late(
             command_name, device_info, data, True, request_id, test_mqtt_client
         )
 
-        command_type.assert_called_with(**(data["body"]["data"]))
+        create_from_mqtt.assert_called_with(data["body"]["data"])
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 

@@ -1,8 +1,8 @@
 """Volume command module."""
 
-from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import InitParam
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
@@ -34,8 +34,10 @@ class SetVolume(SetCommand):
 
     name = "setVolume"
     get_command = GetVolume
+    _mqtt_params = {
+        "volume": InitParam(int),
+        "total": None,  # Remove it as we don't can set it (App includes it)
+    }
 
-    def __init__(self, volume: int, **kwargs: Mapping[str, Any]) -> None:
-        # removing "total" as we don't can set it (App includes it)
-        kwargs.pop("total", None)
-        super().__init__({"volume": volume}, **kwargs)
+    def __init__(self, volume: int) -> None:
+        super().__init__({"volume": volume})

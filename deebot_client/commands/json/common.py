@@ -1,10 +1,9 @@
 """Base commands."""
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 
-from deebot_client.command import Command, CommandMqttP2P, CommandResult
+from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
 from deebot_client.events import AvailabilityEvent, EnableEvent
 from deebot_client.events.event_bus import EventBus
@@ -108,16 +107,6 @@ class SetCommand(ExecuteCommand, CommandMqttP2P, ABC):
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
     """
 
-    def __init__(
-        self,
-        args: dict | list | None,
-        **kwargs: Mapping[str, Any],
-    ) -> None:
-        if kwargs:
-            _LOGGER.debug("Following passed parameters will be ignored: %s", kwargs)
-
-        super().__init__(args)
-
     @property
     @abstractmethod
     def get_command(self) -> type[CommandWithMessageHandling]:
@@ -156,7 +145,7 @@ class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
 class SetEnableCommand(SetCommand, ABC):
     """Abstract set enable command."""
 
-    def __init__(self, enable: int | bool, **kwargs: Mapping[str, Any]) -> None:
-        if isinstance(enable, bool):
-            enable = 1 if enable else 0
-        super().__init__({"enable": enable}, **kwargs)
+    _mqtt_params = {"enable": InitParam(bool)}
+
+    def __init__(self, enable: bool) -> None:
+        super().__init__({"enable": 1 if enable else 0})

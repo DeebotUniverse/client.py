@@ -4,6 +4,8 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from typing import Any, final
 
+from deebot_client.exceptions import DeebotError
+
 from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .events.event_bus import EventBus
@@ -186,9 +188,51 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
+@dataclass
+class InitParam:
+    """Init param."""
+
+    type_: type
+    name: str | None = None
+
+
 class CommandMqttP2P(Command, ABC):
     """Command which can handle mqtt p2p messages."""
+
+    _mqtt_params: dict[str, InitParam | None]
 
     @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
+
+    @classmethod
+    def create_from_mqtt(cls, data: dict[str, Any]) -> "CommandMqttP2P":
+        """Create a command from the mqtt data."""
+        values: dict[str, Any] = {}
+        if not hasattr(cls, "_mqtt_params"):
+            raise DeebotError("_mqtt_params not set")
+
+        for name, param in cls._mqtt_params.items():
+            if param is None:
+                # Remove field
+                data.pop(name, None)
+            else:
+                values[param.name or name] = _pop_or_raise(name, param.type_, data)
+
+        if data:
+            _LOGGER.debug("Following data will be ignored: %s", data)
+
+        return cls(**values)
+
+
+def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
+    try:
+        value = data.pop(name)
+    except KeyError as err:
+        raise DeebotError(f'"{name}" is missing in {data}') from err
+    try:
+        return type_(value)
+    except ValueError as err:
+        raise DeebotError(
+            f'Could not convert "{value}" of {name} into {type_}'
+        ) from err
