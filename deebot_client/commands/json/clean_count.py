@@ -32,7 +32,7 @@ class SetCleanCount(SetCommand):
 
     name = "setCleanCount"
     get_command = GetCleanCount
-    _mqtt_params = {"count": InitParam("count", int)}
+    _mqtt_params = {"count": InitParam(int)}
 
     def __init__(self, count: int) -> None:
         super().__init__({"count": count})

@@ -34,11 +34,9 @@ class SetVolume(SetCommand):
 
     name = "setVolume"
     get_command = GetVolume
-    _init_params = {
-        "volume": InitParam("volume", int),
-        "total": InitParam(
-            "total", int, True
-        ),  # Remove it as we don't can set it (App includes it)
+    _mqtt_params = {
+        "volume": InitParam(int),
+        "total": None,  # Remove it as we don't can set it (App includes it)
     }
 
     def __init__(self, volume: int) -> None:

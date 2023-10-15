@@ -192,15 +192,14 @@ class Command(ABC):
 class InitParam:
     """Init param."""
 
-    name: str
-    type: type
-    remove: bool = False
+    type_: type
+    name: str | None = None
 
 
 class CommandMqttP2P(Command, ABC):
     """Command which can handle mqtt p2p messages."""
 
-    _mqtt_params: dict[str, InitParam]
+    _mqtt_params: dict[str, InitParam | None]
 
     @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
@@ -214,10 +213,11 @@ class CommandMqttP2P(Command, ABC):
             raise DeebotError("_mqtt_params not set")
 
         for name, param in cls._mqtt_params.items():
-            if param.remove:
-                data.pop(param.name, None)
+            if param is None:
+                # Remove field
+                data.pop(name, None)
             else:
-                values[name] = _pop_or_raise(param, data)
+                values[param.name or name] = _pop_or_raise(name, param.type_, data)
 
         if data:
             _LOGGER.debug("Following data will be ignored: %s", data)
@@ -225,10 +225,10 @@ class CommandMqttP2P(Command, ABC):
         return cls(**values)
 
 
-def _pop_or_raise(param: InitParam, data: dict[str, Any]) -> Any:
+def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
     try:
-        return param.type(data.pop(param.name))
+        return type_(data.pop(name))
     except KeyError as err:
-        raise DeebotError(f'"{param.name}" is missing in {data}') from err
+        raise DeebotError(f'"{name}" is missing in {data}') from err
     except ValueError as err:
-        raise DeebotError(f"Could not convert field into {param.name}") from err
+        raise DeebotError(f"Could not convert field into {name}") from err

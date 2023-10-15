@@ -35,10 +35,8 @@ class SetWaterInfo(SetCommand):
     name = "setWaterInfo"
     get_command = GetWaterInfo
     _mqtt_params = {
-        "amount": InitParam("amount", WaterAmount),
-        "enable": InitParam(
-            "enable", int, True
-        ),  # Remove it as we don't can set it (App includes it)
+        "amount": InitParam(WaterAmount),
+        "enable": None,  # Remove it as we don't can set it (App includes it)
     }
 
     def __init__(self, amount: WaterAmount) -> None:

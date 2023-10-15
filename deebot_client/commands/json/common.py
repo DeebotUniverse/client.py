@@ -145,7 +145,7 @@ class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
 class SetEnableCommand(SetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = {"enable": InitParam("enable", bool)}
+    _mqtt_params = {"enable": InitParam(bool)}
 
     def __init__(self, enable: bool) -> None:
         super().__init__({"enable": 1 if enable else 0})
