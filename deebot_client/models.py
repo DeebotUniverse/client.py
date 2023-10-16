@@ -2,60 +2,83 @@
 import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientSession
 
 from deebot_client.const import DataType
 
+if TYPE_CHECKING:
+    from deebot_client.capabilities import Capabilities
 
-class DeviceInfo(dict[str, Any]):
-    """Class holds all values, which we get from api. Common values can be accessed through properties."""
+
+class DeviceInfo:
+    """Device info."""
+
+    def __init__(self, api_device_info: dict[str, Any]) -> None:
+        self._api_device_info = api_device_info
+        self._capabilities: "Capabilities" | None = None
+
+    @property
+    def api_device_info(self) -> dict[str, Any]:
+        """Return all data goten from the api."""
+        return self._api_device_info
 
     @property
     def company(self) -> str:
         """Return company."""
-        return str(self["company"])
+        return str(self._api_device_info["company"])
 
     @property
     def did(self) -> str:
         """Return did."""
-        return str(self["did"])
+        return str(self._api_device_info["did"])
 
     @property
     def name(self) -> str:
         """Return name."""
-        return str(self["name"])
+        return str(self._api_device_info["name"])
 
     @property
     def nick(self) -> str | None:
         """Return nick name."""
-        return cast(str | None, self.get("nick", None))
+        return self._api_device_info.get("nick", None)
 
     @property
     def resource(self) -> str:
         """Return resource."""
-        return str(self["resource"])
+        return str(self._api_device_info["resource"])
 
     @property
     def device_name(self) -> str:
         """Return device name."""
-        return str(self["deviceName"])
+        return str(self._api_device_info["deviceName"])
 
     @property
     def status(self) -> int:
         """Return device status."""
-        return int(self["status"])
+        return int(self._api_device_info["status"])
 
     @property
     def get_class(self) -> str:
         """Return device class."""
-        return str(self["class"])
+        return str(self._api_device_info["class"])
 
     @property
     def data_type(self) -> DataType:
         """Return data type."""
         return DataType.JSON
+
+    @property
+    def capabilities(self) -> "Capabilities":
+        """Return capabilities."""
+        if not self._capabilities:
+            # pylint: disable-next=import-outside-toplevel
+            from deebot_client.hardware.deebot import get_capabilities
+
+            self._capabilities = get_capabilities(self.get_class)
+
+        return self._capabilities
 
 
 @dataclass(frozen=True)

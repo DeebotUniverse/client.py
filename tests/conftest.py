@@ -6,7 +6,6 @@ import aiohttp
 import pytest
 from aiomqtt import Client
 
-from deebot_client import hardware
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.capabilities import Capabilities
@@ -138,13 +137,8 @@ def execute_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def capabilities() -> Capabilities:
-    return hardware.get_capabilities(FALLBACK)
-
-
-@pytest.fixture
-def event_bus(execute_mock: AsyncMock, capabilities: Capabilities) -> EventBus:
-    return EventBus(execute_mock, capabilities.get_refresh_commands)
+def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
+    return EventBus(execute_mock, device_info.capabilities.get_refresh_commands)
 
 
 @pytest.fixture
