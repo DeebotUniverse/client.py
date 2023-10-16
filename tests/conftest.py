@@ -10,8 +10,14 @@ from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.capabilities import Capabilities
 from deebot_client.event_bus import EventBus
+from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
 from deebot_client.hardware.deebot import FALLBACK
-from deebot_client.models import Configuration, Credentials, DeviceInfo
+from deebot_client.models import (
+    Configuration,
+    Credentials,
+    DeviceInfo,
+    StaticDeviceInfo,
+)
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -105,7 +111,12 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-def device_info() -> DeviceInfo:
+def static_device_info() -> StaticDeviceInfo:
+    return get_static_device_info(FALLBACK)
+
+
+@pytest.fixture
+def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
     return DeviceInfo(
         {
             "company": "company",
@@ -116,7 +127,8 @@ def device_info() -> DeviceInfo:
             "deviceName": "device_name",
             "status": 1,
             "class": "get_class",
-        }
+        },
+        static_device_info,
     )
 
 

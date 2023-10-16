@@ -4,7 +4,9 @@ from unittest.mock import Mock
 
 from deebot_client.capabilities import Capabilities
 from deebot_client.command import Command
+from deebot_client.const import DataType
 from deebot_client.events.base import Event
+from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import DisplayNameIntEnum
 
 
@@ -55,10 +57,10 @@ def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_mocked_capabilities(
+def mock_static_device_info(
     events: Mapping[type[Event], list[Command]] | None = None
-) -> Capabilities:
-    """Get test capabilities."""
+) -> StaticDeviceInfo:
+    """Mock static device info."""
     if events is None:
         events = {}
 
@@ -69,4 +71,4 @@ def get_mocked_capabilities(
 
     mock.get_refresh_commands.side_effect = get_refresh_commands
 
-    return mock
+    return StaticDeviceInfo(DataType.JSON, mock)

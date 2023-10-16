@@ -5,7 +5,6 @@ from collections.abc import Callable
 
 import pytest
 
-from deebot_client.capabilities import Capabilities
 from deebot_client.command import Command
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
@@ -55,8 +54,9 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.hardware import get_capabilities
+from deebot_client.hardware import get_static_device_info
 from deebot_client.hardware.deebot import DEVICES, FALLBACK
+from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
@@ -66,10 +66,12 @@ from deebot_client.hardware.deebot import DEVICES, FALLBACK
         ("yna5x1", lambda: DEVICES["yna5x1"]),
     ],
 )
-def test_get_capabilities(_class: str, expected: Callable[[], Capabilities]) -> None:
-    """Test get_capabilities."""
-    capabilities = get_capabilities(_class)
-    assert expected() == capabilities
+def test_get_static_device_info(
+    _class: str, expected: Callable[[], StaticDeviceInfo]
+) -> None:
+    """Test get_static_device_info."""
+    static_device_info = get_static_device_info(_class)
+    assert expected() == static_device_info
 
 
 @pytest.mark.parametrize(
@@ -137,7 +139,7 @@ def test_get_capabilities(_class: str, expected: Callable[[], Capabilities]) -> 
 def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    capabilities = get_capabilities(class_)
+    capabilities = get_static_device_info(class_).capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert capabilities.get_refresh_commands(event) == expected_commands

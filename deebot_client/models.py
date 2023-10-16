@@ -2,7 +2,7 @@
 import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Required, TypedDict
 
 from aiohttp import ClientSession
 
@@ -12,22 +12,48 @@ if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
 
 
+ApiDeviceInfo = TypedDict(
+    "ApiDeviceInfo",
+    {
+        "company": str,
+        "did": Required[str],
+        "name": Required[str],
+        "nick": str,
+        "resource": Required[str],
+        "deviceName": Required[str],
+        "status": Required[int],
+        "class": Required[str],
+    },
+    total=False,
+)
+
+
+@dataclass(frozen=True)
+class StaticDeviceInfo:
+    """Static device info."""
+
+    data_type: DataType
+    capabilities: "Capabilities"
+
+
 class DeviceInfo:
     """Device info."""
 
-    def __init__(self, api_device_info: dict[str, Any]) -> None:
+    def __init__(
+        self, api_device_info: ApiDeviceInfo, static_device_info: StaticDeviceInfo
+    ) -> None:
         self._api_device_info = api_device_info
-        self._capabilities: "Capabilities" | None = None
+        self._static_device_info = static_device_info
 
     @property
-    def api_device_info(self) -> dict[str, Any]:
+    def api_device_info(self) -> ApiDeviceInfo:
         """Return all data goten from the api."""
         return self._api_device_info
 
     @property
     def company(self) -> str:
         """Return company."""
-        return str(self._api_device_info["company"])
+        return self._api_device_info["company"]
 
     @property
     def did(self) -> str:
@@ -67,18 +93,12 @@ class DeviceInfo:
     @property
     def data_type(self) -> DataType:
         """Return data type."""
-        return DataType.JSON
+        return self._static_device_info.data_type
 
     @property
     def capabilities(self) -> "Capabilities":
         """Return capabilities."""
-        if not self._capabilities:
-            # pylint: disable-next=import-outside-toplevel
-            from deebot_client.hardware.deebot import get_capabilities
-
-            self._capabilities = get_capabilities(self.get_class)
-
-        return self._capabilities
+        return self._static_device_info.capabilities
 
 
 @dataclass(frozen=True)

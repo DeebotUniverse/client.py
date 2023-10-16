@@ -2,17 +2,17 @@
 import importlib
 import pkgutil
 
-from deebot_client.capabilities import Capabilities
 from deebot_client.logging_filter import get_logger
+from deebot_client.models import StaticDeviceInfo
 
-__all__ = ["get_capabilities"]
+__all__ = ["get_static_device_info"]
 
 _LOGGER = get_logger(__name__)
 
 
 FALLBACK = "fallback"
 
-DEVICES: dict[str, Capabilities] = {}
+DEVICES: dict[str, StaticDeviceInfo] = {}
 
 
 def _load() -> None:
@@ -21,8 +21,8 @@ def _load() -> None:
         importlib.import_module(full_package_name)
 
 
-def get_capabilities(class_: str) -> Capabilities:
-    """Get capabilities for given class."""
+def get_static_device_info(class_: str) -> StaticDeviceInfo:
+    """Get static device info for given class."""
     if not DEVICES:
         _load()
 

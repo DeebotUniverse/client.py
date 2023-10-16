@@ -9,7 +9,7 @@ from deebot_client.events import AvailabilityEvent
 from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.vacuum_bot import VacuumBot
-from tests.helpers import get_mocked_capabilities
+from tests.helpers import mock_static_device_info
 
 
 @patch("deebot_client.vacuum_bot._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
@@ -28,7 +28,7 @@ async def test_available_check_and_teardown(
 
     # prepare mocks
     battery_mock = Mock(spec_set=GetBattery)
-    device_info._capabilities = get_mocked_capabilities(
+    device_info._static_device_info = mock_static_device_info(
         {AvailabilityEvent: [battery_mock]}
     )
     execute_mock = battery_mock.execute

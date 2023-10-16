@@ -1,4 +1,4 @@
-"""Deebot ozmo 950 Capabilities."""
+"""Deebot Ozmo 920/950 Capabilities."""
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -40,6 +40,7 @@ from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
+from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
@@ -65,58 +66,64 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.water_info import WaterAmount, WaterInfoEvent
+from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
 from . import DEVICES
 
-DEVICES[short_name(__name__)] = Capabilities(
-    availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
-    battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
-    charge=CapabilityExecute(Charge),
-    clean=CapabilityClean(
-        action=CapabilityCleanAction(command=Clean, area=CleanArea),
-        continuous=CapabilitySetEnable(
-            ContinuousCleaningEvent,
-            [GetContinuousCleaning()],
-            SetContinuousCleaning,
+DEVICES[short_name(__name__)] = StaticDeviceInfo(
+    DataType.JSON,
+    Capabilities(
+        availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
+        battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
+        charge=CapabilityExecute(Charge),
+        clean=CapabilityClean(
+            action=CapabilityCleanAction(command=Clean, area=CleanArea),
+            continuous=CapabilitySetEnable(
+                ContinuousCleaningEvent,
+                [GetContinuousCleaning()],
+                SetContinuousCleaning,
+            ),
+            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
         ),
-        log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-    ),
-    error=CapabilityEvent(ErrorEvent, [GetError()]),
-    fan_speed=CapabilitySet(FanSpeedEvent, [GetFanSpeed()], SetFanSpeed),
-    life_span=CapabilityLifeSpan(
-        types={LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH},
-        event=LifeSpanEvent,
-        get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
-        reset=ResetLifeSpan,
-    ),
-    map=CapabilityMap(
-        chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
-        major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
-        multi_state=CapabilitySetEnable(
-            MultimapStateEvent, [GetMultimapState()], SetMultimapState
+        error=CapabilityEvent(ErrorEvent, [GetError()]),
+        fan_speed=CapabilitySet(FanSpeedEvent, [GetFanSpeed()], SetFanSpeed),
+        life_span=CapabilityLifeSpan(
+            types={LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH},
+            event=LifeSpanEvent,
+            get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
+            reset=ResetLifeSpan,
         ),
-        position=CapabilityEvent(PositionsEvent, [GetPos()]),
-        relocation=CapabilityExecute(SetRelocationState),
-        rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
-        trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
-    ),
-    play_sound=CapabilityExecute(PlaySound),
-    settings=CapabilitySettings(
-        advanced_mode=CapabilitySetEnable(
-            AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
+        map=CapabilityMap(
+            chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
+            multi_state=CapabilitySetEnable(
+                MultimapStateEvent, [GetMultimapState()], SetMultimapState
+            ),
+            position=CapabilityEvent(PositionsEvent, [GetPos()]),
+            relocation=CapabilityExecute(SetRelocationState),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
-        carpet_auto_fan_boost=CapabilitySetEnable(
-            CarpetAutoFanBoostEvent,
-            [GetCarpetAutoFanBoost()],
-            SetCarpetAutoFanBoost,
+        play_sound=CapabilityExecute(PlaySound),
+        settings=CapabilitySettings(
+            advanced_mode=CapabilitySetEnable(
+                AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
+            ),
+            carpet_auto_fan_boost=CapabilitySetEnable(
+                CarpetAutoFanBoostEvent,
+                [GetCarpetAutoFanBoost()],
+                SetCarpetAutoFanBoost,
+            ),
+            volume=CapabilitySet[int](VolumeEvent, [GetVolume()], SetVolume),
         ),
-        volume=CapabilitySet[int](VolumeEvent, [GetVolume()], SetVolume),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+        stats=CapabilityStats(
+            clean=CapabilityEvent(StatsEvent, [GetStats()]),
+            total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
+        ),
+        water=CapabilitySet[WaterAmount](
+            WaterInfoEvent, [GetWaterInfo()], SetWaterInfo
+        ),
     ),
-    state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
-    stats=CapabilityStats(
-        clean=CapabilityEvent(StatsEvent, [GetStats()]),
-        total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
-    ),
-    water=CapabilitySet[WaterAmount](WaterInfoEvent, [GetWaterInfo()], SetWaterInfo),
 )
