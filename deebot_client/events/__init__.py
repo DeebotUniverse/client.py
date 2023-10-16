@@ -106,9 +106,9 @@ class ErrorEvent(Event):
 class LifeSpan(str, Enum):
     """Enum class for all possible life span components."""
 
-    SIDE_BRUSH = "sideBrush"
     BRUSH = "brush"
     FILTER = "heap"
+    SIDE_BRUSH = "sideBrush"
 
 
 @dataclass(frozen=True)

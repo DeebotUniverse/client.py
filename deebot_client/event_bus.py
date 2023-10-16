@@ -12,7 +12,6 @@ from .util import cancel, create_task
 
 if TYPE_CHECKING:
     from .command import Command
-    from .hardware.device_capabilities import DeviceCapabilities
 
 _LOGGER = get_logger(__name__)
 
@@ -40,14 +39,14 @@ class EventBus:
     def __init__(
         self,
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
-        device_capabilities: "DeviceCapabilities",
+        get_refresh_commands: Callable[[type[Event]], list["Command"]],
     ):
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 
         self._execute_command: Final = execute_command
-        self._device_capabilities = device_capabilities
+        self._get_refresh_commands = get_refresh_commands
 
     def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
@@ -173,7 +172,7 @@ class EventBus:
 
             if event_processing_data is None:
                 event_processing_data = _EventProcessingData(
-                    self._device_capabilities.get_refresh_commands(event_class)
+                    self._get_refresh_commands(event_class)
                 )
                 self._event_processing_dict[event_class] = event_processing_data
 

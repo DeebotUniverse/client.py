@@ -1,12 +1,10 @@
-from collections.abc import Callable, Mapping
+from collections.abc import Mapping
 from typing import Any
+from unittest.mock import Mock
 
+from deebot_client.capabilities import Capabilities
 from deebot_client.command import Command
 from deebot_client.events.base import Event
-from deebot_client.hardware.device_capabilities import (
-    _REQUIRED_EVENTS,
-    DeviceCapabilities,
-)
 from deebot_client.util import DisplayNameIntEnum
 
 
@@ -57,15 +55,11 @@ def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
     }
 
 
-def get_device_capabilities(
-    events: Mapping[
-        type[Event], list[Command | Callable[["DeviceCapabilities"], Command]]
-    ]
-    | None = None
-) -> DeviceCapabilities:
-    """Get test device capabilities."""
-    _events = {**events} if events else {}
-    for event in _REQUIRED_EVENTS:
-        _events.setdefault(event, [])
+def get_mocked_capabilities(
+    events: Mapping[type[Event], list[Command]] | None = None
+) -> Capabilities:
+    """Get test capabilities."""
+    mock = Mock(spec_set=Capabilities)
+    mock.get_refresh_commands.return_value = events or []
 
-    return DeviceCapabilities("test", _events)
+    return mock

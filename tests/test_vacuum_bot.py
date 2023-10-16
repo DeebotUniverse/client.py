@@ -9,7 +9,7 @@ from deebot_client.events import AvailabilityEvent
 from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.vacuum_bot import VacuumBot
-from tests.helpers import get_device_capabilities
+from tests.helpers import get_mocked_capabilities
 
 
 @patch("deebot_client.vacuum_bot._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
@@ -26,12 +26,10 @@ async def test_available_check_and_teardown(
         await asyncio.sleep(0.1)
         assert received_statuses.get_nowait().available is expected
 
-    with patch(
-        "deebot_client.vacuum_bot.get_device_capabilities"
-    ) as get_device_capabilities_patch:
+    with patch("deebot_client.vacuum_bot.get_capabilities") as get_capabilities_patch:
         # prepare mocks
         battery_mock = Mock(spec_set=GetBattery)
-        get_device_capabilities_patch.return_value = get_device_capabilities(
+        get_capabilities_patch.return_value = get_mocked_capabilities(
             {AvailabilityEvent: [battery_mock]}
         )
         execute_mock = battery_mock.execute
@@ -44,7 +42,7 @@ async def test_available_check_and_teardown(
         await bot.initialize(mqtt_client)
 
         # deactivate refresh event subscribe refresh calls
-        bot.events._device_capabilities = get_device_capabilities()
+        bot.events._get_refresh_commands = lambda _: []
 
         bot.events.subscribe(AvailabilityEvent, on_status)
 
