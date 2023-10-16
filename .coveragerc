@@ -4,3 +4,8 @@ source = deebot_client
 
 omit =
     tests/*
+
+[report]
+exclude_lines =
+    pragma: no cover
+    if TYPE_CHECKING:
