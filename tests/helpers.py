@@ -59,7 +59,14 @@ def get_mocked_capabilities(
     events: Mapping[type[Event], list[Command]] | None = None
 ) -> Capabilities:
     """Get test capabilities."""
+    if events is None:
+        events = {}
+
     mock = Mock(spec_set=Capabilities)
-    mock.get_refresh_commands.return_value = events or []
+
+    def get_refresh_commands(event: type[Event]) -> list[Command]:
+        return events.get(event, [])
+
+    mock.get_refresh_commands.side_effect = get_refresh_commands
 
     return mock
