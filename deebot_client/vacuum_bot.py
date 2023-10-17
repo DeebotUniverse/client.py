@@ -41,6 +41,7 @@ class VacuumBot:
         authenticator: Authenticator,
     ):
         self.device_info: Final[DeviceInfo] = device_info
+        self.capabilities: Final = device_info.capabilities
         self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
@@ -51,7 +52,7 @@ class VacuumBot:
 
         self.fw_version: str | None = None
         self.events: Final[EventBus] = EventBus(
-            self.execute_command, self.device_info.capabilities.get_refresh_commands
+            self.execute_command, self.capabilities.get_refresh_commands
         )
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
@@ -126,7 +127,7 @@ class VacuumBot:
             ):
                 tasks: set[asyncio.Future[Any]] = set()
                 try:
-                    for command in self.device_info.capabilities.get_refresh_commands(
+                    for command in self.capabilities.get_refresh_commands(
                         AvailabilityEvent
                     ):
                         tasks.add(asyncio.create_task(self._execute_command(command)))
