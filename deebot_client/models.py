@@ -2,6 +2,7 @@
 import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
+from typing import cast
 
 from aiohttp import ClientSession
 
@@ -29,7 +30,7 @@ class DeviceInfo(dict):
     @property
     def nick(self) -> str | None:
         """Return nick name."""
-        return self.get("nick", None)
+        return cast(str | None, self.get("nick", None))
 
     @property
     def resource(self) -> str:
