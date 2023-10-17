@@ -1,7 +1,7 @@
+import logging
 from typing import Any
 
 import pytest
-from testfixtures import LogCapture
 
 from deebot_client.commands.json import GetCleanLogs
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
@@ -9,7 +9,7 @@ from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from . import assert_command
 
 
-async def test_GetCleanLogs() -> None:
+async def test_GetCleanLogs(caplog: pytest.LogCaptureFixture) -> None:
     json = {
         "ret": "ok",
         "logs": [
@@ -105,49 +105,44 @@ async def test_GetCleanLogs() -> None:
         ]
     )
 
-    with LogCapture() as log:
-        await assert_command(GetCleanLogs(), json, expected)
+    await assert_command(GetCleanLogs(), json, expected)
 
-        log.check_present(
-            (
-                "deebot_client.commands.json.clean_logs",
-                "WARNING",
-                "Skipping log entry: {'ts': 1655564616, 'invalid': 'event'}",
-            )
-        )
+    assert (
+        "deebot_client.commands.json.clean_logs",
+        logging.WARNING,
+        "Skipping log entry: {'ts': 1655564616, 'invalid': 'event'}",
+    ) in caplog.record_tuples
 
 
 @pytest.mark.parametrize(
     "json",
     [{"ret": "ok"}, {"ret": "fail"}],
 )
-async def test_GetCleanLogs_analyse_logged(json: dict[str, Any]) -> None:
-    with LogCapture() as log:
-        await assert_command(
-            GetCleanLogs(),
-            json,
-            None,
-        )
-        log.check_present(
-            (
-                "deebot_client.command",
-                "DEBUG",
-                f"ANALYSE: Could not handle command: GetCleanLogs with {json}",
-            )
-        )
+async def test_GetCleanLogs_analyse_logged(
+    json: dict[str, Any], caplog: pytest.LogCaptureFixture
+) -> None:
+    await assert_command(
+        GetCleanLogs(),
+        json,
+        None,
+    )
+
+    assert (
+        "deebot_client.command",
+        logging.DEBUG,
+        f"ANALYSE: Could not handle command: GetCleanLogs with {json}",
+    ) in caplog.record_tuples
 
 
-async def test_GetCleanLogs_handle_fails() -> None:
-    with LogCapture() as log:
-        await assert_command(
-            GetCleanLogs(),
-            {},
-            None,
-        )
-        log.check_present(
-            (
-                "deebot_client.command",
-                "WARNING",
-                f"Could not parse response for {GetCleanLogs.name}: {{}}",
-            )
-        )
+async def test_GetCleanLogs_handle_fails(caplog: pytest.LogCaptureFixture) -> None:
+    await assert_command(
+        GetCleanLogs(),
+        {},
+        None,
+    )
+
+    assert (
+        "deebot_client.command",
+        logging.WARNING,
+        f"Could not parse response for {GetCleanLogs.name}: {{}}",
+    ) in caplog.record_tuples

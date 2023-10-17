@@ -4,8 +4,8 @@ from typing import Any
 from deebot_client.authentication import Authenticator
 from deebot_client.command import CommandResult
 from deebot_client.const import PATH_API_LG_LOG, REQUEST_HEADERS
+from deebot_client.event_bus import EventBus
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.logging_filter import get_logger
 from deebot_client.models import DeviceInfo
 
@@ -56,7 +56,7 @@ class GetCleanLogs(JsonCommand):
         :return: A message response
         """
         if response["ret"] == "ok":
-            resp_logs: list[dict] | None = response.get("logs")
+            resp_logs: list[dict[str, Any]] | None = response.get("logs")
 
             # Ecovacs API is changing their API, this request may not work properly
             if resp_logs is not None and len(resp_logs) >= 0:

@@ -1,8 +1,8 @@
 """Battery messages."""
 from typing import Any
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import BatteryEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 

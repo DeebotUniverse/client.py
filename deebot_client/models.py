@@ -2,14 +2,14 @@
 import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from typing import cast
+from typing import Any, cast
 
 from aiohttp import ClientSession
 
 from deebot_client.const import DataType
 
 
-class DeviceInfo(dict):
+class DeviceInfo(dict[str, Any]):
     """Class holds all values, which we get from api. Common values can be accessed through properties."""
 
     @property

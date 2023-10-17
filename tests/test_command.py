@@ -1,11 +1,11 @@
+import logging
 from typing import Any
 
 import pytest
-from testfixtures import LogCapture
 
 from deebot_client.command import CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import DeebotError
 
 
@@ -20,7 +20,7 @@ class _TestCommand(CommandMqttP2P):
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         pass
 
-    def _get_payload(self) -> dict[str, Any] | list | str:
+    def _get_payload(self) -> dict[str, Any] | list[Any] | str:
         return {}
 
     def _handle_response(
@@ -51,14 +51,12 @@ def test_CommandMqttP2P_create_from_mqtt_error(
         _TestCommand.create_from_mqtt(data)
 
 
-def test_CommandMqttP2P_create_from_mqtt_additional_fields() -> None:
-    with LogCapture() as log:
-        _TestCommand.create_from_mqtt({"field": 0, "remove": "bla", "additional": 1})
-
-        log.check_present(
-            (
-                "deebot_client.command",
-                "DEBUG",
-                "Following data will be ignored: {'additional': 1}",
-            )
-        )
+def test_CommandMqttP2P_create_from_mqtt_additional_fields(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _TestCommand.create_from_mqtt({"field": 0, "remove": "bla", "additional": 1})
+    assert (
+        "deebot_client.command",
+        logging.DEBUG,
+        "Following data will be ignored: {'additional': 1}",
+    ) in caplog.record_tuples

@@ -6,13 +6,14 @@ from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
+from typing import Any
 
 from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.command import CommandMqttP2P
 from deebot_client.const import DataType
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 
 from .authentication import Authenticator
@@ -97,7 +98,7 @@ class MqttClient:
         self._subscribtion_changes: asyncio.Queue[
             tuple[SubscriberInfo, bool]
         ] = asyncio.Queue()
-        self._mqtt_task: asyncio.Task | None = None
+        self._mqtt_task: asyncio.Task[Any] | None = None
 
         self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(
             maxsize=60 * 60, ttl=60

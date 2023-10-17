@@ -5,9 +5,9 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
-from deebot_client.events.event_bus import EventBus
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import VacuumState
@@ -162,7 +162,7 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
     mock = AsyncMock()
     event_bus.subscribe(MapChangedEvent, mock)
 
-    with patch("deebot_client.events.event_bus.asyncio", wraps=asyncio) as aio:
+    with patch("deebot_client.event_bus.asyncio", wraps=asyncio) as aio:
 
         async def test_cycle(call_expected: bool) -> MapChangedEvent:
             event = MapChangedEvent(datetime.now(timezone.utc))

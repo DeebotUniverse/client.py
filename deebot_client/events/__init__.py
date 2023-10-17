@@ -2,7 +2,7 @@
 
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, Optional
+from typing import Any
 
 from ..events.base import Event
 from ..models import Room, VacuumState
@@ -20,6 +20,26 @@ from .map import (
     PositionType,
 )
 from .water_info import WaterAmount, WaterInfoEvent
+
+__all__ = [
+    "Event",
+    "BatteryEvent",
+    "CleanJobStatus",
+    "CleanLogEntry",
+    "WaterAmount",
+    "WaterInfoEvent",
+    "MajorMapEvent",
+    "MapSetEvent",
+    "MapSetType",
+    "MapSubsetEvent",
+    "MapTraceEvent",
+    "MinorMapEvent",
+    "Position",
+    "PositionsEvent",
+    "PositionType",
+    "FanSpeedEvent",
+    "FanSpeedLevel",
+]
 
 
 @dataclass(frozen=True)

@@ -2,11 +2,12 @@
 from typing import Any
 
 from deebot_client.command import CommandMqttP2P, InitParam
+from deebot_client.event_bus import EventBus
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 from deebot_client.util import LST
 
-from .common import CommandWithMessageHandling, EventBus, ExecuteCommand
+from .common import CommandWithMessageHandling, ExecuteCommand
 
 
 class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
@@ -19,7 +20,9 @@ class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
         super().__init__(args)
 
     @classmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: list) -> HandlingResult:
+    def _handle_body_data_list(
+        cls, event_bus: EventBus, data: list[dict[str, Any]]
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response

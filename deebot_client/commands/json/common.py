@@ -5,8 +5,8 @@ from typing import Any
 
 from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
+from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent, EnableEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
@@ -25,7 +25,7 @@ class JsonCommand(Command):
 
     data_type: DataType = DataType.JSON
 
-    def _get_payload(self) -> dict[str, Any] | list:
+    def _get_payload(self) -> dict[str, Any] | list[Any]:
         payload = {
             "header": {
                 "pri": "1",

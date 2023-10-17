@@ -4,12 +4,13 @@ from typing import Any
 
 from deebot_client.authentication import Authenticator
 from deebot_client.command import CommandResult
+from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import DeviceInfo, VacuumState
 
-from .common import CommandWithMessageHandling, EventBus, ExecuteCommand
+from .common import CommandWithMessageHandling, ExecuteCommand
 
 _LOGGER = get_logger(__name__)
 

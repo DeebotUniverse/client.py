@@ -32,6 +32,50 @@ from .true_detect import GetTrueDetect, SetTrueDetect
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 
+__all__ = [
+    "GetAdvancedMode",
+    "SetAdvancedMode",
+    "GetBattery",
+    "GetCarpetAutoFanBoost",
+    "SetCarpetAutoFanBoost",
+    "GetCleanCount",
+    "SetCleanCount",
+    "GetCleanPreference",
+    "SetCleanPreference",
+    "Charge",
+    "GetChargeState",
+    "Clean",
+    "CleanArea",
+    "GetCleanInfo",
+    "GetCleanLogs",
+    "GetContinuousCleaning",
+    "SetContinuousCleaning",
+    "GetError",
+    "GetFanSpeed",
+    "SetFanSpeed",
+    "GetLifeSpan",
+    "ResetLifeSpan",
+    "GetCachedMapInfo",
+    "GetMajorMap",
+    "GetMapSet",
+    "GetMapSubSet",
+    "GetMapTrace",
+    "GetMinorMap",
+    "GetMultimapState",
+    "SetMultimapState",
+    "PlaySound",
+    "GetPos",
+    "SetRelocationState",
+    "GetStats",
+    "GetTotalStats",
+    "GetTrueDetect",
+    "SetTrueDetect",
+    "GetVolume",
+    "SetVolume",
+    "GetWaterInfo",
+    "SetWaterInfo",
+]
+
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[JsonCommand]] = [
