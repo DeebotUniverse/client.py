@@ -8,10 +8,8 @@ from aiomqtt import Client
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
-from deebot_client.capabilities import Capabilities
 from deebot_client.event_bus import EventBus
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
-from deebot_client.hardware.deebot import FALLBACK
 from deebot_client.models import (
     Configuration,
     Credentials,

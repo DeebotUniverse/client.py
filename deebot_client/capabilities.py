@@ -8,6 +8,7 @@ from deebot_client.command import Command
 from deebot_client.commands.json.common import SetCommand, SetEnableCommand
 from deebot_client.events import LifeSpan
 from deebot_client.events.base import Event
+from deebot_client.events.fan_speed import FanSpeedLevel
 from deebot_client.events.water_info import WaterAmount
 
 if TYPE_CHECKING:
@@ -129,7 +130,7 @@ class Capabilities:
     charge: CapabilityExecute
     clean: CapabilityClean
     error: CapabilityEvent
-    fan_speed: CapabilitySet
+    fan_speed: CapabilitySet[FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap
     play_sound: CapabilityExecute
