@@ -1,8 +1,9 @@
 """Custom command module."""
 from typing import Any
 
-from deebot_client.command import CommandResult, EventBus
+from deebot_client.command import CommandResult
 from deebot_client.commands.json.common import JsonCommand
+from deebot_client.event_bus import EventBus
 from deebot_client.events import CustomCommandEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingState
@@ -15,7 +16,9 @@ class CustomCommand(JsonCommand):
 
     name: str = "CustomCommand"
 
-    def __init__(self, name: str, args: dict | list | None = None) -> None:
+    def __init__(
+        self, name: str, args: dict[str, Any] | list[Any] | None = None
+    ) -> None:
         self.name = name
         super().__init__(args)
 
@@ -47,5 +50,5 @@ class CustomCommand(JsonCommand):
 class CustomPayloadCommand(CustomCommand):
     """Custom command, where args is the raw payload."""
 
-    def _get_json_payload(self) -> dict[str, Any] | list:
+    def _get_json_payload(self) -> dict[str, Any] | list[Any]:
         return self._args

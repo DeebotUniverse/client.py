@@ -8,7 +8,7 @@ from deebot_client.exceptions import DeebotError
 
 from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
-from .events.event_bus import EventBus
+from .event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState
 from .models import DeviceInfo
@@ -38,7 +38,7 @@ class Command(ABC):
 
     _targets_bot: bool = True
 
-    def __init__(self, args: dict | list | None = None) -> None:
+    def __init__(self, args: dict[str, Any] | list[Any] | None = None) -> None:
         if args is None:
             args = {}
         self._args = args
@@ -56,7 +56,7 @@ class Command(ABC):
         """Data type."""  # noqa: D401
 
     @abstractmethod
-    def _get_payload(self) -> dict[str, Any] | list | str:
+    def _get_payload(self) -> dict[str, Any] | list[Any] | str:
         """Get the payload for the rest call."""
 
     @final

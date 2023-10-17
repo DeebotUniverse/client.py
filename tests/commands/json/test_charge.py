@@ -1,7 +1,7 @@
+import logging
 from typing import Any
 
 import pytest
-from testfixtures import LogCapture
 
 from deebot_client.commands.json import Charge
 from deebot_client.events import StateEvent
@@ -33,15 +33,12 @@ async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
     await assert_command(Charge(), json, expected)
 
 
-async def test_Charge_failed() -> None:
-    with LogCapture() as log:
-        json = _prepare_json(500, "fail")
-        await assert_command(Charge(), json, None)
+async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:
+    json = _prepare_json(500, "fail")
+    await assert_command(Charge(), json, None)
 
-        log.check_present(
-            (
-                "deebot_client.commands.json.common",
-                "WARNING",
-                f"Command \"charge\" was not successfully. body={json['resp']['body']}",
-            )
-        )
+    assert (
+        "deebot_client.commands.json.common",
+        logging.WARNING,
+        f"Command \"charge\" was not successfully. body={json['resp']['body']}",
+    ) in caplog.record_tuples

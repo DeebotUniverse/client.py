@@ -5,14 +5,14 @@ from collections.abc import Callable, Coroutine
 from datetime import datetime, timedelta, timezone
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
-from ..logging_filter import get_logger
-from ..models import VacuumState
-from ..util import cancel, create_task
-from . import AvailabilityEvent, Event, StateEvent
+from .events import AvailabilityEvent, Event, StateEvent
+from .logging_filter import get_logger
+from .models import VacuumState
+from .util import cancel, create_task
 
 if TYPE_CHECKING:
-    from ..command import Command
-    from ..hardware.device_capabilities import DeviceCapabilities
+    from .command import Command
+    from .hardware.device_capabilities import DeviceCapabilities
 
 _LOGGER = get_logger(__name__)
 
@@ -42,7 +42,7 @@ class EventBus:
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
         device_capabilities: "DeviceCapabilities",
     ):
-        self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
+        self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 

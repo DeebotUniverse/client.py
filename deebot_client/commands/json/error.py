@@ -1,11 +1,12 @@
 """Error commands."""
 from typing import Any
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import VacuumState
 
-from .common import CommandWithMessageHandling, EventBus
+from .common import CommandWithMessageHandling
 
 
 class GetError(CommandWithMessageHandling, MessageBodyDataDict):

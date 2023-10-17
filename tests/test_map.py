@@ -3,7 +3,7 @@ from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
     MapChangedEvent,
     MapSetEvent,

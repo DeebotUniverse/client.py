@@ -12,6 +12,7 @@ from deebot_client.util import cancel
 
 from .authentication import Authenticator
 from .command import Command
+from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
     CleanLogEvent,
@@ -23,7 +24,6 @@ from .events import (
     StatsEvent,
     TotalStatsEvent,
 )
-from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
@@ -48,7 +48,7 @@ class VacuumBot:
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now()
-        self._available_task: asyncio.Task | None = None
+        self._available_task: asyncio.Task[Any] | None = None
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None

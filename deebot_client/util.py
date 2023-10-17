@@ -41,7 +41,7 @@ async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
 class DisplayNameIntEnum(IntEnum):
     """Int enum with a property "display_name"."""
 
-    def __new__(cls, *args: int, **_: Mapping) -> DisplayNameIntEnum:
+    def __new__(cls, *args: int, **_: Mapping[Any, Any]) -> DisplayNameIntEnum:
         """Create new DisplayNameIntEnum."""
         obj = int.__new__(cls)
         obj._value_ = args[0]

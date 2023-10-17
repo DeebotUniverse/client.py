@@ -12,13 +12,15 @@ from datetime import datetime, timezone
 from io import BytesIO
 from typing import Any, Final
 
-from numpy import ndarray, reshape, zeros
+from numpy import float64, reshape, zeros
+from numpy.typing import NDArray
 from PIL import Image, ImageDraw, ImageOps
 
 from deebot_client.events.map import MapChangedEvent
 
 from .command import Command
 from .commands.json import GetCachedMapInfo, GetMinorMap
+from .event_bus import EventBus
 from .events import (
     MajorMapEvent,
     MapSetEvent,
@@ -31,7 +33,6 @@ from .events import (
     PositionType,
     RoomsEvent,
 )
-from .events.event_bus import EventBus
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
@@ -102,7 +103,9 @@ def _calc_point(
 
 
 def _draw_positions(
-    positions: list[Position], image: Image, image_box: tuple[int, int, int, int]
+    positions: list[Position],
+    image: Image.Image,
+    image_box: tuple[int, int, int, int] | None,
 ) -> None:
     for position in positions:
         icon = Image.open(BytesIO(base64.b64decode(_POSITION_PNG[position.type])))
@@ -116,7 +119,7 @@ def _draw_positions(
 def _draw_subset(
     subset: MapSubsetEvent,
     draw: "DashedImageDraw",
-    image_box: tuple[int, int, int, int],
+    image_box: tuple[int, int, int, int] | None,
 ) -> None:
     coordinates_ = ast.literal_eval(subset.coordinates)
     points: list[tuple[int, int]] = []
@@ -202,7 +205,7 @@ class Map:
 
         _LOGGER.debug("[_update_trace_points] finish")
 
-    def _draw_map_pieces(self, draw: ImageDraw.Draw) -> None:
+    def _draw_map_pieces(self, draw: ImageDraw.ImageDraw) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
         image_y = 0
@@ -394,7 +397,7 @@ class MapPiece:
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
         self._index = index
-        self._points: ndarray | None = None
+        self._points: NDArray[float64] | None = None
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
 
     def crc32_indicates_update(self, crc32: str) -> bool:
@@ -413,7 +416,7 @@ class MapPiece:
         return self._crc32 != MapPiece._NOT_INUSE_CRC32
 
     @property
-    def points(self) -> ndarray:
+    def points(self) -> NDArray[float64]:
         """I'm the 'x' property."""
         if not self.in_use or self._points is None:
             return zeros((100, 100))
@@ -444,16 +447,17 @@ class MapPiece:
         return self._crc32 == obj._crc32 and self._index == obj._index
 
 
-class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
+class DashedImageDraw(ImageDraw.ImageDraw):
     """Class extend ImageDraw by dashed line."""
 
     # Copied from https://stackoverflow.com/a/65893631 Credits ands
+    _FILL = str | int | tuple[int, int, int] | tuple[int, int, int, int] | None
 
     def _thick_line(
         self,
         xy: list[tuple[int, int]],
         direction: list[tuple[int, int]],
-        fill: tuple | str | None = None,
+        fill: _FILL = None,
         width: int = 0,
     ) -> None:
         if xy[0] != xy[1]:
@@ -490,8 +494,8 @@ class DashedImageDraw(ImageDraw.ImageDraw):  # type: ignore
     def dashed_line(
         self,
         xy: list[tuple[int, int]],
-        dash: tuple = (2, 2),
-        fill: tuple | str | None = None,
+        dash: tuple[int, int] = (2, 2),
+        fill: _FILL = None,
         width: int = 0,
     ) -> None:
         """Draw a dashed line, or a connected sequence of line segments."""

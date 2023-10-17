@@ -11,8 +11,8 @@ from deebot_client.commands.json.common import (
     SetCommand,
     SetEnableCommand,
 )
+from deebot_client.event_bus import EventBus
 from deebot_client.events import EnableEvent, Event
-from deebot_client.events.event_bus import EventBus
 from deebot_client.models import Credentials, DeviceInfo
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
@@ -56,7 +56,7 @@ async def assert_command(
 
 
 async def assert_execute_command(
-    command: ExecuteCommand, args: dict | list | None
+    command: ExecuteCommand, args: dict[str, Any] | list[Any] | None
 ) -> None:
     assert command.name != "invalid"
     assert command._args == args
@@ -82,7 +82,7 @@ async def assert_execute_command(
 
 async def assert_set_command(
     command: SetCommand,
-    args: dict,
+    args: dict[str, Any],
     expected_get_command_event: Event,
 ) -> None:
     await assert_execute_command(command, args)

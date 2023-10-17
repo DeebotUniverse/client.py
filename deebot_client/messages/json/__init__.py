@@ -6,6 +6,8 @@ from deebot_client.message import Message
 from .battery import OnBattery
 from .stats import ReportStats
 
+__all__ = ["OnBattery", "ReportStats"]
+
 # fmt: off
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [

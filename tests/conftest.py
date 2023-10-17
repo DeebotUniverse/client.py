@@ -9,7 +9,7 @@ from aiomqtt import Client
 from deebot_client import hardware
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.hardware.device_capabilities import DeviceCapabilities
 from deebot_client.models import Configuration, Credentials, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
@@ -19,14 +19,14 @@ from .fixtures.mqtt_server import MqttServer
 
 
 @pytest.fixture
-async def session() -> AsyncGenerator:
+async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
     async with aiohttp.ClientSession() as client_session:
         logging.basicConfig(level=logging.DEBUG)
         yield client_session
 
 
 @pytest.fixture
-async def config(session: aiohttp.ClientSession) -> AsyncGenerator:
+async def config(session: aiohttp.ClientSession) -> AsyncGenerator[Configuration, None]:
     configuration = Configuration(
         session,
         device_id="Test_device",
@@ -151,3 +151,10 @@ def event_bus(
 @pytest.fixture
 def event_bus_mock() -> Mock:
     return Mock(spec_set=EventBus)
+
+
+@pytest.fixture(name="caplog")
+def caplog_fixture(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
+    """Set log level to debug for tests using the caplog fixture."""
+    caplog.set_level(logging.DEBUG)
+    return caplog
