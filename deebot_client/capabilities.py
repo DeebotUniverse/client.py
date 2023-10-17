@@ -5,17 +5,43 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 from deebot_client.command import Command
-from deebot_client.commands.json.common import SetCommand, SetEnableCommand
-from deebot_client.events import LifeSpan
+from deebot_client.commands.json.common import SetCommand
+from deebot_client.events import (
+    AdvancedModeEvent,
+    AvailabilityEvent,
+    BatteryEvent,
+    CarpetAutoFanBoostEvent,
+    CleanCountEvent,
+    CleanLogEvent,
+    CleanPreferenceEvent,
+    ContinuousCleaningEvent,
+    ErrorEvent,
+    LifeSpan,
+    LifeSpanEvent,
+    MultimapStateEvent,
+    RoomsEvent,
+    StateEvent,
+    StatsEvent,
+    TotalStatsEvent,
+    TrueDetectEvent,
+    VolumeEvent,
+)
 from deebot_client.events.base import Event
-from deebot_client.events.fan_speed import FanSpeedLevel
-from deebot_client.events.water_info import WaterAmount
+from deebot_client.events.fan_speed import FanSpeedEvent, FanSpeedLevel
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MajorMapEvent,
+    MapTraceEvent,
+    PositionsEvent,
+)
+from deebot_client.events.water_info import WaterAmount, WaterInfoEvent
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
 
 _T = TypeVar("_T")
+_EVENT = TypeVar("_EVENT", bound=Event)
 
 
 def _get_events(
@@ -35,25 +61,23 @@ def _get_events(
 
 
 @dataclass(frozen=True)
-class CapabilityEvent:
+class CapabilityEvent(Generic[_EVENT]):
     """Capability for an event with get command."""
 
-    event: type[Event]
+    event: type[_EVENT]
     get: list[Command]
 
 
 @dataclass(frozen=True)
-class CapabilitySet(CapabilityEvent, Generic[_T]):
+class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _T]):
     """Capability setCommand with event."""
 
     set: Callable[[_T], SetCommand]
 
 
 @dataclass(frozen=True)
-class CapabilitySetEnable(CapabilitySet[bool]):
+class CapabilitySetEnable(CapabilitySet[_EVENT, bool]):
     """Capability for SetEnableCommand with event."""
-
-    set: Callable[[bool], SetEnableCommand]
 
 
 @dataclass(frozen=True)
@@ -76,14 +100,14 @@ class CapabilityClean:
     """Capabilities for clean."""
 
     action: CapabilityCleanAction
-    continuous: CapabilitySetEnable
-    count: CapabilitySet[int] | None = None
-    log: CapabilityEvent
-    preference: CapabilitySetEnable | None = None
+    continuous: CapabilitySetEnable[ContinuousCleaningEvent]
+    count: CapabilitySet[CleanCountEvent, int] | None = None
+    log: CapabilityEvent[CleanLogEvent]
+    preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityLifeSpan(CapabilityEvent):
+class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent]):
     """Capabilities for life span."""
 
     types: set[LifeSpan]
@@ -94,50 +118,50 @@ class CapabilityLifeSpan(CapabilityEvent):
 class CapabilityMap:
     """Capabilities for map."""
 
-    chached_info: CapabilityEvent
-    major: CapabilityEvent
-    multi_state: CapabilitySetEnable
-    position: CapabilityEvent
+    chached_info: CapabilityEvent[CachedMapInfoEvent]
+    major: CapabilityEvent[MajorMapEvent]
+    multi_state: CapabilitySetEnable[MultimapStateEvent]
+    position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute
-    rooms: CapabilityEvent
-    trace: CapabilityEvent
+    rooms: CapabilityEvent[RoomsEvent]
+    trace: CapabilityEvent[MapTraceEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityStats:
     """Capabilities for statistics."""
 
-    clean: CapabilityEvent
-    total: CapabilityEvent
+    clean: CapabilityEvent[StatsEvent]
+    total: CapabilityEvent[TotalStatsEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilitySettings:
     """Capabilities for settings."""
 
-    advanced_mode: CapabilitySetEnable
-    carpet_auto_fan_boost: CapabilitySetEnable
-    true_detect: CapabilitySetEnable | None = None
-    volume: CapabilitySet[int]
+    advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
+    carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
+    true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
+    volume: CapabilitySet[VolumeEvent, int]
 
 
 @dataclass(frozen=True, kw_only=True)
 class Capabilities:
     """Capabilities."""
 
-    availability: CapabilityEvent
-    battery: CapabilityEvent
+    availability: CapabilityEvent[AvailabilityEvent]
+    battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute
     clean: CapabilityClean
-    error: CapabilityEvent
-    fan_speed: CapabilitySet[FanSpeedLevel]
+    error: CapabilityEvent[ErrorEvent]
+    fan_speed: CapabilitySet[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap
     play_sound: CapabilityExecute
     settings: CapabilitySettings
-    state: CapabilityEvent
+    state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
-    water: CapabilitySet[WaterAmount]
+    water: CapabilitySet[WaterInfoEvent, WaterAmount]
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

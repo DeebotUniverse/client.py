@@ -74,7 +74,7 @@ from deebot_client.events.map import (
     MapTraceEvent,
     PositionsEvent,
 )
-from deebot_client.events.water_info import WaterAmount, WaterInfoEvent
+from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import StaticDeviceInfo
 
 from . import DEVICES, FALLBACK
@@ -92,7 +92,7 @@ DEVICES[FALLBACK] = StaticDeviceInfo(
                 [GetContinuousCleaning()],
                 SetContinuousCleaning,
             ),
-            count=CapabilitySet[int](CleanCountEvent, [GetCleanCount()], SetCleanCount),
+            count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
@@ -130,15 +130,13 @@ DEVICES[FALLBACK] = StaticDeviceInfo(
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
             ),
-            volume=CapabilitySet[int](VolumeEvent, [GetVolume()], SetVolume),
+            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySet[WaterAmount](
-            WaterInfoEvent, [GetWaterInfo()], SetWaterInfo
-        ),
+        water=CapabilitySet(WaterInfoEvent, [GetWaterInfo()], SetWaterInfo),
     ),
 )

@@ -65,7 +65,7 @@ from deebot_client.events.map import (
     MapTraceEvent,
     PositionsEvent,
 )
-from deebot_client.events.water_info import WaterAmount, WaterInfoEvent
+from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
@@ -115,15 +115,13 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
             ),
-            volume=CapabilitySet[int](VolumeEvent, [GetVolume()], SetVolume),
+            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySet[WaterAmount](
-            WaterInfoEvent, [GetWaterInfo()], SetWaterInfo
-        ),
+        water=CapabilitySet(WaterInfoEvent, [GetWaterInfo()], SetWaterInfo),
     ),
 )
