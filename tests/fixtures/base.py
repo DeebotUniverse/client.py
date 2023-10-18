@@ -1,3 +1,4 @@
+import contextlib
 import os
 import re
 from abc import ABC, abstractmethod
@@ -204,11 +205,7 @@ class BaseContainer(ABC):
     def stop(self) -> None:
         """Stop container."""
         if self.container is not None:
-            try:
+            with contextlib.suppress(APIError):
                 self.container.kill()
-            except APIError:
-                pass
-            try:
+            with contextlib.suppress(APIError):
                 self.container.remove(v=True, force=True)
-            except APIError:
-                pass

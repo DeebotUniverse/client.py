@@ -13,5 +13,5 @@ def verify_sorted_devices(devices: Mapping[str, DeviceCapabilities]) -> None:
 
 
 def verify_get_refresh_commands(device_capabilites: DeviceCapabilities) -> None:
-    for event in device_capabilites.events.keys():
+    for event in device_capabilites.events:
         device_capabilites.get_refresh_commands(event)

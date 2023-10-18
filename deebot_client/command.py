@@ -65,7 +65,8 @@ class Command(ABC):
     ) -> bool:
         """Execute command.
 
-        Returns:
+        Returns
+        -------
             bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """

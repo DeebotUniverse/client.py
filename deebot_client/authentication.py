@@ -2,6 +2,7 @@
 import asyncio
 import time
 from collections.abc import Callable, Coroutine, Mapping
+from http import HTTPStatus
 from typing import Any
 from urllib.parse import urljoin
 
@@ -252,7 +253,7 @@ class _AuthClient:
                     timeout=60,
                     ssl=self._config.verify_ssl,
                 ) as res:
-                    if res.status == 200:
+                    if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
                             "Success calling api %s, response=%s",
@@ -278,7 +279,7 @@ class _AuthClient:
                 raise ApiError("Timeout reached") from ex
             except ClientResponseError as ex:
                 _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
-                if ex.status == 502:
+                if ex.status == HTTPStatus.BAD_GATEWAY:
                     seconds_to_sleep = 10
                     _LOGGER.info(
                         "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
@@ -384,9 +385,7 @@ class Authenticator:
                 try:
                     await self.authenticate(True)
                 except Exception:  # pylint: disable=broad-except
-                    _LOGGER.error(
-                        "An exception occurred during refreshing token", exc_info=True
-                    )
+                    _LOGGER.exception("An exception occurred during refreshing token")
 
             create_task(self._tasks, async_refresh())
             self._refresh_handle = None

@@ -192,13 +192,12 @@ class MqttClient:
                         exc_info=True,
                     )
                 except AuthenticationError:
-                    _LOGGER.error(
-                        "Could not authenticate. Please check your credentials and afterwards reload the integration.",
-                        exc_info=True,
+                    _LOGGER.exception(
+                        "Could not authenticate. Please check your credentials and afterwards reload the integration."
                     )
                     return
                 except Exception:  # pylint: disable=broad-except
-                    _LOGGER.error("An exception occurred", exc_info=True)
+                    _LOGGER.exception("An exception occurred")
                     return
 
                 await asyncio.sleep(RECONNECT_INTERVAL)
@@ -253,9 +252,7 @@ class MqttClient:
             if sub_info := self._subscribtions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling atr message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling atr message")
 
     def _handle_p2p(
         self, topic_split: list[str], payload: str | bytes | bytearray
@@ -293,18 +290,15 @@ class MqttClient:
                 self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
                     data
                 )
+            elif command := self._received_p2p_commands.pop(request_id, None):
+                if sub_info := self._subscribtions.get(topic_split[3]):
+                    data = json.loads(payload)
+                    command.handle_mqtt_p2p(sub_info.events, data)
             else:
-                if command := self._received_p2p_commands.pop(request_id, None):
-                    if sub_info := self._subscribtions.get(topic_split[3]):
-                        data = json.loads(payload)
-                        command.handle_mqtt_p2p(sub_info.events, data)
-                else:
-                    _LOGGER.debug(
-                        "Response to command came in probably to late. requestId=%s, commandName=%s",
-                        request_id,
-                        command_name,
-                    )
+                _LOGGER.debug(
+                    "Response to command came in probably to late. requestId=%s, commandName=%s",
+                    request_id,
+                    command_name,
+                )
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling p2p message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling p2p message")

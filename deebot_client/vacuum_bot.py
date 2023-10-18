@@ -187,6 +187,4 @@ class VacuumBot:
 
                 message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling message")
