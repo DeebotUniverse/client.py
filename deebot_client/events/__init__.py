@@ -9,7 +9,9 @@ from ..models import Room, VacuumState
 from ..util import DisplayNameIntEnum
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
+    CachedMapInfoEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -22,23 +24,25 @@ from .map import (
 from .water_info import WaterAmount, WaterInfoEvent
 
 __all__ = [
-    "Event",
     "BatteryEvent",
+    "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
-    "WaterAmount",
-    "WaterInfoEvent",
+    "Event",
+    "FanSpeedEvent",
+    "FanSpeedLevel",
     "MajorMapEvent",
+    "MapChangedEvent",
     "MapSetEvent",
     "MapSetType",
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
     "Position",
-    "PositionsEvent",
     "PositionType",
-    "FanSpeedEvent",
-    "FanSpeedLevel",
+    "PositionsEvent",
+    "WaterAmount",
+    "WaterInfoEvent",
 ]
 
 

@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
+    CapabilitySetTypes,
     CapabilityStats,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -51,30 +52,30 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     CleanCountEvent,
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     ErrorEvent,
+    FanSpeedEvent,
+    FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
+    MajorMapEvent,
+    MapTraceEvent,
     MultimapStateEvent,
+    PositionsEvent,
     RoomsEvent,
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
+    WaterAmount,
+    WaterInfoEvent,
 )
-from deebot_client.events.fan_speed import FanSpeedEvent
-from deebot_client.events.map import (
-    CachedMapInfoEvent,
-    MajorMapEvent,
-    MapTraceEvent,
-    PositionsEvent,
-)
-from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import StaticDeviceInfo
 
 from . import DEVICES, FALLBACK
@@ -99,9 +100,19 @@ DEVICES[FALLBACK] = StaticDeviceInfo(
             ),
         ),
         error=CapabilityEvent(ErrorEvent, [GetError()]),
-        fan_speed=CapabilitySet(FanSpeedEvent, [GetFanSpeed()], SetFanSpeed),
+        fan_speed=CapabilitySetTypes(
+            event=FanSpeedEvent,
+            get=[GetFanSpeed()],
+            set=SetFanSpeed,
+            types=(
+                FanSpeedLevel.QUIET,
+                FanSpeedLevel.NORMAL,
+                FanSpeedLevel.MAX,
+                FanSpeedLevel.MAX_PLUS,
+            ),
+        ),
         life_span=CapabilityLifeSpan(
-            types={LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH},
+            types=(LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH),
             event=LifeSpanEvent,
             get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
             reset=ResetLifeSpan,
@@ -137,6 +148,16 @@ DEVICES[FALLBACK] = StaticDeviceInfo(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySet(WaterInfoEvent, [GetWaterInfo()], SetWaterInfo),
+        water=CapabilitySetTypes(
+            event=WaterInfoEvent,
+            get=[GetWaterInfo()],
+            set=SetWaterInfo,
+            types=(
+                WaterAmount.LOW,
+                WaterAmount.MEDIUM,
+                WaterAmount.HIGH,
+                WaterAmount.ULTRAHIGH,
+            ),
+        ),
     ),
 )

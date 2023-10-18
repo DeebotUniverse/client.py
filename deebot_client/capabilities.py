@@ -10,31 +10,31 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     CleanCountEvent,
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     ErrorEvent,
+    Event,
+    FanSpeedEvent,
+    FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
+    MajorMapEvent,
+    MapTraceEvent,
     MultimapStateEvent,
+    PositionsEvent,
     RoomsEvent,
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
+    WaterAmount,
+    WaterInfoEvent,
 )
-from deebot_client.events.base import Event
-from deebot_client.events.fan_speed import FanSpeedEvent, FanSpeedLevel
-from deebot_client.events.map import (
-    CachedMapInfoEvent,
-    MajorMapEvent,
-    MapTraceEvent,
-    PositionsEvent,
-)
-from deebot_client.events.water_info import WaterAmount, WaterInfoEvent
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -88,6 +88,18 @@ class CapabilityExecute:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityTypes(Generic[_T]):
+    """Capability to specify types support."""
+
+    types: tuple[_T, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilitySetTypes(CapabilitySet[_EVENT, _T], CapabilityTypes[_T]):
+    """Capability for set command and types."""
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityCleanAction:
     """Capabilities for clean action."""
 
@@ -107,10 +119,9 @@ class CapabilityClean:
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent]):
+class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent], CapabilityTypes[LifeSpan]):
     """Capabilities for life span."""
 
-    types: set[LifeSpan]
     reset: Callable[[LifeSpan], Command]
 
 
@@ -154,14 +165,14 @@ class Capabilities:
     charge: CapabilityExecute
     clean: CapabilityClean
     error: CapabilityEvent[ErrorEvent]
-    fan_speed: CapabilitySet[FanSpeedEvent, FanSpeedLevel]
+    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
-    water: CapabilitySet[WaterInfoEvent, WaterAmount]
+    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount]
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 
