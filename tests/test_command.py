@@ -38,7 +38,7 @@ def test_CommandMqttP2P_no_mqtt_params() -> None:
 
 
 @pytest.mark.parametrize(
-    "data, expected",
+    ("data", "expected"),
     [
         ({"field": "a"}, r"""Could not convert "a" of field into <class 'int'>"""),
         ({"something": "a"}, r'"field" is missing in {\'something\': \'a\'}'),

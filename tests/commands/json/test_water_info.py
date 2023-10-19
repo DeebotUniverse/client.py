@@ -18,7 +18,7 @@ def test_WaterAmount_unique() -> None:
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    ("json", "expected"),
     [
         ({"amount": 2}, WaterInfoEvent(None, WaterAmount.MEDIUM)),
         ({"amount": 1, "enable": 1}, WaterInfoEvent(True, WaterAmount.LOW)),

@@ -4,9 +4,9 @@
 import re
 
 from deebot_client.const import DataType
+from deebot_client.logging_filter import get_logger
+from deebot_client.message import Message
 
-from ..logging_filter import get_logger
-from ..message import Message
 from .json import MESSAGES as JSON_MESSAGES
 
 _LOGGER = get_logger(__name__)
@@ -44,7 +44,9 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
         converted_name,
     )
 
-    from ..commands import COMMANDS  # pylint: disable=import-outside-toplevel
+    from deebot_client.commands import (  # pylint: disable=import-outside-toplevel
+        COMMANDS,
+    )
 
     if found_command := COMMANDS.get(data_type, {}).get(converted_name, None):
         if issubclass(found_command, Message):

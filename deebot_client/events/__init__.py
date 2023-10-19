@@ -4,9 +4,10 @@ from dataclasses import dataclass
 from enum import Enum, unique
 from typing import Any
 
-from ..events.base import Event
-from ..models import Room, VacuumState
-from ..util import DisplayNameIntEnum
+from deebot_client.events.base import Event
+from deebot_client.models import Room, VacuumState
+from deebot_client.util import DisplayNameIntEnum
+
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     MajorMapEvent,

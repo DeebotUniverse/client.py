@@ -20,7 +20,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] = field(default_factory=lambda: [])
+    requested_commands: list["Command"] = field(default_factory=list)
 
     @classmethod
     def success(cls) -> "CommandResult":

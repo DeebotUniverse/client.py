@@ -10,7 +10,7 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    ("json", "expected"),
     [
         (get_request_json(get_success_body({"isCharging": 0, "mode": "slot"})), None),
     ],

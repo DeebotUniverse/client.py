@@ -26,15 +26,13 @@ async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
 
 
 @pytest.fixture
-async def config(session: aiohttp.ClientSession) -> AsyncGenerator[Configuration, None]:
-    configuration = Configuration(
+async def config(session: aiohttp.ClientSession) -> Configuration:
+    return Configuration(
         session,
         device_id="Test_device",
         country="it",
         continent="eu",
     )
-
-    yield configuration
 
 
 @pytest.fixture

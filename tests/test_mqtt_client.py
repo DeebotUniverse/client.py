@@ -138,7 +138,7 @@ _test_MqttConfiguration_data = [
 
 @pytest.mark.parametrize("set_ssl_context", [True, False])
 @pytest.mark.parametrize(
-    "country,hostname,expected_hostname", _test_MqttConfiguration_data
+    ("country", "hostname", "expected_hostname"), _test_MqttConfiguration_data
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
 def test_MqttConfiguration(
@@ -384,7 +384,7 @@ async def test_p2p_parse_error(
 
 
 @pytest.mark.parametrize(
-    "exception_to_raise, expected_log_message",
+    ("exception_to_raise", "expected_log_message"),
     [
         (
             AuthenticationError,

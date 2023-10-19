@@ -11,7 +11,7 @@ from . import verify_get_refresh_commands
 
 
 @pytest.mark.parametrize(
-    "_class, expected",
+    ("class_", "expected"),
     [
         ("not_specified", _DEFAULT),
         ("yna5x1", _DEVICES["yna5x1"]),
@@ -25,8 +25,8 @@ from . import verify_get_refresh_commands
         ),
     ],
 )
-def test_get_device_capabilities(_class: str, expected: DeviceCapabilities) -> None:
+def test_get_device_capabilities(class_: str, expected: DeviceCapabilities) -> None:
     """Test get_device_capabilities."""
-    device_capabilities = get_device_capabilities(_class)
+    device_capabilities = get_device_capabilities(class_)
     assert expected == device_capabilities
     verify_get_refresh_commands(device_capabilities)
