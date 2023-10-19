@@ -44,7 +44,7 @@ select = [
     "PLW", # pylint
     "PT", # https://docs.astral.sh/ruff/rules/#flake8-pytest-style-pt
     "PYI", # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
-    "Q000", # Double quotes found but single quotes preferred
+    "RET", # https://docs.astral.sh/ruff/rules/#flake8-return-ret
     "RUF006", # Store a reference to the return value of asyncio.create_task
     "S",  # flake8-bandit
     "SIM105", # Use contextlib.suppress({exception}) instead of try-except-pass
