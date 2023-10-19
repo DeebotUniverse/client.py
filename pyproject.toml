@@ -17,22 +17,20 @@ known-first-party = [
 
 [tool.ruff]
 select = [
-    "B002", # Python does not support the unary prefix increment
-    "B007", # Loop control variable {name} not used within loop body
-    "B014", # Exception handler with duplicate exception
-    "B023", # Function definition does not bind loop variable {name}
-    "B026", # Star-arg unpacking after a keyword argument is strongly discouraged
+    "ASYNC",  # https://docs.astral.sh/ruff/rules/#flake8-async
+    "B",  # https://docs.astral.sh/ruff/rules/#flake8-bugbear
     "C",  # complexity
     "COM818", # Trailing comma on bare tuple prohibited
+    "C4",  # https://docs.astral.sh/ruff/rules/#flake8-comprehensions-c4
     "D",  # docstrings
     "DTZ003",  # Use datetime.now(tz=) instead of datetime.utcnow()
     "DTZ004",  # Use datetime.fromtimestamp(ts, tz=) instead of datetime.utcfromtimestamp(ts)
     "E",  # pycodestyle
     "F",  # pyflakes/autoflake
-    "G", # flake8-logging-format
+    "G", # https://docs.astral.sh/ruff/rules/#flake8-logging-format-g
     "I",  # isort
     "ICN001", # import concentions; {name} should be imported as {asname}
-    "ISC001", # Implicitly concatenated string literals on one line
+    "ISC", # https://docs.astral.sh/ruff/rules/#flake8-implicit-str-concat-isc
     "N",  # pep8-naming
     "PIE", # https://docs.astral.sh/ruff/rules/#flake8-pie-pie
     "PGH001", # No builtin eval() allowed
@@ -44,12 +42,16 @@ select = [
     "PLW", # pylint
     "PT", # https://docs.astral.sh/ruff/rules/#flake8-pytest-style-pt
     "PYI", # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
+    "Q", # https://docs.astral.sh/ruff/rules/#flake8-quotes-q
     "RET", # https://docs.astral.sh/ruff/rules/#flake8-return-ret
+    "RSE", # https://docs.astral.sh/ruff/rules/#flake8-raise-rse
     "RUF006", # Store a reference to the return value of asyncio.create_task
     "S",  # flake8-bandit
     "SIM", # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
+    "SLF", # https://docs.astral.sh/ruff/rules/#flake8-self-slf
+    "SLOT", # https://docs.astral.sh/ruff/rules/#flake8-slots-slot
     "T100", # Trace found: {name} used
-    "T20",  # flake8-print
+    "T20",  # https://docs.astral.sh/ruff/rules/#flake8-print-t20
     "TID", # https://docs.astral.sh/ruff/rules/#flake8-tidy-imports-tid
     "TRY004", # Prefer TypeError exception for invalid type
     "TRY200", # Use raise from to specify exception cause
@@ -78,6 +80,7 @@ ignore = [
     "N802",  # Function name {name} should be lowercase
     "N816",  # Variable {name} in global scope should not be mixedCase
     "S101",  # Use of assert detected
+    "SLF001", # Private member accessed: {access}
     "T201",  # print found
 ]
 
