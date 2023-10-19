@@ -118,7 +118,7 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
 
 
 @pytest.mark.parametrize(
-    "last, actual, expected",
+    ("last", "actual", "expected"),
     [
         (VacuumState.DOCKED, VacuumState.IDLE, None),
         (VacuumState.CLEANING, VacuumState.IDLE, VacuumState.IDLE),

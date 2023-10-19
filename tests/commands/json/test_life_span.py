@@ -11,7 +11,7 @@ from . import assert_command, assert_execute_command
 
 
 @pytest.mark.parametrize(
-    "command, json, expected",
+    ("command", "json", "expected"),
     [
         (
             GetLifeSpan({LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH}),
@@ -53,7 +53,7 @@ async def test_GetLifeSpan(
 
 
 @pytest.mark.parametrize(
-    "command, args",
+    ("command", "args"),
     [
         (ResetLifeSpan(LifeSpan.FILTER), {"type": LifeSpan.FILTER.value}),
         (

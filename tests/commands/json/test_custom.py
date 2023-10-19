@@ -10,7 +10,7 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "command, json, expected",
+    ("command", "json", "expected"),
     [
         (
             CustomCommand("getSleep"),

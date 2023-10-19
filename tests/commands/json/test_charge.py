@@ -23,7 +23,7 @@ def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    ("json", "expected"),
     [
         (get_request_json(get_success_body()), StateEvent(VacuumState.RETURNING)),
         (_prepare_json(30007), StateEvent(VacuumState.DOCKED)),

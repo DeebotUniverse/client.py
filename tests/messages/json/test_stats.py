@@ -8,7 +8,7 @@ from tests.messages import assert_message
 
 
 @pytest.mark.parametrize(
-    "data, expected",
+    ("data", "expected"),
     [
         (
             {
