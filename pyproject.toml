@@ -50,7 +50,7 @@ select = [
     "SIM", # https://docs.astral.sh/ruff/rules/#flake8-simplify-sim
     "T100", # Trace found: {name} used
     "T20",  # flake8-print
-    "TID251", # Banned imports
+    "TID", # https://docs.astral.sh/ruff/rules/#flake8-tidy-imports-tid
     "TRY004", # Prefer TypeError exception for invalid type
     "TRY200", # Use raise from to specify exception cause
     "TRY302", # Remove exception handler; error is immediately re-raised
