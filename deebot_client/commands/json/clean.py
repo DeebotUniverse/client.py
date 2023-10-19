@@ -75,7 +75,7 @@ class CleanArea(Clean):
     def __init__(self, mode: CleanMode, area: str, cleanings: int = 1) -> None:
         super().__init__(CleanAction.START)
         if not isinstance(self._args, dict):
-            raise ValueError("args must be a dict!")
+            raise TypeError("args must be a dict!")
 
         self._args["type"] = mode.value
         self._args["content"] = str(area)
