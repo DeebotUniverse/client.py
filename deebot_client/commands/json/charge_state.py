@@ -37,9 +37,9 @@ class GetChargeState(CommandWithMessageHandling, MessageBodyDataDict):
         if body.get("msg", None) == "fail":
             if body["code"] == "30007":  # Already charging
                 status = VacuumState.DOCKED
-            elif body["code"] == "5":  # Busy with another command
-                status = VacuumState.ERROR
-            elif body["code"] == "3":  # Bot in stuck state, example dust bin out
+            elif body["code"] in ("3", "5"):
+                # 3 -> Bot in stuck state, example dust bin out
+                # 5 -> Busy with another command
                 status = VacuumState.ERROR
 
         if status:
