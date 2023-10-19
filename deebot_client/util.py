@@ -13,7 +13,7 @@ _T = TypeVar("_T")
 
 def md5(text: str) -> str:
     """Hash text using md5."""
-    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()
+    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
 
 
 def create_task(
