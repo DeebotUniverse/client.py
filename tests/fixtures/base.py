@@ -20,8 +20,6 @@ DOCKER_HOST_TCP_FORMAT = re.compile(r"^tcp://(\d+\.\d+\.\d+\.\d+)(?::\d+)?$")
 class ContainerNotStartedError(Exception):
     """Container not started exception."""
 
-    pass
-
 
 @dataclass()
 class ContainerConfiguration:
