@@ -1,6 +1,6 @@
 import asyncio
 from collections.abc import Callable
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from unittest.mock import AsyncMock, call, patch
 
 import pytest
@@ -165,7 +165,7 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
     with patch("deebot_client.event_bus.asyncio", wraps=asyncio) as aio:
 
         async def test_cycle(call_expected: bool) -> MapChangedEvent:
-            event = MapChangedEvent(datetime.now(timezone.utc))
+            event = MapChangedEvent(datetime.now(UTC))
             await notify(event, debounce_time)
             if call_expected:
                 aio.get_running_loop.assert_not_called()

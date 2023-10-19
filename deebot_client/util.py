@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
 from enum import IntEnum, unique
+import hashlib
 from typing import Any, TypeVar
 
 _T = TypeVar("_T")

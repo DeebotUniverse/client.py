@@ -1,9 +1,9 @@
 """Base messages."""
-import functools
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
+import functools
 from typing import Any, TypeVar, final
 
 from .event_bus import EventBus

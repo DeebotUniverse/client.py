@@ -1,9 +1,9 @@
 """Vacuum bot module."""
 import asyncio
-import json
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
+import json
 from typing import Any, Final
 
 from deebot_client.hardware import get_device_capabilities

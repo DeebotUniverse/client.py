@@ -1,11 +1,11 @@
-import contextlib
-import os
-import re
 from abc import ABC, abstractmethod
 from collections import namedtuple
+import contextlib
 from dataclasses import dataclass, field
 from datetime import datetime
+import os
 from pprint import pformat
+import re
 from time import sleep
 from typing import Any
 
