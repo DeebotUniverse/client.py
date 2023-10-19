@@ -1,8 +1,8 @@
 """Authentication module."""
 import asyncio
-import time
 from collections.abc import Callable, Coroutine, Mapping
 from http import HTTPStatus
+import time
 from typing import Any
 from urllib.parse import urljoin
 

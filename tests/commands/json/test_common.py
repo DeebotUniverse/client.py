@@ -1,5 +1,5 @@
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any
 from unittest.mock import Mock
 

@@ -2,6 +2,18 @@
 target-version = ['py311']
 safe = true
 
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+
+
+[tool.ruff.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = [
+    "deebot_client",
+]
+
+
 
 [tool.ruff]
 select = [

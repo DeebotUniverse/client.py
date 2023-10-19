@@ -1,16 +1,16 @@
 import asyncio
+from collections.abc import Callable
 import datetime
 import json
 import logging
 import ssl
-from collections.abc import Callable
 from typing import Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
-import pytest
 from aiohttp import ClientSession
 from aiomqtt import Client, Message
 from cachetools import TTLCache
+import pytest
 
 from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery

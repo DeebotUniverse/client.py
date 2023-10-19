@@ -1,11 +1,11 @@
 """MQTT module."""
 import asyncio
-import json
-import ssl
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
+import json
+import ssl
 from typing import Any
 
 from aiomqtt import Client, Message, MqttError

@@ -1,10 +1,10 @@
-import logging
 from collections.abc import AsyncGenerator, Generator
+import logging
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
-import pytest
 from aiomqtt import Client
+import pytest
 
 from deebot_client import hardware
 from deebot_client.api_client import ApiClient
