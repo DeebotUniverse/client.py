@@ -33,9 +33,7 @@ select = [
     "I",  # isort
     "ICN001", # import concentions; {name} should be imported as {asname}
     "ISC001", # Implicitly concatenated string literals on one line
-    "N804", # First argument of a class method should be named cls
-    "N805", # First argument of a method should be named self
-    "N815", # Variable {name} in class scope should not be mixedCase
+    "N",  # pep8-naming
     "PGH001", # No builtin eval() allowed
     "PGH004",  # Use specific rule codes when using noqa
     "PLC0414", # Useless import alias. Import alias does not rename original package.
@@ -82,6 +80,7 @@ ignore = [
     "D103",  # Missing docstring in public function
     "D104",  # Missing docstring in public package
     "N802",  # Function name {name} should be lowercase
+    "N816",  # Variable {name} in global scope should not be mixedCase
     "S101",  # Use of assert detected
     "T201",  # print found
 ]

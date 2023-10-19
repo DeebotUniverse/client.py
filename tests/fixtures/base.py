@@ -17,7 +17,7 @@ from docker.models.containers import Container
 DOCKER_HOST_TCP_FORMAT = re.compile(r"^tcp://(\d+\.\d+\.\d+\.\d+)(?::\d+)?$")
 
 
-class ContainerNotStartedException(Exception):
+class ContainerNotStartedError(Exception):
     """Container not started exception."""
 
     pass
@@ -81,7 +81,7 @@ class BaseContainer(ABC):
     def get_ports(self) -> dict[str, int]:
         """Get all service ports and their mapping."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         network = self.container.attrs["NetworkSettings"]
         result = {}
@@ -109,7 +109,7 @@ class BaseContainer(ABC):
     def get_host(self) -> str:
         """Get host."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         host: str = self.container.attrs["NetworkSettings"]["IPAddress"]
 
@@ -146,7 +146,7 @@ class BaseContainer(ABC):
     def logs(self, since_last_start: bool = True) -> str:
         """Get docker container logs."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         if since_last_start:
             logs: bytes = self.container.logs(since=self._start_time)
