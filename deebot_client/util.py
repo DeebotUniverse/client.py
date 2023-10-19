@@ -6,7 +6,7 @@ from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
 from enum import IntEnum, unique
 import hashlib
-from typing import Any, TypeVar
+from typing import Any, Self, TypeVar
 
 _T = TypeVar("_T")
 
@@ -41,7 +41,7 @@ async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
 class DisplayNameIntEnum(IntEnum):
     """Int enum with a property "display_name"."""
 
-    def __new__(cls, *args: int, **_: Mapping[Any, Any]) -> DisplayNameIntEnum:
+    def __new__(cls, *args: int, **_: Mapping[Any, Any]) -> Self:
         """Create new DisplayNameIntEnum."""
         obj = int.__new__(cls)
         obj._value_ = args[0]
@@ -61,7 +61,7 @@ class DisplayNameIntEnum(IntEnum):
         return self.name.lower()
 
     @classmethod
-    def get(cls, value: str) -> DisplayNameIntEnum:
+    def get(cls, value: str) -> Self:
         """Get enum member from name or display_name."""
         value = str(value).upper()
         if value in cls.__members__:

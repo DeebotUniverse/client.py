@@ -1,5 +1,4 @@
 from abc import ABC, abstractmethod
-from collections import namedtuple
 import contextlib
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -7,7 +6,7 @@ import os
 from pprint import pformat
 import re
 from time import sleep
-from typing import Any
+from typing import Any, NamedTuple
 
 import docker
 from docker.client import DockerClient
@@ -33,7 +32,11 @@ class ContainerConfiguration:
     max_wait_started: int = 30
 
 
-HostPort = namedtuple("HostPort", ["host", "port"])
+class HostPort(NamedTuple):
+    """Host port tuple."""
+
+    host: str
+    port: int
 
 
 class BaseContainer(ABC):

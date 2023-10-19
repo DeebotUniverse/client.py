@@ -42,6 +42,7 @@ select = [
     "PLE", # pylint
     "PLR", # pylint
     "PLW", # pylint
+    "PYI", # https://docs.astral.sh/ruff/rules/#flake8-pyi-pyi
     "Q000", # Double quotes found but single quotes preferred
     "RUF006", # Store a reference to the return value of asyncio.create_task
     "S",  # flake8-bandit
