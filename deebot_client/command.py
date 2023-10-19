@@ -1,6 +1,6 @@
 """Base command."""
-import asyncio
 from abc import ABC, abstractmethod
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, final
 
@@ -20,7 +20,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] = field(default_factory=lambda: [])
+    requested_commands: list["Command"] = field(default_factory=list)
 
     @classmethod
     def success(cls) -> "CommandResult":
@@ -65,7 +65,8 @@ class Command(ABC):
     ) -> bool:
         """Execute command.
 
-        Returns:
+        Returns
+        -------
             bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """

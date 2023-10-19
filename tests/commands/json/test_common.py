@@ -1,5 +1,5 @@
-import logging
 from collections.abc import Callable
+import logging
 from typing import Any
 from unittest.mock import Mock
 
@@ -32,7 +32,7 @@ def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> 
 
 
 @pytest.mark.parametrize(
-    "repsonse_json, expected_log, assert_func",
+    ("repsonse_json", "expected_log", "assert_func"),
     [
         (
             _ERROR_500,

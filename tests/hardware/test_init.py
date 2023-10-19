@@ -60,22 +60,22 @@ from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
-    "_class, expected",
+    ("class_", "expected"),
     [
         ("not_specified", lambda: DEVICES[FALLBACK]),
         ("yna5x1", lambda: DEVICES["yna5x1"]),
     ],
 )
 def test_get_static_device_info(
-    _class: str, expected: Callable[[], StaticDeviceInfo]
+    class_: str, expected: Callable[[], StaticDeviceInfo]
 ) -> None:
     """Test get_static_device_info."""
-    static_device_info = get_static_device_info(_class)
+    static_device_info = get_static_device_info(class_)
     assert expected() == static_device_info
 
 
 @pytest.mark.parametrize(
-    "class_, expected",
+    ("class_", "expected"),
     [
         (
             FALLBACK,

@@ -15,7 +15,7 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    ("json", "expected"),
     [
         (
             get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
@@ -28,7 +28,7 @@ async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
 
 
 @pytest.mark.parametrize(
-    "action, vacuum_state, expected",
+    ("action", "vacuum_state", "expected"),
     [
         (CleanAction.START, None, CleanAction.START),
         (CleanAction.START, VacuumState.PAUSED, CleanAction.RESUME),

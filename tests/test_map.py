@@ -21,7 +21,7 @@ _test_calc_point_data = [
 ]
 
 
-@pytest.mark.parametrize("x,y,image_box,expected", _test_calc_point_data)
+@pytest.mark.parametrize(("x", "y", "image_box", "expected"), _test_calc_point_data)
 def test_calc_point(
     x: int,
     y: int,

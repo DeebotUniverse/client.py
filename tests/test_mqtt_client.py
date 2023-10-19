@@ -1,16 +1,16 @@
 import asyncio
+from collections.abc import Callable
 import datetime
 import json
 import logging
 import ssl
-from collections.abc import Callable
 from typing import Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
-import pytest
 from aiohttp import ClientSession
 from aiomqtt import Client, Message
 from cachetools import TTLCache
+import pytest
 
 from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery
@@ -138,7 +138,7 @@ _test_MqttConfiguration_data = [
 
 @pytest.mark.parametrize("set_ssl_context", [True, False])
 @pytest.mark.parametrize(
-    "country,hostname,expected_hostname", _test_MqttConfiguration_data
+    ("country", "hostname", "expected_hostname"), _test_MqttConfiguration_data
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
 def test_MqttConfiguration(
@@ -384,7 +384,7 @@ async def test_p2p_parse_error(
 
 
 @pytest.mark.parametrize(
-    "exception_to_raise, expected_log_message",
+    ("exception_to_raise", "expected_log_message"),
     [
         (
             AuthenticationError,

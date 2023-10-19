@@ -1,6 +1,6 @@
 import asyncio
-import json
 from collections.abc import Callable
+import json
 from unittest.mock import Mock, patch
 
 from deebot_client.authentication import Authenticator

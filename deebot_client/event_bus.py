@@ -1,8 +1,8 @@
 """Event emitter module."""
 import asyncio
-import threading
 from collections.abc import Callable, Coroutine
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+import threading
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
@@ -29,7 +29,7 @@ class _EventProcessingData(Generic[T]):
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
         self.last_event: T | None = None
-        self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=timezone.utc)
+        self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
 
 
@@ -88,7 +88,7 @@ class EventBus:
             handle.cancel()
 
         def _notify(event: T) -> None:
-            event_processing_data.last_event_time = datetime.now(timezone.utc)
+            event_processing_data.last_event_time = datetime.now(UTC)
             event_processing_data.notify_handle = None
 
             if (
@@ -123,7 +123,7 @@ class EventBus:
             else:
                 _LOGGER.debug("No subscribers... Discharging %s", event)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if debounce_time <= 0 or (
             now - event_processing_data.last_event_time
         ) > timedelta(seconds=debounce_time):

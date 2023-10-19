@@ -1,7 +1,8 @@
 """Authentication module."""
 import asyncio
-import time
 from collections.abc import Callable, Coroutine, Mapping
+from http import HTTPStatus
+import time
 from typing import Any
 from urllib.parse import urljoin
 
@@ -16,9 +17,9 @@ from .util import cancel, create_task, md5
 _LOGGER = get_logger(__name__)
 
 _CLIENT_KEY = "1520391301804"
-_CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"
+_CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
 _AUTH_CLIENT_KEY = "1520391491841"
-_AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"
+_AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
 _USER_LOGIN_URL_FORMAT = (
     "https://gl-{country}-api.ecovacs.{tld}/v1/private/{country}/{lang}/{deviceId}/{appCode}/"
     "{appVersion}/{channel}/{deviceType}/user/login"
@@ -252,7 +253,7 @@ class _AuthClient:
                     timeout=60,
                     ssl=self._config.verify_ssl,
                 ) as res:
-                    if res.status == 200:
+                    if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
                             "Success calling api %s, response=%s",
@@ -278,7 +279,7 @@ class _AuthClient:
                 raise ApiError("Timeout reached") from ex
             except ClientResponseError as ex:
                 _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
-                if ex.status == 502:
+                if ex.status == HTTPStatus.BAD_GATEWAY:
                     seconds_to_sleep = 10
                     _LOGGER.info(
                         "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
@@ -319,23 +320,19 @@ class Authenticator:
     async def authenticate(self, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
-            should_login = False
-            if self._credentials is None or force:
-                _LOGGER.debug("No cached credentials, performing login")
-                should_login = True
-            elif self._credentials.expires_at < time.time():
-                _LOGGER.debug("Credentials have expired, performing login")
-                should_login = True
-
-            if should_login:
+            if (
+                self._credentials is None
+                or force
+                or self._credentials.expires_at < time.time()
+            ):
+                _LOGGER.debug("Performing login")
                 self._credentials = await self._auth_client.login()
                 self._cancel_refresh_task()
-                self._create_refresh_task()
+                self._create_refresh_task(self._credentials)
 
                 for on_changed in self._on_credentials_changed:
                     create_task(self._tasks, on_changed(self._credentials))
 
-            assert self._credentials is not None
             return self._credentials
 
     def subscribe(
@@ -375,7 +372,7 @@ class Authenticator:
         if self._refresh_handle and not self._refresh_handle.cancelled():
             self._refresh_handle.cancel()
 
-    def _create_refresh_task(self) -> None:
+    def _create_refresh_task(self, credentials: Credentials) -> None:
         # refresh at 99% of validity
         def refresh() -> None:
             _LOGGER.debug("Refresh token")
@@ -384,14 +381,11 @@ class Authenticator:
                 try:
                     await self.authenticate(True)
                 except Exception:  # pylint: disable=broad-except
-                    _LOGGER.error(
-                        "An exception occurred during refreshing token", exc_info=True
-                    )
+                    _LOGGER.exception("An exception occurred during refreshing token")
 
             create_task(self._tasks, async_refresh())
             self._refresh_handle = None
 
-        assert self._credentials is not None
-        validity = (self._credentials.expires_at - time.time()) * 0.99
+        validity = (credentials.expires_at - time.time()) * 0.99
 
         self._refresh_handle = asyncio.get_event_loop().call_later(validity, refresh)

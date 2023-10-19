@@ -1,9 +1,9 @@
 """Vacuum bot module."""
 import asyncio
-import json
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
+import json
 from typing import Any, Final
 
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
@@ -186,6 +186,4 @@ class VacuumBot:
 
                 message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling message")

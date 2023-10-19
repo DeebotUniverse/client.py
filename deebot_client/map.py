@@ -2,15 +2,15 @@
 import ast
 import asyncio
 import base64
+from collections.abc import Callable, Coroutine
 import dataclasses
+from datetime import UTC, datetime
+from io import BytesIO
 import lzma
 import math
 import struct
-import zlib
-from collections.abc import Callable, Coroutine
-from datetime import datetime, timezone
-from io import BytesIO
 from typing import Any, Final
+import zlib
 
 from numpy import float64, reshape, zeros
 from numpy.typing import NDArray
@@ -548,9 +548,7 @@ class MapData:
 
         def on_change() -> None:
             self._changed = True
-            event_bus.notify(
-                MapChangedEvent(datetime.now(timezone.utc)), debounce_time=1
-            )
+            event_bus.notify(MapChangedEvent(datetime.now(UTC)), debounce_time=1)
 
         self._on_change = on_change
         self._map_pieces: OnChangedList[MapPiece] = OnChangedList(

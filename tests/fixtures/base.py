@@ -1,12 +1,12 @@
-import os
-import re
 from abc import ABC, abstractmethod
-from collections import namedtuple
+import contextlib
 from dataclasses import dataclass, field
 from datetime import datetime
+import os
 from pprint import pformat
+import re
 from time import sleep
-from typing import Any
+from typing import Any, NamedTuple
 
 import docker
 from docker.client import DockerClient
@@ -16,10 +16,8 @@ from docker.models.containers import Container
 DOCKER_HOST_TCP_FORMAT = re.compile(r"^tcp://(\d+\.\d+\.\d+\.\d+)(?::\d+)?$")
 
 
-class ContainerNotStartedException(Exception):
+class ContainerNotStartedError(Exception):
     """Container not started exception."""
-
-    pass
 
 
 @dataclass()
@@ -34,7 +32,11 @@ class ContainerConfiguration:
     max_wait_started: int = 30
 
 
-HostPort = namedtuple("HostPort", ["host", "port"])
+class HostPort(NamedTuple):
+    """Host port tuple."""
+
+    host: str
+    port: int
 
 
 class BaseContainer(ABC):
@@ -80,7 +82,7 @@ class BaseContainer(ABC):
     def get_ports(self) -> dict[str, int]:
         """Get all service ports and their mapping."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         network = self.container.attrs["NetworkSettings"]
         result = {}
@@ -108,7 +110,7 @@ class BaseContainer(ABC):
     def get_host(self) -> str:
         """Get host."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         host: str = self.container.attrs["NetworkSettings"]["IPAddress"]
 
@@ -145,7 +147,7 @@ class BaseContainer(ABC):
     def logs(self, since_last_start: bool = True) -> str:
         """Get docker container logs."""
         if self.container is None:
-            raise ContainerNotStartedException
+            raise ContainerNotStartedError
 
         if since_last_start:
             logs: bytes = self.container.logs(since=self._start_time)
@@ -204,11 +206,7 @@ class BaseContainer(ABC):
     def stop(self) -> None:
         """Stop container."""
         if self.container is not None:
-            try:
+            with contextlib.suppress(APIError):
                 self.container.kill()
-            except APIError:
-                pass
-            try:
+            with contextlib.suppress(APIError):
                 self.container.remove(v=True, force=True)
-            except APIError:
-                pass

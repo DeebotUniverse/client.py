@@ -1,10 +1,10 @@
-import logging
 from collections.abc import AsyncGenerator, Generator
+import logging
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
-import pytest
 from aiomqtt import Client
+import pytest
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
@@ -30,15 +30,13 @@ async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
 
 
 @pytest.fixture
-async def config(session: aiohttp.ClientSession) -> AsyncGenerator[Configuration, None]:
-    configuration = Configuration(
+async def config(session: aiohttp.ClientSession) -> Configuration:
+    return Configuration(
         session,
         device_id="Test_device",
         country="it",
         continent="eu",
     )
-
-    yield configuration
 
 
 @pytest.fixture

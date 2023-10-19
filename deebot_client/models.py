@@ -1,7 +1,7 @@
 """Models module."""
-import os
 from dataclasses import dataclass
 from enum import IntEnum, unique
+import os
 from typing import TYPE_CHECKING, Required, TypedDict
 
 from aiohttp import ClientSession
