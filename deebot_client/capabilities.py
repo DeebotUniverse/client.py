@@ -98,7 +98,7 @@ class CapabilityTypes(Generic[_T]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilitySetTypes(CapabilitySet[_EVENT, _T], CapabilityTypes[_T]):
+class CapabilitySetTypes(CapabilitySet[_EVENT, _T | str], CapabilityTypes[_T]):
     """Capability for set command and types."""
 
 
