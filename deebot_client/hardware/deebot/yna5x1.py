@@ -3,6 +3,7 @@ from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
+    CapabilityCustomCommand,
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
@@ -27,6 +28,7 @@ from deebot_client.commands.json.continuous_cleaning import (
     GetContinuousCleaning,
     SetContinuousCleaning,
 )
+from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
@@ -50,15 +52,18 @@ from deebot_client.events import (
     CarpetAutoFanBoostEvent,
     CleanLogEvent,
     ContinuousCleaningEvent,
+    CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
     FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
     PositionsEvent,
+    ReportStatsEvent,
     RoomsEvent,
     StateEvent,
     StatsEvent,
@@ -87,6 +92,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
         ),
+        custom=CapabilityCustomCommand(
+            event=CustomCommandEvent, get=[], set=CustomCommand
+        ),
         error=CapabilityEvent(ErrorEvent, [GetError()]),
         fan_speed=CapabilitySetTypes(
             event=FanSpeedEvent,
@@ -107,6 +115,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         ),
         map=CapabilityMap(
             chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
@@ -131,6 +140,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
+            report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
         water=CapabilitySetTypes(

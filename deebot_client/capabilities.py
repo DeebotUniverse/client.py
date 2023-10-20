@@ -2,7 +2,7 @@
 from collections.abc import Callable
 from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
 from deebot_client.command import Command
 from deebot_client.commands.json.common import SetCommand
@@ -16,6 +16,7 @@ from deebot_client.events import (
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
+    CustomCommandEvent,
     ErrorEvent,
     Event,
     FanSpeedEvent,
@@ -23,9 +24,11 @@ from deebot_client.events import (
     LifeSpan,
     LifeSpanEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
     PositionsEvent,
+    ReportStatsEvent,
     RoomsEvent,
     StateEvent,
     StatsEvent,
@@ -118,6 +121,13 @@ class CapabilityClean:
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
 
 
+@dataclass(frozen=True)
+class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
+    """Capability custom command."""
+
+    set: Callable[[Any], Command]
+
+
 @dataclass(frozen=True, kw_only=True)
 class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent], CapabilityTypes[LifeSpan]):
     """Capabilities for life span."""
@@ -130,6 +140,7 @@ class CapabilityMap:
     """Capabilities for map."""
 
     chached_info: CapabilityEvent[CachedMapInfoEvent]
+    changed: CapabilityEvent[MapChangedEvent]
     major: CapabilityEvent[MajorMapEvent]
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
@@ -143,6 +154,7 @@ class CapabilityStats:
     """Capabilities for statistics."""
 
     clean: CapabilityEvent[StatsEvent]
+    report: CapabilityEvent[ReportStatsEvent]
     total: CapabilityEvent[TotalStatsEvent]
 
 
@@ -164,10 +176,11 @@ class Capabilities:
     battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute
     clean: CapabilityClean
+    custom: CapabilityCustomCommand[CustomCommandEvent] | None = None
     error: CapabilityEvent[ErrorEvent]
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
-    map: CapabilityMap
+    map: CapabilityMap | None = None
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
