@@ -63,9 +63,7 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
 class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
-    name = "getMajorMap"
-
-    xml_name = "GetMajorMap"
+    name = "GetMajorMap"
 
     @classmethod
     def _handle_body_data_dict(
@@ -112,9 +110,7 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
     _ARGS_TYPE = "type"
     _ARGS_SUBSETS = "subsets"
 
-    name = "getMapSet"
-
-    xml_name = "GetMapSet"
+    name = "GetMapSet"
 
     def __init__(
         self,
@@ -199,9 +195,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         # 15 custom; get name from name attribute
     }
 
-    name = "getMapSubSet"
-
-    xml_name = "GetMapSubSet"
+    name = "GetMapSubSet"
 
     def __init__(
         self,
@@ -269,9 +263,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
 
     _TRACE_POINT_COUNT = 200
 
-    name = "getMapTrace"
-
-    xml_name = "GetMapTrace"
+    name = "GetMapTrace"
 
     def __init__(self, trace_start: int = 0) -> None:
         super().__init__(
@@ -323,9 +315,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
 class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
-    name = "getMinorMap"
-
-    xml_name = "GetMinorMap"
+    name = "GetMinorMap"
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})

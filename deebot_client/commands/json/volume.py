@@ -15,8 +15,6 @@ class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getVolume"
 
-    xml_name = "GetVolume"
-
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -31,20 +29,11 @@ class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
         )
         return HandlingResult.success()
 
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
-
 
 class SetVolume(SetCommand):
     """Set volume command."""
 
     name = "setVolume"
-
-    xml_name = "SetVolume"
-
     get_command = GetVolume
     _mqtt_params = {
         "volume": InitParam(int),

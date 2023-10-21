@@ -8,12 +8,14 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetTrueDetect(GetEnableCommand):
     """Get multimap state command."""
 
-    name = "getTrueDetect"
+    name = "GetTrueDetect"
+
     event_type = TrueDetectEvent
 
 
 class SetTrueDetect(SetEnableCommand):
     """Set multimap state command."""
 
-    name = "setTrueDetect"
+    name = "SetTrueDetect"
+
     get_command = GetTrueDetect

@@ -12,7 +12,7 @@ from .common import CommandWithMessageHandling, SetCommand
 class GetWaterInfo(CommandWithMessageHandling, MessageBodyDataDict):
     """Get water info command."""
 
-    name = "getWaterInfo"
+    name = "GetWaterInfo"
 
     @classmethod
     def _handle_body_data_dict(
@@ -29,11 +29,18 @@ class GetWaterInfo(CommandWithMessageHandling, MessageBodyDataDict):
         event_bus.notify(WaterInfoEvent(mop_attached, WaterAmount(int(data["amount"]))))
         return HandlingResult.success()
 
+    @classmethod
+    def _handle_body_data_xml(
+        cls, event_bus: EventBus, xml_message: str
+    ) -> HandlingResult:
+        raise NotImplementedError
+
 
 class SetWaterInfo(SetCommand):
     """Set water info command."""
 
-    name = "setWaterInfo"
+    name = "SetWaterInfo"
+
     get_command = GetWaterInfo
     _mqtt_params = {
         "amount": InitParam(WaterAmount),

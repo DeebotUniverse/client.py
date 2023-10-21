@@ -13,9 +13,7 @@ from .common import CommandWithMessageHandling, SetCommand
 class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
-    name = "getVolume"
-
-    xml_name = "GetVolume"
+    name = "GetVolume"
 
     @classmethod
     def _handle_body_data_dict(
@@ -41,9 +39,7 @@ class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
 class SetVolume(SetCommand):
     """Set volume command."""
 
-    name = "setVolume"
-
-    xml_name = "SetVolume"
+    name = "SetVolume"
 
     get_command = GetVolume
     _mqtt_params = {
