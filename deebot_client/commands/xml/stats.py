@@ -11,9 +11,7 @@ from .common import CommandWithMessageHandling
 class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
-    name = "getStats"
-
-    xml_name = "GetStats"
+    name = "GetStats"
 
     @classmethod
     def _handle_body_data_dict(
@@ -41,9 +39,7 @@ class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
 class GetTotalStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
-    name = "getTotalStats"
-
-    xml_name = "GetTotalStats"
+    name = "GetTotalStats"
 
     @classmethod
     def _handle_body_data_dict(
