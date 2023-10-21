@@ -7,7 +7,7 @@ from .common import CommandWithMessageHandling
 class GetBattery(OnBattery, CommandWithMessageHandling):
     """Get battery command."""
 
-    name = "getBattery"
+    name = "GetBatteryInfo"
 
     def __init__(self, is_available_check: bool = False) -> None:
         super().__init__()
