@@ -1,8 +1,8 @@
 """Stats messages."""
 from typing import Any
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import CleanJobStatus, ReportStatsEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 

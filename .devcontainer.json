@@ -5,6 +5,7 @@
     // Configure properties specific to VS Code.
     "vscode": {
       "extensions": [
+        "eamodio.gitlens",
         "github.vscode-pull-request-github",
         "ms-python.python",
         "ms-python.vscode-pylance",
@@ -61,7 +62,7 @@
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postCreateCommand": "pip install -r requirements-dev.txt && pre-commit install && pip install -e .",
+  "postStartCommand": "pip install -r requirements-dev.txt && pre-commit install && pip install -e .",
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "runArgs": ["-e", "GIT_EDITOR=code --wait"]

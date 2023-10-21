@@ -5,7 +5,7 @@ with open("README.md", encoding="utf-8") as file:
     long_description = file.read()
 
 with open("requirements.txt", encoding="utf-8") as file:
-    install_requires = list(val.strip() for val in file)
+    install_requires = [val.strip() for val in file]
 
 setup(
     name="deebot-client",

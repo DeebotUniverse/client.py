@@ -1,15 +1,21 @@
-import logging
 from collections.abc import AsyncGenerator, Generator
+import logging
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
-import pytest
 from aiomqtt import Client
+import pytest
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
-from deebot_client.events.event_bus import EventBus
-from deebot_client.models import Configuration, Credentials, DeviceInfo
+from deebot_client.event_bus import EventBus
+from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
+from deebot_client.models import (
+    Configuration,
+    Credentials,
+    DeviceInfo,
+    StaticDeviceInfo,
+)
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -17,22 +23,20 @@ from .fixtures.mqtt_server import MqttServer
 
 
 @pytest.fixture
-async def session() -> AsyncGenerator:
+async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
     async with aiohttp.ClientSession() as client_session:
         logging.basicConfig(level=logging.DEBUG)
         yield client_session
 
 
 @pytest.fixture
-async def config(session: aiohttp.ClientSession) -> AsyncGenerator:
-    configuration = Configuration(
+async def config(session: aiohttp.ClientSession) -> Configuration:
+    return Configuration(
         session,
         device_id="Test_device",
         country="it",
         continent="eu",
     )
-
-    yield configuration
 
 
 @pytest.fixture
@@ -103,7 +107,12 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-def device_info() -> DeviceInfo:
+def static_device_info() -> StaticDeviceInfo:
+    return get_static_device_info(FALLBACK)
+
+
+@pytest.fixture
+def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
     return DeviceInfo(
         {
             "company": "company",
@@ -114,7 +123,8 @@ def device_info() -> DeviceInfo:
             "deviceName": "device_name",
             "status": 1,
             "class": "get_class",
-        }
+        },
+        static_device_info,
     )
 
 
@@ -135,5 +145,17 @@ def execute_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def event_bus(execute_mock: AsyncMock) -> EventBus:
-    return EventBus(execute_mock)
+def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
+    return EventBus(execute_mock, device_info.capabilities.get_refresh_commands)
+
+
+@pytest.fixture
+def event_bus_mock() -> Mock:
+    return Mock(spec_set=EventBus)
+
+
+@pytest.fixture(name="caplog")
+def caplog_fixture(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
+    """Set log level to debug for tests using the caplog fixture."""
+    caplog.set_level(logging.DEBUG)
+    return caplog

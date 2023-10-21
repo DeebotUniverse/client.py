@@ -4,18 +4,20 @@ import pytest
 
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.events import CustomCommandEvent
-from tests.helpers import get_message_json, get_request_json
+from tests.helpers import get_message_json, get_request_json, get_success_body
 
 from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "command, json, expected",
+    ("command", "json", "expected"),
     [
         (
             CustomCommand("getSleep"),
-            get_request_json({"enable": 1}),
-            CustomCommandEvent("getSleep", get_message_json({"enable": 1})),
+            get_request_json(get_success_body({"enable": 1})),
+            CustomCommandEvent(
+                "getSleep", get_message_json(get_success_body({"enable": 1}))
+            ),
         ),
         (CustomCommand("getSleep"), {}, None),
     ],

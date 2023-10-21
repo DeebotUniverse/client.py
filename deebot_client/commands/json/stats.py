@@ -1,13 +1,14 @@
 """Stats commands."""
 from typing import Any
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling
 
 
-class GetStats(NoArgsCommand, MessageBodyDataDict):
+class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getStats"
@@ -37,7 +38,7 @@ class GetStats(NoArgsCommand, MessageBodyDataDict):
         raise NotImplementedError
 
 
-class GetTotalStats(NoArgsCommand, MessageBodyDataDict):
+class GetTotalStats(CommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getTotalStats"

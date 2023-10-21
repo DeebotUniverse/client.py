@@ -4,7 +4,7 @@ from datetime import datetime
 from enum import Enum, unique
 from typing import Any
 
-from ..events import Event
+from deebot_client.events import Event
 
 
 @unique

@@ -1,7 +1,8 @@
 """Maps commands."""
 from typing import Any
 
-from deebot_client.command import Command
+from deebot_client.command import Command, CommandResult
+from deebot_client.event_bus import EventBus
 from deebot_client.events import (
     MajorMapEvent,
     MapSetEvent,
@@ -10,11 +11,10 @@ from deebot_client.events import (
     MapTraceEvent,
     MinorMapEvent,
 )
-from deebot_client.events.event_bus import EventBus
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
-from .common import CommandResult, CommandWithMessageHandling
+from .common import CommandWithMessageHandling
 
 
 class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):

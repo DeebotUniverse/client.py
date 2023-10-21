@@ -3,9 +3,13 @@ import pytest
 from deebot_client.commands.json import GetFanSpeed, SetFanSpeed
 from deebot_client.events import FanSpeedEvent
 from deebot_client.events.fan_speed import FanSpeedLevel
-from tests.helpers import get_request_json, verify_DisplayNameEnum_unique
+from tests.helpers import (
+    get_request_json,
+    get_success_body,
+    verify_DisplayNameEnum_unique,
+)
 
-from . import assert_command
+from . import assert_command, assert_set_command
 
 
 def test_FanSpeedLevel_unique() -> None:
@@ -13,15 +17,19 @@ def test_FanSpeedLevel_unique() -> None:
 
 
 async def test_GetFanSpeed() -> None:
-    json = get_request_json({"speed": 2})
+    json = get_request_json(get_success_body({"speed": 2}))
     await assert_command(GetFanSpeed(), json, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
 
 
-@pytest.mark.parametrize(
-    "value, expected",
-    [("quiet", 1000), ("max_plus", 2), (0, 0), (FanSpeedLevel.MAX, 1)],
-)
-def test_SetFanSpeed(value: str | int | FanSpeedLevel, expected: int) -> None:
+@pytest.mark.parametrize(("value"), [FanSpeedLevel.MAX, "max"])
+async def test_SetFanSpeed(value: FanSpeedLevel | str) -> None:
     command = SetFanSpeed(value)
-    assert command.name == "setSpeed"
-    assert command._args == {"speed": expected}
+    args = {"speed": 1}
+    await assert_set_command(command, args, FanSpeedEvent(FanSpeedLevel.MAX))
+
+
+def test_SetFanSpeed_inexisting_value() -> None:
+    with pytest.raises(
+        ValueError, match="'INEXSTING' is not a valid FanSpeedLevel member"
+    ):
+        SetFanSpeed("inexsting")

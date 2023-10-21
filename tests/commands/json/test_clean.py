@@ -6,19 +6,19 @@ import pytest
 from deebot_client.authentication import Authenticator
 from deebot_client.commands.json import GetCleanInfo
 from deebot_client.commands.json.clean import Clean, CleanAction
+from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.models import DeviceInfo, VacuumState
-from tests.helpers import get_request_json
+from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
 
 
 @pytest.mark.parametrize(
-    "json, expected",
+    ("json", "expected"),
     [
         (
-            get_request_json({"trigger": "none", "state": "idle"}),
+            get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
             StateEvent(VacuumState.IDLE),
         ),
     ],
@@ -28,7 +28,7 @@ async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
 
 
 @pytest.mark.parametrize(
-    "action, vacuum_state, expected",
+    ("action", "vacuum_state", "expected"),
     [
         (CleanAction.START, None, CleanAction.START),
         (CleanAction.START, VacuumState.PAUSED, CleanAction.RESUME),

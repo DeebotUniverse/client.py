@@ -1,17 +1,17 @@
 """Event emitter module."""
 import asyncio
-import threading
 from collections.abc import Callable, Coroutine
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
+import threading
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
-from ..logging_filter import get_logger
-from ..models import VacuumState
-from ..util import cancel, create_task
-from . import AvailabilityEvent, Event, StateEvent
+from .events import AvailabilityEvent, Event, StateEvent
+from .logging_filter import get_logger
+from .models import VacuumState
+from .util import cancel, create_task
 
 if TYPE_CHECKING:
-    from ..command import Command
+    from .command import Command
 
 _LOGGER = get_logger(__name__)
 
@@ -21,15 +21,15 @@ T = TypeVar("T", bound=Event)
 class _EventProcessingData(Generic[T]):
     """Data class, which holds all needed data per EventDto."""
 
-    def __init__(self) -> None:
-        super().__init__()
+    def __init__(self, refresh_commands: list["Command"]) -> None:
+        self.refresh_commands: Final = refresh_commands
 
         self.subscriber_callbacks: Final[
             list[Callable[[T], Coroutine[Any, Any, None]]]
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
         self.last_event: T | None = None
-        self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=timezone.utc)
+        self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
 
 
@@ -39,12 +39,14 @@ class EventBus:
     def __init__(
         self,
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
+        get_refresh_commands: Callable[[type[Event]], list["Command"]],
     ):
-        self._event_processing_dict: dict[type[Event], _EventProcessingData] = {}
+        self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 
         self._execute_command: Final = execute_command
+        self._get_refresh_commands = get_refresh_commands
 
     def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
@@ -86,7 +88,7 @@ class EventBus:
             handle.cancel()
 
         def _notify(event: T) -> None:
-            event_processing_data.last_event_time = datetime.now(timezone.utc)
+            event_processing_data.last_event_time = datetime.now(UTC)
             event_processing_data.notify_handle = None
 
             if (
@@ -121,7 +123,7 @@ class EventBus:
             else:
                 _LOGGER.debug("No subscribers... Discharging %s", event)
 
-        now = datetime.now(timezone.utc)
+        now = datetime.now(UTC)
         if debounce_time <= 0 or (
             now - event_processing_data.last_event_time
         ) > timedelta(seconds=debounce_time):
@@ -144,17 +146,14 @@ class EventBus:
                 handle.cancel()
 
     async def _call_refresh_function(self, event_class: type[T]) -> None:
-        semaphore = self._event_processing_dict[event_class].semaphore
+        processing_data = self._event_processing_dict[event_class]
+        semaphore = processing_data.semaphore
         if semaphore.locked():
             _LOGGER.debug("Already refresh function running. Skipping...")
             return
 
         async with semaphore:
-            from deebot_client.events.const import (  # pylint: disable=import-outside-toplevel
-                EVENT_DTO_REFRESH_COMMANDS,
-            )
-
-            commands = EVENT_DTO_REFRESH_COMMANDS.get(event_class, [])
+            commands = processing_data.refresh_commands
             if not commands:
                 return
 
@@ -172,7 +171,9 @@ class EventBus:
             event_processing_data = self._event_processing_dict.get(event_class, None)
 
             if event_processing_data is None:
-                event_processing_data = _EventProcessingData()
+                event_processing_data = _EventProcessingData(
+                    self._get_refresh_commands(event_class)
+                )
                 self._event_processing_dict[event_class] = event_processing_data
 
             return event_processing_data

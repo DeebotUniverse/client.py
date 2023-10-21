@@ -1,11 +1,17 @@
 import asyncio
-from unittest.mock import AsyncMock
+from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 
-from deebot_client.events.event_bus import EventBus
-from deebot_client.events.map import MapChangedEvent, Position, PositionType
-from deebot_client.map import MapData, _calc_point
+from deebot_client.event_bus import EventBus
+from deebot_client.events.map import (
+    MapChangedEvent,
+    MapSetEvent,
+    MapSubsetEvent,
+    Position,
+    PositionType,
+)
+from deebot_client.map import Map, MapData, _calc_point
 from deebot_client.models import Room
 
 _test_calc_point_data = [
@@ -15,7 +21,7 @@ _test_calc_point_data = [
 ]
 
 
-@pytest.mark.parametrize("x,y,image_box,expected", _test_calc_point_data)
+@pytest.mark.parametrize(("x", "y", "image_box", "expected"), _test_calc_point_data)
 def test_calc_point(
     x: int,
     y: int,
@@ -50,3 +56,16 @@ async def test_MapData(event_bus: EventBus) -> None:
     await asyncio.sleep(1.1)
 
     await test_cycle()
+
+
+async def test_Map_internal_subscriptions(
+    execute_mock: AsyncMock, event_bus_mock: Mock
+) -> None:
+    map = Map(execute_mock, event_bus_mock)
+
+    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
+    event_bus_mock.subscribe.assert_has_calls(calls)
+    assert len(map._unsubscribers_internal) == len(calls)
+
+    await map.teardown()
+    assert not map._unsubscribers_internal

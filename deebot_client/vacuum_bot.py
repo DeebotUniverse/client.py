@@ -1,16 +1,17 @@
 """Vacuum bot module."""
 import asyncio
-import json
 from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
+import json
 from typing import Any, Final
 
-from deebot_client.commands.json.battery import GetBattery
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
+from deebot_client.util import cancel
 
 from .authentication import Authenticator
 from .command import Command
+from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
     CleanLogEvent,
@@ -22,7 +23,6 @@ from .events import (
     StatsEvent,
     TotalStatsEvent,
 )
-from .events.event_bus import EventBus
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
@@ -41,16 +41,19 @@ class VacuumBot:
         authenticator: Authenticator,
     ):
         self.device_info: Final[DeviceInfo] = device_info
+        self.capabilities: Final = device_info.capabilities
         self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now()
-        self._available_task: asyncio.Task | None = None
+        self._available_task: asyncio.Task[Any] | None = None
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
-        self.events: Final[EventBus] = EventBus(self.execute_command)
+        self.events: Final[EventBus] = EventBus(
+            self.execute_command, self.capabilities.get_refresh_commands
+        )
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
@@ -122,14 +125,21 @@ class VacuumBot:
             if (datetime.now() - self._last_time_available).total_seconds() > (
                 _AVAILABLE_CHECK_INTERVAL - 1
             ):
-                # request GetBattery to check availability
+                tasks: set[asyncio.Future[Any]] = set()
                 try:
-                    self._set_available(await self._execute_command(GetBattery(True)))
+                    for command in self.capabilities.get_refresh_commands(
+                        AvailabilityEvent
+                    ):
+                        tasks.add(asyncio.create_task(self._execute_command(command)))
+
+                    result = await asyncio.gather(*tasks)
+                    self._set_available(all(result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
                         exc_info=True,
                     )
+                    await cancel(tasks)
             await asyncio.sleep(_AVAILABLE_CHECK_INTERVAL)
 
     async def _execute_command(self, command: Command) -> bool:
@@ -176,6 +186,4 @@ class VacuumBot:
 
                 message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling message")

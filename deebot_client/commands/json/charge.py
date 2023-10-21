@@ -2,12 +2,13 @@
 from typing import Any
 from xml.etree import ElementTree
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 from deebot_client.models import VacuumState
 
-from .common import EventBus, ExecuteCommand
+from .common import ExecuteCommand
 from .const import CODE
 
 _LOGGER = get_logger(__name__)

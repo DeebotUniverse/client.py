@@ -1,13 +1,14 @@
 """Base command."""
-import asyncio
 from abc import ABC, abstractmethod
+import asyncio
 from dataclasses import dataclass, field
 from typing import Any, final
-from xml.etree import ElementTree
+
+from deebot_client.exceptions import DeebotError
 
 from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
-from .events.event_bus import EventBus
+from .event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState
 from .models import DeviceInfo
@@ -19,7 +20,7 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] = field(default_factory=lambda: [])
+    requested_commands: list["Command"] = field(default_factory=list)
 
     @classmethod
     def success(cls) -> "CommandResult":
@@ -37,7 +38,7 @@ class Command(ABC):
 
     _targets_bot: bool = True
 
-    def __init__(self, args: dict | list | None = None) -> None:
+    def __init__(self, args: dict[str, Any] | list[Any] | None = None) -> None:
         if args is None:
             args = {}
         self._args = args
@@ -55,7 +56,7 @@ class Command(ABC):
         """Data type."""  # noqa: D401
 
     @abstractmethod
-    def _get_payload(self) -> dict[str, Any] | list | str:
+    def _get_payload(self) -> dict[str, Any] | list[Any] | str:
         """Get the payload for the rest call."""
 
     @final
@@ -64,7 +65,8 @@ class Command(ABC):
     ) -> bool:
         """Execute command.
 
-        Returns:
+        Returns
+        -------
             bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """
@@ -209,9 +211,51 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
+@dataclass
+class InitParam:
+    """Init param."""
+
+    type_: type
+    name: str | None = None
+
+
 class CommandMqttP2P(Command, ABC):
     """Command which can handle mqtt p2p messages."""
+
+    _mqtt_params: dict[str, InitParam | None]
 
     @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
+
+    @classmethod
+    def create_from_mqtt(cls, data: dict[str, Any]) -> "CommandMqttP2P":
+        """Create a command from the mqtt data."""
+        values: dict[str, Any] = {}
+        if not hasattr(cls, "_mqtt_params"):
+            raise DeebotError("_mqtt_params not set")
+
+        for name, param in cls._mqtt_params.items():
+            if param is None:
+                # Remove field
+                data.pop(name, None)
+            else:
+                values[param.name or name] = _pop_or_raise(name, param.type_, data)
+
+        if data:
+            _LOGGER.debug("Following data will be ignored: %s", data)
+
+        return cls(**values)
+
+
+def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
+    try:
+        value = data.pop(name)
+    except KeyError as err:
+        raise DeebotError(f'"{name}" is missing in {data}') from err
+    try:
+        return type_(value)
+    except ValueError as err:
+        raise DeebotError(
+            f'Could not convert "{value}" of {name} into {type_}'
+        ) from err

@@ -1,10 +1,9 @@
 """Battery messages."""
 from typing import Any
-from xml.etree import ElementTree
 
-from ..events import BatteryEvent
-from ..events.event_bus import EventBus
-from ..message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.event_bus import EventBus
+from deebot_client.events import BatteryEvent
+from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 
 class OnBattery(MessageBodyDataDict):

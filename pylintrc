@@ -81,3 +81,4 @@ overgeneral-exceptions=builtins.BaseException,
 
 [DESIGN]
 max-parents=10
+max-args=6

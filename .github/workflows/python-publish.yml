@@ -20,7 +20,7 @@ jobs:
       id-token: write
     steps:
       - name: 📥 Checkout the repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: 🔢 Get release version
         id: version
@@ -31,7 +31,7 @@ jobs:
           sed -i '/version=/c\    version="${{ steps.version.outputs.version }}",' "${{ github.workspace }}/setup.py"
 
       - name: Set up Python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
         with:
           python-version: "3.11"
 

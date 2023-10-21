@@ -2,14 +2,17 @@
 
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any, Optional
+from typing import Any
 
-from ..events.base import Event
-from ..models import Room, VacuumState
-from ..util import DisplayNameIntEnum
+from deebot_client.events.base import Event
+from deebot_client.models import Room, VacuumState
+from deebot_client.util import DisplayNameIntEnum
+
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
+    CachedMapInfoEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -20,6 +23,28 @@ from .map import (
     PositionType,
 )
 from .water_info import WaterAmount, WaterInfoEvent
+
+__all__ = [
+    "BatteryEvent",
+    "CachedMapInfoEvent",
+    "CleanJobStatus",
+    "CleanLogEntry",
+    "Event",
+    "FanSpeedEvent",
+    "FanSpeedLevel",
+    "MajorMapEvent",
+    "MapChangedEvent",
+    "MapSetEvent",
+    "MapSetType",
+    "MapSubsetEvent",
+    "MapTraceEvent",
+    "MinorMapEvent",
+    "Position",
+    "PositionType",
+    "PositionsEvent",
+    "WaterAmount",
+    "WaterInfoEvent",
+]
 
 
 @dataclass(frozen=True)
@@ -86,9 +111,9 @@ class ErrorEvent(Event):
 class LifeSpan(str, Enum):
     """Enum class for all possible life span components."""
 
-    SIDE_BRUSH = "sideBrush"
     BRUSH = "brush"
     FILTER = "heap"
+    SIDE_BRUSH = "sideBrush"
 
 
 @dataclass(frozen=True)

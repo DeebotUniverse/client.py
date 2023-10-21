@@ -2,14 +2,15 @@
 from typing import Any
 from xml.etree import ElementTree
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import VacuumState
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling
 
 
-class GetError(NoArgsCommand, MessageBodyDataDict):
+class GetError(CommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"

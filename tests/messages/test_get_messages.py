@@ -8,7 +8,7 @@ from deebot_client.messages.json.battery import OnBattery
 
 
 @pytest.mark.parametrize(
-    "name, data_type, expected",
+    ("name", "data_type", "expected"),
     [
         ("onBattery", DataType.JSON, OnBattery),
         ("onBattery_V2", DataType.JSON, OnBattery),
