@@ -38,6 +38,7 @@ from deebot_client.events import (
     WaterAmount,
     WaterInfoEvent,
 )
+from deebot_client.models import CleanAction
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -106,7 +107,7 @@ class CapabilitySetTypes(CapabilitySet[_EVENT, _T | str], CapabilityTypes[_T]):
 class CapabilityCleanAction:
     """Capabilities for clean action."""
 
-    command: type[Command]
+    command: Callable[[CleanAction], Command]
     area: type[Command]
 
 
@@ -125,7 +126,7 @@ class CapabilityClean:
 class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
     """Capability custom command."""
 
-    set: Callable[[Any], Command]
+    set: Callable[[str, Any], Command]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -176,7 +177,7 @@ class Capabilities:
     battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute
     clean: CapabilityClean
-    custom: CapabilityCustomCommand[CustomCommandEvent] | None = None
+    custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan

@@ -1,6 +1,6 @@
 """Models module."""
 from dataclasses import dataclass
-from enum import IntEnum, unique
+from enum import IntEnum, StrEnum, unique
 import os
 from typing import TYPE_CHECKING, Required, TypedDict
 
@@ -120,6 +120,25 @@ class VacuumState(IntEnum):
     DOCKED = 4
     ERROR = 5
     PAUSED = 6
+
+
+@unique
+class CleanAction(StrEnum):
+    """Enum class for all possible clean actions."""
+
+    START = "start"
+    PAUSE = "pause"
+    RESUME = "resume"
+    STOP = "stop"
+
+
+@unique
+class CleanMode(StrEnum):
+    """Enum class for all possible clean modes."""
+
+    AUTO = "auto"
+    SPOT_AREA = "spotArea"
+    CUSTOM_AREA = "customArea"
 
 
 @dataclass(frozen=True)

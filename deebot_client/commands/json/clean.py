@@ -1,5 +1,4 @@
 """Clean commands."""
-from enum import Enum, unique
 from typing import Any
 
 from deebot_client.authentication import Authenticator
@@ -8,30 +7,11 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import DeviceInfo, VacuumState
+from deebot_client.models import CleanAction, CleanMode, DeviceInfo, VacuumState
 
 from .common import CommandWithMessageHandling, ExecuteCommand
 
 _LOGGER = get_logger(__name__)
-
-
-@unique
-class CleanAction(str, Enum):
-    """Enum class for all possible clean actions."""
-
-    START = "start"
-    PAUSE = "pause"
-    RESUME = "resume"
-    STOP = "stop"
-
-
-@unique
-class CleanMode(str, Enum):
-    """Enum class for all possible clean modes."""
-
-    AUTO = "auto"
-    SPOT_AREA = "spotArea"
-    CUSTOM_AREA = "customArea"
 
 
 class Clean(ExecuteCommand):
