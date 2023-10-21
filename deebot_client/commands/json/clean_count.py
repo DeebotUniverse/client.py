@@ -15,9 +15,6 @@ class GetCleanCount(CommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getCleanCount"
 
-    # TODO Potentially not available on XML based models?
-    xml_name = "GetCleanCount"
-
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -30,20 +27,11 @@ class GetCleanCount(CommandWithMessageHandling, MessageBodyDataDict):
         event_bus.notify(CleanCountEvent(count=data["count"]))
         return HandlingResult.success()
 
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
-
 
 class SetCleanCount(SetCommand):
     """Set clean count command."""
 
     name = "setCleanCount"
-    # TODO Potentially not available on XML based models?
-    xml_name = "SetCleanCount"
-
     get_command = GetCleanCount
     _mqtt_params = {"count": InitParam(int)}
 

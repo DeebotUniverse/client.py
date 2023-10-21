@@ -2,12 +2,11 @@ from xml.etree import ElementTree
 
 from deebot_client.authentication import Authenticator
 from deebot_client.command import CommandResult
-from deebot_client.commands.json.clean import CleanAction, CleanMode
 from deebot_client.commands.json.common import ExecuteCommand, NoArgsCommand
+from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import DeviceInfo, VacuumState
+from deebot_client.models import CleanAction, CleanMode, DeviceInfo, VacuumState
 
 
 @unique
