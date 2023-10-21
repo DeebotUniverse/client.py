@@ -30,7 +30,15 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> N
     await assert_command(GetWaterInfo(), json, expected)
 
 
-async def test_SetWaterInfo() -> None:
-    command = SetWaterInfo(WaterAmount.MEDIUM)
+@pytest.mark.parametrize(("value"), [WaterAmount.MEDIUM, "medium"])
+async def test_SetWaterInfo(value: WaterAmount | str) -> None:
+    command = SetWaterInfo(value)
     args = {"amount": 2}
     await assert_set_command(command, args, WaterInfoEvent(None, WaterAmount.MEDIUM))
+
+
+def test_SetWaterInfo_inexisting_value() -> None:
+    with pytest.raises(
+        ValueError, match="'INEXSTING' is not a valid WaterAmount member"
+    ):
+        SetWaterInfo("inexsting")

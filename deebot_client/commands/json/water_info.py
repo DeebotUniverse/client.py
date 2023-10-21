@@ -40,5 +40,7 @@ class SetWaterInfo(SetCommand):
         "enable": None,  # Remove it as we don't can set it (App includes it)
     }
 
-    def __init__(self, amount: WaterAmount) -> None:
+    def __init__(self, amount: WaterAmount | str) -> None:
+        if isinstance(amount, str):
+            amount = WaterAmount.get(amount)
         super().__init__({"amount": amount.value})

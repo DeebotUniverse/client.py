@@ -10,7 +10,9 @@ from deebot_client.util import DisplayNameIntEnum
 
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
+    CachedMapInfoEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -23,23 +25,25 @@ from .map import (
 from .water_info import WaterAmount, WaterInfoEvent
 
 __all__ = [
-    "Event",
     "BatteryEvent",
+    "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
-    "WaterAmount",
-    "WaterInfoEvent",
+    "Event",
+    "FanSpeedEvent",
+    "FanSpeedLevel",
     "MajorMapEvent",
+    "MapChangedEvent",
     "MapSetEvent",
     "MapSetType",
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
     "Position",
-    "PositionsEvent",
     "PositionType",
-    "FanSpeedEvent",
-    "FanSpeedLevel",
+    "PositionsEvent",
+    "WaterAmount",
+    "WaterInfoEvent",
 ]
 
 
@@ -107,9 +111,9 @@ class ErrorEvent(Event):
 class LifeSpan(str, Enum):
     """Enum class for all possible life span components."""
 
-    SIDE_BRUSH = "sideBrush"
     BRUSH = "brush"
     FILTER = "heap"
+    SIDE_BRUSH = "sideBrush"
 
 
 @dataclass(frozen=True)

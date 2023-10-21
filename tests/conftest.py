@@ -6,12 +6,16 @@ import aiohttp
 from aiomqtt import Client
 import pytest
 
-from deebot_client import hardware
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
 from deebot_client.event_bus import EventBus
-from deebot_client.hardware.device_capabilities import DeviceCapabilities
-from deebot_client.models import Configuration, Credentials, DeviceInfo
+from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
+from deebot_client.models import (
+    Configuration,
+    Credentials,
+    DeviceInfo,
+    StaticDeviceInfo,
+)
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.vacuum_bot import VacuumBot
 
@@ -103,7 +107,12 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-def device_info() -> DeviceInfo:
+def static_device_info() -> StaticDeviceInfo:
+    return get_static_device_info(FALLBACK)
+
+
+@pytest.fixture
+def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
     return DeviceInfo(
         {
             "company": "company",
@@ -114,7 +123,8 @@ def device_info() -> DeviceInfo:
             "deviceName": "device_name",
             "status": 1,
             "class": "get_class",
-        }
+        },
+        static_device_info,
     )
 
 
@@ -135,15 +145,8 @@ def execute_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def device_capabilities() -> DeviceCapabilities:
-    return hardware._DEFAULT
-
-
-@pytest.fixture
-def event_bus(
-    execute_mock: AsyncMock, device_capabilities: DeviceCapabilities
-) -> EventBus:
-    return EventBus(execute_mock, device_capabilities)
+def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
+    return EventBus(execute_mock, device_info.capabilities.get_refresh_commands)
 
 
 @pytest.fixture

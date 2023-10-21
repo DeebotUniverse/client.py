@@ -19,7 +19,7 @@ def _verify_event_command_called(
     expected_call: bool,
     event_bus: EventBus,
 ) -> None:
-    for command in event_bus._device_capabilities.get_refresh_commands(event):
+    for command in event_bus._get_refresh_commands(event):
         assert (call(command) in execute_mock.call_args_list) == expected_call
 
 

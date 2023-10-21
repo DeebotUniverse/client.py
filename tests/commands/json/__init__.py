@@ -13,6 +13,7 @@ from deebot_client.commands.json.common import (
 )
 from deebot_client.event_bus import EventBus
 from deebot_client.events import EnableEvent, Event
+from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
 from deebot_client.models import Credentials, DeviceInfo
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
@@ -38,7 +39,8 @@ async def assert_command(
             "deviceName": "device_name",
             "status": 1,
             "class": "get_class",
-        }
+        },
+        get_static_device_info(FALLBACK),
     )
 
     await command.execute(authenticator, device_info, event_bus)

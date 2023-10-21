@@ -33,5 +33,7 @@ class SetFanSpeed(SetCommand):
     get_command = GetFanSpeed
     _mqtt_params = {"speed": InitParam(FanSpeedLevel)}
 
-    def __init__(self, speed: FanSpeedLevel) -> None:
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
+        if isinstance(speed, str):
+            speed = FanSpeedLevel.get(speed)
         super().__init__({"speed": speed.value})

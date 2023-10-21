@@ -6,7 +6,6 @@ from datetime import datetime
 import json
 from typing import Any, Final
 
-from deebot_client.hardware import get_device_capabilities
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
@@ -42,9 +41,9 @@ class VacuumBot:
         authenticator: Authenticator,
     ):
         self.device_info: Final[DeviceInfo] = device_info
+        self.capabilities: Final = device_info.capabilities
         self._authenticator = authenticator
 
-        self._device_capabilities = get_device_capabilities(device_info.get_class)
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now()
@@ -53,7 +52,7 @@ class VacuumBot:
 
         self.fw_version: str | None = None
         self.events: Final[EventBus] = EventBus(
-            self.execute_command, self._device_capabilities
+            self.execute_command, self.capabilities.get_refresh_commands
         )
 
         self.map: Final[Map] = Map(self.execute_command, self.events)
@@ -128,7 +127,7 @@ class VacuumBot:
             ):
                 tasks: set[asyncio.Future[Any]] = set()
                 try:
-                    for command in self._device_capabilities.get_refresh_commands(
+                    for command in self.capabilities.get_refresh_commands(
                         AvailabilityEvent
                     ):
                         tasks.add(asyncio.create_task(self._execute_command(command)))
