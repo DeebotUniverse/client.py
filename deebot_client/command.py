@@ -142,28 +142,6 @@ class Command(ABC):
             headers=REQUEST_HEADERS,
         )
 
-    def _generate_json_payload(self, device_info: DeviceInfo) -> dict[str, Any]:
-        return {
-            "cmdName": self.name,
-            "payload": self._get_json_payload(),
-            "payloadType": "j",
-            "td": "q",
-            "toId": device_info.did,
-            "toRes": device_info.resource,
-            "toType": device_info.get_class,
-        }
-
-    def _generate_xml_payload(self, device_info: DeviceInfo) -> dict[str, Any]:
-        return {
-            "cmdName": self.xml_name,
-            "payload": self._get_xml_payload(),
-            "payloadType": "x",
-            "td": "q",
-            "toId": device_info.did,
-            "toRes": device_info.resource,
-            "toType": device_info.get_class,
-        }
-
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
