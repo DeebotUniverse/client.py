@@ -34,10 +34,12 @@ from deebot_client.events import (
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
+    CustomCommandEvent,
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
     MultimapStateEvent,
+    ReportStatsEvent,
     RoomsEvent,
     StateEvent,
     StatsEvent,
@@ -50,6 +52,7 @@ from deebot_client.events.fan_speed import FanSpeedEvent
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
+    MapChangedEvent,
     MapTraceEvent,
     PositionsEvent,
 )
@@ -63,7 +66,7 @@ from deebot_client.models import StaticDeviceInfo
     ("class_", "expected"),
     [
         ("not_specified", lambda: DEVICES[FALLBACK]),
-        ("yna5x1", lambda: DEVICES["yna5x1"]),
+        ("yna5xi", lambda: DEVICES["yna5xi"]),
     ],
 )
 def test_get_static_device_info(
@@ -89,15 +92,18 @@ def test_get_static_device_info(
                 CleanLogEvent: [GetCleanLogs()],
                 CleanPreferenceEvent: [GetCleanPreference()],
                 ContinuousCleaningEvent: [GetContinuousCleaning()],
+                CustomCommandEvent: [],
                 ErrorEvent: [GetError()],
                 FanSpeedEvent: [GetFanSpeed()],
                 LifeSpanEvent: [
                     GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])
                 ],
+                MapChangedEvent: [],
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
                 PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
                 StateEvent: [GetChargeState(), GetCleanInfo()],
                 StatsEvent: [GetStats()],
@@ -108,7 +114,7 @@ def test_get_static_device_info(
             },
         ),
         (
-            "yna5x1",
+            "yna5xi",
             {
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(True)],
@@ -117,15 +123,18 @@ def test_get_static_device_info(
                 CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
                 CleanLogEvent: [GetCleanLogs()],
                 ContinuousCleaningEvent: [GetContinuousCleaning()],
+                CustomCommandEvent: [],
                 ErrorEvent: [GetError()],
                 FanSpeedEvent: [GetFanSpeed()],
                 LifeSpanEvent: [
                     GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])
                 ],
+                MapChangedEvent: [],
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
                 PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
                 StateEvent: [GetChargeState(), GetCleanInfo()],
                 StatsEvent: [GetStats()],
