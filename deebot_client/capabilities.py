@@ -38,7 +38,7 @@ from deebot_client.events import (
     WaterAmount,
     WaterInfoEvent,
 )
-from deebot_client.models import CleanAction
+from deebot_client.models import CleanAction, CleanMode
 
 if TYPE_CHECKING:
     from _typeshed import DataclassInstance
@@ -108,7 +108,7 @@ class CapabilityCleanAction:
     """Capabilities for clean action."""
 
     command: Callable[[CleanAction], Command]
-    area: type[Command]
+    area: Callable[[CleanMode, str, int], Command]
 
 
 @dataclass(frozen=True, kw_only=True)
