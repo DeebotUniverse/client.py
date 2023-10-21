@@ -11,8 +11,6 @@ class ReportStats(MessageBodyDataDict):
 
     name = "reportStats"
 
-    xml_name = "GetReportStats"
-
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -37,9 +35,3 @@ class ReportStats(MessageBodyDataDict):
         )
         event_bus.notify(stats_event)
         return HandlingResult.success()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
