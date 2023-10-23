@@ -10,7 +10,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.1.0
+    rev: v0.1.1
     hooks:
       - id: ruff
         args:
@@ -22,7 +22,7 @@ repos:
         args:
           - --py311-plus
   - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 23.9.1
+    rev: 23.10.0
     hooks:
       - id: black
         args:
