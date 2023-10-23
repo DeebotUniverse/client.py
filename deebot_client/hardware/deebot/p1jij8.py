@@ -1,4 +1,4 @@
-"""Fallback Capabilities."""
+"""Deebot T20 Omni Capabilities."""
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -49,6 +49,7 @@ from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
+from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -80,6 +81,7 @@ from deebot_client.events import (
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    WorkModeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -104,6 +106,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
             ),
+            work_mode=CapabilitySet(WorkModeEvent, [GetWorkMode()], SetWorkMode),
         ),
         custom=CapabilityCustomCommand(
             event=CustomCommandEvent, get=[], set=CustomCommand
