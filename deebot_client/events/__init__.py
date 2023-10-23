@@ -23,6 +23,7 @@ from .map import (
     PositionType,
 )
 from .water_info import WaterAmount, WaterInfoEvent
+from .work_mode import WorkMode, WorkModeEvent
 
 __all__ = [
     "BatteryEvent",
@@ -44,6 +45,8 @@ __all__ = [
     "PositionsEvent",
     "WaterAmount",
     "WaterInfoEvent",
+    "WorkMode",
+    "WorkModeEvent",
 ]
 
 

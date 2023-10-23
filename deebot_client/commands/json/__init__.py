@@ -31,6 +31,7 @@ from .stats import GetStats, GetTotalStats
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
+from .work_mode import GetWorkMode, SetWorkMode
 
 __all__ = [
     "GetAdvancedMode",
@@ -74,6 +75,8 @@ __all__ = [
     "SetVolume",
     "GetWaterInfo",
     "SetWaterInfo",
+    "GetWorkMode",
+    "SetWorkMode",
 ]
 
 # fmt: off
@@ -141,6 +144,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetWaterInfo,
     SetWaterInfo,
+
+    GetWorkMode,
+    SetWorkMode
 ]
 # fmt: on
 
