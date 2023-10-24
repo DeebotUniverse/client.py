@@ -5,7 +5,7 @@ from enum import Enum, unique
 from typing import Any
 
 from deebot_client.events.base import Event
-from deebot_client.models import Room, VacuumState
+from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
@@ -175,7 +175,7 @@ class AvailabilityEvent(Event):
 class StateEvent(Event):
     """State event representation."""
 
-    state: VacuumState
+    state: State
 
 
 @dataclass(frozen=True)

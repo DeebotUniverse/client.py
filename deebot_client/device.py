@@ -1,4 +1,4 @@
-"""Vacuum bot module."""
+"""Device module."""
 import asyncio
 from collections.abc import Callable
 from contextlib import suppress
@@ -27,14 +27,14 @@ from .events import (
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
-from .models import DeviceInfo, VacuumState
+from .models import DeviceInfo, State
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
 
-class VacuumBot:
-    """Vacuum bot representation."""
+class Device:
+    """Device representation."""
 
     def __init__(
         self,
@@ -60,7 +60,7 @@ class VacuumBot:
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
         async def on_pos(event: PositionsEvent) -> None:
-            if self._state == StateEvent(VacuumState.DOCKED):
+            if self._state == StateEvent(State.DOCKED):
                 return
 
             deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
@@ -79,7 +79,7 @@ class VacuumBot:
         self.events.subscribe(PositionsEvent, on_pos)
 
         async def on_state(event: StateEvent) -> None:
-            if event.state == VacuumState.DOCKED:
+            if event.state == State.DOCKED:
                 self.events.request_refresh(CleanLogEvent)
                 self.events.request_refresh(TotalStatsEvent)
 

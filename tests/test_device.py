@@ -5,16 +5,16 @@ from unittest.mock import Mock, patch
 
 from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
-from deebot_client.vacuum_bot import VacuumBot
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
 
 
-@patch("deebot_client.vacuum_bot._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
+@patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
 async def test_available_check_and_teardown(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
@@ -36,7 +36,7 @@ async def test_available_check_and_teardown(
     execute_mock = battery_mock.execute
 
     # prepare bot and mock mqtt
-    bot = VacuumBot(device_info, authenticator)
+    bot = Device(device_info, authenticator)
     mqtt_client = Mock(spec=MqttClient)
     unsubscribe_mock = Mock(spec=Callable[[], None])
     mqtt_client.subscribe.return_value = unsubscribe_mock

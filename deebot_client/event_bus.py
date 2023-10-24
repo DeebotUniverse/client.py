@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
 from .logging_filter import get_logger
-from .models import VacuumState
+from .models import State
 from .util import cancel, create_task
 
 if TYPE_CHECKING:
@@ -93,13 +93,13 @@ class EventBus:
 
             if (
                 isinstance(event, StateEvent)
-                and event.state == VacuumState.IDLE
+                and event.state == State.IDLE
                 and event_processing_data.last_event
-                and event_processing_data.last_event.state == VacuumState.DOCKED  # type: ignore[attr-defined]
+                and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
             ):
                 # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
                 # Problem getCleanInfo will return state=idle, when bot is charging
-                event = StateEvent(VacuumState.DOCKED)  # type: ignore[assignment]
+                event = StateEvent(State.DOCKED)  # type: ignore[assignment]
             elif (
                 isinstance(event, AvailabilityEvent)
                 and event.available
