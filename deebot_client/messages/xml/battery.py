@@ -6,7 +6,7 @@ from deebot_client.message import HandlingResult, HandlingState
 
 
 class OnBattery():
-    
+
     name = "OnBattery"
 
     @classmethod
