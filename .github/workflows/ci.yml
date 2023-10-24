@@ -15,10 +15,10 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Check code quality
     steps:
-      - uses: "actions/checkout@v3"
+      - uses: "actions/checkout@v4"
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: "pip"
@@ -39,10 +39,10 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Run tests
     steps:
-      - uses: "actions/checkout@v3"
+      - uses: "actions/checkout@v4"
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
-        uses: actions/setup-python@v4.7.0
+        uses: actions/setup-python@v4.7.1
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: "pip"

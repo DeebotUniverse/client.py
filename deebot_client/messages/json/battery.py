@@ -1,10 +1,9 @@
 """Battery messages."""
 from typing import Any
-from xml.etree import ElementTree
 
-from ..events import BatteryEvent
-from ..events.event_bus import EventBus
-from ..message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.event_bus import EventBus
+from deebot_client.events import BatteryEvent
+from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 
 class OnBattery(MessageBodyDataDict):
@@ -21,15 +20,4 @@ class OnBattery(MessageBodyDataDict):
         :return: A message response
         """
         event_bus.notify(BatteryEvent(data["value"]))
-        return HandlingResult.success()
-
-    @classmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, xml: str) -> HandlingResult:
-        tree = ElementTree.fromstring(xml)
-        element = tree.find("battery")
-
-        if element is None:
-            return HandlingResult(HandlingState.ERROR)
-
-        event_bus.notify(BatteryEvent(int(element.attrib.get("power"))))
         return HandlingResult.success()

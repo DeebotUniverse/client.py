@@ -1,8 +1,8 @@
 """Stats messages."""
 from typing import Any
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import CleanJobStatus, ReportStatsEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 
@@ -10,8 +10,6 @@ class ReportStats(MessageBodyDataDict):
     """Report stats message."""
 
     name = "reportStats"
-
-    xml_name = "GetReportStats"
 
     @classmethod
     def _handle_body_data_dict(
@@ -37,9 +35,3 @@ class ReportStats(MessageBodyDataDict):
         )
         event_bus.notify(stats_event)
         return HandlingResult.success()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError

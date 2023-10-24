@@ -1,11 +1,13 @@
 """Api client module."""
 from typing import Any
 
+from deebot_client.hardware.deebot import get_static_device_info
+
 from .authentication import Authenticator
 from .const import PATH_API_APPSVR_APP, PATH_API_PIM_PRODUCT_IOT_MAP
 from .exceptions import ApiError
 from .logging_filter import get_logger
-from .models import DeviceInfo
+from .models import ApiDeviceInfo, DeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -27,9 +29,11 @@ class ApiClient:
 
         if resp.get("code", None) == 0:
             devices: list[DeviceInfo] = []
+            device: ApiDeviceInfo
             for device in resp["devices"]:
                 if device.get("company") == "eco-ng":
-                    devices.append(DeviceInfo(device))
+                    static_device_info = get_static_device_info(device["class"])
+                    devices.append(DeviceInfo(device, static_device_info))
                 else:
                     _LOGGER.debug("Skipping device as it is not supported: %s", device)
             return devices

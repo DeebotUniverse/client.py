@@ -1,20 +1,18 @@
 """Error commands."""
 from typing import Any
-from xml.etree import ElementTree
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import VacuumState
 
-from .common import EventBus, NoArgsCommand
+from .common import CommandWithMessageHandling
 
 
-class GetError(NoArgsCommand, MessageBodyDataDict):
+class GetError(CommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"
-
-    xml_name = "GetError"
 
     @classmethod
     def _handle_body_data_dict(
@@ -37,27 +35,6 @@ class GetError(NoArgsCommand, MessageBodyDataDict):
                 return HandlingResult.success()
 
         return HandlingResult.analyse()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        element = ElementTree.fromstring(xml_message)
-
-        error_code = element.attrib.get("errs")
-
-        if error_code == "":
-            event_bus.notify(ErrorEvent(0, _ERROR_CODES.get(0)))
-            return HandlingResult.success()
-
-        error_code = int(error_code)
-
-        if error_code != 0:
-            event_bus.notify(StateEvent(VacuumState.ERROR))
-
-        description = _ERROR_CODES.get(error_code)
-        event_bus.notify(ErrorEvent(error_code, description))
-        return HandlingResult.success()
 
 
 # from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.json

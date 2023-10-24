@@ -7,7 +7,5 @@ class SetRelocationState(ExecuteCommand):
 
     name = "setRelocationState"
 
-    xml_name = "SetRelocationState"
-
     def __init__(self) -> None:
         super().__init__({"mode": "manu"})

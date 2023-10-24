@@ -1,18 +1,19 @@
 """MQTT module."""
 import asyncio
-import json
-import ssl
 from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
+import json
+import ssl
+from typing import Any
 
 from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.command import CommandMqttP2P
 from deebot_client.const import DataType
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 
 from .authentication import Authenticator
@@ -97,7 +98,7 @@ class MqttClient:
         self._subscribtion_changes: asyncio.Queue[
             tuple[SubscriberInfo, bool]
         ] = asyncio.Queue()
-        self._mqtt_task: asyncio.Task | None = None
+        self._mqtt_task: asyncio.Task[Any] | None = None
 
         self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(
             maxsize=60 * 60, ttl=60
@@ -191,13 +192,12 @@ class MqttClient:
                         exc_info=True,
                     )
                 except AuthenticationError:
-                    _LOGGER.error(
-                        "Could not authenticate. Please check your credentials and afterwards reload the integration.",
-                        exc_info=True,
+                    _LOGGER.exception(
+                        "Could not authenticate. Please check your credentials and afterwards reload the integration."
                     )
                     return
                 except Exception:  # pylint: disable=broad-except
-                    _LOGGER.error("An exception occurred", exc_info=True)
+                    _LOGGER.exception("An exception occurred")
                     return
 
                 await asyncio.sleep(RECONNECT_INTERVAL)
@@ -252,9 +252,7 @@ class MqttClient:
             if sub_info := self._subscribtions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling atr message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling atr message")
 
     def _handle_p2p(
         self, topic_split: list[str], payload: str | bytes | bytearray
@@ -289,19 +287,18 @@ class MqttClient:
                     )
                     return
 
-                self._received_p2p_commands[request_id] = command_type(**data)
+                self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
+                    data
+                )
+            elif command := self._received_p2p_commands.pop(request_id, None):
+                if sub_info := self._subscribtions.get(topic_split[3]):
+                    data = json.loads(payload)
+                    command.handle_mqtt_p2p(sub_info.events, data)
             else:
-                if command := self._received_p2p_commands.pop(request_id, None):
-                    if sub_info := self._subscribtions.get(topic_split[3]):
-                        data = json.loads(payload)
-                        command.handle_mqtt_p2p(sub_info.events, data)
-                else:
-                    _LOGGER.debug(
-                        "Response to command came in probably to late. requestId=%s, commandName=%s",
-                        request_id,
-                        command_name,
-                    )
+                _LOGGER.debug(
+                    "Response to command came in probably to late. requestId=%s, commandName=%s",
+                    request_id,
+                    command_name,
+                )
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.error(
-                "An exception occurred during handling p2p message", exc_info=True
-            )
+            _LOGGER.exception("An exception occurred during handling p2p message")

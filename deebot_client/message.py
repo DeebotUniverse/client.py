@@ -1,12 +1,12 @@
 """Base messages."""
-import functools
 from abc import ABC, abstractmethod
 from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
+import functools
 from typing import Any, TypeVar, final
 
-from .events.event_bus import EventBus
+from .event_bus import EventBus
 from .logging_filter import get_logger
 
 _LOGGER = get_logger(__name__)
@@ -172,7 +172,7 @@ class MessageBodyData(MessageBody):
     @classmethod
     @abstractmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list | str
+        cls, event_bus: EventBus, data: dict[str, Any] | list[Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -182,7 +182,7 @@ class MessageBodyData(MessageBody):
     @classmethod
     @final
     def __handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list | str
+        cls, event_bus: EventBus, data: dict[str, Any] | list[Any]
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
@@ -225,7 +225,7 @@ class MessageBodyDataDict(MessageBodyData):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list | str
+        cls, event_bus: EventBus, data: dict[str, Any] | list[Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -256,7 +256,9 @@ class MessageBodyDataList(MessageBodyData):
 
     @classmethod
     @abstractmethod
-    def _handle_body_data_list(cls, event_bus: EventBus, data: list) -> HandlingResult:
+    def _handle_body_data_list(
+        cls, event_bus: EventBus, data: list[Any]
+    ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
@@ -264,7 +266,7 @@ class MessageBodyDataList(MessageBodyData):
 
     @classmethod
     def _handle_body_data(
-        cls, event_bus: EventBus, data: dict[str, Any] | list
+        cls, event_bus: EventBus, data: dict[str, Any] | list[Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 

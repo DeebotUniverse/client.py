@@ -25,7 +25,8 @@ class XmlCommand(Command):
             if self.has_sub_element:
                 element = ElementTree.SubElement(element, self.name.lower())
 
-            for key in self._args:
-                element.set(key, self._args[key])
+            if isinstance(self._args, dict):
+                for key, value in self._args.items():
+                    element.set(key, value)
 
         return ElementTree.tostring(ctl_element, "unicode")

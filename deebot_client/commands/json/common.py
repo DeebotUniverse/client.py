@@ -1,14 +1,13 @@
 """Base commands."""
 from abc import ABC, abstractmethod
-from collections.abc import Mapping
 from datetime import datetime
 from typing import Any
 from xml.etree import ElementTree
 
-from deebot_client.command import Command, CommandMqttP2P, CommandResult
+from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
+from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent, EnableEvent
-from deebot_client.events.event_bus import EventBus
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
@@ -27,7 +26,7 @@ class JsonCommand(Command):
 
     data_type: DataType = DataType.JSON
 
-    def _get_payload(self) -> dict[str, Any] | list:
+    def _get_payload(self) -> dict[str, Any] | list[Any]:
         payload = {
             "header": {
                 "pri": "1",
@@ -86,13 +85,6 @@ class CommandWithMessageHandling(JsonCommand, MessageBody, ABC):
         return CommandResult(HandlingState.ANALYSE)
 
 
-class NoArgsCommand(CommandWithMessageHandling, ABC):
-    """Command without args."""
-
-    def __init__(self) -> None:
-        super().__init__()
-
-
 class ExecuteCommand(CommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
@@ -124,16 +116,6 @@ class SetCommand(ExecuteCommand, CommandMqttP2P, ABC):
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
     """
 
-    def __init__(
-        self,
-        args: dict | list | None,
-        **kwargs: Mapping[str, Any],
-    ) -> None:
-        if kwargs:
-            _LOGGER.debug("Following passed parameters will be ignored: %s", kwargs)
-
-        super().__init__(args)
-
     @property
     @abstractmethod
     def get_command(self) -> type[CommandWithMessageHandling]:
@@ -147,7 +129,7 @@ class SetCommand(ExecuteCommand, CommandMqttP2P, ABC):
             self.get_command.handle(event_bus, self._args)
 
 
-class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
+class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
 
     @property  # type: ignore[misc]
@@ -178,13 +160,7 @@ class GetEnableCommand(NoArgsCommand, MessageBodyDataDict, ABC):
 class SetEnableCommand(SetCommand, ABC):
     """Abstract set enable command."""
 
-    def __init__(self, enable: int | bool, **kwargs: Mapping[str, Any]) -> None:
-        if isinstance(enable, bool):
-            enable = 1 if enable else 0
-        super().__init__({"enable": enable}, **kwargs)
+    _mqtt_params = {"enable": InitParam(bool)}
 
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
+    def __init__(self, enable: bool) -> None:
+        super().__init__({"enable": 1 if enable else 0})

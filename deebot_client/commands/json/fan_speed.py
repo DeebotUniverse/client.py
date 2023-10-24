@@ -1,14 +1,15 @@
 """(fan) speed commands."""
-from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import InitParam
+from deebot_client.event_bus import EventBus
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand, SetCommand
+from .common import CommandWithMessageHandling, SetCommand
 
 
-class GetFanSpeed(NoArgsCommand, MessageBodyDataDict):
+class GetFanSpeed(CommandWithMessageHandling, MessageBodyDataDict):
     """Get fan speed command."""
 
     name = "getSpeed"
@@ -30,13 +31,9 @@ class SetFanSpeed(SetCommand):
 
     name = "setSpeed"
     get_command = GetFanSpeed
+    _mqtt_params = {"speed": InitParam(FanSpeedLevel)}
 
-    def __init__(
-        self, speed: str | int | FanSpeedLevel, **kwargs: Mapping[str, Any]
-    ) -> None:
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
         if isinstance(speed, str):
             speed = FanSpeedLevel.get(speed)
-        if isinstance(speed, FanSpeedLevel):
-            speed = speed.value
-
-        super().__init__({"speed": speed}, **kwargs)
+        super().__init__({"speed": speed.value})

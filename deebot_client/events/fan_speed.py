@@ -3,7 +3,8 @@
 from dataclasses import dataclass
 from enum import Enum
 
-from ..util import DisplayNameIntEnum
+from deebot_client.util import DisplayNameIntEnum
+
 from .base import Event
 
 

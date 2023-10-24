@@ -1,14 +1,13 @@
-from deebot_client.authentication import Authenticator
-from deebot_client.command import CommandResult
-from deebot_client.commands.json.clean import CleanAction, CleanMode
-from deebot_client.commands.json.common import ExecuteCommand, NoArgsCommand
-from deebot_client.events import StateEvent
-from deebot_client.events.event_bus import EventBus
-from deebot_client.message import HandlingResult, MessageBodyDataDict
-
 from xml.etree import ElementTree
 
-from deebot_client.models import DeviceInfo, VacuumState
+from deebot_client.authentication import Authenticator
+from deebot_client.command import CommandResult
+from deebot_client.commands.json.common import ExecuteCommand, NoArgsCommand
+from deebot_client.event_bus import EventBus
+from deebot_client.events import StateEvent
+from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.models import CleanAction, CleanMode, DeviceInfo, VacuumState
+
 
 @unique
 class CleanSpeed(str, Enum):
@@ -20,6 +19,7 @@ class CleanSpeed(str, Enum):
     STANDARD = "standard"
     STRONG = "strong"
 
+
 class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     """Get clean info command."""
 
@@ -29,7 +29,6 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
     def _handle_body_data_xml(
         cls, event_bus: EventBus, xml_message: str
     ) -> HandlingResult:
-        
         status: VacuumState | None = None
 
         tree = ElementTree.fromstring(xml_message)
@@ -56,6 +55,7 @@ class GetCleanInfo(NoArgsCommand, MessageBodyDataDict):
 
         return HandlingResult.analyse()
 
+
 class CleanArea(Clean):
     """Clean area command."""
 
@@ -68,13 +68,15 @@ class CleanArea(Clean):
         self._args["content"] = str(area)
         self._args["count"] = cleanings
 
-class Clean(ExecuteCommand):
 
+class Clean(ExecuteCommand):
     name = "Clean"
 
     has_sub_element = True
 
-    async def _execute(self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus) -> CommandResult:
+    async def _execute(
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+    ) -> CommandResult:
         state = event_bus.get_last_event(StateEvent)
 
         if state and isinstance(self._args, dict):

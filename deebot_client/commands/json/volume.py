@@ -1,20 +1,19 @@
 """Volume command module."""
 
-from collections.abc import Mapping
 from typing import Any
 
+from deebot_client.command import InitParam
+from deebot_client.event_bus import EventBus
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import EventBus, NoArgsCommand, SetCommand
+from .common import CommandWithMessageHandling, SetCommand
 
 
-class GetVolume(NoArgsCommand, MessageBodyDataDict):
+class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"
-
-    xml_name = "GetVolume"
 
     @classmethod
     def _handle_body_data_dict(
@@ -30,23 +29,16 @@ class GetVolume(NoArgsCommand, MessageBodyDataDict):
         )
         return HandlingResult.success()
 
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
-
 
 class SetVolume(SetCommand):
     """Set volume command."""
 
     name = "setVolume"
-
-    xml_name = "SetVolume"
-
     get_command = GetVolume
+    _mqtt_params = {
+        "volume": InitParam(int),
+        "total": None,  # Remove it as we don't can set it (App includes it)
+    }
 
-    def __init__(self, volume: int, **kwargs: Mapping[str, Any]) -> None:
-        # removing "total" as we don't can set it (App includes it)
-        kwargs.pop("total", None)
-        super().__init__({"volume": volume}, **kwargs)
+    def __init__(self, volume: int) -> None:
+        super().__init__({"volume": volume})
