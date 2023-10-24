@@ -27,6 +27,7 @@ from deebot_client.events import (
     MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
+    NetworkInfoEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -185,6 +186,7 @@ class Capabilities:
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
+    network: CapabilityEvent[NetworkInfoEvent] | None
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]

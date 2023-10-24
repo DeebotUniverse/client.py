@@ -22,6 +22,7 @@ from .map import (
     PositionsEvent,
     PositionType,
 )
+from .network import NetworkInfoEvent
 from .water_info import WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
@@ -40,6 +41,7 @@ __all__ = [
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
+    "NetworkInfoEvent",
     "Position",
     "PositionType",
     "PositionsEvent",
