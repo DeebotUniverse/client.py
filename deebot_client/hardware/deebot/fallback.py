@@ -42,6 +42,7 @@ from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
 )
+from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
@@ -70,6 +71,7 @@ from deebot_client.events import (
     MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
+    NetworkInfoEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -138,6 +140,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
+        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
             advanced_mode=CapabilitySetEnable(

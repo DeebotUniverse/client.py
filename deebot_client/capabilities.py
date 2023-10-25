@@ -186,7 +186,7 @@ class Capabilities:
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
-    network: CapabilityEvent[NetworkInfoEvent] | None
+    network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
