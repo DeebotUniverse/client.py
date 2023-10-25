@@ -81,6 +81,7 @@ from deebot_client.events import (
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    WorkMode,
     WorkModeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
@@ -106,7 +107,17 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
             ),
-            work_mode=CapabilitySet(WorkModeEvent, [GetWorkMode()], SetWorkMode),
+            work_mode=CapabilitySetTypes(
+                event=WorkModeEvent,
+                get=[GetWorkMode()],
+                set=SetWorkMode,
+                types=(
+                    WorkMode.MOP,
+                    WorkMode.MOP_AFTER_VACUUM,
+                    WorkMode.VACUUM,
+                    WorkMode.VACUUM_AND_MOP,
+                ),
+            ),
         ),
         custom=CapabilityCustomCommand(
             event=CustomCommandEvent, get=[], set=CustomCommand

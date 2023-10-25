@@ -122,7 +122,7 @@ class CapabilityClean:
     count: CapabilitySet[CleanCountEvent, int] | None = None
     log: CapabilityEvent[CleanLogEvent]
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
-    work_mode: CapabilitySet[WorkModeEvent, WorkMode] | None = None
+    work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
 
 @dataclass(frozen=True)
