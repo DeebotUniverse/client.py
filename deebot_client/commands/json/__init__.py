@@ -24,6 +24,7 @@ from .map import (
     GetMinorMap,
 )
 from .multimap_state import GetMultimapState, SetMultimapState
+from .network import GetNetInfo
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
@@ -64,6 +65,7 @@ __all__ = [
     "GetMinorMap",
     "GetMultimapState",
     "SetMultimapState",
+    "GetNetInfo",
     "PlaySound",
     "GetPos",
     "SetRelocationState",
@@ -126,6 +128,8 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetMultimapState,
     SetMultimapState,
+
+    GetNetInfo,
 
     PlaySound,
 
