@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 from typing import Any, Final
 
+from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
@@ -51,6 +52,7 @@ class VacuumBot:
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
+        self.mac: str | None = None
         self.events: Final[EventBus] = EventBus(
             self.execute_command, self.capabilities.get_refresh_commands
         )
@@ -92,6 +94,11 @@ class VacuumBot:
             self._handle_message(event.name, event.response)
 
         self.events.subscribe(CustomCommandEvent, on_custom_command)
+
+        async def on_network(event: NetworkInfoEvent) -> None:
+            self.mac = event.mac
+
+        self.events.subscribe(NetworkInfoEvent, on_network)
 
     async def execute_command(self, command: Command) -> None:
         """Execute given command."""
