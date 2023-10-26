@@ -108,7 +108,7 @@ async def test_mac_address(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
     """Test that the mac address is change on NetwerkInfoEvent."""
-    device = VacuumBot(device_info, authenticator)
+    device = Device(device_info, authenticator)
     # deactivate refresh event subscribe refresh calls
     device.events._get_refresh_commands = lambda _: []
 
