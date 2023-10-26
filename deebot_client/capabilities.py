@@ -37,6 +37,8 @@ from deebot_client.events import (
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    WorkMode,
+    WorkModeEvent,
 )
 from deebot_client.models import CleanAction, CleanMode
 
@@ -120,6 +122,7 @@ class CapabilityClean:
     count: CapabilitySet[CleanCountEvent, int] | None = None
     log: CapabilityEvent[CleanLogEvent]
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
+    work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
 
 @dataclass(frozen=True)
