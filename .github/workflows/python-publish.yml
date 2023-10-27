@@ -22,14 +22,6 @@ jobs:
       - name: 📥 Checkout the repository
         uses: actions/checkout@v4
 
-      - name: 🔢 Get release version
-        id: version
-        uses: home-assistant/actions/helpers/version@master
-
-      - name: 🖊️ Set version number
-        run: |
-          sed -i '/version=/c\    version="${{ steps.version.outputs.version }}",' "${{ github.workspace }}/setup.py"
-
       - name: Set up Python
         uses: actions/setup-python@v4.7.1
         with:
@@ -38,10 +30,10 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install setuptools wheel
+          pip install -q build
 
       - name: 📦 Build package
-        run: python setup.py sdist bdist_wheel
+        run: python -m build
 
       - name: 📤 Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
