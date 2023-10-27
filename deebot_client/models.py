@@ -111,8 +111,8 @@ class Room:
 
 
 @unique
-class VacuumState(IntEnum):
-    """Vacuum state representation."""
+class State(IntEnum):
+    """State representation."""
 
     IDLE = 1
     CLEANING = 2

@@ -116,7 +116,7 @@ class MqttClient:
         return self._last_message_received_at
 
     async def subscribe(self, info: SubscriberInfo) -> Callable[[], None]:
-        """Subscribe for messages from given vacuum."""
+        """Subscribe for messages from given device."""
         await self.connect()
         self._subscribtion_changes.put_nowait((info, True))
 

@@ -4,7 +4,7 @@ from typing import Any
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import VacuumState
+from deebot_client.models import State
 
 from .common import CommandWithMessageHandling
 from .const import CODE
@@ -24,7 +24,7 @@ class GetChargeState(CommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         if data.get("isCharging") == 1:
-            event_bus.notify(StateEvent(VacuumState.DOCKED))
+            event_bus.notify(StateEvent(State.DOCKED))
         return HandlingResult.success()
 
     @classmethod
@@ -33,17 +33,17 @@ class GetChargeState(CommandWithMessageHandling, MessageBodyDataDict):
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
-        status: VacuumState | None = None
+        status: State | None = None
         if body.get("msg", None) == "fail":
             if body["code"] == "30007":  # Already charging
-                status = VacuumState.DOCKED
+                status = State.DOCKED
             elif body["code"] in ("3", "5"):
                 # 3 -> Bot in stuck state, example dust bin out
                 # 5 -> Busy with another command
-                status = VacuumState.ERROR
+                status = State.ERROR
 
         if status:
-            event_bus.notify(StateEvent(VacuumState.DOCKED))
+            event_bus.notify(StateEvent(State.DOCKED))
             return HandlingResult.success()
 
         return HandlingResult.analyse()

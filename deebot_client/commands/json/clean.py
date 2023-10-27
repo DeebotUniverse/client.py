@@ -7,7 +7,7 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import CleanAction, CleanMode, DeviceInfo, VacuumState
+from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
 
 from .common import CommandWithMessageHandling, ExecuteCommand
 
@@ -30,12 +30,12 @@ class Clean(ExecuteCommand):
         if state and isinstance(self._args, dict):
             if (
                 self._args["act"] == CleanAction.RESUME.value
-                and state.state != VacuumState.PAUSED
+                and state.state != State.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.START)
             elif (
                 self._args["act"] == CleanAction.START.value
-                and state.state == VacuumState.PAUSED
+                and state.state == State.PAUSED
             ):
                 self._args = self.__get_args(CleanAction.RESUME)
 
@@ -76,19 +76,19 @@ class GetCleanInfo(CommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
 
-        status: VacuumState | None = None
+        status: State | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":
-            status = VacuumState.ERROR
+            status = State.ERROR
         elif state == "clean":
             clean_state = data.get("cleanState", {})
             motion_state = clean_state.get("motionState")
             if motion_state == "working":
-                status = VacuumState.CLEANING
+                status = State.CLEANING
             elif motion_state == "pause":
-                status = VacuumState.PAUSED
+                status = State.PAUSED
             elif motion_state == "goCharging":
-                status = VacuumState.RETURNING
+                status = State.RETURNING
 
             clean_type = clean_state.get("type")
             content = clean_state.get("content", {})
@@ -103,9 +103,9 @@ class GetCleanInfo(CommandWithMessageHandling, MessageBodyDataDict):
                 _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
 
         elif state == "goCharging":
-            status = VacuumState.RETURNING
+            status = State.RETURNING
         elif state == "idle":
-            status = VacuumState.IDLE
+            status = State.IDLE
 
         if status:
             event_bus.notify(StateEvent(status))

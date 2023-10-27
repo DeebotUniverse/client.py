@@ -63,7 +63,7 @@ class CommandWithMessageHandling(JsonCommand, MessageBody, ABC):
                 case 4200:
                     # bot offline
                     _LOGGER.info(
-                        'Vacuum is offline. Could not execute command "%s"', self.name
+                        'Device is offline. Could not execute command "%s"', self.name
                     )
                     event_bus.notify(AvailabilityEvent(False))
                     return CommandResult(HandlingState.FAILED)
@@ -75,7 +75,7 @@ class CommandWithMessageHandling(JsonCommand, MessageBody, ABC):
                         )
                     else:
                         _LOGGER.warning(
-                            'No response received for command "%s". This can happen if the vacuum has network issues or does not support the command',
+                            'No response received for command "%s". This can happen if the device has network issues or does not support the command',
                             self.name,
                         )
                     return CommandResult(HandlingState.FAILED)
