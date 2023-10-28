@@ -2,18 +2,18 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
 from enum import IntEnum, unique
-from typing import Any, TypeVar
+import hashlib
+from typing import Any, Self, TypeVar
 
 _T = TypeVar("_T")
 
 
 def md5(text: str) -> str:
     """Hash text using md5."""
-    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()
+    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
 
 
 def create_task(
@@ -41,7 +41,7 @@ async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
 class DisplayNameIntEnum(IntEnum):
     """Int enum with a property "display_name"."""
 
-    def __new__(cls, *args: int, **_: Mapping) -> DisplayNameIntEnum:
+    def __new__(cls, *args: int, **_: Mapping[Any, Any]) -> Self:
         """Create new DisplayNameIntEnum."""
         obj = int.__new__(cls)
         obj._value_ = args[0]
@@ -61,7 +61,7 @@ class DisplayNameIntEnum(IntEnum):
         return self.name.lower()
 
     @classmethod
-    def get(cls, value: str) -> DisplayNameIntEnum:
+    def get(cls, value: str) -> Self:
         """Get enum member from name or display_name."""
         value = str(value).upper()
         if value in cls.__members__:
@@ -136,3 +136,11 @@ class OnChangedDict(dict[_KT, _VT]):
         if __name in OnChangedDict._MODIFING_FUNCTIONS:
             self._on_change()
         return super().__getattribute__(__name)
+
+
+LST = list[_T] | set[_T] | tuple[_T, ...]
+
+
+def short_name(value: str) -> str:
+    """Return value after last dot."""
+    return value.rsplit(".", maxsplit=1)[-1]

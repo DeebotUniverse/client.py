@@ -1,7 +1,8 @@
 """Water info event module."""
 from dataclasses import dataclass
 
-from ..util import DisplayNameIntEnum
+from deebot_client.util import DisplayNameIntEnum
+
 from .base import Event
 
 

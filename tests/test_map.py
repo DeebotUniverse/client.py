@@ -3,7 +3,7 @@ from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 
-from deebot_client.events.event_bus import EventBus
+from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
     MapChangedEvent,
     MapSetEvent,
@@ -21,7 +21,7 @@ _test_calc_point_data = [
 ]
 
 
-@pytest.mark.parametrize("x,y,image_box,expected", _test_calc_point_data)
+@pytest.mark.parametrize(("x", "y", "image_box", "expected"), _test_calc_point_data)
 def test_calc_point(
     x: int,
     y: int,

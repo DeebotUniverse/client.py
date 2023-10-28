@@ -1,8 +1,8 @@
 from typing import Any
 from unittest.mock import Mock
 
+from deebot_client.event_bus import EventBus
 from deebot_client.events import Event
-from deebot_client.events.event_bus import EventBus
 from deebot_client.message import HandlingState, Message
 
 
