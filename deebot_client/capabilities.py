@@ -35,6 +35,7 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
+    VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
@@ -174,6 +175,13 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityVoiceAssistantState:
+    """Capabilities for voice assistant state."""
+
+    preference: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
 class Capabilities:
     """Capabilities."""
 
@@ -192,6 +200,7 @@ class Capabilities:
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
     water: CapabilitySetTypes[WaterInfoEvent, WaterAmount]
+    voice_assistant: CapabilityVoiceAssistantState | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 
