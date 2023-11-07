@@ -66,7 +66,7 @@ class GetCleanLogs(JsonCommand):
                         logs.append(
                             CleanLogEntry(
                                 timestamp=log["ts"],
-                                image_url=log["imageUrl"],
+                                image_url=log.get("imageUrl", ""),
                                 type=log["type"],
                                 area=log["area"],
                                 stop_reason=CleanJobStatus(
