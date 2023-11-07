@@ -1,4 +1,5 @@
 """clean log commands."""
+import json
 from typing import Any
 
 from deebot_client.authentication import Authenticator
@@ -35,13 +36,15 @@ class GetCleanLogsV2(JsonCommand):
             "logType": self.name,
             "channel": "google_play",
             "size": "10",
-            "auth": {
-                "with": "users",
-                "userid": credentials.user_id,
-                "realm": "ecouser.net",
-                "token": credentials.token,
-                "resource": device_info.resource,
-            },
+            "auth": json.dumps(
+                {
+                    "with": "users",
+                    "userid": credentials.user_id,
+                    "realm": "ecouser.net",
+                    "token": credentials.token,
+                    "resource": device_info.resource,
+                }
+            ),
             # "country": "DE",
             # "lang": "EN",
             # "defaultLang": "zh_cn",
