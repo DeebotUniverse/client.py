@@ -171,8 +171,8 @@ class CapabilitySettings:
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, int]
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
+    volume: CapabilitySet[VolumeEvent, int]
 
 
 @dataclass(frozen=True, kw_only=True)
