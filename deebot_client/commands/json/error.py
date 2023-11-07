@@ -73,6 +73,7 @@ _ERROR_CODES = {
     205: "IonSterilizeExhausted",
     206: "IonSterilizeAbnormal",
     207: "IonSterilizeFault",
+    312: "Please replace the Dust Bag.",
     404: "Recipient unavailable",
     500: "Request Timeout",
     601: "ERROR_ClosedAIVISideAbnormal",
