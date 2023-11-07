@@ -172,13 +172,7 @@ class CapabilitySettings:
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]
-
-
-@dataclass(frozen=True, kw_only=True)
-class CapabilityVoiceAssistantState:
-    """Capabilities for voice assistant state."""
-
-    preference: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
+    voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -200,7 +194,6 @@ class Capabilities:
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
     water: CapabilitySetTypes[WaterInfoEvent, WaterAmount]
-    voice_assistant: CapabilityVoiceAssistantState | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

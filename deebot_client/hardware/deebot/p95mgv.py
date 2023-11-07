@@ -13,7 +13,6 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
-    CapabilityVoiceAssistantState,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
@@ -169,6 +168,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
+            voice_assistant=CapabilitySetEnable(
+                VoiceAssistantStateEvent,
+                [GetVoiceAssistantState()],
+                SetVoiceAssistantState,
+            ),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         stats=CapabilityStats(
@@ -186,13 +190,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 WaterAmount.HIGH,
                 WaterAmount.ULTRAHIGH,
             ),
-        ),
-        voice_assistant=CapabilityVoiceAssistantState(
-            preference=CapabilitySetEnable(
-                VoiceAssistantStateEvent,
-                [GetVoiceAssistantState()],
-                SetVoiceAssistantState,
-            )
         ),
     ),
 )
