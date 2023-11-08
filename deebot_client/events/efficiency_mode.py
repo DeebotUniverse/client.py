@@ -9,8 +9,8 @@ from .base import Event
 class EfficiencyMode(DisplayNameIntEnum):
     """Enum class for all possible efficiency modes."""
 
-    ENERGY_EFFICIENT_MODE = 0
-    STANDART_MODE = 1
+    STANDART_MODE = 0
+    ENERGY_EFFICIENT_MODE = 1
 
 
 @dataclass(frozen=True)
