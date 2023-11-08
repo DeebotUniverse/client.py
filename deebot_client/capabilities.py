@@ -43,6 +43,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import CleanAction, CleanMode
 
 if TYPE_CHECKING:
@@ -171,7 +172,9 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
-    efficiency_mode: CapabilitySet[EfficiencyModeEvent, bool] | None = None
+    efficiency_mode: (
+        CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
+    ) = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]

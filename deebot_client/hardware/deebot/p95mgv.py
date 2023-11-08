@@ -96,6 +96,7 @@ from deebot_client.events import (
     WaterAmount,
     WaterInfoEvent,
 )
+from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
@@ -180,10 +181,14 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
             ),
-            efficiency_mode=CapabilitySet(
-                EfficiencyModeEvent,
-                [GetEfficiencyMode()],
-                SetEfficiencyMode,
+            efficiency_mode=CapabilitySetTypes(
+                event=EfficiencyModeEvent,
+                get=[GetEfficiencyMode()],
+                set=SetEfficiencyMode,
+                types=(
+                    EfficiencyMode.ENERGY_EFFICIENT_MODE,
+                    EfficiencyMode.STANDART_MODE,
+                ),
             ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
