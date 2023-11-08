@@ -4,7 +4,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
-from enum import IntEnum, unique
+from enum import Enum, IntEnum, unique
 import hashlib
 from typing import Any, Self, TypeVar
 
@@ -64,6 +64,54 @@ class DisplayNameIntEnum(IntEnum):
     def get(cls, value: str) -> Self:
         """Get enum member from name or display_name."""
         value = str(value).upper()
+        if value in cls.__members__:
+            return cls[value]
+
+        for member in cls:
+            if value == member.display_name.upper():
+                return member
+
+        raise ValueError(f"'{value}' is not a valid {cls.__name__} member")
+
+    def __eq__(self, x: object) -> bool:
+        if not isinstance(x, type(self)):
+            return False
+        return bool(self._value_ == x._value_)
+
+    def __ne__(self, x: object) -> bool:
+        return not self.__eq__(x)
+
+    def __hash__(self) -> int:
+        return hash(self._value_)
+
+
+@unique
+class DisplayNameStrEnum(Enum):
+    """Int enum with a property "display_name"."""
+
+    def __new__(cls, *args: str, **_: Mapping[Any, Any]) -> Self:
+        """Create new DisplayNameIntEnum."""
+        obj = object.__new__(cls)
+        obj._value_ = args[0]
+        return obj
+
+    def __init__(self, value: str, display_name: str | None = None):
+        super().__init__()
+        self._value_ = value
+        self._display_name = display_name
+
+    @property
+    def display_name(self) -> str:
+        """Return the custom display name or the lowered name property."""
+        if self._display_name:
+            return self._display_name
+
+        return self.name.lower()
+
+    @classmethod
+    def get(cls, value: str) -> Self:
+        """Get enum member from name or display_name."""
+        value = value.upper()
         if value in cls.__members__:
             return cls[value]
 

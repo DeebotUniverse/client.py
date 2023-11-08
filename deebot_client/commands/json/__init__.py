@@ -1,9 +1,9 @@
 """Commands module."""
 from deebot_client.command import Command, CommandMqttP2P
-from deebot_client.commands.json.clean_logs_v2 import GetCleanLogsV2
-from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
+from .auto_empty import GetAutoEmpty, SetAutoEmpty
+from .auto_empty_enable import GetAutoEmptyEnable, SetAutoEmptyEnable
 from .battery import GetBattery
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
@@ -11,9 +11,11 @@ from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
+from .clean_logs_v2 import GetCleanLogsV2
 from .clean_preference import GetCleanPreference, SetCleanPreference
 from .common import JsonCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
+from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan, ResetLifeSpan
@@ -40,6 +42,10 @@ from .work_mode import GetWorkMode, SetWorkMode
 __all__ = [
     "GetAdvancedMode",
     "SetAdvancedMode",
+    "GetAutoEmptyEnable",
+    "SetAutoEmptyEnable",
+    "GetAutoEmpty",
+    "SetAutoEmpty",
     "GetBattery",
     "GetCarpetAutoFanBoost",
     "SetCarpetAutoFanBoost",
@@ -94,6 +100,11 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    GetAutoEmptyEnable,
+    SetAutoEmptyEnable,
+    GetAutoEmpty,
+    SetAutoEmpty,
 
     GetBattery,
 

@@ -8,6 +8,7 @@ from deebot_client.command import Command
 from deebot_client.commands.json.common import SetCommand
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEnableEvent,
     AvailabilityEvent,
     BatteryEvent,
     CachedMapInfoEvent,
@@ -43,6 +44,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.auto_empty import AutoEmptyMode, AutoEmptyModeEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import CleanAction, CleanMode
 
@@ -121,6 +123,8 @@ class CapabilityCleanAction:
 class CapabilityClean:
     """Capabilities for clean."""
 
+    auto_empty_enable: CapabilitySetEnable[AutoEmptyEnableEvent] | None = None
+    auto_empty: CapabilitySetTypes[AutoEmptyModeEvent, AutoEmptyMode] | None = None
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent]
     count: CapabilitySet[CleanCountEvent, int] | None = None

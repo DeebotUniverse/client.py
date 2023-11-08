@@ -5,8 +5,7 @@ from typing import Any
 
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
-from deebot_client.events import EfficiencyModeEvent
-from deebot_client.events.efficiency_mode import EfficiencyMode
+from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 from .common import CommandWithMessageHandling, SetCommand

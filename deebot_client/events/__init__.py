@@ -8,6 +8,7 @@ from deebot_client.events.base import Event
 from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
+from .auto_empty import AutoEmptyMode, AutoEmptyModeEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -28,6 +29,8 @@ from .water_info import WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 __all__ = [
+    "AutoEmptyMode",
+    "AutoEmptyModeEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -200,6 +203,11 @@ class EnableEvent(Event):
 @dataclass(frozen=True)
 class AdvancedModeEvent(EnableEvent):
     """Advanced mode event."""
+
+
+@dataclass(frozen=True)
+class AutoEmptyEnableEvent(EnableEvent):
+    """Auto empty event."""
 
 
 @dataclass(frozen=True)
