@@ -1,6 +1,7 @@
 """Commands module."""
 from deebot_client.command import Command, CommandMqttP2P
 from deebot_client.commands.json.clean_logs_v2 import GetCleanLogsV2
+from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
@@ -55,6 +56,8 @@ __all__ = [
     "GetCleanLogsV2",
     "GetContinuousCleaning",
     "SetContinuousCleaning",
+    "GetEfficiencyMode",
+    "SetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
     "SetFanSpeed",
@@ -116,6 +119,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetContinuousCleaning,
     SetContinuousCleaning,
+
+    GetEfficiencyMode,
+    SetEfficiencyMode,
 
     GetError,
 

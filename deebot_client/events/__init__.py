@@ -105,6 +105,13 @@ class CustomCommandEvent(Event):
 
 
 @dataclass(frozen=True)
+class EfficiencyModeEvent(Event):
+    """Efficiency event."""
+
+    efficiency: bool
+
+
+@dataclass(frozen=True)
 class ErrorEvent(Event):
     """Error event representation."""
 

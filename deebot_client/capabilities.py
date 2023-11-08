@@ -17,6 +17,7 @@ from deebot_client.events import (
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
+    EfficiencyModeEvent,
     ErrorEvent,
     Event,
     FanSpeedEvent,
@@ -170,6 +171,7 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
+    efficiency_mode: CapabilitySet[EfficiencyModeEvent, bool] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]

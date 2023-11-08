@@ -34,6 +34,7 @@ from deebot_client.commands.json.continuous_cleaning import (
     SetContinuousCleaning,
 )
 from deebot_client.commands.json.custom import CustomCommand
+from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
@@ -72,6 +73,7 @@ from deebot_client.events import (
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
+    EfficiencyModeEvent,
     ErrorEvent,
     FanSpeedEvent,
     FanSpeedLevel,
@@ -178,15 +180,20 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
             ),
+            efficiency_mode=CapabilitySet(
+                EfficiencyModeEvent,
+                [GetEfficiencyMode()],
+                SetEfficiencyMode,
+            ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
             ),
-            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
             voice_assistant=CapabilitySetEnable(
                 VoiceAssistantStateEvent,
                 [GetVoiceAssistantState()],
                 SetVoiceAssistantState,
             ),
+            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         stats=CapabilityStats(
