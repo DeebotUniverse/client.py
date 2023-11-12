@@ -19,9 +19,6 @@ DEVICES: dict[str, StaticDeviceInfo] = {}
 def _load() -> None:
     for _, package_name, _ in pkgutil.iter_modules(__path__):
         full_package_name = f"{__package__}.{package_name}"
-
-        pprint.pprint
-
         importlib.import_module(full_package_name)
 
 
@@ -29,8 +26,6 @@ def get_static_device_info(class_: str) -> StaticDeviceInfo:
     """Get static device info for given class."""
     if not DEVICES:
         _load()
-
-    pprint.pprint(class_)
 
     if device := DEVICES.get(class_):
         _LOGGER.debug("Capabilities found for %s", class_)
