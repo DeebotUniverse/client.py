@@ -6,8 +6,8 @@ from xml.etree import ElementTree
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent
-from deebot_client.message import MessageBody, HandlingResult, HandlingState
 from deebot_client.logging_filter import get_logger
+from deebot_client.message import HandlingResult, HandlingState, MessageBody
 
 _LOGGER = get_logger(__name__)
 
@@ -41,7 +41,7 @@ class CommandWithMessageHandling(XmlCommand, MessageBody, ABC):
     _is_available_check: bool = False
 
     def _handle_response(
-            self, event_bus: EventBus, response: dict[str, Any]
+        self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
         """Handle response from a command.
 
@@ -83,7 +83,7 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
 
     @classmethod
     def _handle_body(
-            cls, event_bus: EventBus, body: dict[str, Any] | str
+        cls, event_bus: EventBus, body: dict[str, Any] | str
     ) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 

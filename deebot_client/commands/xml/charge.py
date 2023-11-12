@@ -6,12 +6,11 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
-from deebot_client.models import VacuumState, DeviceInfo
+from deebot_client.models import DeviceInfo, VacuumState
 
-from .common import ExecuteCommand
-from .const import CODE
 from ...authentication import Authenticator
 from ...command import CommandResult
+from .common import ExecuteCommand
 
 _LOGGER = get_logger(__name__)
 
@@ -45,7 +44,7 @@ class Charge(ExecuteCommand):
 
         # "<ctl ret='fail' errno='8'/>", == already charging
         is_already_charging = (
-                "errno" in attributes and int(tree.attrib.get("errno")) == 8
+            "errno" in attributes and int(tree.attrib.get("errno")) == 8
         )
         if is_already_charging:
             # bot is already charging

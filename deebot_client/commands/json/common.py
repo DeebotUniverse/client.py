@@ -2,7 +2,6 @@
 from abc import ABC, abstractmethod
 from datetime import datetime
 from typing import Any
-from xml.etree import ElementTree
 
 from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType

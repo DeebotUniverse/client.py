@@ -1,5 +1,4 @@
 """Api client module."""
-import pprint
 from typing import Any
 
 from deebot_client.hardware.deebot import get_static_device_info
