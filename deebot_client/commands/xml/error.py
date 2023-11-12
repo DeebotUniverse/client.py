@@ -5,7 +5,7 @@ from xml.etree import ElementTree
 from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import VacuumState
+from deebot_client.models import State
 
 from .common import CommandWithMessageHandling
 
@@ -31,7 +31,7 @@ class GetError(CommandWithMessageHandling, MessageBodyDataDict):
             if error is not None:
                 description = _ERROR_CODES.get(error)
                 if error != 0:
-                    event_bus.notify(StateEvent(VacuumState.ERROR))
+                    event_bus.notify(StateEvent(State.ERROR))
                 event_bus.notify(ErrorEvent(error, description))
                 return HandlingResult.success()
 
@@ -52,7 +52,7 @@ class GetError(CommandWithMessageHandling, MessageBodyDataDict):
         error_code = int(error_code)
 
         if error_code != 0:
-            event_bus.notify(StateEvent(VacuumState.ERROR))
+            event_bus.notify(StateEvent(State.ERROR))
 
         description = _ERROR_CODES.get(error_code)
         event_bus.notify(ErrorEvent(error_code, description))

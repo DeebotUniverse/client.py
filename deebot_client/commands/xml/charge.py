@@ -6,7 +6,7 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
-from deebot_client.models import VacuumState, DeviceInfo
+from deebot_client.models import State, DeviceInfo
 
 from .common import ExecuteCommand
 from .const import CODE
@@ -40,7 +40,7 @@ class Charge(ExecuteCommand):
 
         # "resp": "<ctl ret='ok'/>", == returning
         if "ret" in attributes and tree.attrib.get("ret") == "ok":
-            event_bus.notify(StateEvent(VacuumState.RETURNING))
+            event_bus.notify(StateEvent(State.RETURNING))
             return HandlingResult.success()
 
         # "<ctl ret='fail' errno='8'/>", == already charging
@@ -49,7 +49,7 @@ class Charge(ExecuteCommand):
         )
         if is_already_charging:
             # bot is already charging
-            event_bus.notify(StateEvent(VacuumState.DOCKED))
+            event_bus.notify(StateEvent(State.DOCKED))
             return HandlingResult.success()
 
         return HandlingResult.success()
