@@ -5,7 +5,7 @@ import pytest
 
 from deebot_client.commands.json import Charge
 from deebot_client.events import StateEvent
-from deebot_client.models import VacuumState
+from deebot_client.models import State
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -25,8 +25,8 @@ def _prepare_json(code: int, msg: str = "ok") -> dict[str, Any]:
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        (get_request_json(get_success_body()), StateEvent(VacuumState.RETURNING)),
-        (_prepare_json(30007), StateEvent(VacuumState.DOCKED)),
+        (get_request_json(get_success_body()), StateEvent(State.RETURNING)),
+        (_prepare_json(30007), StateEvent(State.DOCKED)),
     ],
 )
 async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:

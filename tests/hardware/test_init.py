@@ -20,6 +20,7 @@ from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.multimap_state import GetMultimapState
+from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
@@ -56,6 +57,7 @@ from deebot_client.events.map import (
     MapTraceEvent,
     PositionsEvent,
 )
+from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.hardware import get_static_device_info
 from deebot_client.hardware.deebot import DEVICES, FALLBACK
@@ -102,6 +104,7 @@ def test_get_static_device_info(
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
+                NetworkInfoEvent: [GetNetInfo()],
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
@@ -133,6 +136,7 @@ def test_get_static_device_info(
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
+                NetworkInfoEvent: [GetNetInfo()],
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],

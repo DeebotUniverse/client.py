@@ -41,7 +41,7 @@ body:
     validations:
       required: true
     attributes:
-      label: On which deebot vacuum you have the issue?
+      label: On which deebot device (vacuum) you have the issue?
       placeholder: Deebot Ozmo 950
   - type: input
     id: version

@@ -27,6 +27,7 @@ from deebot_client.events import (
     MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
+    NetworkInfoEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -37,6 +38,8 @@ from deebot_client.events import (
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    WorkMode,
+    WorkModeEvent,
 )
 from deebot_client.models import CleanAction, CleanMode
 
@@ -120,6 +123,7 @@ class CapabilityClean:
     count: CapabilitySet[CleanCountEvent, int] | None = None
     log: CapabilityEvent[CleanLogEvent]
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
+    work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
 
 @dataclass(frozen=True)
@@ -182,6 +186,7 @@ class Capabilities:
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
+    network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]

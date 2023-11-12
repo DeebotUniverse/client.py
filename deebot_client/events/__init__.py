@@ -5,7 +5,7 @@ from enum import Enum, unique
 from typing import Any
 
 from deebot_client.events.base import Event
-from deebot_client.models import Room, VacuumState
+from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
@@ -22,7 +22,9 @@ from .map import (
     PositionsEvent,
     PositionType,
 )
+from .network import NetworkInfoEvent
 from .water_info import WaterAmount, WaterInfoEvent
+from .work_mode import WorkMode, WorkModeEvent
 
 __all__ = [
     "BatteryEvent",
@@ -39,11 +41,14 @@ __all__ = [
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
+    "NetworkInfoEvent",
     "Position",
     "PositionType",
     "PositionsEvent",
     "WaterAmount",
     "WaterInfoEvent",
+    "WorkMode",
+    "WorkModeEvent",
 ]
 
 
@@ -170,7 +175,7 @@ class AvailabilityEvent(Event):
 class StateEvent(Event):
     """State event representation."""
 
-    state: VacuumState
+    state: State
 
 
 @dataclass(frozen=True)

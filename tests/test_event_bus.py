@@ -10,7 +10,7 @@ from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.base import Event
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.models import VacuumState
+from deebot_client.models import State
 
 
 def _verify_event_command_called(
@@ -120,18 +120,18 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
 @pytest.mark.parametrize(
     ("last", "actual", "expected"),
     [
-        (VacuumState.DOCKED, VacuumState.IDLE, None),
-        (VacuumState.CLEANING, VacuumState.IDLE, VacuumState.IDLE),
-        (VacuumState.IDLE, VacuumState.DOCKED, VacuumState.DOCKED),
+        (State.DOCKED, State.IDLE, None),
+        (State.CLEANING, State.IDLE, State.IDLE),
+        (State.IDLE, State.DOCKED, State.DOCKED),
     ],
 )
 async def test_StateEvent(
     event_bus: EventBus,
-    last: VacuumState,
-    actual: VacuumState,
-    expected: VacuumState | None,
+    last: State,
+    actual: State,
+    expected: State | None,
 ) -> None:
-    async def notify(state: VacuumState) -> None:
+    async def notify(state: State) -> None:
         event_bus.notify(StateEvent(state))
         await asyncio.sleep(0.1)
 

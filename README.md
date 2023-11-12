@@ -1,4 +1,4 @@
-# Client Library for Deebot Vacuums
+# Client Library for Deebot devices (Vacuums)
 
 [![PyPI - Downloads](https://img.shields.io/pypi/dw/deebot-client?style=for-the-badge)](https://pypi.org/project/deebot-client)
 <a href="https://www.buymeacoffee.com/edenhaus" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-black.png" width="150px" height="35px" alt="Buy Me A Coffee" style="height: 35px !important;width: 150px !important;" ></a>
@@ -31,7 +31,7 @@ from deebot_client.events import BatteryEvent
 from deebot_client.models import Configuration
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 from deebot_client.util import md5
-from deebot_client.vacuum_bot import VacuumBot
+from deebot_client.device import Device
 
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
@@ -52,7 +52,7 @@ async def main():
 
     devices_ = await api_client.get_devices()
 
-    bot = VacuumBot(devices_[0], authenticator)
+    bot = Device(devices_[0], authenticator)
 
     mqtt_config = MqttConfiguration(config=config)
     mqtt = MqttClient(mqtt_config, authenticator)

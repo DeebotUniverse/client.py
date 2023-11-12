@@ -1,4 +1,4 @@
-"""Vacuum bot module."""
+"""Device module."""
 import asyncio
 from collections.abc import Callable
 from contextlib import suppress
@@ -6,6 +6,7 @@ from datetime import datetime
 import json
 from typing import Any, Final
 
+from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
@@ -26,14 +27,14 @@ from .events import (
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
-from .models import DeviceInfo, VacuumState
+from .models import DeviceInfo, State
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
 
-class VacuumBot:
-    """Vacuum bot representation."""
+class Device:
+    """Device representation."""
 
     def __init__(
         self,
@@ -51,6 +52,7 @@ class VacuumBot:
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
+        self.mac: str | None = None
         self.events: Final[EventBus] = EventBus(
             self.execute_command, self.capabilities.get_refresh_commands
         )
@@ -58,7 +60,7 @@ class VacuumBot:
         self.map: Final[Map] = Map(self.execute_command, self.events)
 
         async def on_pos(event: PositionsEvent) -> None:
-            if self._state == StateEvent(VacuumState.DOCKED):
+            if self._state == StateEvent(State.DOCKED):
                 return
 
             deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
@@ -77,7 +79,7 @@ class VacuumBot:
         self.events.subscribe(PositionsEvent, on_pos)
 
         async def on_state(event: StateEvent) -> None:
-            if event.state == VacuumState.DOCKED:
+            if event.state == State.DOCKED:
                 self.events.request_refresh(CleanLogEvent)
                 self.events.request_refresh(TotalStatsEvent)
 
@@ -92,6 +94,11 @@ class VacuumBot:
             self._handle_message(event.name, event.response)
 
         self.events.subscribe(CustomCommandEvent, on_custom_command)
+
+        async def on_network(event: NetworkInfoEvent) -> None:
+            self.mac = event.mac
+
+        self.events.subscribe(NetworkInfoEvent, on_network)
 
     async def execute_command(self, command: Command) -> None:
         """Execute given command."""

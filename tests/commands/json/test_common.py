@@ -38,7 +38,7 @@ def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> 
             _ERROR_500,
             (
                 logging.WARNING,
-                'No response received for command "{}". This can happen if the vacuum has network issues or does not support the command',
+                'No response received for command "{}". This can happen if the device has network issues or does not support the command',
             ),
             _assert_false_and_not_called,
         ),
@@ -54,7 +54,7 @@ def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> 
             _ERROR_4200,
             (
                 logging.INFO,
-                'Vacuum is offline. Could not execute command "{}"',
+                'Device is offline. Could not execute command "{}"',
             ),
             _assert_false_and_avalable_event_false,
         ),

@@ -5,7 +5,7 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
-from deebot_client.models import VacuumState
+from deebot_client.models import State
 
 from .common import ExecuteCommand
 from .const import CODE
@@ -29,12 +29,12 @@ class Charge(ExecuteCommand):
         """
         code = int(body.get(CODE, -1))
         if code == 0:
-            event_bus.notify(StateEvent(VacuumState.RETURNING))
+            event_bus.notify(StateEvent(State.RETURNING))
             return HandlingResult.success()
 
         if code == 30007:
             # bot is already charging
-            event_bus.notify(StateEvent(VacuumState.DOCKED))
+            event_bus.notify(StateEvent(State.DOCKED))
             return HandlingResult.success()
 
         return super()._handle_body(event_bus, body)

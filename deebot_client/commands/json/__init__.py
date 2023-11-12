@@ -24,6 +24,7 @@ from .map import (
     GetMinorMap,
 )
 from .multimap_state import GetMultimapState, SetMultimapState
+from .network import GetNetInfo
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
@@ -31,6 +32,7 @@ from .stats import GetStats, GetTotalStats
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
+from .work_mode import GetWorkMode, SetWorkMode
 
 __all__ = [
     "GetAdvancedMode",
@@ -63,6 +65,7 @@ __all__ = [
     "GetMinorMap",
     "GetMultimapState",
     "SetMultimapState",
+    "GetNetInfo",
     "PlaySound",
     "GetPos",
     "SetRelocationState",
@@ -74,6 +77,8 @@ __all__ = [
     "SetVolume",
     "GetWaterInfo",
     "SetWaterInfo",
+    "GetWorkMode",
+    "SetWorkMode",
 ]
 
 # fmt: off
@@ -124,6 +129,8 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMultimapState,
     SetMultimapState,
 
+    GetNetInfo,
+
     PlaySound,
 
     GetPos,
@@ -141,6 +148,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetWaterInfo,
     SetWaterInfo,
+
+    GetWorkMode,
+    SetWorkMode
 ]
 # fmt: on
 

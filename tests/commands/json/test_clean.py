@@ -8,7 +8,7 @@ from deebot_client.commands.json import GetCleanInfo
 from deebot_client.commands.json.clean import Clean, CleanAction
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.models import DeviceInfo, VacuumState
+from deebot_client.models import DeviceInfo, State
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -19,7 +19,7 @@ from . import assert_command
     [
         (
             get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
-            StateEvent(VacuumState.IDLE),
+            StateEvent(State.IDLE),
         ),
     ],
 )
@@ -28,26 +28,26 @@ async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
 
 
 @pytest.mark.parametrize(
-    ("action", "vacuum_state", "expected"),
+    ("action", "state", "expected"),
     [
         (CleanAction.START, None, CleanAction.START),
-        (CleanAction.START, VacuumState.PAUSED, CleanAction.RESUME),
-        (CleanAction.START, VacuumState.DOCKED, CleanAction.START),
+        (CleanAction.START, State.PAUSED, CleanAction.RESUME),
+        (CleanAction.START, State.DOCKED, CleanAction.START),
         (CleanAction.RESUME, None, CleanAction.RESUME),
-        (CleanAction.RESUME, VacuumState.PAUSED, CleanAction.RESUME),
-        (CleanAction.RESUME, VacuumState.DOCKED, CleanAction.START),
+        (CleanAction.RESUME, State.PAUSED, CleanAction.RESUME),
+        (CleanAction.RESUME, State.DOCKED, CleanAction.START),
     ],
 )
 async def test_Clean_act(
     authenticator: Authenticator,
     device_info: DeviceInfo,
     action: CleanAction,
-    vacuum_state: VacuumState | None,
+    state: State | None,
     expected: CleanAction,
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
     event_bus.get_last_event.return_value = (
-        StateEvent(vacuum_state) if vacuum_state is not None else None
+        StateEvent(state) if state is not None else None
     )
     command = Clean(action)
 

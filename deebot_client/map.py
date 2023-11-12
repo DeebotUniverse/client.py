@@ -499,7 +499,6 @@ class DashedImageDraw(ImageDraw.ImageDraw):
         width: int = 0,
     ) -> None:
         """Draw a dashed line, or a connected sequence of line segments."""
-        # pylint: disable=too-many-locals
         for i in range(len(xy) - 1):
             x1, y1 = xy[i]
             x2, y2 = xy[i + 1]
