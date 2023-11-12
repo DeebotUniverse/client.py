@@ -1,7 +1,6 @@
 """Hardware deebot module."""
 import importlib
 import pkgutil
-import pprint
 
 from deebot_client.logging_filter import get_logger
 from deebot_client.models import StaticDeviceInfo
