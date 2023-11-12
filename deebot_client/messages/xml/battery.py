@@ -1,9 +1,8 @@
 from xml.etree import ElementTree
 
-from deebot_client.message import HandlingState
 from deebot_client.event_bus import EventBus
 from deebot_client.events import BatteryEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
 
 class OnBattery(MessageBodyDataDict):
@@ -12,9 +11,7 @@ class OnBattery(MessageBodyDataDict):
     name = "onBattery"
 
     @classmethod
-    def _handle_body_data_xml(
-            cls, event_bus: EventBus, xml: str
-    ) -> HandlingResult:
+    def _handle_body_data_xml(cls, event_bus: EventBus, xml: str) -> HandlingResult:
         tree = ElementTree.fromstring(xml)
         element = tree.find("battery")
 

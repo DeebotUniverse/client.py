@@ -1,6 +1,5 @@
 """Continuous cleaning (break point) command module."""
 
-from deebot_client.events import ContinuousCleaningEvent
 
 # from .common import GetEnableCommand, SetEnableCommand
 #
