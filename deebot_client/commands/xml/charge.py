@@ -6,10 +6,12 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
-from deebot_client.models import VacuumState
+from deebot_client.models import VacuumState, DeviceInfo
 
 from .common import ExecuteCommand
 from .const import CODE
+from ...authentication import Authenticator
+from ...command import CommandResult
 
 _LOGGER = get_logger(__name__)
 
@@ -30,23 +32,6 @@ class Charge(ExecuteCommand):
         :return: A message response
         """
 
-        if isinstance(body, str):
-            return cls._handle_xml_response(event_bus=event_bus, body=body)
-
-        code = int(body.get(CODE, -1))
-        if code == 0:
-            event_bus.notify(StateEvent(VacuumState.RETURNING))
-            return HandlingResult.success()
-
-        if code == 30007:
-            # bot is already charging
-            event_bus.notify(StateEvent(VacuumState.DOCKED))
-            return HandlingResult.success()
-
-        return super()._handle_body(event_bus, body)
-
-    @classmethod
-    def _handle_xml_response(self, event_bus: EventBus, body: str) -> HandlingResult:
         tree = ElementTree.fromstring(body)
         attributes = tree.attrib.keys()
 
@@ -60,7 +45,7 @@ class Charge(ExecuteCommand):
 
         # "<ctl ret='fail' errno='8'/>", == already charging
         is_already_charging = (
-            "errno" in attributes and int(tree.attrib.get("errno")) == 8
+                "errno" in attributes and int(tree.attrib.get("errno")) == 8
         )
         if is_already_charging:
             # bot is already charging
@@ -72,10 +57,7 @@ class Charge(ExecuteCommand):
     async def _execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
-        if isinstance(self._args, dict) and device_info.uses_xml_protocol:
+        if isinstance(self._args, dict):
             self._args.update({"type": "go"})
-
-        if isinstance(self._args, dict) and not device_info.uses_xml_protocol:
-            self._args.update({"act": "go"})
 
         return await super()._execute(authenticator, device_info, event_bus)

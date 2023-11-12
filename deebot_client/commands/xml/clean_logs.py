@@ -9,12 +9,12 @@ from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.models import DeviceInfo
 
-from .common import JsonCommand
+from .common import XmlCommand
 
 _LOGGER = get_logger(__name__)
 
 
-class GetCleanLogs(JsonCommand):
+class GetCleanLogs(XmlCommand):
     """Get clean logs command."""
 
     _targets_bot: bool = False

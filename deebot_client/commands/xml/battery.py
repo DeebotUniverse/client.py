@@ -1,5 +1,5 @@
 """Battery commands."""
-from deebot_client.messages.json import OnBattery
+from deebot_client.messages.xml import OnBattery
 
 from .common import CommandWithMessageHandling
 

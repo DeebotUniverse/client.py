@@ -96,11 +96,6 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
 
         :return: A message response
         """
-        # Success events from the XML api looks like <ctl ret='ok'/>
-        if isinstance(body, str):
-            element = ElementTree.fromstring(body)
-            if element.attrib.get("ret") == "ok":
-                return HandlingResult.success()
 
         # Success event looks like { "code": 0, "msg": "ok" }
         if isinstance(body, dict) and body.get(CODE, -1) == 0:
