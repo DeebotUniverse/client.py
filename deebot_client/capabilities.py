@@ -30,6 +30,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
+    OtaEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -179,6 +180,7 @@ class CapabilitySettings:
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
     ) = None
+    ota: CapabilitySetEnable[OtaEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]

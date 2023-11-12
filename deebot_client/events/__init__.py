@@ -236,5 +236,10 @@ class TrueDetectEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class OtaEvent(EnableEvent):
+    """Ota event."""
+
+
+@dataclass(frozen=True)
 class VoiceAssistantStateEvent(EnableEvent):
     """VoiceAssistantState event."""
