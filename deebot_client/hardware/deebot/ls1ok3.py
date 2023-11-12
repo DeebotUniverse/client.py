@@ -83,16 +83,14 @@ from deebot_client.events import (
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
-from . import DEVICES
 from ...commands.xml import GetBattery
+from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.XML,
     Capabilities(
         availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
-
-
         # THE REST NEEDS TO BE RE-IMPLEMENTED
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
