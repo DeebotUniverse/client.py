@@ -40,7 +40,7 @@ class SetOta(SetCommand):
     name = "setOta"
     get_command = GetOta
 
-    _mqtt_params = {"autoSwitch": InitParam(bool)}
+    _mqtt_params = {"autoSwitch": InitParam(bool, "enable")}
 
     def __init__(self, enable: bool) -> None:
         super().__init__({"autoSwitch": 1 if enable else 0})
