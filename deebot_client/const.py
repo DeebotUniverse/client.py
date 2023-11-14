@@ -5,6 +5,7 @@ from typing import Self
 
 REALM = "ecouser.net"
 _API_PREFIX = "api/"
+PATH_USERS_USER = f"{_API_PREFIX}users/user.do"
 PATH_API_APPSVR_APP = f"{_API_PREFIX}appsvr/app.do"
 PATH_API_PIM_PRODUCT_IOT_MAP = f"{_API_PREFIX}pim/product/getProductIotMap"
 PATH_API_IOT_DEVMANAGER = f"{_API_PREFIX}iot/devmanager.do"

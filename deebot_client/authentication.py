@@ -8,7 +8,7 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, hdrs
 
-from .const import REALM
+from .const import PATH_USERS_USER, REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
@@ -27,7 +27,6 @@ _USER_LOGIN_URL_FORMAT = (
 _GLOBAL_AUTHCODE_URL_FORMAT = (
     "https://gl-{country}-openapi.ecovacs.{tld}/v1/global/auth/getAuthCode"
 )
-_PATH_USERS_USER = "users/user.do"
 _META = {
     "lang": "EN",
     "appCode": "global_e",
@@ -195,7 +194,7 @@ class _AuthClient:
         }
 
         for i in range(3):
-            resp = await self.post(_PATH_USERS_USER, data)
+            resp = await self.post(PATH_USERS_USER, data)
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
@@ -203,9 +202,9 @@ class _AuthClient:
                 _LOGGER.warning("loginByItToken set token error, attempt %d/3", i + 2)
                 continue
 
-            _LOGGER.error("call to %s failed with %s", _PATH_USERS_USER, resp)
+            _LOGGER.error("call to %s failed with %s", PATH_USERS_USER, resp)
             raise AuthenticationError(
-                f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER}"
+                f"failure {resp['error']} ({resp['errno']}) for call {PATH_USERS_USER}"
             )
 
         raise AuthenticationError("failed to login with token")
