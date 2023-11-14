@@ -67,30 +67,29 @@ class GetCleanLogsV2(JsonCommand):
 
         :return: A message response
         """
-        if response["code"] == 0:
-            resp_logs: list[dict[str, Any]] | None = response.get("data")
-
-            # Ecovacs API is changing their API, this request may not work properly
-            if resp_logs is not None and len(resp_logs) >= 0:
-                logs: list[CleanLogEntry] = []
-                for log in resp_logs:
-                    try:
-                        logs.append(
-                            CleanLogEntry(
-                                timestamp=log["ts"],
-                                image_url=log["imageUrl"],
-                                type=log["type"],
-                                area=log["area"],
-                                stop_reason=CleanJobStatus(
-                                    int(log.get("stopReason", -2))
-                                ),
-                                duration=log["last"],
-                            )
+        # Ecovacs API is changing their API, this request may not work properly
+        if (
+            response["code"] == 0
+            and (resp_logs := response.get("data"))
+            and len(resp_logs) >= 0
+        ):
+            logs: list[CleanLogEntry] = []
+            for log in resp_logs:
+                try:
+                    logs.append(
+                        CleanLogEntry(
+                            timestamp=log["ts"],
+                            image_url=log["imageUrl"],
+                            type=log["type"],
+                            area=log["area"],
+                            stop_reason=CleanJobStatus(int(log.get("stopReason", -2))),
+                            duration=log["last"],
                         )
-                    except Exception:  # pylint: disable=broad-except
-                        _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
+                    )
+                except Exception:  # pylint: disable=broad-except
+                    _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
 
-                event_bus.notify(CleanLogEvent(logs))
-                return CommandResult.success()
+            event_bus.notify(CleanLogEvent(logs))
+            return CommandResult.success()
 
         return CommandResult.analyse()
