@@ -38,10 +38,9 @@ _META = {
 MAX_RETRIES = 3
 
 
-def _get_portal_url(config: Configuration, path: str, app_dln_api: bool = False) -> str:
+def _get_portal_url(config: Configuration, path: str) -> str:
     subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
-    api_path = "api/" if app_dln_api is False else "app/dln/api/"
-    return urljoin(f"https://{subdomain}.ecouser.net/{api_path}", path)
+    return urljoin(f"https://{subdomain}.ecouser.net/", path)
 
 
 class _AuthClient:
@@ -219,10 +218,9 @@ class _AuthClient:
         query_params: dict[str, Any] | None = None,
         headers: dict[str, Any] | None = None,
         credentials: Credentials | None = None,
-        app_dln_api: bool = False,
     ) -> dict[str, Any]:
         """Perform a post request."""
-        url = _get_portal_url(self._config, path, app_dln_api)
+        url = _get_portal_url(self._config, path)
         logger_requst_params = f"url={url}, params={query_params}, json={json}"
 
         if credentials is not None:
@@ -355,7 +353,6 @@ class Authenticator:
         *,
         query_params: dict[str, Any] | None = None,
         headers: dict[str, Any] | None = None,
-        app_dln_api: bool = False,
     ) -> dict[str, Any]:
         """Perform an authenticated post request."""
         return await self._auth_client.post(
@@ -364,7 +361,6 @@ class Authenticator:
             query_params=query_params,
             headers=headers,
             credentials=await self.authenticate(),
-            app_dln_api=app_dln_api,
         )
 
     async def teardown(self) -> None:

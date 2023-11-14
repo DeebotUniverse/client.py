@@ -57,7 +57,6 @@ class GetCleanLogsV2(JsonCommand):
             json={},
             query_params=query_params,
             headers=REQUEST_HEADERS,
-            app_dln_api=True,
         )
 
     def _handle_response(
