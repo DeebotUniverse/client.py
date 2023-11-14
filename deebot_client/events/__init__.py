@@ -206,11 +206,6 @@ class AdvancedModeEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
-class AutoEmptyEnableEvent(EnableEvent):
-    """Auto empty event."""
-
-
-@dataclass(frozen=True)
 class ContinuousCleaningEvent(EnableEvent):
     """Continuous cleaning event."""
 

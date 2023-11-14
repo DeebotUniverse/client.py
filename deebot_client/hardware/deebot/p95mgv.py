@@ -3,6 +3,7 @@ from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
+    CapabilityCleanAutoEmpty,
     CapabilityCustomCommand,
     CapabilityEvent,
     CapabilityExecute,
@@ -15,10 +16,10 @@ from deebot_client.capabilities import (
     CapabilityStats,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
-from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
-from deebot_client.commands.json.auto_empty_enable import (
-    GetAutoEmptyEnable,
-    SetAutoEmptyEnable,
+from deebot_client.commands.json.auto_empty import (
+    GetAutoEmpty,
+    SetAutoEmpty,
+    SetAutoEmptyMode,
 )
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
@@ -70,7 +71,6 @@ from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
-    AutoEmptyEnableEvent,
     AvailabilityEvent,
     BatteryEvent,
     CachedMapInfoEvent,
@@ -120,20 +120,22 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
-            auto_empty_enable=CapabilitySetEnable(
-                AutoEmptyEnableEvent,
-                [GetAutoEmptyEnable()],
-                SetAutoEmptyEnable,
-            ),
-            auto_empty=CapabilitySetTypes(
-                event=AutoEmptyModeEvent,
-                get=[GetAutoEmpty()],
-                set=SetAutoEmpty,
-                types=(
-                    AutoEmptyMode.MODE_10,
-                    AutoEmptyMode.MODE_15,
-                    AutoEmptyMode.MODE_25,
-                    AutoEmptyMode.MODE_AUTO,
+            auto_empty=CapabilityCleanAutoEmpty(
+                auto_empty_enable=CapabilitySetEnable(
+                    AutoEmptyModeEvent,
+                    [GetAutoEmpty()],
+                    SetAutoEmpty,
+                ),
+                auto_empty=CapabilitySetTypes(
+                    event=AutoEmptyModeEvent,
+                    get=[GetAutoEmpty()],
+                    set=SetAutoEmptyMode,
+                    types=(
+                        AutoEmptyMode.MODE_10,
+                        AutoEmptyMode.MODE_15,
+                        AutoEmptyMode.MODE_25,
+                        AutoEmptyMode.MODE_AUTO,
+                    ),
                 ),
             ),
             action=CapabilityCleanAction(command=Clean, area=CleanArea),

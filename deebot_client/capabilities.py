@@ -8,7 +8,6 @@ from deebot_client.command import Command
 from deebot_client.commands.json.common import SetCommand
 from deebot_client.events import (
     AdvancedModeEvent,
-    AutoEmptyEnableEvent,
     AvailabilityEvent,
     BatteryEvent,
     CachedMapInfoEvent,
@@ -121,11 +120,18 @@ class CapabilityCleanAction:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityCleanAutoEmpty:
+    """Capabilities for clean auto empty."""
+
+    auto_empty_enable: CapabilitySetEnable[AutoEmptyModeEvent]
+    auto_empty: CapabilitySetTypes[AutoEmptyModeEvent, AutoEmptyMode]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityClean:
     """Capabilities for clean."""
 
-    auto_empty_enable: CapabilitySetEnable[AutoEmptyEnableEvent] | None = None
-    auto_empty: CapabilitySetTypes[AutoEmptyModeEvent, AutoEmptyMode] | None = None
+    auto_empty: CapabilityCleanAutoEmpty | None = None
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent]
     count: CapabilitySet[CleanCountEvent, int] | None = None

@@ -19,4 +19,5 @@ class AutoEmptyMode(DisplayNameStrEnum):
 class AutoEmptyModeEvent(Event):
     """Auto empty event representation."""
 
+    enable: bool
     mode: AutoEmptyMode
