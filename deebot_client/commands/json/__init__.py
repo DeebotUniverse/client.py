@@ -30,6 +30,7 @@ from .pos import GetPos
 from .relocation import SetRelocationState
 from .stats import GetStats, GetTotalStats
 from .true_detect import GetTrueDetect, SetTrueDetect
+from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
@@ -73,6 +74,8 @@ __all__ = [
     "GetTotalStats",
     "GetTrueDetect",
     "SetTrueDetect",
+    "GetVoiceAssistantState",
+    "SetVoiceAssistantState",
     "GetVolume",
     "SetVolume",
     "GetWaterInfo",
@@ -142,6 +145,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetTrueDetect,
     SetTrueDetect,
+
+    GetVoiceAssistantState,
+    SetVoiceAssistantState,
 
     GetVolume,
     SetVolume,
