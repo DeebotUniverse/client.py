@@ -21,7 +21,7 @@ from deebot_client.commands.json.carpet import (
 )
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.xml.charge_state import GetChargeState
-from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
+from deebot_client.commands.json.clean import Clean, CleanArea
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
@@ -159,8 +159,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(
-            StateEvent, [GetChargeState(), GetCleanInfo()]
-        ),  # todo needs to be re-implemented
+            StateEvent, [GetChargeState()]
+        ),
 
         stats=CapabilityStats(  # todo needs to be re-implemented
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
