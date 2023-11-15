@@ -1,4 +1,5 @@
-from xml.etree import ElementTree
+"""Xml battery messages."""
+from defusedxml import ElementTree
 
 from deebot_client.event_bus import EventBus
 from deebot_client.events import BatteryEvent

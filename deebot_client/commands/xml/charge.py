@@ -1,15 +1,16 @@
 """Charge commands."""
 from typing import Any
-from xml.etree import ElementTree
 
+from defusedxml import ElementTree
+
+from deebot_client.authentication import Authenticator
+from deebot_client.command import CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 from deebot_client.models import DeviceInfo, State
 
-from ...authentication import Authenticator
-from ...command import CommandResult
 from .common import ExecuteCommand
 
 _LOGGER = get_logger(__name__)

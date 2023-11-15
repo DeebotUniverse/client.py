@@ -1,7 +1,8 @@
 """Common xml based commands."""
 from abc import ABC
 from typing import Any
-from xml.etree import ElementTree
+
+from defusedxml import ElementTree
 
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
@@ -17,7 +18,7 @@ class XmlCommand(Command):
 
     @property
     @classmethod
-    def has_sub_element(self) -> bool:
+    def has_sub_element(cls) -> bool:
         """Return True if command has inner element."""
         return False
 

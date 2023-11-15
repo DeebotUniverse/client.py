@@ -1,6 +1,7 @@
 """Error commands."""
 from typing import Any
-from xml.etree import ElementTree
+
+from defusedxml import ElementTree
 
 from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent

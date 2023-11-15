@@ -1,6 +1,7 @@
 import pytest
 
 from deebot_client.events import BatteryEvent
+from deebot_client.messages.xml.battery import OnBattery
 from tests.messages import assert_message
 
 

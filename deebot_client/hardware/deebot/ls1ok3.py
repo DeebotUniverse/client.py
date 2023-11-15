@@ -1,4 +1,4 @@
-"""Deebot 900 Capabilities"""
+"""Deebot 900 Capabilities."""
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -48,6 +48,7 @@ from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
+from deebot_client.commands.xml.battery import GetBattery
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -83,7 +84,6 @@ from deebot_client.events import (
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
-from ...commands.xml import GetBattery
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
