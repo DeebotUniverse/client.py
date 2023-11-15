@@ -6,10 +6,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import EfficiencyMode, EfficiencyModeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetEfficiencyMode(CommandWithMessageHandling, MessageBodyDataDict):
+class GetEfficiencyMode(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get efficiency mode command."""
 
     name = "getEfficiency"
@@ -26,7 +26,7 @@ class GetEfficiencyMode(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetEfficiencyMode(SetCommand):
+class SetEfficiencyMode(JsonSetCommand):
     """Set efficiency mode command."""
 
     name = "setEfficiency"
