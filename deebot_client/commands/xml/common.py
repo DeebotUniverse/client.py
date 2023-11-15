@@ -5,12 +5,11 @@ from xml.etree.ElementTree import Element, SubElement
 
 from defusedxml import ElementTree  # type: ignore[import-untyped]
 
-from deebot_client.command import Command, CommandResult
+from deebot_client.command import Command, CommandWithMessageHandling
 from deebot_client.const import DataType
 from deebot_client.event_bus import EventBus
-from deebot_client.events import AvailabilityEvent
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, HandlingState, MessageBody
+from deebot_client.message import HandlingResult, HandlingState
 
 _LOGGER = get_logger(__name__)
 
@@ -40,47 +39,8 @@ class XmlCommand(Command):
         return ElementTree.tostring(ctl_element, "unicode")
 
 
-class CommandWithMessageHandling(XmlCommand, MessageBody, ABC):
-    """Command, which handle response by itself."""
-
-    _is_available_check: bool = False
-
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        if response.get("ret") == "ok":
-            data = response.get("resp", response)
-            result = self.handle(event_bus, data)
-            return CommandResult(result.state, result.args)
-
-        if errno := response.get("errno", None):
-            match errno:
-                case 4200:
-                    # bot offline
-                    _LOGGER.info(
-                        'Vacuum is offline. Could not execute command "%s"', self.name
-                    )
-                    event_bus.notify(AvailabilityEvent(False))
-                    return CommandResult(HandlingState.FAILED)
-                case 500:
-                    if self._is_available_check:
-                        _LOGGER.info(
-                            'No response received for command "%s" during availability-check.',
-                            self.name,
-                        )
-                    else:
-                        _LOGGER.warning(
-                            'No response received for command "%s". This can happen if the vacuum has network issues or does not support the command',
-                            self.name,
-                        )
-                    return CommandResult(HandlingState.FAILED)
-
-        _LOGGER.warning('Command "%s" was not successfully.', self.name)
-        return CommandResult(HandlingState.ANALYSE)
+class XmlCommandWithMessageHandling(XmlCommand, CommandWithMessageHandling, ABC):
+    """Xml command, which handle response by itself."""
 
 
 class ExecuteCommand(CommandWithMessageHandling, ABC):

@@ -5,10 +5,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import XmlCommandWithMessageHandling
 
 
-class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
+class GetStats(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "GetStats"
@@ -36,7 +36,7 @@ class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
         raise NotImplementedError
 
 
-class GetTotalStats(CommandWithMessageHandling, MessageBodyDataDict):
+class GetTotalStats(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "GetTotalStats"

@@ -1,10 +1,10 @@
 """Battery commands."""
 from deebot_client.messages.xml import OnBattery
 
-from .common import CommandWithMessageHandling
+from .common import XmlCommandWithMessageHandling
 
 
-class GetBattery(OnBattery, CommandWithMessageHandling):
+class GetBattery(OnBattery, XmlCommandWithMessageHandling):
     """Get battery command."""
 
     name = "GetBatteryInfo"

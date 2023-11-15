@@ -14,10 +14,10 @@ from deebot_client.events import (
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import XmlCommandWithMessageHandling
 
 
-class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetCachedMapInfo(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -60,7 +60,7 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMajorMap(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "GetMajorMap"
@@ -102,7 +102,7 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
         raise NotImplementedError
 
 
-class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSet(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -173,7 +173,7 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSubSet(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
     _ROOM_NUM_TO_NAME = {
@@ -258,7 +258,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         raise NotImplementedError
 
 
-class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapTrace(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -312,7 +312,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMinorMap(XmlCommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "GetMinorMap"
