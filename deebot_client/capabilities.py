@@ -146,6 +146,7 @@ class CapabilityMap:
 
     chached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
+    clear_map: CapabilityExecute | None = None
     major: CapabilityEvent[MajorMapEvent]
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
