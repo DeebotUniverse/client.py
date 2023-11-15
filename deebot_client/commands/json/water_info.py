@@ -6,10 +6,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import WaterAmount, WaterInfoEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetWaterInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetWaterInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get water info command."""
 
     name = "getWaterInfo"
@@ -30,7 +30,7 @@ class GetWaterInfo(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetWaterInfo(SetCommand):
+class SetWaterInfo(JsonSetCommand):
     """Set water info command."""
 
     name = "setWaterInfo"
