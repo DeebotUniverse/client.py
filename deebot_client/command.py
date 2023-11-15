@@ -293,7 +293,7 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
     @abstractmethod
     def get_command(self) -> type[CommandWithMessageHandling]:
         """Return the corresponding "get" command."""
-        raise NotImplementedError
+        raise NotImplementedError  # pragma: no cover
 
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
