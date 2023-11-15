@@ -1,6 +1,6 @@
 """Common xml based commands."""
 from abc import ABC
-from typing import Any
+from typing import Any, cast
 from xml.etree.ElementTree import Element, SubElement
 
 from defusedxml import ElementTree  # type: ignore[import-untyped]
@@ -19,7 +19,7 @@ class XmlCommand(Command):
 
     data_type: DataType = DataType.XML
 
-    @property
+    @property  # type: ignore[misc]
     @classmethod
     def has_sub_element(cls) -> bool:
         """Return True if command has inner element."""
@@ -36,7 +36,7 @@ class XmlCommand(Command):
                 for key, value in self._args.items():
                     element.set(key, value)
 
-        return ElementTree.tostring(ctl_element, "unicode")
+        return cast(str, ElementTree.tostring(ctl_element, "unicode"))
 
 
 class XmlCommandWithMessageHandling(XmlCommand, CommandWithMessageHandling, ABC):
