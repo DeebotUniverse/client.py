@@ -69,6 +69,7 @@ from deebot_client.models import StaticDeviceInfo
     [
         ("not_specified", lambda: DEVICES[FALLBACK]),
         ("yna5xi", lambda: DEVICES["yna5xi"]),
+        ("ls1ok3", lambda: DEVICES["ls1ok3"]),
     ],
 )
 def test_get_static_device_info(
