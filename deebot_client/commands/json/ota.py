@@ -1,22 +1,15 @@
 """Ota command module."""
-
 from typing import Any
 
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
 from deebot_client.events import OtaEvent
-from deebot_client.message import (
-    HandlingResult,
-    MessageBodyDataDict,
-)
+from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import (
-    CommandWithMessageHandling,
-    SetCommand,
-)
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetOta(CommandWithMessageHandling, MessageBodyDataDict):
+class GetOta(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get ota command."""
 
     name = "getOta"
@@ -34,7 +27,7 @@ class GetOta(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetOta(SetCommand):
+class SetOta(JsonSetCommand):
     """Set ota command."""
 
     name = "setOta"
