@@ -20,7 +20,6 @@ from deebot_client.commands.json.carpet import (
     SetCarpetAutoFanBoost,
 )
 from deebot_client.commands.json.charge import Charge
-from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.json.clean import Clean, CleanArea
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
@@ -49,6 +48,7 @@ from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.xml.battery import GetBattery
+from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.xml.error import GetError
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -158,10 +158,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(
-            StateEvent, [GetChargeState()]
-        ),
-
+        state=CapabilityEvent(StateEvent, [GetChargeState()]),
         stats=CapabilityStats(  # todo needs to be re-implemented
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),

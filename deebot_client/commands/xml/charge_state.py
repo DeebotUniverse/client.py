@@ -1,5 +1,6 @@
 """Charge state commands."""
 from xml.etree.ElementTree import Element
+
 from deebot_client.commands.xml.common import XmlCommandWithMessageHandling
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
@@ -13,14 +14,14 @@ _LOGGER = get_logger(__name__)
 class GetChargeState(XmlCommandWithMessageHandling):
     """Get charge state comment"""
 
-    name = 'GetChargeState'
+    name = "GetChargeState"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
         # "<ctl ret='ok'><charge type='SlotCharging' g='1'/></ctl>" == docked and charging
         # "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>"" == Idle (Potentially already fully charged?)
 
-        element = xml.find('charge')
+        element = xml.find("charge")
 
         if element is None:
             return HandlingResult(HandlingState.ERROR)
