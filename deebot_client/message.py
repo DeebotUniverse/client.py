@@ -158,8 +158,7 @@ class MessageBody(Message):
         :return: A message response
         """
         if isinstance(message, dict):
-            data_body = message.get("body", message)
-            return cls.__handle_body(event_bus, data_body)
+            return cls.__handle_body(event_bus, message["body"])
 
         return super()._handle(event_bus, message)
 
@@ -193,19 +192,15 @@ class MessageBodyData(MessageBody):
             return HandlingResult(HandlingState.ERROR)
 
     @classmethod
-    def _handle_body(
-        cls, event_bus: EventBus, body: dict[str, Any] | str
-    ) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
         """
-        if isinstance(body, str):
-            data = body
-        else:
-            data = body.get("data", body)
+        if "data" in body:
+            return cls.__handle_body_data(event_bus, body["data"])
 
-        return cls.__handle_body_data(event_bus, data)
+        return super()._handle_body(event_bus, body)
 
 
 class MessageBodyDataDict(MessageBodyData):
@@ -229,24 +224,10 @@ class MessageBodyDataDict(MessageBodyData):
 
         :return: A message response
         """
-        if isinstance(data, str) or isinstance(data.get("resp"), str):
-            # data = data.get('resp') if isinstance(data.get('resp', {}), str) else data
-            data = data if isinstance(data, str) else data.get("resp")
-
-            return cls._handle_body_data_xml(event_bus, str(data))
-
         if isinstance(data, dict):
             return cls._handle_body_data_dict(event_bus, data)
 
         return super()._handle_body_data(event_bus, data)
-
-    @classmethod
-    @abstractmethod
-    def _handle_body_data_xml(cls, event_bus: EventBus, data: str) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
 
 
 class MessageBodyDataList(MessageBodyData):
