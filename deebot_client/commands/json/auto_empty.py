@@ -3,13 +3,13 @@ from typing import Any
 
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
-from deebot_client.events.auto_empty import AutoEmptyMode, AutoEmptyModeEvent
+from deebot_client.events import AutoEmptyMode, AutoEmptyModeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand, SetEnableCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand, SetEnableCommand
 
 
-class GetAutoEmpty(CommandWithMessageHandling, MessageBodyDataDict):
+class GetAutoEmpty(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get auto empty command."""
 
     name = "getAutoEmpty"
@@ -38,7 +38,7 @@ class SetAutoEmpty(SetEnableCommand):
     get_command = GetAutoEmpty
 
 
-class SetAutoEmptyMode(SetCommand):
+class SetAutoEmptyMode(JsonSetCommand):
     """Set auto empty mode command."""
 
     name = "setAutoEmpty"
