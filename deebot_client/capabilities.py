@@ -28,6 +28,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
+    OtaEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -169,6 +170,7 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
+    ota: CapabilitySetEnable[OtaEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]
 
