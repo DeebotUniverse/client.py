@@ -7,10 +7,10 @@ from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 from deebot_client.util import LST
 
-from .common import CommandWithMessageHandling, ExecuteCommand
+from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
 
-class GetLifeSpan(CommandWithMessageHandling, MessageBodyDataList):
+class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
     """Get life span command."""
 
     name = "getLifeSpan"

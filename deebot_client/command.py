@@ -4,13 +4,14 @@ import asyncio
 from dataclasses import dataclass, field
 from typing import Any, final
 
+from deebot_client.events import AvailabilityEvent
 from deebot_client.exceptions import DeebotError
 
 from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .event_bus import EventBus
 from .logging_filter import get_logger
-from .message import HandlingResult, HandlingState
+from .message import HandlingResult, HandlingState, MessageBody
 from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
@@ -189,6 +190,49 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
+class CommandWithMessageHandling(Command, MessageBody, ABC):
+    """Command, which handle response by itself."""
+
+    _is_available_check: bool = False
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        if response.get("ret") == "ok":
+            data = response.get("resp", response)
+            result = self.handle(event_bus, data)
+            return CommandResult(result.state, result.args)
+
+        if errno := response.get("errno", None):
+            match errno:
+                case 4200:
+                    # bot offline
+                    _LOGGER.info(
+                        'Device is offline. Could not execute command "%s"', self.name
+                    )
+                    event_bus.notify(AvailabilityEvent(False))
+                    return CommandResult(HandlingState.FAILED)
+                case 500:
+                    if self._is_available_check:
+                        _LOGGER.info(
+                            'No response received for command "%s" during availability-check.',
+                            self.name,
+                        )
+                    else:
+                        _LOGGER.warning(
+                            'No response received for command "%s". This can happen if the device has network issues or does not support the command',
+                            self.name,
+                        )
+                    return CommandResult(HandlingState.FAILED)
+
+        _LOGGER.warning('Command "%s" was not successfully.', self.name)
+        return CommandResult(HandlingState.ANALYSE)
+
+
 @dataclass
 class InitParam:
     """Init param."""
@@ -237,3 +281,22 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
         raise DeebotError(
             f'Could not convert "{value}" of {name} into {type_}'
         ) from err
+
+
+class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
+    """Base set command.
+
+    Command needs to be linked to the "get" command, for handling (updating) the sensors.
+    """
+
+    @property
+    @abstractmethod
+    def get_command(self) -> type[CommandWithMessageHandling]:
+        """Return the corresponding "get" command."""
+        raise NotImplementedError  # pragma: no cover
+
+    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        result = self.handle(event_bus, response)
+        if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):
+            self.get_command.handle(event_bus, self._args)

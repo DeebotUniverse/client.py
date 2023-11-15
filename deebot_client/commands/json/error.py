@@ -6,10 +6,10 @@ from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetError(CommandWithMessageHandling, MessageBodyDataDict):
+class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"

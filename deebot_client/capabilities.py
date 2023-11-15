@@ -4,8 +4,7 @@ from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from deebot_client.command import Command
-from deebot_client.commands.json.common import SetCommand
+from deebot_client.command import Command, SetCommand
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
