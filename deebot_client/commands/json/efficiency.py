@@ -33,7 +33,7 @@ class SetEfficiencyMode(JsonSetCommand):
     get_command = GetEfficiencyMode
     _mqtt_params = {"efficiency": InitParam(EfficiencyMode)}
 
-    def __init__(self, mode: EfficiencyMode | str) -> None:
-        if isinstance(mode, str):
-            mode = EfficiencyMode.get(mode)
-        super().__init__({"efficiency": mode.value})
+    def __init__(self, efficiency: EfficiencyMode | str) -> None:
+        if isinstance(efficiency, str):
+            efficiency = EfficiencyMode.get(efficiency)
+        super().__init__({"efficiency": efficiency.value})

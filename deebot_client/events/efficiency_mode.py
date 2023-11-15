@@ -17,4 +17,4 @@ class EfficiencyMode(DisplayNameIntEnum):
 class EfficiencyModeEvent(Event):
     """Efficiency mode event representation."""
 
-    mode: EfficiencyMode
+    efficiency: EfficiencyMode
