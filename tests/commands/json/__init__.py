@@ -8,7 +8,7 @@ from deebot_client.authentication import Authenticator
 from deebot_client.command import Command
 from deebot_client.commands.json.common import (
     ExecuteCommand,
-    SetCommand,
+    JsonSetCommand,
     SetEnableCommand,
 )
 from deebot_client.event_bus import EventBus
@@ -83,7 +83,7 @@ async def assert_execute_command(
 
 
 async def assert_set_command(
-    command: SetCommand,
+    command: JsonSetCommand,
     args: dict[str, Any],
     expected_get_command_event: Event,
 ) -> None:
