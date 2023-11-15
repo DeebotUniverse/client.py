@@ -11,7 +11,7 @@ from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .event_bus import EventBus
 from .logging_filter import get_logger
-from .message import HandlingResult, HandlingState, MessageBody
+from .message import HandlingResult, HandlingState, Message
 from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
@@ -190,7 +190,7 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
-class CommandWithMessageHandling(Command, MessageBody, ABC):
+class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
 
     _is_available_check: bool = False

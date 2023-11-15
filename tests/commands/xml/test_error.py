@@ -1,7 +1,8 @@
-from deebot_client.commands import GetError
+from deebot_client.commands.xml import GetError
 from deebot_client.events import ErrorEvent
-from tests.commands import assert_command
 from tests.helpers import get_request_xml
+
+from . import assert_command
 
 
 async def test_getErrors() -> None:

@@ -33,7 +33,6 @@ from deebot_client.commands.json.continuous_cleaning import (
     SetContinuousCleaning,
 )
 from deebot_client.commands.json.custom import CustomCommand
-from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
@@ -50,6 +49,7 @@ from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.xml.battery import GetBattery
+from deebot_client.commands.xml.error import GetError
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -93,9 +93,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
     Capabilities(
         availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
-        # THE REST NEEDS TO BE RE-IMPLEMENTED
-        charge=CapabilityExecute(Charge),
-        clean=CapabilityClean(
+        charge=CapabilityExecute(Charge),  # todo needs to be re-implemented
+        clean=CapabilityClean(  # todo needs to be re-implemented
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
             continuous=CapabilitySetEnable(
                 ContinuousCleaningEvent,
@@ -108,11 +107,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
             ),
         ),
-        custom=CapabilityCustomCommand(
+        custom=CapabilityCustomCommand(  # todo needs to be re-implemented
             event=CustomCommandEvent, get=[], set=CustomCommand
         ),
         error=CapabilityEvent(ErrorEvent, [GetError()]),
-        fan_speed=CapabilitySetTypes(
+        fan_speed=CapabilitySetTypes(  # todo needs to be re-implemented
             event=FanSpeedEvent,
             get=[GetFanSpeed()],
             set=SetFanSpeed,
@@ -123,13 +122,13 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 FanSpeedLevel.MAX_PLUS,
             ),
         ),
-        life_span=CapabilityLifeSpan(
+        life_span=CapabilityLifeSpan(  # todo needs to be re-implemented
             types=(LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH),
             event=LifeSpanEvent,
             get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
             reset=ResetLifeSpan,
         ),
-        map=CapabilityMap(
+        map=CapabilityMap(  # todo needs to be re-implemented
             chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
@@ -141,9 +140,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
-        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
-        play_sound=CapabilityExecute(PlaySound),
-        settings=CapabilitySettings(
+        network=CapabilityEvent(
+            NetworkInfoEvent, [GetNetInfo()]
+        ),  # todo needs to be re-implemented
+        play_sound=CapabilityExecute(PlaySound),  # todo needs to be re-implemented
+        settings=CapabilitySettings(  # todo needs to be re-implemented
             advanced_mode=CapabilitySetEnable(
                 AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
             ),
@@ -157,13 +158,15 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
-        stats=CapabilityStats(
+        state=CapabilityEvent(
+            StateEvent, [GetChargeState(), GetCleanInfo()]
+        ),  # todo needs to be re-implemented
+        stats=CapabilityStats(  # todo needs to be re-implemented
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySetTypes(
+        water=CapabilitySetTypes(  # todo needs to be re-implemented
             event=WaterInfoEvent,
             get=[GetWaterInfo()],
             set=SetWaterInfo,

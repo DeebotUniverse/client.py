@@ -16,6 +16,7 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
+    MessageBody,
     MessageBodyDataDict,
 )
 
@@ -45,7 +46,9 @@ class JsonCommand(Command):
         return payload
 
 
-class JsonCommandWithMessageHandling(JsonCommand, CommandWithMessageHandling, ABC):
+class JsonCommandWithMessageHandling(
+    JsonCommand, CommandWithMessageHandling, MessageBody, ABC
+):
     """Command, which handle response by itself."""
 
 

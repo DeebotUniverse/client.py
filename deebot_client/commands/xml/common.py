@@ -1,5 +1,5 @@
 """Common xml based commands."""
-from abc import ABC
+from abc import ABC, abstractmethod
 from typing import Any, cast
 from xml.etree.ElementTree import Element, SubElement
 
@@ -9,7 +9,7 @@ from deebot_client.command import Command, CommandWithMessageHandling
 from deebot_client.const import DataType
 from deebot_client.event_bus import EventBus
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.message import HandlingResult, HandlingState, MessageStr
 
 _LOGGER = get_logger(__name__)
 
@@ -39,8 +39,27 @@ class XmlCommand(Command):
         return cast(str, ElementTree.tostring(ctl_element, "unicode"))
 
 
-class XmlCommandWithMessageHandling(XmlCommand, CommandWithMessageHandling, ABC):
+class XmlCommandWithMessageHandling(
+    XmlCommand, CommandWithMessageHandling, MessageStr, ABC
+):
     """Xml command, which handle response by itself."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        xml = ElementTree.fromstring(message)
+        return cls._handle_xml(event_bus, xml)
 
 
 class ExecuteCommand(CommandWithMessageHandling, ABC):

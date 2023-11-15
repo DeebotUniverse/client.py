@@ -1,56 +1,26 @@
 """Error commands."""
-from typing import Any
-
-from defusedxml import ElementTree
+from xml.etree.ElementTree import Element
 
 from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult
 from deebot_client.models import State
 
 from .common import XmlCommandWithMessageHandling
 
 
-class GetError(XmlCommandWithMessageHandling, MessageBodyDataDict):
+class GetError(XmlCommandWithMessageHandling):
     """Get error command."""
 
     name = "GetError"
 
     @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
 
         :return: A message response
         """
-        codes = data.get("code", [])
-        if codes:
-            # the last error code
-            error = codes[-1]
-
-            if error is not None:
-                description = _ERROR_CODES.get(error)
-                if error != 0:
-                    event_bus.notify(StateEvent(State.ERROR))
-                event_bus.notify(ErrorEvent(error, description))
-                return HandlingResult.success()
-
-        return HandlingResult.analyse()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        element = ElementTree.fromstring(xml_message)
-
-        error_code = element.attrib.get("errs")
-
-        if error_code == "":
-            event_bus.notify(ErrorEvent(0, _ERROR_CODES.get(0)))
-            return HandlingResult.success()
-
-        error_code = int(error_code)
+        error_code = int(errs) if (errs := xml.attrib["errs"]) else 0
 
         if error_code != 0:
             event_bus.notify(StateEvent(State.ERROR))
