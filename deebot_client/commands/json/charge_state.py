@@ -6,11 +6,11 @@ from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 from .const import CODE
 
 
-class GetChargeState(CommandWithMessageHandling, MessageBodyDataDict):
+class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get charge state command."""
 
     name = "getChargeState"
