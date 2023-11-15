@@ -5,8 +5,8 @@ from unittest.mock import Mock
 
 import pytest
 
+from deebot_client.command import CommandWithMessageHandling
 from deebot_client.commands.json import GetBattery
-from deebot_client.commands.json.common import CommandWithMessageHandling
 from deebot_client.commands.json.map import GetCachedMapInfo
 from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent
@@ -79,14 +79,14 @@ async def test_common_functionality(
 
     if repsonse_json.get("errno") == 500 and command._is_available_check:
         assert (
-            "deebot_client.commands.json.common",
+            "deebot_client.command",
             logging.INFO,
             f'No response received for command "{command.name}" during availability-check.',
         ) in caplog.record_tuples
 
     elif expected_log:
         assert (
-            "deebot_client.commands.json.common",
+            "deebot_client.command",
             expected_log[0],
             expected_log[1].format(command.name),
         ) in caplog.record_tuples
