@@ -5,10 +5,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
+class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getStats"
@@ -30,7 +30,7 @@ class GetStats(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class GetTotalStats(CommandWithMessageHandling, MessageBodyDataDict):
+class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
     name = "getTotalStats"

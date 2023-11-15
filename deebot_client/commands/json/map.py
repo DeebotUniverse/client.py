@@ -14,10 +14,10 @@ from deebot_client.events import (
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -60,7 +60,7 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "getMajorMap"
@@ -96,7 +96,7 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -161,7 +161,7 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
     _ROOM_NUM_TO_NAME = {
@@ -240,7 +240,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -288,7 +288,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "getMinorMap"
