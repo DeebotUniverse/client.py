@@ -6,10 +6,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import Position, PositionsEvent, PositionType
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
+class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getPos"
