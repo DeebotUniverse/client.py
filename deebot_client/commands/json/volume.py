@@ -7,10 +7,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
+class GetVolume(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"
@@ -30,7 +30,7 @@ class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetVolume(SetCommand):
+class SetVolume(JsonSetCommand):
     """Set volume command."""
 
     name = "setVolume"
