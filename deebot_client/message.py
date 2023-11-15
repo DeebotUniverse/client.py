@@ -99,52 +99,22 @@ class Message(ABC):
         return cls._handle(event_bus, message)
 
 
-class MessageBody(Message):
-    """Dict message with body attribute."""
+class MessageStr(Message):
+    """String message."""
 
     @classmethod
     @abstractmethod
-    def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
-    ) -> HandlingResult:
-        """Handle message and notify the correct event subscribers.
+    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
 
         :return: A message response
         """
 
     @classmethod
-    @_handle_error_or_analyse
+    # @_handle_error_or_analyse @edenhaus will make the decorator to work again
     @final
-    def handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
-    ) -> HandlingResult:
-        """Handle message and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        return cls._handle(event_bus, message)
-
-
-class MessageBody(Message):
-    """Dict message with body attribute."""
-
-    @classmethod
-    @abstractmethod
-    def _handle_body(
-        cls, event_bus: EventBus, body: dict[str, Any] | str
-    ) -> HandlingResult:
-        """Handle message->body and notify the correct event subscribers.
-
-        :return: A message response
-        """
-
-    @classmethod
-    @_handle_error_or_analyse
-    @final
-    def __handle_body(
-        cls, event_bus: EventBus, body: dict[str, Any] | str
-    ) -> HandlingResult:
-        return cls._handle_body(event_bus, body)
+    def __handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        return cls._handle_str(event_bus, message)
 
     @classmethod
     def _handle(
@@ -157,8 +127,36 @@ class MessageBody(Message):
 
         # This basically means an XML message
         if isinstance(message, str):
-            return cls.__handle_body(event_bus, message)
+            return cls.__handle_str(event_bus, message)
 
+        return super()._handle(event_bus, message)
+
+
+class MessageBody(Message):
+    """Dict message with body attribute."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+        """Handle message->body and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def __handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+        return cls._handle_body(event_bus, body)
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
         if isinstance(message, dict):
             data_body = message.get("body", message)
             return cls.__handle_body(event_bus, data_body)

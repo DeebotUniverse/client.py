@@ -88,16 +88,13 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(
-        cls, event_bus: EventBus, body: dict[str, Any] | str
-    ) -> HandlingResult:
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
         """
-
         # Success event looks like { "code": 0, "msg": "ok" }
-        if isinstance(body, dict) and body.get(CODE, -1) == 0:
+        if body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
@@ -143,12 +140,6 @@ class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
         event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
         event_bus.notify(event)
         return HandlingResult.success()
-
-    @classmethod
-    def _handle_body_data_xml(
-        cls, event_bus: EventBus, xml_message: str
-    ) -> HandlingResult:
-        raise NotImplementedError
 
 
 class SetEnableCommand(SetCommand, ABC):
