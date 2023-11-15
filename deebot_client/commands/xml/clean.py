@@ -1,3 +1,4 @@
+"""Clean commands."""
 # from xml.etree import ElementTree
 #
 # from deebot_client.authentication import Authenticator
