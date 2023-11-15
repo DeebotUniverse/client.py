@@ -32,7 +32,6 @@ from deebot_client.commands.json.continuous_cleaning import (
     SetContinuousCleaning,
 )
 from deebot_client.commands.json.custom import CustomCommand
-from deebot_client.commands.xml.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.multimap_state import (
@@ -50,6 +49,7 @@ from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.xml.battery import GetBattery
 from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.xml.error import GetError
+from deebot_client.commands.xml.fan_speed import GetFanSpeed
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -86,8 +86,8 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
-from . import DEVICES
 from ...commands.json import SetFanSpeed
+from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.XML,

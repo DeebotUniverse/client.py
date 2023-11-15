@@ -1,9 +1,8 @@
-from xml.etree import ElementTree
 from xml.etree.ElementTree import Element
 
 from deebot_client.commands.xml.common import XmlCommandWithMessageHandling
 from deebot_client.event_bus import EventBus
-from deebot_client.events.fan_speed import FanSpeedLevelXml, FanSpeedEvent
+from deebot_client.events.fan_speed import FanSpeedEvent, FanSpeedLevelXml
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 
