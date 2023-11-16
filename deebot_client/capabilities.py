@@ -34,6 +34,7 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
+    VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
@@ -173,6 +174,7 @@ class CapabilitySettings:
         CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
     ) = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
+    voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]
 
 

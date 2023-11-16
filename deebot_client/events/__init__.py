@@ -225,3 +225,8 @@ class MultimapStateEvent(EnableEvent):
 @dataclass(frozen=True)
 class TrueDetectEvent(EnableEvent):
     """TrueDetect event."""
+
+
+@dataclass(frozen=True)
+class VoiceAssistantStateEvent(EnableEvent):
+    """VoiceAssistantState event."""
