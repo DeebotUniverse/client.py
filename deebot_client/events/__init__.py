@@ -8,6 +8,7 @@ from deebot_client.events.base import Event
 from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
+from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     CachedMapInfoEvent,
@@ -31,6 +32,8 @@ __all__ = [
     "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
+    "EfficiencyMode",
+    "EfficiencyModeEvent",
     "Event",
     "FanSpeedEvent",
     "FanSpeedLevel",
@@ -119,6 +122,7 @@ class LifeSpan(str, Enum):
     BRUSH = "brush"
     FILTER = "heap"
     SIDE_BRUSH = "sideBrush"
+    UNIT_CARE = "unitCare"
 
 
 @dataclass(frozen=True)
@@ -221,3 +225,8 @@ class MultimapStateEvent(EnableEvent):
 @dataclass(frozen=True)
 class TrueDetectEvent(EnableEvent):
     """TrueDetect event."""
+
+
+@dataclass(frozen=True)
+class VoiceAssistantStateEvent(EnableEvent):
+    """VoiceAssistantState event."""

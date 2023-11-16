@@ -14,21 +14,37 @@ from . import assert_command, assert_execute_command
     ("command", "json", "expected"),
     [
         (
-            GetLifeSpan({LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH}),
+            GetLifeSpan(
+                {
+                    LifeSpan.BRUSH,
+                    LifeSpan.FILTER,
+                    LifeSpan.SIDE_BRUSH,
+                    LifeSpan.UNIT_CARE,
+                }
+            ),
             get_request_json(
                 get_success_body(
                     [
-                        {"type": "sideBrush", "left": 8977, "total": 9000},
                         {"type": "brush", "left": 17979, "total": 18000},
                         {"type": "heap", "left": 7179, "total": 7200},
+                        {"type": "sideBrush", "left": 8977, "total": 9000},
+                        {"type": "unitCare", "left": 265, "total": 1800},
                     ]
                 )
             ),
             [
-                LifeSpanEvent(LifeSpan.SIDE_BRUSH, 99.74, 8977),
                 LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),
                 LifeSpanEvent(LifeSpan.FILTER, 99.71, 7179),
+                LifeSpanEvent(LifeSpan.SIDE_BRUSH, 99.74, 8977),
+                LifeSpanEvent(LifeSpan.UNIT_CARE, 14.72, 265),
             ],
+        ),
+        (
+            GetLifeSpan({LifeSpan.BRUSH}),
+            get_request_json(
+                get_success_body([{"type": "brush", "left": 17979, "total": 18000}])
+            ),
+            [LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979)],
         ),
         (
             GetLifeSpan([LifeSpan.FILTER]),
@@ -38,11 +54,18 @@ from . import assert_command, assert_execute_command
             [LifeSpanEvent(LifeSpan.FILTER, 99.71, 7179)],
         ),
         (
-            GetLifeSpan({LifeSpan.BRUSH}),
+            GetLifeSpan([LifeSpan.SIDE_BRUSH]),
             get_request_json(
-                get_success_body([{"type": "brush", "left": 17979, "total": 18000}])
+                get_success_body([{"type": "sideBrush", "left": 8977, "total": 9000}])
             ),
-            [LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979)],
+            [LifeSpanEvent(LifeSpan.SIDE_BRUSH, 99.74, 8977)],
+        ),
+        (
+            GetLifeSpan({LifeSpan.UNIT_CARE}),
+            get_request_json(
+                get_success_body([{"type": "unitCare", "left": 265, "total": 1800}])
+            ),
+            [LifeSpanEvent(LifeSpan.UNIT_CARE, 14.72, 265)],
         ),
     ],
 )
