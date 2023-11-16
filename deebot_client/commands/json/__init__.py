@@ -12,6 +12,7 @@ from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
 from .common import JsonCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
+from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan, ResetLifeSpan
@@ -52,6 +53,8 @@ __all__ = [
     "GetCleanLogs",
     "GetContinuousCleaning",
     "SetContinuousCleaning",
+    "GetEfficiencyMode",
+    "SetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
     "SetFanSpeed",
@@ -110,6 +113,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetContinuousCleaning,
     SetContinuousCleaning,
+
+    GetEfficiencyMode,
+    SetEfficiencyMode,
 
     GetError,
 
