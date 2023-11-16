@@ -109,11 +109,12 @@ class CapabilitySetTypes(CapabilitySet[_EVENT, _T | str], CapabilityTypes[_T]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityCleanAutoEmpty:
+class CapabilityCleanAutoEmpty(
+    CapabilityEvent[AutoEmptyModeEvent], CapabilityTypes[AutoEmptyMode]
+):
     """Capabilities for clean auto empty."""
 
-    auto_empty_enable: CapabilitySetEnable[AutoEmptyModeEvent]
-    auto_empty: CapabilitySetTypes[AutoEmptyModeEvent, AutoEmptyMode]
+    set: Callable[[bool, AutoEmptyMode | str | None], SetCommand]
 
 
 @dataclass(frozen=True, kw_only=True)

@@ -2,7 +2,7 @@
 from deebot_client.command import Command, CommandMqttP2P
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
-from .auto_empty import GetAutoEmpty, SetAutoEmpty, SetAutoEmptyMode
+from .auto_empty import GetAutoEmpty, SetAutoEmpty
 from .battery import GetBattery
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
@@ -42,7 +42,6 @@ __all__ = [
     "SetAdvancedMode",
     "GetAutoEmpty",
     "SetAutoEmpty",
-    "SetAutoEmptyMode",
     "GetBattery",
     "GetCarpetAutoFanBoost",
     "SetCarpetAutoFanBoost",
@@ -99,7 +98,6 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetAutoEmpty,
     SetAutoEmpty,
-    SetAutoEmptyMode,
 
     GetBattery,
 

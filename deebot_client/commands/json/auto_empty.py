@@ -6,7 +6,7 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import AutoEmptyMode, AutoEmptyModeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import JsonCommandWithMessageHandling, JsonSetCommand, SetEnableCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
 class GetAutoEmpty(JsonCommandWithMessageHandling, MessageBodyDataDict):
@@ -31,21 +31,20 @@ class GetAutoEmpty(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetAutoEmpty(SetEnableCommand):
+class SetAutoEmpty(JsonSetCommand):
     """Set auto empty command."""
 
     name = "setAutoEmpty"
     get_command = GetAutoEmpty
+    _mqtt_params = {"enable": InitParam(bool), "frequency": InitParam(AutoEmptyMode)}
 
+    def __init__(
+        self, enable: bool = True, frequency: AutoEmptyMode | str | None = None
+    ) -> None:
+        args: dict[str, int | str] = {"enable": int(enable)}
+        if frequency is not None:
+            if isinstance(frequency, str):
+                frequency = AutoEmptyMode.get(frequency)
+            args["frequency"] = frequency.value
 
-class SetAutoEmptyMode(JsonSetCommand):
-    """Set auto empty mode command."""
-
-    name = "setAutoEmpty"
-    get_command = GetAutoEmpty
-    _mqtt_params = {"frequency": InitParam(AutoEmptyMode)}
-
-    def __init__(self, mode: AutoEmptyMode | str) -> None:
-        if isinstance(mode, str):
-            mode = AutoEmptyMode.get(mode)
-        super().__init__({"enable": 1, "frequency": mode.value})
+        super().__init__(args)
