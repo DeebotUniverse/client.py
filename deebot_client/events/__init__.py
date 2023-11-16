@@ -119,6 +119,7 @@ class LifeSpan(str, Enum):
     BRUSH = "brush"
     FILTER = "heap"
     SIDE_BRUSH = "sideBrush"
+    UNIT_CARE = "unitCare"
 
 
 @dataclass(frozen=True)
