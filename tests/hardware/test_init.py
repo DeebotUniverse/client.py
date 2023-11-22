@@ -15,6 +15,7 @@ from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
 from deebot_client.commands.json.continuous_cleaning import GetContinuousCleaning
+from deebot_client.commands.json.efficiency import GetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
@@ -24,6 +25,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
+from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
 from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
@@ -46,9 +48,11 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
+    VoiceAssistantStateEvent,
     VolumeEvent,
 )
 from deebot_client.events.base import Event
+from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
 from deebot_client.events.map import (
     CachedMapInfoEvent,
@@ -143,6 +147,48 @@ def test_get_static_device_info(
                 StateEvent: [GetChargeState(), GetCleanInfo()],
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
+                VolumeEvent: [GetVolume()],
+                WaterInfoEvent: [GetWaterInfo()],
+            },
+        ),
+        (
+            "p95mgv",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AvailabilityEvent: [GetBattery(True)],
+                BatteryEvent: [GetBattery()],
+                CachedMapInfoEvent: [GetCachedMapInfo()],
+                CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
+                CleanCountEvent: [GetCleanCount()],
+                CleanPreferenceEvent: [GetCleanPreference()],
+                ContinuousCleaningEvent: [GetContinuousCleaning()],
+                CustomCommandEvent: [],
+                EfficiencyModeEvent: [GetEfficiencyMode()],
+                ErrorEvent: [GetError()],
+                FanSpeedEvent: [GetFanSpeed()],
+                LifeSpanEvent: [
+                    GetLifeSpan(
+                        [
+                            LifeSpan.BRUSH,
+                            LifeSpan.FILTER,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.UNIT_CARE,
+                        ]
+                    )
+                ],
+                MajorMapEvent: [GetMajorMap()],
+                MapChangedEvent: [],
+                MapTraceEvent: [GetMapTrace()],
+                MultimapStateEvent: [GetMultimapState()],
+                NetworkInfoEvent: [GetNetInfo()],
+                PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
+                RoomsEvent: [GetCachedMapInfo()],
+                StateEvent: [GetChargeState(), GetCleanInfo()],
+                StatsEvent: [GetStats()],
+                TotalStatsEvent: [GetTotalStats()],
+                TrueDetectEvent: [GetTrueDetect()],
+                VoiceAssistantStateEvent: [GetVoiceAssistantState()],
                 VolumeEvent: [GetVolume()],
                 WaterInfoEvent: [GetWaterInfo()],
             },
