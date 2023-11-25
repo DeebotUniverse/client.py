@@ -26,7 +26,9 @@ class GetWaterInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if mop_attached is not None:
             mop_attached = bool(mop_attached)
 
-        event_bus.notify(WaterInfoEvent(mop_attached, WaterAmount(int(data["amount"]))))
+        event_bus.notify(
+            WaterInfoEvent(WaterAmount(int(data["amount"])), mop_attached=mop_attached)
+        )
         return HandlingResult.success()
 
 

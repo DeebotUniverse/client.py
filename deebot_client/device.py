@@ -140,7 +140,7 @@ class Device:
                         tasks.add(asyncio.create_task(self._execute_command(command)))
 
                     result = await asyncio.gather(*tasks)
-                    self._set_available(all(result))
+                    self._set_available(available=all(result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
@@ -155,17 +155,17 @@ class Device:
             if await command.execute(
                 self._authenticator, self.device_info, self.events
             ):
-                self._set_available(True)
+                self._set_available(available=True)
                 return True
 
         return False
 
-    def _set_available(self, available: bool) -> None:
+    def _set_available(self, *, available: bool) -> None:
         """Set available."""
         if available:
             self._last_time_available = datetime.now()
 
-        self.events.notify(AvailabilityEvent(available))
+        self.events.notify(AvailabilityEvent(available=available))
 
     def _handle_message(
         self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]
@@ -176,7 +176,7 @@ class Device:
         :param message_data: message data
         :return: None
         """
-        self._set_available(True)
+        self._set_available(available=True)
 
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)

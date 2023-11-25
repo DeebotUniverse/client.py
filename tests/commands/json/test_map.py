@@ -104,7 +104,7 @@ async def test_getCachedMapInfo() -> None:
     await assert_command(
         GetCachedMapInfo(),
         json,
-        CachedMapInfoEvent(expected_name, True),
+        CachedMapInfoEvent(expected_name, active=True),
         # TODO check requested command be called
         # CommandResult(
         #    HandlingState.SUCCESS,
@@ -131,7 +131,9 @@ async def test_getMajorMap() -> None:
         )
     )
     await assert_command(
-        GetMajorMap(), json, MajorMapEvent(True, expected_mid, value.split(","))
+        GetMajorMap(),
+        json,
+        MajorMapEvent(expected_mid, value.split(","), requested=True),
     )
 
 

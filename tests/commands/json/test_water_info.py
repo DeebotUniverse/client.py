@@ -20,9 +20,15 @@ def test_WaterAmount_unique() -> None:
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        ({"amount": 2}, WaterInfoEvent(None, WaterAmount.MEDIUM)),
-        ({"amount": 1, "enable": 1}, WaterInfoEvent(True, WaterAmount.LOW)),
-        ({"amount": 4, "enable": 0}, WaterInfoEvent(False, WaterAmount.ULTRAHIGH)),
+        ({"amount": 2}, WaterInfoEvent(WaterAmount.MEDIUM)),
+        (
+            {"amount": 1, "enable": 1},
+            WaterInfoEvent(WaterAmount.LOW, mop_attached=True),
+        ),
+        (
+            {"amount": 4, "enable": 0},
+            WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
+        ),
     ],
 )
 async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> None:
@@ -34,7 +40,7 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> N
 async def test_SetWaterInfo(value: WaterAmount | str) -> None:
     command = SetWaterInfo(value)
     args = {"amount": 2}
-    await assert_set_command(command, args, WaterInfoEvent(None, WaterAmount.MEDIUM))
+    await assert_set_command(command, args, WaterInfoEvent(WaterAmount.MEDIUM))
 
 
 def test_SetWaterInfo_inexisting_value() -> None:

@@ -24,7 +24,7 @@ async def test_available_check_and_teardown(
     async def on_status(event: AvailabilityEvent) -> None:
         received_statuses.put_nowait(event)
 
-    async def assert_received_status(expected: bool) -> None:
+    async def assert_received_status(*, expected: bool) -> None:
         await asyncio.sleep(0.1)
         assert received_statuses.get_nowait().available is expected
 
@@ -62,14 +62,14 @@ async def test_available_check_and_teardown(
     await asyncio.sleep(2.1)
     # Verify command call for available check
     execute_mock.assert_awaited_once()
-    await assert_received_status(False)
+    await assert_received_status(expected=False)
 
     # Simulate bot reached by returning True
     execute_mock.return_value = True
 
     await asyncio.sleep(2)
     execute_mock.await_count = 2
-    await assert_received_status(True)
+    await assert_received_status(expected=True)
 
     # reset mock for easier handling
     battery_mock.reset_mock()

@@ -214,7 +214,7 @@ class CommandWithMessageHandling(Command, MessageBody, ABC):
                     _LOGGER.info(
                         'Device is offline. Could not execute command "%s"', self.name
                     )
-                    event_bus.notify(AvailabilityEvent(False))
+                    event_bus.notify(AvailabilityEvent(available=False))
                     return CommandResult(HandlingState.FAILED)
                 case 500:
                     if self._is_available_check:

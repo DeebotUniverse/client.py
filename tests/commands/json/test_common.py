@@ -28,7 +28,7 @@ def _assert_false_and_not_called(available: bool, event_bus: Mock) -> None:
 
 def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> None:
     assert available is False
-    event_bus.notify.assert_called_with(AvailabilityEvent(False))
+    event_bus.notify.assert_called_with(AvailabilityEvent(available=False))
 
 
 @pytest.mark.parametrize(
@@ -61,7 +61,7 @@ def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> 
     ],
 )
 @pytest.mark.parametrize(
-    "command", [GetBattery(), GetBattery(True), GetCachedMapInfo()]
+    "command", [GetBattery(), GetBattery(is_available_check=True), GetCachedMapInfo()]
 )
 async def test_common_functionality(
     authenticator: Mock,

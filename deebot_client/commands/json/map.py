@@ -90,7 +90,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(True, **result.args))
+            event_bus.notify(MajorMapEvent(requested=True, **result.args))
             return CommandResult.success()
 
         return result

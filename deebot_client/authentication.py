@@ -317,7 +317,7 @@ class Authenticator:
         self._refresh_handle: asyncio.TimerHandle | None = None
         self._tasks: set[asyncio.Future[Any]] = set()
 
-    async def authenticate(self, force: bool = False) -> Credentials:
+    async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
             if (
@@ -379,7 +379,7 @@ class Authenticator:
 
             async def async_refresh() -> None:
                 try:
-                    await self.authenticate(True)
+                    await self.authenticate(force=True)
                 except Exception:  # pylint: disable=broad-except
                     _LOGGER.exception("An exception occurred during refreshing token")
 

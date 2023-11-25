@@ -168,7 +168,7 @@ class TotalStatsEvent(Event):
     cleanings: int
 
 
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class AvailabilityEvent(Event):
     """Availability event."""
 
