@@ -9,7 +9,7 @@ class SanitizeFilter(Filter):
     """Filter to sensitive data."""
 
     # all lowercase
-    _SANITIZE_LOG_KEYS: set[str] = {
+    _SANITIZE_LOG_KEYS = (
         "auth",
         "did",
         "email",
@@ -18,7 +18,7 @@ class SanitizeFilter(Filter):
         "token",
         "uid",
         "user",
-    }
+    )
 
     def filter(self, record: LogRecord) -> bool:
         """Filter log record."""

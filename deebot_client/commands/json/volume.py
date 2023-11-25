@@ -1,5 +1,6 @@
 """Volume command module."""
 
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -35,10 +36,12 @@ class SetVolume(JsonSetCommand):
 
     name = "setVolume"
     get_command = GetVolume
-    _mqtt_params = {
-        "volume": InitParam(int),
-        "total": None,  # Remove it as we don't can set it (App includes it)
-    }
+    _mqtt_params = MappingProxyType(
+        {
+            "volume": InitParam(int),
+            "total": None,  # Remove it as we don't can set it (App includes it)
+        }
+    )
 
     def __init__(self, volume: int) -> None:
         super().__init__({"volume": volume})

@@ -1,5 +1,6 @@
 """Clean count command module."""
 
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -33,7 +34,7 @@ class SetCleanCount(JsonSetCommand):
 
     name = "setCleanCount"
     get_command = GetCleanCount
-    _mqtt_params = {"count": InitParam(int)}
+    _mqtt_params = MappingProxyType({"count": InitParam(int)})
 
     def __init__(self, count: int) -> None:
         super().__init__({"count": count})

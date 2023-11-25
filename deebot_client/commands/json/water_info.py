@@ -1,4 +1,5 @@
 """Water info commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -37,10 +38,12 @@ class SetWaterInfo(JsonSetCommand):
 
     name = "setWaterInfo"
     get_command = GetWaterInfo
-    _mqtt_params = {
-        "amount": InitParam(WaterAmount),
-        "enable": None,  # Remove it as we don't can set it (App includes it)
-    }
+    _mqtt_params = MappingProxyType(
+        {
+            "amount": InitParam(WaterAmount),
+            "enable": None,  # Remove it as we don't can set it (App includes it)
+        }
+    )
 
     def __init__(self, amount: WaterAmount | str) -> None:
         if isinstance(amount, str):

@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, final
 
 from deebot_client.events import AvailabilityEvent
@@ -244,7 +245,7 @@ class InitParam:
 class CommandMqttP2P(Command, ABC):
     """Command which can handle mqtt p2p messages."""
 
-    _mqtt_params: dict[str, InitParam | None]
+    _mqtt_params: MappingProxyType[str, InitParam | None]
 
     @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:

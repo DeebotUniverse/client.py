@@ -13,7 +13,7 @@ _T = TypeVar("_T")
 
 def md5(text: str) -> str:
     """Hash text using md5."""
-    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
+    return hashlib.md5(bytes(str(text), "utf8")).hexdigest()
 
 
 def create_task(
@@ -88,7 +88,7 @@ class DisplayNameIntEnum(IntEnum):
 class OnChangedList(list[_T]):
     """List, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = [
+    _MODIFING_FUNCTIONS = (
         "append",
         "clear",
         "extend",
@@ -98,7 +98,7 @@ class OnChangedList(list[_T]):
         "__setitem__",
         "__delitem__",
         "__add__",
-    ]
+    )
 
     def __init__(
         self, on_change: Callable[[], None], iterable: Iterable[_T] = ()
@@ -119,14 +119,14 @@ _VT = TypeVar("_VT")
 class OnChangedDict(dict[_KT, _VT]):
     """Dict, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = [
+    _MODIFING_FUNCTIONS = (
         "clear",
         "pop",
         "popitem",
         "update",
         "__setitem__",
         "__delitem__",
-    ]
+    )
 
     def __init__(
         self, on_change: Callable[[], None], iterable: Iterable[tuple[_KT, _VT]] = ()

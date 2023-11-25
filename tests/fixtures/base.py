@@ -6,7 +6,7 @@ import os
 from pprint import pformat
 import re
 from time import sleep
-from typing import Any, NamedTuple
+from typing import Any, ClassVar, NamedTuple
 
 import docker
 from docker.client import DockerClient
@@ -43,7 +43,7 @@ class BaseContainer(ABC):
     """Abstract base container."""
 
     docker_version = "auto"
-    base_image_options: dict[str, Any] = {
+    base_image_options: ClassVar[dict[str, Any]] = {
         "cap_add": ["IPC_LOCK"],
         "mem_limit": "1g",
         "environment": {},

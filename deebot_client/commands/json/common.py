@@ -1,6 +1,7 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from datetime import datetime
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import (
@@ -98,7 +99,7 @@ class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC)
 class SetEnableCommand(JsonSetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = {"enable": InitParam(bool)}
+    _mqtt_params = MappingProxyType({"enable": InitParam(bool)})
 
     def __init__(self, enable: bool) -> None:  # noqa: FBT001
         super().__init__({"enable": 1 if enable else 0})

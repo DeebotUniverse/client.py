@@ -1,4 +1,5 @@
 """Maps commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import Command, CommandResult
@@ -164,24 +165,26 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
-    _ROOM_NUM_TO_NAME = {
-        "0": "Default",
-        "1": "Living Room",
-        "2": "Dining Room",
-        "3": "Bedroom",
-        "4": "Study",
-        "5": "Kitchen",
-        "6": "Bathroom",
-        "7": "Laundry",
-        "8": "Lounge",
-        "9": "Storeroom",
-        "10": "Kids room",
-        "11": "Sunroom",
-        "12": "Corridor",
-        "13": "Balcony",
-        "14": "Gym",
-        # 15 custom; get name from name attribute
-    }
+    _ROOM_NUM_TO_NAME = MappingProxyType(
+        {
+            "0": "Default",
+            "1": "Living Room",
+            "2": "Dining Room",
+            "3": "Bedroom",
+            "4": "Study",
+            "5": "Kitchen",
+            "6": "Bathroom",
+            "7": "Laundry",
+            "8": "Lounge",
+            "9": "Storeroom",
+            "10": "Kids room",
+            "11": "Sunroom",
+            "12": "Corridor",
+            "13": "Balcony",
+            "14": "Gym",
+            # 15 custom; get name from name attribute
+        }
+    )
 
     name = "getMapSubSet"
 
