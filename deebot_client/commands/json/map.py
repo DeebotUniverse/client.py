@@ -264,7 +264,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         start = int(data["traceStart"])
 
         if "traceValue" not in data:
-            # todo verify that this is legit pylint: disable=fixme
+            # TODO verify that this is legit pylint: disable=fixme
             return HandlingResult.analyse()
 
         event_bus.notify(

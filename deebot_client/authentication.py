@@ -107,7 +107,7 @@ class _AuthClient:
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
             _LOGGER.debug("got %s", json)
-            # todo better error handling # pylint: disable=fixme
+            # TODO better error handling # pylint: disable=fixme
             if json["code"] == "0000":
                 data: dict[str, Any] = json["data"]
                 return data

@@ -105,7 +105,7 @@ async def test_getCachedMapInfo() -> None:
         GetCachedMapInfo(),
         json,
         CachedMapInfoEvent(expected_name, True),
-        # todo check requested command be called
+        # TODO check requested command be called
         # CommandResult(
         #    HandlingState.SUCCESS,
         #    {"map_id": expected_mid},
@@ -162,7 +162,7 @@ async def test_getMapSet() -> None:
         GetMapSet(mid),
         json,
         MapSetEvent(MapSetType.ROOMS, subsets),
-        # todo check requested command be called
+        # TODO check requested command be called
         # CommandResult(
         #    HandlingState.SUCCESS,
         #    {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
@@ -193,7 +193,7 @@ async def test_getMapTrace() -> None:
         GetMapTrace(start),
         json,
         MapTraceEvent(start=start, total=total, data=trace_value),
-        # todo check requested command be called
+        # TODO check requested command be called
         # CommandResult(
         #    HandlingState.SUCCESS, {"start": start, "total": total}, [GetMapTrace(200)]
         # ),

@@ -97,7 +97,7 @@ class EventBus:
                 and event_processing_data.last_event
                 and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
             ):
-                # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
+                # TODO distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
                 # Problem getCleanInfo will return state=idle, when bot is charging
                 event = StateEvent(State.DOCKED)  # type: ignore[assignment]
             elif (
