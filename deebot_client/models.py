@@ -165,9 +165,11 @@ def _str_to_bool_or_cert(value: bool | str) -> bool | str:
             # User could provide a path to a CA Cert as well, which is useful for Bumper
             if os.path.isfile(str(value)):
                 return value
-            raise ValueError(f"Certificate path provided is not a file: {value}")
+            msg = f"Certificate path provided is not a file: {value}"
+            raise ValueError(msg)
 
-    raise ValueError(f'Cannot convert "{value}" to a bool or certificate path')
+    msg = f'Cannot convert "{value}" to a bool or certificate path'
+    raise ValueError(msg)
 
 
 class Configuration:

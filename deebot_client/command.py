@@ -275,13 +275,13 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
     try:
         value = data.pop(name)
     except KeyError as err:
-        raise DeebotError(f'"{name}" is missing in {data}') from err
+        msg = f'"{name}" is missing in {data}'
+        raise DeebotError(msg) from err
     try:
         return type_(value)
     except ValueError as err:
-        raise DeebotError(
-            f'Could not convert "{value}" of {name} into {type_}'
-        ) from err
+        msg = f'Could not convert "{value}" of {name} into {type_}'
+        raise DeebotError(msg) from err
 
 
 class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):

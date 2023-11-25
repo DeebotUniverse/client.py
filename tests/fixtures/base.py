@@ -184,7 +184,8 @@ class BaseContainer(ABC):
             if self.container.status == "exited":
                 logs = self.container.logs()
                 self.stop()
-                raise Exception(f"Container failed to start {logs}")
+                msg = f"Container failed to start {logs}"
+                raise Exception(msg)
 
             if self.get_host() != "":
                 started = self.check()
@@ -192,11 +193,12 @@ class BaseContainer(ABC):
         if not started:
             logs = self.container.logs().decode("utf-8")
             self.stop()
-            raise Exception(
+            msg = (
                 f"Could not start {self.name}: {logs}\n"
                 f"Image: {self.image}\n"
                 f"Options:\n{pformat(image_options)}"
             )
+            raise Exception(msg)
 
         print(f"{self.name} started")
         self._start_time = datetime.now()

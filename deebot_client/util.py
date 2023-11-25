@@ -71,7 +71,8 @@ class DisplayNameIntEnum(IntEnum):
             if value == member.display_name.upper():
                 return member
 
-        raise ValueError(f"'{value}' is not a valid {cls.__name__} member")
+        msg = f"'{value}' is not a valid {cls.__name__} member"
+        raise ValueError(msg)
 
     def __eq__(self, x: object) -> bool:
         if not isinstance(x, type(self)):

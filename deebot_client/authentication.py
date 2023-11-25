@@ -115,9 +115,8 @@ class _AuthClient:
                 raise InvalidAuthenticationError
 
             _LOGGER.error("call to %s failed with %s", url, json)
-            raise AuthenticationError(
-                f"failure code {json['code']} ({json['msg']}) for call {url}"
-            )
+            msg = f"failure code {json['code']} ({json['msg']}) for call {url}"
+            raise AuthenticationError(msg)
 
     async def __call_login_api(
         self, account_id: str, password_hash: str
@@ -204,9 +203,10 @@ class _AuthClient:
                 continue
 
             _LOGGER.error("call to %s failed with %s", _PATH_USERS_USER, resp)
-            raise AuthenticationError(
+            msg = (
                 f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER}"
             )
+            raise AuthenticationError(msg)
 
         raise AuthenticationError("failed to login with token")
 
