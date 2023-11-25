@@ -100,6 +100,9 @@ select = [
     "W",  # pycodestyle
 ]
 ignore = [
+    "ANN101", # Self... explanatory
+    "ANN102", # Cls... explanatory
+    "ANN401", # Opinioated warning on disallowing dynamically typed expressions
     "D105",  # Missing docstring in magic method
     "D107",  # Missing docstring in `__init__`
     "D202",  # No blank lines allowed after function docstring

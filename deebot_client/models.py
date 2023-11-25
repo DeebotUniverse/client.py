@@ -181,7 +181,7 @@ class Configuration:
         country: str,
         continent: str,
         verify_ssl: bool | str = True,
-    ):
+    ) -> None:
         self._session = session
         self._device_id = device_id
         self._country = country

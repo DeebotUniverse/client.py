@@ -40,7 +40,7 @@ class Device:
         self,
         device_info: DeviceInfo,
         authenticator: Authenticator,
-    ):
+    ) -> None:
         self.device_info: Final[DeviceInfo] = device_info
         self.capabilities: Final = device_info.capabilities
         self._authenticator = authenticator

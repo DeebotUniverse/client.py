@@ -15,7 +15,7 @@ _LOGGER = get_logger(__name__)
 class ApiClient:
     """Api client."""
 
-    def __init__(self, authenticator: Authenticator):
+    def __init__(self, authenticator: Authenticator) -> None:
         self._authenticator = authenticator
 
     async def get_devices(self) -> list[DeviceInfo]:

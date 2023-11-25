@@ -47,7 +47,7 @@ class DisplayNameIntEnum(IntEnum):
         obj._value_ = args[0]
         return obj
 
-    def __init__(self, value: int, display_name: str | None = None):
+    def __init__(self, value: int, display_name: str | None = None) -> None:
         super().__init__()
         self._value_ = value
         self._display_name = display_name
@@ -100,7 +100,9 @@ class OnChangedList(list[_T]):
         "__add__",
     ]
 
-    def __init__(self, on_change: Callable[[], None], iterable: Iterable[_T] = ()):
+    def __init__(
+        self, on_change: Callable[[], None], iterable: Iterable[_T] = ()
+    ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
 
@@ -128,7 +130,7 @@ class OnChangedDict(dict[_KT, _VT]):
 
     def __init__(
         self, on_change: Callable[[], None], iterable: Iterable[tuple[_KT, _VT]] = ()
-    ):
+    ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
 

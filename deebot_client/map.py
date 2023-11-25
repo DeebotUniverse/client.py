@@ -142,7 +142,7 @@ class Map:
         self,
         execute_command: Callable[[Command], Coroutine[Any, Any, None]],
         event_bus: EventBus,
-    ):
+    ) -> None:
         self._execute_command = execute_command
         self._event_bus = event_bus
 

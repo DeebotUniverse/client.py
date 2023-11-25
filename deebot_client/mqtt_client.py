@@ -90,7 +90,7 @@ class MqttClient:
         self,
         config: MqttConfiguration,
         authenticator: Authenticator,
-    ):
+    ) -> None:
         self._config = config
         self._authenticator = authenticator
 

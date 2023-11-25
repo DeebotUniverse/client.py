@@ -54,7 +54,7 @@ class Command(ABC):
     @classmethod
     @abstractmethod
     def data_type(cls) -> DataType:
-        """Data type."""  # noqa: D401
+        """Data type."""
 
     @abstractmethod
     def _get_payload(self) -> dict[str, Any] | list[Any] | str:

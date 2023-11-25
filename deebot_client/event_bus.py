@@ -40,7 +40,7 @@ class EventBus:
         self,
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
         get_refresh_commands: Callable[[type[Event]], list["Command"]],
-    ):
+    ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()

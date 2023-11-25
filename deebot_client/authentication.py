@@ -51,7 +51,7 @@ class _AuthClient:
         config: Configuration,
         account_id: str,
         password_hash: str,
-    ):
+    ) -> None:
         self._config = config
         self._account_id = account_id
         self._password_hash = password_hash
@@ -302,7 +302,7 @@ class Authenticator:
         config: Configuration,
         account_id: str,
         password_hash: str,
-    ):
+    ) -> None:
         self._auth_client = _AuthClient(
             config,
             account_id,
