@@ -160,7 +160,7 @@ class MqttClient:
         async def mqtt() -> None:
             while True:
                 try:
-                    async with (await self._get_client()) as client:
+                    async with await self._get_client() as client:
                         _LOGGER.debug("Subscribe to all previous subscriptions")
                         for _, info in self._subscribtions.items():
                             for topic in _get_topics(info.device_info):

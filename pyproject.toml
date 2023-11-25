@@ -108,8 +108,9 @@ ignore = [
     "E501",  # line too long
 
     "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
-    # Ignored due to performance: https://github.com/charliermarsh/ruff/issues/2923
-    "UP038", # Use `X | Y` in `isinstance` call instead of `(X, Y)`
+    # Conflicts with the Ruff formatter
+    "COM812",
+    "ISC001",
 ]
 
 [tool.ruff.per-file-ignores]
