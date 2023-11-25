@@ -100,5 +100,5 @@ class SetEnableCommand(JsonSetCommand, ABC):
 
     _mqtt_params = {"enable": InitParam(bool)}
 
-    def __init__(self, enable: bool) -> None:
+    def __init__(self, enable: bool) -> None:  # noqa: FBT001
         super().__init__({"enable": 1 if enable else 0})

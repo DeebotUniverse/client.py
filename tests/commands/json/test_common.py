@@ -21,13 +21,11 @@ _ERROR_4200 = {
 }
 
 
-def _assert_false_and_not_called(available: bool, event_bus: Mock) -> None:
-    assert available is False
+def _assert_false_and_not_called(event_bus: Mock) -> None:
     event_bus.assert_not_called()
 
 
-def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> None:
-    assert available is False
+def _assert_false_and_avalable_event_false(event_bus: Mock) -> None:
     event_bus.notify.assert_called_with(AvailabilityEvent(available=False))
 
 
@@ -69,7 +67,7 @@ async def test_common_functionality(
     command: CommandWithMessageHandling,
     repsonse_json: dict[str, Any],
     expected_log: tuple[int, str],
-    assert_func: Callable[[bool, Mock], None],
+    assert_func: Callable[[Mock], None],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     authenticator.post_authenticated.return_value = repsonse_json
@@ -91,4 +89,5 @@ async def test_common_functionality(
             expected_log[1].format(command.name),
         ) in caplog.record_tuples
 
-    assert_func(available, event_bus)
+    assert available is False
+    assert_func(event_bus)

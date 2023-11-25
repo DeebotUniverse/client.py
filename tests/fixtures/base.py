@@ -144,7 +144,7 @@ class BaseContainer(ABC):
         image_options.update(self.config.options)
         return image_options
 
-    def logs(self, since_last_start: bool = True) -> str:
+    def logs(self, *, since_last_start: bool = True) -> str:
         """Get docker container logs."""
         if self.container is None:
             raise ContainerNotStartedError

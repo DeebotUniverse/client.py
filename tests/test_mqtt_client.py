@@ -146,12 +146,13 @@ _test_MqttConfiguration_data = [
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
 def test_MqttConfiguration(
-    set_ssl_context: bool,
     country: str,
     hostname: str | None,
     expected_hostname: str,
     session: ClientSession,
     device_id: str,
+    *,
+    set_ssl_context: bool,
 ) -> None:
     args: dict[str, Any] = {
         "config": Configuration(
