@@ -1,4 +1,4 @@
-"""Commands module."""
+"""Json commands module."""
 from deebot_client.command import Command, CommandMqttP2P
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
