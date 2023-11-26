@@ -1,7 +1,7 @@
 """Models module."""
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
-import os
+from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
 from aiohttp import ClientSession
@@ -161,9 +161,10 @@ def _str_to_bool_or_cert(value: bool | str) -> bool | str:
             return True
         if value in ("n", "no", "f", "false", "off", "0"):
             return False
-        if os.path.exists(str(value)):
+        path = Path(str(value))
+        if path.exists():
             # User could provide a path to a CA Cert as well, which is useful for Bumper
-            if os.path.isfile(str(value)):
+            if path.is_file():
                 return value
             msg = f"Certificate path provided is not a file: {value}"
             raise ValueError(msg)

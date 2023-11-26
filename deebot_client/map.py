@@ -157,7 +157,7 @@ class Map:
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
                 self._amount_rooms = len(event.subsets)
-                for room_id in self._map_data.rooms.copy().keys():
+                for room_id in self._map_data.rooms.copy():
                     if room_id not in event.subsets:
                         self._map_data.rooms.pop(room_id, None)
             else:
