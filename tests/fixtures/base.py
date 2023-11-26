@@ -6,12 +6,14 @@ import os
 from pprint import pformat
 import re
 from time import sleep
-from typing import Any, ClassVar, NamedTuple
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
 import docker
-from docker.client import DockerClient
 from docker.errors import APIError, NotFound
-from docker.models.containers import Container
+
+if TYPE_CHECKING:
+    from docker.client import DockerClient
+    from docker.models.containers import Container
 
 DOCKER_HOST_TCP_FORMAT = re.compile(r"^tcp://(\d+\.\d+\.\d+\.\d+)(?::\d+)?$")
 

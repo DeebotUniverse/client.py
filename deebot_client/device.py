@@ -1,10 +1,9 @@
 """Device module."""
 import asyncio
-from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
@@ -28,6 +27,9 @@ from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60

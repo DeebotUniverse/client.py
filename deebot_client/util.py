@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
 from enum import IntEnum, unique
 import hashlib
-from typing import Any, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Iterable, Mapping
 
 _T = TypeVar("_T")
 
