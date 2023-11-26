@@ -54,7 +54,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, _: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response

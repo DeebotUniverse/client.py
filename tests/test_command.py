@@ -25,7 +25,9 @@ class _TestCommand(CommandMqttP2P):
         return {}
 
     def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
+        self,
+        _: EventBus,
+        response: dict[str, Any],  # noqa: ARG002
     ) -> CommandResult:
         return CommandResult.analyse()
 

@@ -68,7 +68,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+        cls, _: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
