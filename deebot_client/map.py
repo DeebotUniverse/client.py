@@ -122,9 +122,10 @@ def _draw_subset(
     image_box: tuple[int, int, int, int] | None,
 ) -> None:
     coordinates_ = ast.literal_eval(subset.coordinates)
-    points: list[tuple[int, int]] = []
-    for i in range(0, len(coordinates_), 2):
-        points.append(_calc_point(coordinates_[i], coordinates_[i + 1], image_box))
+    points: list[tuple[int, int]] = [
+        _calc_point(coordinates_[i], coordinates_[i + 1], image_box)
+        for i in range(0, len(coordinates_), 2)
+    ]
 
     if len(points) == 4:
         # close rectangle
@@ -156,7 +157,7 @@ class Map:
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
                 self._amount_rooms = len(event.subsets)
-                for room_id, _ in self._map_data.rooms.copy().items():
+                for room_id in self._map_data.rooms.copy().keys():
                     if room_id not in event.subsets:
                         self._map_data.rooms.pop(room_id, None)
             else:

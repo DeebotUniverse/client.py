@@ -107,7 +107,7 @@ class EventBus:
                 and not event_processing_data.last_event.available  # type: ignore[attr-defined]
             ):
                 # unavailable -> available: refresh everything
-                for event_type, _ in self._event_processing_dict.items():
+                for event_type in self._event_processing_dict:
                     if event_type != AvailabilityEvent:
                         self.request_refresh(event_type)
 

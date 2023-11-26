@@ -39,12 +39,14 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
                     )
                 )
             else:
-                for entry in data_positions:
-                    positions.append(
+                positions.extend(
+                    [
                         Position(
                             type=PositionType(type_str), x=entry["x"], y=entry["y"]
                         )
-                    )
+                        for entry in data_positions
+                    ]
+                )
 
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))

@@ -147,16 +147,15 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = []
-            for subset in result.args[self._ARGS_SUBSETS]:
-                commands.append(
-                    GetMapSubSet(
-                        mid=result.args[self._ARGS_ID],
-                        msid=result.args[self._ARGS_SET_ID],
-                        type=result.args[self._ARGS_TYPE],
-                        mssid=subset,
-                    )
+            commands: list[Command] = [
+                GetMapSubSet(
+                    mid=result.args[self._ARGS_ID],
+                    msid=result.args[self._ARGS_SET_ID],
+                    type=result.args[self._ARGS_TYPE],
+                    mssid=subset,
                 )
+                for subset in result.args[self._ARGS_SUBSETS]
+            ]
             return CommandResult(result.state, result.args, commands)
 
         return result
