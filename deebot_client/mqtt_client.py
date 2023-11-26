@@ -211,7 +211,7 @@ class MqttClient:
         )
         self._last_message_received_at = datetime.now()
 
-        if message.payload is None or isinstance(message.payload, (int, float)):
+        if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
                 "Unexpected message: tpoic=%s, payload=%s",
                 message.topic,
