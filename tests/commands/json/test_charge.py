@@ -3,8 +3,10 @@ from typing import Any
 
 import pytest
 
+from deebot_client.command import CommandResult
 from deebot_client.commands.json import Charge
 from deebot_client.events import StateEvent
+from deebot_client.message import HandlingState
 from deebot_client.models import State
 from tests.helpers import get_request_json, get_success_body
 
@@ -35,7 +37,7 @@ async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
 
 async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:
     json = _prepare_json(500, "fail")
-    await assert_command(Charge(), json, None)
+    await assert_command(Charge(), json, None, CommandResult(HandlingState.FAILED))
 
     assert (
         "deebot_client.commands.json.common",
