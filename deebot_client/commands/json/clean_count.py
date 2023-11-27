@@ -24,7 +24,6 @@ class GetCleanCount(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         event_bus.notify(CleanCountEvent(count=data["count"]))
         return HandlingResult.success()
 

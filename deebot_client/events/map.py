@@ -68,7 +68,6 @@ class MapSetType(str, Enum):
     @classmethod
     def has_value(cls, value: Any) -> bool:
         """Check if value exists."""
-
         return value in cls._value2member_map_
 
 
