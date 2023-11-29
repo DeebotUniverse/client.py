@@ -167,7 +167,8 @@ _COMMANDS: list[type[JsonCommand]] = [
 # fmt: on
 
 COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
+    cmd.name: cmd  # type: ignore[misc]
+    for cmd in _COMMANDS
 }
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
