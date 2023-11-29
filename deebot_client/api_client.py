@@ -15,7 +15,7 @@ _LOGGER = get_logger(__name__)
 class ApiClient:
     """Api client."""
 
-    def __init__(self, authenticator: Authenticator):
+    def __init__(self, authenticator: Authenticator) -> None:
         self._authenticator = authenticator
 
     async def get_devices(self) -> list[DeviceInfo]:
@@ -38,9 +38,8 @@ class ApiClient:
                     _LOGGER.debug("Skipping device as it is not supported: %s", device)
             return devices
         _LOGGER.error("Failed to get devices: %s", resp)
-        raise ApiError(
-            f"failure {resp.get('error', '')} ({resp.get('errno', '')}) on getting devices"
-        )
+        msg = f"failure {resp.get('error', '')} ({resp.get('errno', '')}) on getting devices"
+        raise ApiError(msg)
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""
@@ -55,6 +54,5 @@ class ApiClient:
                 result[entry["classid"]] = entry["product"]
             return result
         _LOGGER.error("Failed to get product iot map")
-        raise ApiError(
-            f"failure {resp['error']} ({resp['errno']}) on getting product iot map"
-        )
+        msg = f"failure {resp['error']} ({resp['errno']}) on getting product iot map"
+        raise ApiError(msg)

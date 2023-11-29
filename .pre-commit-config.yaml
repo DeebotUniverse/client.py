@@ -1,4 +1,5 @@
 ci:
+  autofix_prs: false
   skip:
     # This steps run in the ci workflow. Keep in sync
     - mypy
@@ -15,18 +16,14 @@ repos:
       - id: ruff
         args:
           - --fix
+          # - --unsafe-fixes
+      - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.15.0
     hooks:
       - id: pyupgrade
         args:
           - --py311-plus
-  - repo: https://github.com/psf/black-pre-commit-mirror
-    rev: 23.11.0
-    hooks:
-      - id: black
-        args:
-          - --quiet
   - repo: https://github.com/codespell-project/codespell
     rev: v2.2.6
     hooks:

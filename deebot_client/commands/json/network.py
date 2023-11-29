@@ -21,7 +21,6 @@ class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         event_bus.notify(
             NetworkInfoEvent(
                 ip=data["ip"],

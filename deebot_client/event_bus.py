@@ -40,7 +40,7 @@ class EventBus:
         self,
         execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
         get_refresh_commands: Callable[[type[Event]], list["Command"]],
-    ):
+    ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
@@ -97,7 +97,7 @@ class EventBus:
                 and event_processing_data.last_event
                 and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
             ):
-                # todo distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
+                # TODO distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
                 # Problem getCleanInfo will return state=idle, when bot is charging
                 event = StateEvent(State.DOCKED)  # type: ignore[assignment]
             elif (
@@ -107,7 +107,7 @@ class EventBus:
                 and not event_processing_data.last_event.available  # type: ignore[attr-defined]
             ):
                 # unavailable -> available: refresh everything
-                for event_type, _ in self._event_processing_dict.items():
+                for event_type in self._event_processing_dict:
                     if event_type != AvailabilityEvent:
                         self.request_refresh(event_type)
 

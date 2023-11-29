@@ -1,4 +1,5 @@
 """Work mode commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -31,7 +32,7 @@ class SetWorkMode(JsonSetCommand):
 
     name = "setWorkMode"
     get_command = GetWorkMode
-    _mqtt_params = {"mode": InitParam(WorkMode)}
+    _mqtt_params = MappingProxyType({"mode": InitParam(WorkMode)})
 
     def __init__(self, mode: WorkMode | str) -> None:
         if isinstance(mode, str):

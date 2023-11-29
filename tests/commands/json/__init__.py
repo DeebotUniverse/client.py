@@ -1,11 +1,11 @@
-from collections.abc import Sequence
+from collections.abc import Callable, Sequence
 from typing import Any
 from unittest.mock import AsyncMock, Mock, call
 
 from testfixtures import LogCapture
 
 from deebot_client.authentication import Authenticator
-from deebot_client.command import Command
+from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json.common import (
     ExecuteCommand,
     JsonSetCommand,
@@ -14,15 +14,39 @@ from deebot_client.commands.json.common import (
 from deebot_client.event_bus import EventBus
 from deebot_client.events import EnableEvent, Event
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
+from deebot_client.message import HandlingState
 from deebot_client.models import Credentials, DeviceInfo
 from tests.helpers import get_message_json, get_request_json, get_success_body
+
+
+def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], None]]:
+    result: CommandResult | None = None
+    execute_fn = command._execute
+
+    async def _execute(
+        _: Command,
+        authenticator: Authenticator,
+        device_info: DeviceInfo,
+        event_bus: EventBus,
+    ) -> CommandResult:
+        nonlocal result
+        result = await execute_fn(authenticator, device_info, event_bus)
+        return result
+
+    def verify_result(expected_result: CommandResult) -> None:
+        assert result == expected_result
+
+    command._execute = _execute.__get__(command)  # type: ignore[method-assign]
+    return (command, verify_result)
 
 
 async def assert_command(
     command: Command,
     json_api_response: dict[str, Any],
     expected_events: Event | None | Sequence[Event],
+    command_result: CommandResult | None = None,
 ) -> None:
+    command_result = command_result or CommandResult.success()
     event_bus = Mock(spec_set=EventBus)
     authenticator = Mock(spec_set=Authenticator)
     authenticator.authenticate = AsyncMock(
@@ -43,9 +67,12 @@ async def assert_command(
         get_static_device_info(FALLBACK),
     )
 
+    command, verify_result = _wrap_command(command)
+
     await command.execute(authenticator, device_info, event_bus)
 
     # verify
+    verify_result(command_result)
     authenticator.post_authenticated.assert_called()
     if expected_events:
         if isinstance(expected_events, Sequence):
@@ -71,7 +98,7 @@ async def assert_execute_command(
     with LogCapture() as log:
         body = {"code": 500, "msg": "fail"}
         json = get_request_json(body)
-        await assert_command(command, json, None)
+        await assert_command(command, json, None, CommandResult(HandlingState.FAILED))
 
         log.check_present(
             (
@@ -111,8 +138,9 @@ async def assert_set_command(
 
 async def assert_set_enable_command(
     command: SetEnableCommand,
-    enabled: bool,
     expected_get_command_event: type[EnableEvent],
+    *,
+    enabled: bool,
 ) -> None:
     args = {"enable": 1 if enabled else 0}
     await assert_set_command(command, args, expected_get_command_event(enabled))

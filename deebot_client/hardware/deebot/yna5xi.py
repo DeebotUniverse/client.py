@@ -82,7 +82,9 @@ from . import DEVICES
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
     Capabilities(
-        availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
+        availability=CapabilityEvent(
+            AvailabilityEvent, [GetBattery(is_available_check=True)]
+        ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
