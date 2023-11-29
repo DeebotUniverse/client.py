@@ -91,7 +91,7 @@ class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC)
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore[call-arg, assignment]
         event_bus.notify(event)
         return HandlingResult.success()
 
