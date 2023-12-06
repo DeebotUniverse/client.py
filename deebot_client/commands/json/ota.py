@@ -1,4 +1,5 @@
 """Ota command module."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -33,7 +34,7 @@ class SetOta(JsonSetCommand):
     name = "setOta"
     get_command = GetOta
 
-    _mqtt_params = {"autoSwitch": InitParam(bool, "enable")}
+    _mqtt_params = MappingProxyType({"autoSwitch": InitParam(bool, "enable")})
 
-    def __init__(self, enable: bool) -> None:
+    def __init__(self, enable: bool) -> None:  # noqa: FBT001
         super().__init__({"autoSwitch": 1 if enable else 0})
