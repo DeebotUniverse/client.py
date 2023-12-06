@@ -1,4 +1,4 @@
-"""Deebot T20 Omni Capabilities."""
+"""Deebot T10 PLUS Capabilities."""
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -24,7 +24,6 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
-from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
     GetCleanPreference,
     SetCleanPreference,
@@ -34,10 +33,17 @@ from deebot_client.commands.json.continuous_cleaning import (
     SetContinuousCleaning,
 )
 from deebot_client.commands.json.custom import CustomCommand
+from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+
+# getMapSet
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapTrace,
+)
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -48,9 +54,12 @@ from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
+from deebot_client.commands.json.voice_assistant_state import (
+    GetVoiceAssistantState,
+    SetVoiceAssistantState,
+)
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
-from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -59,10 +68,10 @@ from deebot_client.events import (
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     CleanCountEvent,
-    CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
+    EfficiencyModeEvent,
     ErrorEvent,
     FanSpeedEvent,
     FanSpeedLevel,
@@ -80,15 +89,17 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
+    VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
-    WorkMode,
-    WorkModeEvent,
 )
+from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
+# getSleep
+# from deebot_client.commands.json.
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
@@ -107,20 +118,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 SetContinuousCleaning,
             ),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
-            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
-            ),
-            work_mode=CapabilitySetTypes(
-                event=WorkModeEvent,
-                get=[GetWorkMode()],
-                set=SetWorkMode,
-                types=(
-                    WorkMode.MOP,
-                    WorkMode.MOP_AFTER_VACUUM,
-                    WorkMode.VACUUM,
-                    WorkMode.VACUUM_AND_MOP,
-                ),
             ),
         ),
         custom=CapabilityCustomCommand(
@@ -139,9 +138,23 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
         ),
         life_span=CapabilityLifeSpan(
-            types=(LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH),
+            types=(
+                LifeSpan.BRUSH,
+                LifeSpan.FILTER,
+                LifeSpan.SIDE_BRUSH,
+                LifeSpan.UNIT_CARE,
+            ),
             event=LifeSpanEvent,
-            get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
+            get=[
+                GetLifeSpan(
+                    [
+                        LifeSpan.BRUSH,
+                        LifeSpan.FILTER,
+                        LifeSpan.SIDE_BRUSH,
+                        LifeSpan.UNIT_CARE,
+                    ]
+                )
+            ],
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
@@ -167,8 +180,22 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
             ),
+            efficiency_mode=CapabilitySetTypes(
+                event=EfficiencyModeEvent,
+                get=[GetEfficiencyMode()],
+                set=SetEfficiencyMode,
+                types=(
+                    EfficiencyMode.ENERGY_EFFICIENT_MODE,
+                    EfficiencyMode.STANDART_MODE,
+                ),
+            ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
+            ),
+            voice_assistant=CapabilitySetEnable(
+                VoiceAssistantStateEvent,
+                [GetVoiceAssistantState()],
+                SetVoiceAssistantState,
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),

@@ -5,6 +5,7 @@
     // Configure properties specific to VS Code.
     "vscode": {
       "extensions": [
+        "charliermarsh.ruff",
         "eamodio.gitlens",
         "github.vscode-pull-request-github",
         "ms-python.python",
@@ -15,6 +16,9 @@
       ],
       // Set *default* container specific settings.json values on container create.
       "settings": {
+        "[python]": {
+          "editor.defaultFormatter": "charliermarsh.ruff"
+        },
         "editor.formatOnPaste": false,
         "editor.formatOnSave": true,
         "editor.formatOnType": true,

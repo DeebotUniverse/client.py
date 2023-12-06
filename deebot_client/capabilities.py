@@ -123,7 +123,7 @@ class CapabilityClean:
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent]
     count: CapabilitySet[CleanCountEvent, int] | None = None
-    log: CapabilityEvent[CleanLogEvent]
+    log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 

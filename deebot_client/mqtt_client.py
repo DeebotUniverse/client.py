@@ -6,12 +6,11 @@ from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
 import json
 import ssl
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
-from deebot_client.command import CommandMqttP2P
 from deebot_client.const import DataType
 from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
@@ -20,6 +19,9 @@ from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
 from .models import Configuration, Credentials, DeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.command import CommandMqttP2P
 
 RECONNECT_INTERVAL = 5  # seconds
 
@@ -90,7 +92,7 @@ class MqttClient:
         self,
         config: MqttConfiguration,
         authenticator: Authenticator,
-    ):
+    ) -> None:
         self._config = config
         self._authenticator = authenticator
 
@@ -160,9 +162,9 @@ class MqttClient:
         async def mqtt() -> None:
             while True:
                 try:
-                    async with (await self._get_client()) as client:
+                    async with await self._get_client() as client:
                         _LOGGER.debug("Subscribe to all previous subscriptions")
-                        for _, info in self._subscribtions.items():
+                        for info in self._subscribtions.values():
                             for topic in _get_topics(info.device_info):
                                 await client.subscribe(topic)
 
@@ -211,7 +213,7 @@ class MqttClient:
         )
         self._last_message_received_at = datetime.now()
 
-        if message.payload is None or isinstance(message.payload, (int, float)):
+        if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
                 "Unexpected message: tpoic=%s, payload=%s",
                 message.topic,

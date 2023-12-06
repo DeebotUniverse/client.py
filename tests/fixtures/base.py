@@ -6,12 +6,14 @@ import os
 from pprint import pformat
 import re
 from time import sleep
-from typing import Any, NamedTuple
+from typing import TYPE_CHECKING, Any, ClassVar, NamedTuple
 
 import docker
-from docker.client import DockerClient
 from docker.errors import APIError, NotFound
-from docker.models.containers import Container
+
+if TYPE_CHECKING:
+    from docker.client import DockerClient
+    from docker.models.containers import Container
 
 DOCKER_HOST_TCP_FORMAT = re.compile(r"^tcp://(\d+\.\d+\.\d+\.\d+)(?::\d+)?$")
 
@@ -43,7 +45,7 @@ class BaseContainer(ABC):
     """Abstract base container."""
 
     docker_version = "auto"
-    base_image_options: dict[str, Any] = {
+    base_image_options: ClassVar[dict[str, Any]] = {
         "cap_add": ["IPC_LOCK"],
         "mem_limit": "1g",
         "environment": {},
@@ -144,7 +146,7 @@ class BaseContainer(ABC):
         image_options.update(self.config.options)
         return image_options
 
-    def logs(self, since_last_start: bool = True) -> str:
+    def logs(self, *, since_last_start: bool = True) -> str:
         """Get docker container logs."""
         if self.container is None:
             raise ContainerNotStartedError
@@ -184,7 +186,8 @@ class BaseContainer(ABC):
             if self.container.status == "exited":
                 logs = self.container.logs()
                 self.stop()
-                raise Exception(f"Container failed to start {logs}")
+                msg = f"Container failed to start {logs}"
+                raise Exception(msg)
 
             if self.get_host() != "":
                 started = self.check()
@@ -192,11 +195,12 @@ class BaseContainer(ABC):
         if not started:
             logs = self.container.logs().decode("utf-8")
             self.stop()
-            raise Exception(
+            msg = (
                 f"Could not start {self.name}: {logs}\n"
                 f"Image: {self.image}\n"
                 f"Options:\n{pformat(image_options)}"
             )
+            raise Exception(msg)
 
         print(f"{self.name} started")
         self._start_time = datetime.now()

@@ -2,6 +2,7 @@
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
+from types import MappingProxyType
 from typing import Any, final
 
 from deebot_client.events import AvailabilityEvent
@@ -54,7 +55,7 @@ class Command(ABC):
     @classmethod
     @abstractmethod
     def data_type(cls) -> DataType:
-        """Data type."""  # noqa: D401
+        """Data type."""
 
     @abstractmethod
     def _get_payload(self) -> dict[str, Any] | list[Any] | str:
@@ -214,7 +215,7 @@ class CommandWithMessageHandling(Command, MessageBody, ABC):
                     _LOGGER.info(
                         'Device is offline. Could not execute command "%s"', self.name
                     )
-                    event_bus.notify(AvailabilityEvent(False))
+                    event_bus.notify(AvailabilityEvent(available=False))
                     return CommandResult(HandlingState.FAILED)
                 case 500:
                     if self._is_available_check:
@@ -244,7 +245,7 @@ class InitParam:
 class CommandMqttP2P(Command, ABC):
     """Command which can handle mqtt p2p messages."""
 
-    _mqtt_params: dict[str, InitParam | None]
+    _mqtt_params: MappingProxyType[str, InitParam | None]
 
     @abstractmethod
     def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
@@ -274,13 +275,13 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
     try:
         value = data.pop(name)
     except KeyError as err:
-        raise DeebotError(f'"{name}" is missing in {data}') from err
+        msg = f'"{name}" is missing in {data}'
+        raise DeebotError(msg) from err
     try:
         return type_(value)
     except ValueError as err:
-        raise DeebotError(
-            f'Could not convert "{value}" of {name} into {type_}'
-        ) from err
+        msg = f'Could not convert "{value}" of {name} into {type_}'
+        raise DeebotError(msg) from err
 
 
 class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
