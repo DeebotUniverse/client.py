@@ -1,5 +1,5 @@
 """Water info event module."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from deebot_client.util import DisplayNameIntEnum
 
@@ -19,6 +19,6 @@ class WaterAmount(DisplayNameIntEnum):
 class WaterInfoEvent(Event):
     """Water info event representation."""
 
-    # None means no data available
-    mop_attached: bool | None
     amount: WaterAmount
+    # None means no data available
+    mop_attached: bool | None = field(kw_only=True, default=None)

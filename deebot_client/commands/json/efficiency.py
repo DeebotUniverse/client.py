@@ -1,4 +1,5 @@
 """Efficiency mode command module."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -31,7 +32,7 @@ class SetEfficiencyMode(JsonSetCommand):
 
     name = "setEfficiency"
     get_command = GetEfficiencyMode
-    _mqtt_params = {"efficiency": InitParam(EfficiencyMode)}
+    _mqtt_params = MappingProxyType({"efficiency": InitParam(EfficiencyMode)})
 
     def __init__(self, efficiency: EfficiencyMode | str) -> None:
         if isinstance(efficiency, str):

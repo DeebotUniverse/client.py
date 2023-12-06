@@ -1,4 +1,5 @@
 """Maps commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import Command, CommandResult
@@ -67,7 +68,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+        cls, _: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -90,7 +91,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(True, **result.args))
+            event_bus.notify(MajorMapEvent(requested=True, **result.args))
             return CommandResult.success()
 
         return result
@@ -146,16 +147,15 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = []
-            for subset in result.args[self._ARGS_SUBSETS]:
-                commands.append(
-                    GetMapSubSet(
-                        mid=result.args[self._ARGS_ID],
-                        msid=result.args[self._ARGS_SET_ID],
-                        type=result.args[self._ARGS_TYPE],
-                        mssid=subset,
-                    )
+            commands: list[Command] = [
+                GetMapSubSet(
+                    mid=result.args[self._ARGS_ID],
+                    msid=result.args[self._ARGS_SET_ID],
+                    type=result.args[self._ARGS_TYPE],
+                    mssid=subset,
                 )
+                for subset in result.args[self._ARGS_SUBSETS]
+            ]
             return CommandResult(result.state, result.args, commands)
 
         return result
@@ -164,24 +164,26 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
-    _ROOM_NUM_TO_NAME = {
-        "0": "Default",
-        "1": "Living Room",
-        "2": "Dining Room",
-        "3": "Bedroom",
-        "4": "Study",
-        "5": "Kitchen",
-        "6": "Bathroom",
-        "7": "Laundry",
-        "8": "Lounge",
-        "9": "Storeroom",
-        "10": "Kids room",
-        "11": "Sunroom",
-        "12": "Corridor",
-        "13": "Balcony",
-        "14": "Gym",
-        # 15 custom; get name from name attribute
-    }
+    _ROOM_NUM_TO_NAME = MappingProxyType(
+        {
+            "0": "Default",
+            "1": "Living Room",
+            "2": "Dining Room",
+            "3": "Bedroom",
+            "4": "Study",
+            "5": "Kitchen",
+            "6": "Bathroom",
+            "7": "Laundry",
+            "8": "Lounge",
+            "9": "Storeroom",
+            "10": "Kids room",
+            "11": "Sunroom",
+            "12": "Corridor",
+            "13": "Balcony",
+            "14": "Gym",
+            # 15 custom; get name from name attribute
+        }
+    )
 
     name = "getMapSubSet"
 
@@ -264,7 +266,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         start = int(data["traceStart"])
 
         if "traceValue" not in data:
-            # todo verify that this is legit pylint: disable=fixme
+            # TODO verify that this is legit pylint: disable=fixme
             return HandlingResult.analyse()
 
         event_bus.notify(

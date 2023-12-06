@@ -1,5 +1,5 @@
 """Map event module."""
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from datetime import datetime
 from enum import Enum, unique
 from typing import Any
@@ -44,9 +44,9 @@ class MapTraceEvent(Event):
 class MajorMapEvent(Event):
     """Major map event."""
 
-    requested: bool
     map_id: str
     values: list[str]
+    requested: bool = field(kw_only=True)
 
 
 @dataclass(frozen=True)
@@ -68,7 +68,6 @@ class MapSetType(str, Enum):
     @classmethod
     def has_value(cls, value: Any) -> bool:
         """Check if value exists."""
-
         return value in cls._value2member_map_
 
 
@@ -95,7 +94,7 @@ class CachedMapInfoEvent(Event):
     """Cached map info event."""
 
     name: str
-    active: bool
+    active: bool = field(kw_only=True)
 
 
 @dataclass(frozen=True)

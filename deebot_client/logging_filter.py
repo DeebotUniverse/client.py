@@ -9,7 +9,7 @@ class SanitizeFilter(Filter):
     """Filter to sensitive data."""
 
     # all lowercase
-    _SANITIZE_LOG_KEYS: set[str] = {
+    _SANITIZE_LOG_KEYS = (
         "auth",
         "did",
         "email",
@@ -18,7 +18,7 @@ class SanitizeFilter(Filter):
         "token",
         "uid",
         "user",
-    }
+    )
 
     def filter(self, record: LogRecord) -> bool:
         """Filter log record."""
@@ -32,7 +32,7 @@ class SanitizeFilter(Filter):
 
     def _sanitize_data(self, data: Any) -> Any:
         """Sanitize data (remove personal data)."""
-        if isinstance(data, (set, list)):
+        if isinstance(data, set | list):
             return [self._sanitize_data(entry) for entry in data]
 
         if not isinstance(data, dict):
@@ -44,7 +44,7 @@ class SanitizeFilter(Filter):
                 if sanitized_data is None:
                     sanitized_data = copy.deepcopy(data)
                 sanitized_data[key] = "[REMOVED]"
-            elif isinstance(value, (set, list, dict)):
+            elif isinstance(value, set | list | dict):
                 if sanitized_data is None:
                     sanitized_data = copy.deepcopy(data)
                 sanitized_data[key] = self._sanitize_data(value)

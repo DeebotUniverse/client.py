@@ -1,6 +1,7 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from datetime import datetime
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import (
@@ -53,7 +54,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, _: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -90,7 +91,7 @@ class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC)
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore[call-arg, assignment]
         event_bus.notify(event)
         return HandlingResult.success()
 
@@ -98,7 +99,7 @@ class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC)
 class SetEnableCommand(JsonSetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = {"enable": InitParam(bool)}
+    _mqtt_params = MappingProxyType({"enable": InitParam(bool)})
 
-    def __init__(self, enable: bool) -> None:
+    def __init__(self, enable: bool) -> None:  # noqa: FBT001
         super().__init__({"enable": 1 if enable else 0})

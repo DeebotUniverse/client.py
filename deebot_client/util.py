@@ -2,11 +2,13 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Coroutine, Iterable, Mapping
 from contextlib import suppress
 from enum import Enum, IntEnum, unique
 import hashlib
-from typing import Any, Self, TypeVar
+from typing import TYPE_CHECKING, Any, Self, TypeVar
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Iterable, Mapping
 
 _T = TypeVar("_T")
 
@@ -47,7 +49,7 @@ class DisplayNameIntEnum(IntEnum):
         obj._value_ = args[0]
         return obj
 
-    def __init__(self, value: int, display_name: str | None = None):
+    def __init__(self, value: int, display_name: str | None = None) -> None:
         super().__init__()
         self._value_ = value
         self._display_name = display_name
@@ -71,7 +73,8 @@ class DisplayNameIntEnum(IntEnum):
             if value == member.display_name.upper():
                 return member
 
-        raise ValueError(f"'{value}' is not a valid {cls.__name__} member")
+        msg = f"'{value}' is not a valid {cls.__name__} member"
+        raise ValueError(msg)
 
     def __eq__(self, x: object) -> bool:
         if not isinstance(x, type(self)):
@@ -136,7 +139,7 @@ class DisplayNameStrEnum(Enum):
 class OnChangedList(list[_T]):
     """List, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = [
+    _MODIFING_FUNCTIONS = (
         "append",
         "clear",
         "extend",
@@ -146,9 +149,11 @@ class OnChangedList(list[_T]):
         "__setitem__",
         "__delitem__",
         "__add__",
-    ]
+    )
 
-    def __init__(self, on_change: Callable[[], None], iterable: Iterable[_T] = ()):
+    def __init__(
+        self, on_change: Callable[[], None], iterable: Iterable[_T] = ()
+    ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
 
@@ -165,18 +170,18 @@ _VT = TypeVar("_VT")
 class OnChangedDict(dict[_KT, _VT]):
     """Dict, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = [
+    _MODIFING_FUNCTIONS = (
         "clear",
         "pop",
         "popitem",
         "update",
         "__setitem__",
         "__delitem__",
-    ]
+    )
 
     def __init__(
         self, on_change: Callable[[], None], iterable: Iterable[tuple[_KT, _VT]] = ()
-    ):
+    ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
 
