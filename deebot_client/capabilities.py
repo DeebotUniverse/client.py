@@ -4,8 +4,7 @@ from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from deebot_client.command import Command
-from deebot_client.commands.json.common import SetCommand
+from deebot_client.command import Command, SetCommand
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
@@ -35,12 +34,14 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
+    VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from deebot_client.models import CleanAction, CleanMode
 
 if TYPE_CHECKING:
@@ -121,7 +122,7 @@ class CapabilityClean:
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent]
     count: CapabilitySet[CleanCountEvent, int] | None = None
-    log: CapabilityEvent[CleanLogEvent]
+    log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
@@ -169,7 +170,11 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
+    efficiency_mode: (
+        CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
+    ) = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
+    voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]
 
 

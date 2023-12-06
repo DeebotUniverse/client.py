@@ -5,10 +5,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import NetworkInfoEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetNetInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get network info command."""
 
     name = "getNetInfo"
@@ -21,7 +21,6 @@ class GetNetInfo(CommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         event_bus.notify(
             NetworkInfoEvent(
                 ip=data["ip"],

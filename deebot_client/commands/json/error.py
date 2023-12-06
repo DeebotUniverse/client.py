@@ -6,10 +6,10 @@ from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetError(CommandWithMessageHandling, MessageBodyDataDict):
+class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     name = "getError"
@@ -73,6 +73,7 @@ _ERROR_CODES = {
     205: "IonSterilizeExhausted",
     206: "IonSterilizeAbnormal",
     207: "IonSterilizeFault",
+    312: "Please replace the Dust Bag.",
     404: "Recipient unavailable",
     500: "Request Timeout",
     601: "ERROR_ClosedAIVISideAbnormal",

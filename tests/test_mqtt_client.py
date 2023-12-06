@@ -27,7 +27,7 @@ _WAITING_AFTER_RESTART = 30
 
 
 async def _verify_subscribe(
-    test_client: Client, device_info: DeviceInfo, expected_called: bool, mock: Mock
+    test_client: Client, device_info: DeviceInfo, mock: Mock, *, expected_called: bool
 ) -> None:
     command = "test"
     data = json.dumps({"test": str(datetime.datetime.now())}).encode("utf-8")
@@ -68,7 +68,9 @@ async def test_last_message_received_at(
         dt.now.return_value = expected
 
         # Simulate message received
-        mqtt_client._handle_message(Message("/test", b"", 0, False, 1, None))
+        mqtt_client._handle_message(
+            Message("/test", b"", 0, retain=False, mid=1, properties=None)
+        )
 
         assert mqtt_client.last_message_received_at == expected
 
@@ -90,7 +92,7 @@ async def test_client_reconnect_on_broker_error(
         tls_context=mqtt_config.ssl_context,
     ) as client:
         # test client cannot be used as we restart the broker in this test
-        await _verify_subscribe(client, device_info, True, callback)
+        await _verify_subscribe(client, device_info, callback, expected_called=True)
 
     caplog.clear()
     mqtt_server.stop()
@@ -120,7 +122,9 @@ async def test_client_reconnect_on_broker_error(
                 tls_context=mqtt_config.ssl_context,
             ) as client:
                 # test client cannot be used as we restart the broker in this test
-                await _verify_subscribe(client, device_info, True, callback)
+                await _verify_subscribe(
+                    client, device_info, callback, expected_called=True
+                )
             return
 
         await asyncio.sleep(1)
@@ -142,12 +146,13 @@ _test_MqttConfiguration_data = [
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
 def test_MqttConfiguration(
-    set_ssl_context: bool,
     country: str,
     hostname: str | None,
     expected_hostname: str,
     session: ClientSession,
     device_id: str,
+    *,
+    set_ssl_context: bool,
 ) -> None:
     args: dict[str, Any] = {
         "config": Configuration(
@@ -179,12 +184,16 @@ async def test_client_bot_subscription(
 ) -> None:
     (_, callback, unsubscribe) = await _subscribe(mqtt_client, device_info)
 
-    await _verify_subscribe(test_mqtt_client, device_info, True, callback)
+    await _verify_subscribe(
+        test_mqtt_client, device_info, callback, expected_called=True
+    )
 
     unsubscribe()
     await asyncio.sleep(0.1)
 
-    await _verify_subscribe(test_mqtt_client, device_info, False, callback)
+    await _verify_subscribe(
+        test_mqtt_client, device_info, callback, expected_called=False
+    )
 
 
 async def test_client_reconnect_manual(
@@ -192,25 +201,32 @@ async def test_client_reconnect_manual(
 ) -> None:
     (_, callback, _) = await _subscribe(mqtt_client, device_info)
 
-    await _verify_subscribe(test_mqtt_client, device_info, True, callback)
+    await _verify_subscribe(
+        test_mqtt_client, device_info, callback, expected_called=True
+    )
 
     await mqtt_client.disconnect()
-    await _verify_subscribe(test_mqtt_client, device_info, False, callback)
+    await _verify_subscribe(
+        test_mqtt_client, device_info, callback, expected_called=False
+    )
 
     await mqtt_client.connect()
     await asyncio.sleep(0.1)
 
-    await _verify_subscribe(test_mqtt_client, device_info, True, callback)
+    await _verify_subscribe(
+        test_mqtt_client, device_info, callback, expected_called=True
+    )
 
 
 async def _publish_p2p(
     command_name: str,
     device_info: DeviceInfo,
     data: dict[str, Any],
-    is_request: bool,
     request_id: str,
     test_mqtt_client: Client,
     data_type: str = "j",
+    *,
+    is_request: bool,
 ) -> None:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
@@ -243,7 +259,12 @@ async def test_p2p_success(
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
         await _publish_p2p(
-            command_name, device_info, data, True, request_id, test_mqtt_client
+            command_name,
+            device_info,
+            data,
+            request_id,
+            test_mqtt_client,
+            is_request=True,
         )
 
         create_from_mqtt.assert_called_with(data["body"]["data"])
@@ -252,7 +273,12 @@ async def test_p2p_success(
 
         data = {"body": {"data": {"ret": "ok"}}}
         await _publish_p2p(
-            command_name, device_info, data, False, request_id, test_mqtt_client
+            command_name,
+            device_info,
+            data,
+            request_id,
+            test_mqtt_client,
+            is_request=False,
         )
 
         command_object.handle_mqtt_p2p.assert_called_with(events, data)
@@ -270,7 +296,9 @@ async def test_p2p_not_supported(
     await _subscribe(mqtt_client, device_info)
     command_name: str = GetBattery.name
 
-    await _publish_p2p(command_name, device_info, {}, True, "req", test_mqtt_client)
+    await _publish_p2p(
+        command_name, device_info, {}, "req", test_mqtt_client, is_request=True
+    )
 
     assert (
         "deebot_client.mqtt_client",
@@ -331,7 +359,12 @@ async def test_p2p_to_late(
         request_id = "req"
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
         await _publish_p2p(
-            command_name, device_info, data, True, request_id, test_mqtt_client
+            command_name,
+            device_info,
+            data,
+            request_id,
+            test_mqtt_client,
+            is_request=True,
         )
 
         create_from_mqtt.assert_called_with(data["body"]["data"])
@@ -342,7 +375,7 @@ async def test_p2p_to_late(
 
     data = {"body": {"data": {"ret": "ok"}}}
     await _publish_p2p(
-        command_name, device_info, data, False, request_id, test_mqtt_client
+        command_name, device_info, data, request_id, test_mqtt_client, is_request=False
     )
 
     command_object.handle_mqtt_p2p.assert_not_called()
@@ -373,7 +406,7 @@ async def test_p2p_parse_error(
         data: dict[str, Any] = {"volume": 1}
 
     await _publish_p2p(
-        command_name, device_info, data, True, request_id, test_mqtt_client
+        command_name, device_info, data, request_id, test_mqtt_client, is_request=True
     )
 
     assert (

@@ -9,7 +9,7 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
 
-from .common import CommandWithMessageHandling, ExecuteCommand
+from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
 _LOGGER = get_logger(__name__)
 
@@ -62,7 +62,7 @@ class CleanArea(Clean):
         self._args["count"] = cleanings
 
 
-class GetCleanInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
     name = "getCleanInfo"
@@ -75,7 +75,6 @@ class GetCleanInfo(CommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         status: State | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":

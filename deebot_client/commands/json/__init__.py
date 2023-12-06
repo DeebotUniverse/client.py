@@ -1,4 +1,4 @@
-"""Commands module."""
+"""Json commands module."""
 from deebot_client.command import Command, CommandMqttP2P
 
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -12,6 +12,7 @@ from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
 from .common import JsonCommand
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
+from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan, ResetLifeSpan
@@ -30,6 +31,7 @@ from .pos import GetPos
 from .relocation import SetRelocationState
 from .stats import GetStats, GetTotalStats
 from .true_detect import GetTrueDetect, SetTrueDetect
+from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
 from .volume import GetVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
@@ -52,6 +54,8 @@ __all__ = [
     "GetCleanLogs",
     "GetContinuousCleaning",
     "SetContinuousCleaning",
+    "GetEfficiencyMode",
+    "SetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
     "SetFanSpeed",
@@ -73,6 +77,8 @@ __all__ = [
     "GetTotalStats",
     "GetTrueDetect",
     "SetTrueDetect",
+    "GetVoiceAssistantState",
+    "SetVoiceAssistantState",
     "GetVolume",
     "SetVolume",
     "GetWaterInfo",
@@ -111,6 +117,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetContinuousCleaning,
     SetContinuousCleaning,
 
+    GetEfficiencyMode,
+    SetEfficiencyMode,
+
     GetError,
 
     GetFanSpeed,
@@ -143,6 +152,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetTrueDetect,
     SetTrueDetect,
 
+    GetVoiceAssistantState,
+    SetVoiceAssistantState,
+
     GetVolume,
     SetVolume,
 
@@ -155,7 +167,8 @@ _COMMANDS: list[type[JsonCommand]] = [
 # fmt: on
 
 COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
+    cmd.name: cmd  # type: ignore[misc]
+    for cmd in _COMMANDS
 }
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {

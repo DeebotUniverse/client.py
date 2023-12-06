@@ -42,6 +42,6 @@ async def test_authenticator_authenticate(config: Configuration) -> None:
         unsub()
 
         # reauthenticate with force=True should call again the api
-        assert (await authenticator.authenticate(True)) == login_mock.return_value
+        assert (await authenticator.authenticate(force=True)) == login_mock.return_value
         login_mock.assert_awaited_once()
         assert not on_changed_called.is_set()

@@ -1,5 +1,6 @@
 """Volume command module."""
 
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -7,10 +8,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
+class GetVolume(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getVolume"
@@ -23,22 +24,23 @@ class GetVolume(CommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         event_bus.notify(
             VolumeEvent(volume=data["volume"], maximum=data.get("total", None))
         )
         return HandlingResult.success()
 
 
-class SetVolume(SetCommand):
+class SetVolume(JsonSetCommand):
     """Set volume command."""
 
     name = "setVolume"
     get_command = GetVolume
-    _mqtt_params = {
-        "volume": InitParam(int),
-        "total": None,  # Remove it as we don't can set it (App includes it)
-    }
+    _mqtt_params = MappingProxyType(
+        {
+            "volume": InitParam(int),
+            "total": None,  # Remove it as we don't can set it (App includes it)
+        }
+    )
 
     def __init__(self, volume: int) -> None:
         super().__init__({"volume": volume})

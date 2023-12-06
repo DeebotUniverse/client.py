@@ -1,5 +1,6 @@
 """Clean count command module."""
 
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -7,10 +8,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import CleanCountEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetCleanCount(CommandWithMessageHandling, MessageBodyDataDict):
+class GetCleanCount(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean count command."""
 
     name = "getCleanCount"
@@ -23,17 +24,16 @@ class GetCleanCount(CommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         event_bus.notify(CleanCountEvent(count=data["count"]))
         return HandlingResult.success()
 
 
-class SetCleanCount(SetCommand):
+class SetCleanCount(JsonSetCommand):
     """Set clean count command."""
 
     name = "setCleanCount"
     get_command = GetCleanCount
-    _mqtt_params = {"count": InitParam(int)}
+    _mqtt_params = MappingProxyType({"count": InitParam(int)})
 
     def __init__(self, count: int) -> None:
         super().__init__({"count": count})

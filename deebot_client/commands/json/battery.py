@@ -1,14 +1,14 @@
 """Battery commands."""
 from deebot_client.messages.json import OnBattery
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetBattery(OnBattery, CommandWithMessageHandling):
+class GetBattery(OnBattery, JsonCommandWithMessageHandling):
     """Get battery command."""
 
     name = "getBattery"
 
-    def __init__(self, is_available_check: bool = False) -> None:
+    def __init__(self, *, is_available_check: bool = False) -> None:
         super().__init__()
         self._is_available_check = is_available_check

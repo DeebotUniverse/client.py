@@ -1,4 +1,5 @@
 """Work mode commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -6,10 +7,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import WorkMode, WorkModeEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling, SetCommand
+from .common import JsonCommandWithMessageHandling, JsonSetCommand
 
 
-class GetWorkMode(CommandWithMessageHandling, MessageBodyDataDict):
+class GetWorkMode(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get work mode command."""
 
     name = "getWorkMode"
@@ -26,12 +27,12 @@ class GetWorkMode(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SetWorkMode(SetCommand):
+class SetWorkMode(JsonSetCommand):
     """Set work mode command."""
 
     name = "setWorkMode"
     get_command = GetWorkMode
-    _mqtt_params = {"mode": InitParam(WorkMode)}
+    _mqtt_params = MappingProxyType({"mode": InitParam(WorkMode)})
 
     def __init__(self, mode: WorkMode | str) -> None:
         if isinstance(mode, str):

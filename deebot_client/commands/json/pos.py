@@ -6,10 +6,10 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import Position, PositionsEvent, PositionType
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
+class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
     name = "getPos"
@@ -39,12 +39,14 @@ class GetPos(CommandWithMessageHandling, MessageBodyDataDict):
                     )
                 )
             else:
-                for entry in data_positions:
-                    positions.append(
+                positions.extend(
+                    [
                         Position(
                             type=PositionType(type_str), x=entry["x"], y=entry["y"]
                         )
-                    )
+                        for entry in data_positions
+                    ]
+                )
 
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))

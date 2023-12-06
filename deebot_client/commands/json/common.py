@@ -1,17 +1,22 @@
 """Base commands."""
 from abc import ABC, abstractmethod
 from datetime import datetime
+from types import MappingProxyType
 from typing import Any
 
-from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
+from deebot_client.command import (
+    Command,
+    CommandWithMessageHandling,
+    InitParam,
+    SetCommand,
+)
 from deebot_client.const import DataType
 from deebot_client.event_bus import EventBus
-from deebot_client.events import AvailabilityEvent, EnableEvent
+from deebot_client.events import EnableEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
-    MessageBody,
     MessageBodyDataDict,
 )
 
@@ -41,54 +46,15 @@ class JsonCommand(Command):
         return payload
 
 
-class CommandWithMessageHandling(JsonCommand, MessageBody, ABC):
+class JsonCommandWithMessageHandling(JsonCommand, CommandWithMessageHandling, ABC):
     """Command, which handle response by itself."""
 
-    _is_available_check: bool = False
 
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        if response.get("ret") == "ok":
-            data = response.get("resp", response)
-            result = self.handle(event_bus, data)
-            return CommandResult(result.state, result.args)
-
-        if errno := response.get("errno", None):
-            match errno:
-                case 4200:
-                    # bot offline
-                    _LOGGER.info(
-                        'Device is offline. Could not execute command "%s"', self.name
-                    )
-                    event_bus.notify(AvailabilityEvent(False))
-                    return CommandResult(HandlingState.FAILED)
-                case 500:
-                    if self._is_available_check:
-                        _LOGGER.info(
-                            'No response received for command "%s" during availability-check.',
-                            self.name,
-                        )
-                    else:
-                        _LOGGER.warning(
-                            'No response received for command "%s". This can happen if the device has network issues or does not support the command',
-                            self.name,
-                        )
-                    return CommandResult(HandlingState.FAILED)
-
-        _LOGGER.warning('Command "%s" was not successfully.', self.name)
-        return CommandResult(HandlingState.ANALYSE)
-
-
-class ExecuteCommand(CommandWithMessageHandling, ABC):
+class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, _: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -101,26 +67,14 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
         return HandlingResult(HandlingState.FAILED)
 
 
-class SetCommand(ExecuteCommand, CommandMqttP2P, ABC):
-    """Base set command.
+class JsonSetCommand(ExecuteCommand, SetCommand, ABC):
+    """Json base set command.
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
     """
 
-    @property
-    @abstractmethod
-    def get_command(self) -> type[CommandWithMessageHandling]:
-        """Return the corresponding "get" command."""
-        raise NotImplementedError
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
-        """Handle response received over the mqtt channel "p2p"."""
-        result = self.handle(event_bus, response)
-        if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):
-            self.get_command.handle(event_bus, self._args)
-
-
-class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
+class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC):
     """Abstract get enable command."""
 
     @property  # type: ignore[misc]
@@ -137,15 +91,15 @@ class GetEnableCommand(CommandWithMessageHandling, MessageBodyDataDict, ABC):
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore[call-arg, assignment]
         event_bus.notify(event)
         return HandlingResult.success()
 
 
-class SetEnableCommand(SetCommand, ABC):
+class SetEnableCommand(JsonSetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = {"enable": InitParam(bool)}
+    _mqtt_params = MappingProxyType({"enable": InitParam(bool)})
 
-    def __init__(self, enable: bool) -> None:
+    def __init__(self, enable: bool) -> None:  # noqa: FBT001
         super().__init__({"enable": 1 if enable else 0})

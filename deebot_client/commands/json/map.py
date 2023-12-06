@@ -1,4 +1,5 @@
 """Maps commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import Command, CommandResult
@@ -14,10 +15,10 @@ from deebot_client.events import (
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
-from .common import CommandWithMessageHandling
+from .common import JsonCommandWithMessageHandling
 
 
-class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
+class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
@@ -60,14 +61,14 @@ class GetCachedMapInfo(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
     name = "getMajorMap"
 
     @classmethod
     def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+        cls, _: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -90,13 +91,13 @@ class GetMajorMap(CommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(True, **result.args))
+            event_bus.notify(MajorMapEvent(requested=True, **result.args))
             return CommandResult.success()
 
         return result
 
 
-class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
     _ARGS_ID = "id"
@@ -146,42 +147,43 @@ class GetMapSet(CommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = []
-            for subset in result.args[self._ARGS_SUBSETS]:
-                commands.append(
-                    GetMapSubSet(
-                        mid=result.args[self._ARGS_ID],
-                        msid=result.args[self._ARGS_SET_ID],
-                        type=result.args[self._ARGS_TYPE],
-                        mssid=subset,
-                    )
+            commands: list[Command] = [
+                GetMapSubSet(
+                    mid=result.args[self._ARGS_ID],
+                    msid=result.args[self._ARGS_SET_ID],
+                    type=result.args[self._ARGS_TYPE],
+                    mssid=subset,
                 )
+                for subset in result.args[self._ARGS_SUBSETS]
+            ]
             return CommandResult(result.state, result.args, commands)
 
         return result
 
 
-class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
-    _ROOM_NUM_TO_NAME = {
-        "0": "Default",
-        "1": "Living Room",
-        "2": "Dining Room",
-        "3": "Bedroom",
-        "4": "Study",
-        "5": "Kitchen",
-        "6": "Bathroom",
-        "7": "Laundry",
-        "8": "Lounge",
-        "9": "Storeroom",
-        "10": "Kids room",
-        "11": "Sunroom",
-        "12": "Corridor",
-        "13": "Balcony",
-        "14": "Gym",
-        # 15 custom; get name from name attribute
-    }
+    _ROOM_NUM_TO_NAME = MappingProxyType(
+        {
+            "0": "Default",
+            "1": "Living Room",
+            "2": "Dining Room",
+            "3": "Bedroom",
+            "4": "Study",
+            "5": "Kitchen",
+            "6": "Bathroom",
+            "7": "Laundry",
+            "8": "Lounge",
+            "9": "Storeroom",
+            "10": "Kids room",
+            "11": "Sunroom",
+            "12": "Corridor",
+            "13": "Balcony",
+            "14": "Gym",
+            # 15 custom; get name from name attribute
+        }
+    )
 
     name = "getMapSubSet"
 
@@ -240,7 +242,7 @@ class GetMapSubSet(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -264,7 +266,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
         start = int(data["traceStart"])
 
         if "traceValue" not in data:
-            # todo verify that this is legit pylint: disable=fixme
+            # TODO verify that this is legit pylint: disable=fixme
             return HandlingResult.analyse()
 
         event_bus.notify(
@@ -288,7 +290,7 @@ class GetMapTrace(CommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMinorMap(CommandWithMessageHandling, MessageBodyDataDict):
+class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
     name = "getMinorMap"
