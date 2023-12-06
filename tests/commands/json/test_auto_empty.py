@@ -22,27 +22,27 @@ def test_WorkMode_unique() -> None:
     [
         (
             {"enable": 1, "frequency": "10"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_10),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_10),  # noqa: FBT003
         ),
         (
             {"enable": 1, "frequency": "15"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_15),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_15),  # noqa: FBT003
         ),
         (
             {"enable": 1, "frequency": "25"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_25),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_25),  # noqa: FBT003
         ),
         (
             {"enable": 0, "frequency": "25"},
-            AutoEmptyModeEvent(False, AutoEmptyMode.MODE_25),
+            AutoEmptyModeEvent(False, AutoEmptyMode.MODE_25),  # noqa: FBT003
         ),
         (
             {"enable": 1, "frequency": "auto"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_AUTO),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_AUTO),  # noqa: FBT003
         ),
         (
             {"enable": 1, "frequency": "smart"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_SMART),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_SMART),  # noqa: FBT003
         ),
     ],
 )
@@ -57,31 +57,31 @@ async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyModeEvent) 
         (
             (True, AutoEmptyMode.MODE_10),
             {"enable": 1, "frequency": "10"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_10),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_10),  # noqa: FBT003
         ),
         (
             (True, "mode_smart"),
             {"enable": 1, "frequency": "smart"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_SMART),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_SMART),  # noqa: FBT003
         ),
         (
             (None, AutoEmptyMode.MODE_25),
             {"enable": 1, "frequency": "25"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_25),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_25),  # noqa: FBT003
         ),
         # NOTE: it should be possible to only send 'True' for turn on without 'frequency',
         # but not sure how to implement the test correct
         (
             (True, AutoEmptyMode.MODE_AUTO),
             {"enable": 1, "frequency": "auto"},
-            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_AUTO),
+            AutoEmptyModeEvent(True, AutoEmptyMode.MODE_AUTO),  # noqa: FBT003
         ),
         # NOTE: it should be possible to only send 'False' for turn off without 'frequency',
         # but not sure how to implement the test correct
         (
             (False, AutoEmptyMode.MODE_AUTO),
             {"enable": 0, "frequency": "auto"},
-            AutoEmptyModeEvent(False, AutoEmptyMode.MODE_AUTO),
+            AutoEmptyModeEvent(False, AutoEmptyMode.MODE_AUTO),  # noqa: FBT003
         ),
     ],
 )

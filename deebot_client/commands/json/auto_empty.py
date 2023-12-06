@@ -1,4 +1,5 @@
 """Auto empty command module."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
@@ -36,10 +37,14 @@ class SetAutoEmpty(JsonSetCommand):
 
     name = "setAutoEmpty"
     get_command = GetAutoEmpty
-    _mqtt_params = {"enable": InitParam(bool), "frequency": InitParam(AutoEmptyMode)}
+    _mqtt_params = MappingProxyType(
+        {"enable": InitParam(bool), "frequency": InitParam(AutoEmptyMode)}
+    )
 
     def __init__(
-        self, enable: bool = True, frequency: AutoEmptyMode | str | None = None
+        self,
+        enable: bool = True,  # noqa: FBT001, FBT002
+        frequency: AutoEmptyMode | str | None = None,
     ) -> None:
         args: dict[str, int | str] = {"enable": int(enable)}
         if frequency is not None:

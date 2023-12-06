@@ -98,7 +98,7 @@ class DisplayNameStrEnum(Enum):
         obj._value_ = args[0]
         return obj
 
-    def __init__(self, value: str, display_name: str | None = None):
+    def __init__(self, value: str, display_name: str | None = None) -> None:
         super().__init__()
         self._value_ = value
         self._display_name = display_name
@@ -122,7 +122,8 @@ class DisplayNameStrEnum(Enum):
             if value == member.display_name.upper():
                 return member
 
-        raise ValueError(f"'{value}' is not a valid {cls.__name__} member")
+        msg = f"'{value}' is not a valid {cls.__name__} member"
+        raise ValueError(msg)
 
     def __eq__(self, x: object) -> bool:
         if not isinstance(x, type(self)):
