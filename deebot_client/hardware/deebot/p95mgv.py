@@ -49,6 +49,7 @@ from deebot_client.commands.json.multimap_state import (
     SetMultimapState,
 )
 from deebot_client.commands.json.network import GetNetInfo
+from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
@@ -82,6 +83,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
+    OtaEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
@@ -189,6 +191,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     EfficiencyMode.STANDART_MODE,
                 ),
             ),
+            ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
             ),
