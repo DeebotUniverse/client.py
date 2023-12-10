@@ -3,6 +3,7 @@ from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
+    CapabilityCleanAutoEmpty,
     CapabilityCustomCommand,
     CapabilityEvent,
     CapabilityExecute,
@@ -15,6 +16,7 @@ from deebot_client.capabilities import (
     CapabilityStats,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
@@ -94,6 +96,7 @@ from deebot_client.events import (
     WaterAmount,
     WaterInfoEvent,
 )
+from deebot_client.events.auto_empty import AutoEmptyMode, AutoEmptyModeEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -111,6 +114,17 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
+            auto_empty=CapabilityCleanAutoEmpty(
+                event=AutoEmptyModeEvent,
+                get=[GetAutoEmpty()],
+                set=SetAutoEmpty,
+                types=(
+                    AutoEmptyMode.MODE_10,
+                    AutoEmptyMode.MODE_15,
+                    AutoEmptyMode.MODE_25,
+                    AutoEmptyMode.MODE_AUTO,
+                ),
+            ),
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
             continuous=CapabilitySetEnable(
                 ContinuousCleaningEvent,
