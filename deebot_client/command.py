@@ -12,7 +12,7 @@ from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .event_bus import EventBus
 from .logging_filter import get_logger
-from .message import HandlingResult, HandlingState, MessageBody
+from .message import HandlingResult, HandlingState, Message
 from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
@@ -69,7 +69,7 @@ class Command(ABC):
 
         Returns
         -------
-            bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
+            bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """
         try:
@@ -191,7 +191,7 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
-class CommandWithMessageHandling(Command, MessageBody, ABC):
+class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
 
     _is_available_check: bool = False
@@ -284,6 +284,17 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
         raise DeebotError(msg) from err
 
 
+class GetCommand(CommandWithMessageHandling, ABC):
+    """Base get command."""
+
+    @classmethod
+    @abstractmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+
+
 class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
     """Base set command.
 
@@ -292,7 +303,7 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
 
     @property
     @abstractmethod
-    def get_command(self) -> type[CommandWithMessageHandling]:
+    def get_command(self) -> type[GetCommand]:
         """Return the corresponding "get" command."""
         raise NotImplementedError  # pragma: no cover
 
@@ -300,4 +311,4 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):
-            self.get_command.handle(event_bus, self._args)
+            self.get_command.handle_set_args(event_bus, self._args)
