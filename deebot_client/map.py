@@ -6,7 +6,6 @@ from collections.abc import Callable, Coroutine
 import dataclasses
 from datetime import UTC, datetime
 from io import BytesIO
-import lzma
 import math
 import struct
 from typing import Any, Final
@@ -36,7 +35,13 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .util import OnChangedDict, OnChangedList, cancel, create_task
+from .util import (
+    OnChangedDict,
+    OnChangedList,
+    cancel,
+    create_task,
+    decompress_7z_base64_data,
+)
 
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
@@ -46,35 +51,25 @@ _POSITION_PNG = {
 }
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
+_COLOR_LIST_EXCLUDE = [0x00]
+_COLOR_LIST_INCLUDE = [
+    0x01,  # 1
+    0x02,  # 2
+    0x03,  # 3
+    0x04,  # 4
+    0x05,  # 5
+]
+_COLOR_FLOOR = "#badaff"
 _COLORS = {
-    0x01: "#badaff",  # floor
+    0x01: _COLOR_FLOOR,  # floor
     0x02: "#4e96e2",  # wall
     0x03: "#1a81ed",  # carpet
+    0x04: "#dee9fb",  # not scanned space
+    0x05: "#edf3fb",  # possible obstacle
     _TRACE_MAP: "#FFFFFF",
     MapSetType.VIRTUAL_WALLS: "#FF0000",
     MapSetType.NO_MOP_ZONES: "#FFA500",
 }
-
-
-def _decompress_7z_base64_data(data: str) -> bytes:
-    _LOGGER.debug("[decompress7zBase64Data] Begin")
-    final_array = bytearray()
-
-    # Decode Base64
-    decoded = base64.b64decode(data)
-
-    i = 0
-    for idx in decoded:
-        if i == 8:
-            final_array += b"\x00\x00\x00\x00"
-        final_array.append(idx)
-        i += 1
-
-    dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
-    decompressed_data = dec.decompress(final_array)
-
-    _LOGGER.debug("[decompress7zBase64Data] Done")
-    return decompressed_data
 
 
 def _calc_value(value: int, min_value: int, max_value: int) -> int:
@@ -191,7 +186,7 @@ class Map:
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = _decompress_7z_base64_data(data)
+        trace_points = decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
             byte_position_x = struct.unpack("<h", trace_points[i : i + 2])
@@ -234,8 +229,13 @@ class Map:
                                 point_y,
                             )
                             raise MapError("Map Limit reached!")
-                        if pixel_type in [0x01, 0x02, 0x03]:
+                        if pixel_type in _COLOR_LIST_INCLUDE:
                             draw.point((point_x, point_y), fill=_COLORS[pixel_type])
+                        elif (
+                            pixel_type not in _COLOR_LIST_INCLUDE
+                            and pixel_type not in _COLOR_LIST_EXCLUDE
+                        ):
+                            draw.point((point_x, point_y), fill=_COLOR_FLOOR)
 
     def enable(self) -> None:
         """Enable map."""
@@ -425,7 +425,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = _decompress_7z_base64_data(base64_data)
+        decoded = decompress_7z_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 

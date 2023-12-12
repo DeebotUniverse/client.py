@@ -37,8 +37,6 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficie
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-
-# getMapSet
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -158,7 +156,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            chached_info=CapabilityEvent(
+                CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
+            ),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
@@ -166,7 +166,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
-            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo(version=2)]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),

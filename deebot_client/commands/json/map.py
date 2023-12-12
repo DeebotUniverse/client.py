@@ -1,4 +1,5 @@
 """Maps commands."""
+import json
 from types import MappingProxyType
 from typing import Any
 
@@ -14,6 +15,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
 
@@ -22,6 +24,14 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
+    # version definition for using type of getMapSet v1 or v2
+    get_map_set_version: int = 1
+
+    def __init__(
+        self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
+    ) -> None:
+        self.get_map_set_version = version
+        super().__init__(args)
 
     @classmethod
     def _handle_body_data_dict(
@@ -55,44 +65,11 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return CommandResult(
                 result.state,
                 result.args,
-                [GetMapSet(result.args["map_id"], entry) for entry in MapSetType],
+                # an if check for getmapset, as newer bot use different api version
+                [GetMapSetV2(result.args["map_id"], entry) for entry in MapSetType]
+                if self.get_map_set_version == 2
+                else [GetMapSet(result.args["map_id"], entry) for entry in MapSetType],
             )
-
-        return result
-
-
-class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get major map command."""
-
-    name = "getMajorMap"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, _: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        values = data["value"].split(",")
-        map_id = data["mid"]
-
-        return HandlingResult(
-            HandlingState.SUCCESS,
-            {"map_id": map_id, "values": values},
-        )
-
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(requested=True, **result.args))
-            return CommandResult.success()
 
         return result
 
@@ -201,7 +178,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             type = type.value
 
         if msid is None and type == MapSetType.ROOMS.value:
-            raise ValueError("msid is required when type='vw'")
+            raise ValueError("msid is required when type='ar'")
 
         super().__init__(
             {
@@ -228,16 +205,75 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
+            coordinates: str | None = None
+            if data.get("compress", 0) == 1:
+                # NOTE: newer bot's return coordinates as base64 decoded string
+                coordinates = decompress_7z_base64_data(data["value"]).decode()
+            if coordinates is None:
+                # NOTE: older bot's return coordinates direct as comma separated list
+                coordinates = data["value"]
+
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
                     type=MapSetType(data["type"]),
-                    coordinates=data["value"],
+                    coordinates=coordinates,
                     name=name,
                 )
             )
 
             return HandlingResult.success()
+
+        return HandlingResult.analyse()
+
+
+class GetMapSetV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get map set v2 command."""
+
+    name = "getMapSet_V2"
+
+    def __init__(
+        self,
+        mid: str,
+        type: (  # pylint: disable=redefined-builtin
+            MapSetType | str
+        ) = MapSetType.ROOMS,
+    ) -> None:
+        if isinstance(type, MapSetType):
+            type = type.value
+
+        super().__init__({"mid": mid, "type": type})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if MapSetType.has_value(data["type"]):
+            # subset is based64 7z compressed
+            subsets: list[list[str]] = json.loads(
+                decompress_7z_base64_data(data["subsets"]).decode()
+            )
+            # NOTE: MapSetType.ROOMS is here ignored for now, to be checked if it is needed
+
+            # virtual walls and no map zones are same handled
+            if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
+                for subset in subsets:
+                    mssid = subset[0]  # first entry in list is mssid
+                    coordinates = str(subset[1:])  # all other in list are coordinates
+
+                    event_bus.notify(
+                        MapSubsetEvent(
+                            id=int(mssid),
+                            type=MapSetType(data["type"]),
+                            coordinates=coordinates,
+                        )
+                    )
+
+                return HandlingResult.success()
 
         return HandlingResult.analyse()
 
@@ -286,6 +322,42 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
             start = result.args["start"] + self._TRACE_POINT_COUNT
             if start < result.args["total"]:
                 return CommandResult(result.state, result.args, [GetMapTrace(start)])
+
+        return result
+
+
+class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get major map command."""
+
+    name = "getMajorMap"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, _: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        values = data["value"].split(",")
+        map_id = data["mid"]
+
+        return HandlingResult(
+            HandlingState.SUCCESS,
+            {"map_id": map_id, "values": values},
+        )
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            event_bus.notify(MajorMapEvent(requested=True, **result.args))
+            return CommandResult.success()
 
         return result
 

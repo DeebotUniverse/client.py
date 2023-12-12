@@ -6,6 +6,7 @@ from deebot_client.commands.json import (
     GetMapSubSet,
     GetMapTrace,
 )
+from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import (
     MajorMapEvent,
     MapSetEvent,
@@ -15,6 +16,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingState
+from deebot_client.util import decompress_7z_base64_data
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -49,7 +51,7 @@ async def test_getMapSubSet_customName() -> None:
     await assert_command(
         GetMapSubSet(mid="98100521", mssid="8", msid="1"),
         json,
-        MapSubsetEvent(8, type, value, name),
+        MapSubsetEvent(8, type, decompress_7z_base64_data(value).decode(), name),
     )
 
 
@@ -114,6 +116,17 @@ async def test_getCachedMapInfo() -> None:
         ),
     )
 
+    await assert_command(
+        GetCachedMapInfo(version=2),
+        json,
+        CachedMapInfoEvent(expected_name, active=True),
+        CommandResult(
+            HandlingState.SUCCESS,
+            {"map_id": expected_mid},
+            [GetMapSetV2(expected_mid, entry) for entry in MapSetType],
+        ),
+    )
+
 
 async def test_getMajorMap() -> None:
     expected_mid = "199390082"
@@ -173,6 +186,65 @@ async def test_getMapSet() -> None:
                 for s in subsets
             ],
         ),
+    )
+
+
+async def test_getMapSetV2_virtual_walls() -> None:
+    mid = "199390082"
+    json = get_request_json(
+        get_success_body(
+            {
+                "type": MapSetType.VIRTUAL_WALLS,
+                "mid": mid,
+                "batid": "gheijg",
+                "serial": 1,
+                "index": 1,
+                "subsets": "XQAABADHAAAAAC2WwEHwYhHX3vWwDK80QCnaQU0mwUd9Vk34ub6OxzOk6kdFfbFvpVp4iIlKisAvp0MznQNYEZ8koxFHnO,+iM44GUKgujGQKgzl0bScbQgaon1jI3eyCRikWlkmrbwA=",
+                "infoSize": 199,
+            }
+        )
+    )
+    subset0_mssid = 0
+    subset0 = str(["-5195", "-1059", "-5195", "-37", "-5806", "-37", "-5806", "-1059"])
+    subset1_mssid = 1
+    subset1 = str(["-7959", "220", "-7959", "1083", "-9254", "1083", "-9254", "220"])
+    subset2_mssid = 2
+    subset2 = str(["-9437", "347", "-5387", "410"])
+    subset3_mssid = 3
+    subset3 = str(["-5667", "317", "-4888", "-56"])
+    await assert_command(
+        GetMapSetV2(mid, MapSetType.VIRTUAL_WALLS),
+        json,
+        (
+            MapSubsetEvent(subset0_mssid, MapSetType.VIRTUAL_WALLS, subset0),
+            MapSubsetEvent(subset1_mssid, MapSetType.VIRTUAL_WALLS, subset1),
+            MapSubsetEvent(subset2_mssid, MapSetType.VIRTUAL_WALLS, subset2),
+            MapSubsetEvent(subset3_mssid, MapSetType.VIRTUAL_WALLS, subset3),
+        ),
+    )
+
+
+async def test_getMapSetV2_no_mop_zones() -> None:
+    mid = "199390082"
+    json = get_request_json(
+        get_success_body(
+            {
+                "type": MapSetType.NO_MOP_ZONES,
+                "mid": mid,
+                "batid": "fbfebf",
+                "serial": 1,
+                "index": 1,
+                "subsets": "XQAABABBAAAAAC2WwEIwUhHX3vfFDfs1H1PUqtdWgakwVnMBz3Bb3yaoE5OYkdYA",
+                "infoSize": 65,
+            }
+        )
+    )
+    subset0_mssid = 4
+    subset0 = str(["-6217", "3919", "-6217", "231", "-2642", "231", "-2642", "3919"])
+    await assert_command(
+        GetMapSetV2(mid, MapSetType.NO_MOP_ZONES),
+        json,
+        (MapSubsetEvent(subset0_mssid, MapSetType.NO_MOP_ZONES, subset0),),
     )
 
 

@@ -2,10 +2,16 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 from contextlib import suppress
 from enum import IntEnum, unique
 import hashlib
+import lzma
 from typing import TYPE_CHECKING, Any, Self, TypeVar
+
+from .logging_filter import get_logger
+
+_LOGGER = get_logger(__name__)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Iterable, Mapping
@@ -16,6 +22,28 @@ _T = TypeVar("_T")
 def md5(text: str) -> str:
     """Hash text using md5."""
     return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
+
+
+def decompress_7z_base64_data(data: str) -> bytes:
+    """Decomporess base64 decoded 7z compressed string."""
+    _LOGGER.debug("[decompress7zBase64Data] Begin")
+    final_array = bytearray()
+
+    # Decode Base64
+    decoded = base64.b64decode(data)
+
+    i = 0
+    for idx in decoded:
+        if i == 8:
+            final_array += b"\x00\x00\x00\x00"
+        final_array.append(idx)
+        i += 1
+
+    dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
+    decompressed_data = dec.decompress(final_array)
+
+    _LOGGER.debug("[decompress7zBase64Data] Done")
+    return decompressed_data
 
 
 def create_task(
