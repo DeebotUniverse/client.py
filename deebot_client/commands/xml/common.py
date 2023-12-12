@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import Any, cast
 from xml.etree.ElementTree import Element, SubElement
 
-from defusedxml import ElementTree  # type: ignore[import-untyped]
+from defusedxml import ElementTree  # type: ignore[import]
 
 from deebot_client.command import Command, CommandWithMessageHandling
 from deebot_client.const import DataType
@@ -73,7 +73,6 @@ class ExecuteCommand(CommandWithMessageHandling, ABC):
 
         :return: A message response
         """
-
         # Success events from the XML api looks like <ctl ret='ok'/>
         if isinstance(body, str):
             element = ElementTree.fromstring(body)

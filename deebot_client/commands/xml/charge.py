@@ -31,7 +31,6 @@ class Charge(ExecuteCommand):
 
         :return: A message response
         """
-
         tree = ElementTree.fromstring(body)
         attributes = tree.attrib.keys()
 

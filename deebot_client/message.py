@@ -124,7 +124,6 @@ class MessageStr(Message):
 
         :return: A message response
         """
-
         # This basically means an XML message
         if isinstance(message, str):
             return cls.__handle_str(event_bus, message)

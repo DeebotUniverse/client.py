@@ -12,7 +12,7 @@ _LOGGER = get_logger(__name__)
 
 
 class GetChargeState(XmlCommandWithMessageHandling):
-    """Get charge state comment"""
+    """Get charge state command."""
 
     name = "GetChargeState"
 

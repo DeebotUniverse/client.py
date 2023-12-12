@@ -6,14 +6,6 @@ from .charge import Charge
 from .clean_logs import GetCleanLogs
 from .common import XmlCommand
 from .error import GetError
-from .map import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapSet,
-    GetMapSubSet,
-    GetMapTrace,
-    GetMinorMap,
-)
 from .play_sound import PlaySound
 from .relocation import SetRelocationState
 from .stats import GetStats, GetTotalStats
@@ -46,12 +38,7 @@ _COMMANDS: list[type[XmlCommand]] = [
 
     GetError,
 
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapSet,
-    GetMapSubSet,
-    GetMapTrace,
-    GetMinorMap,
+
 
     PlaySound,
 
