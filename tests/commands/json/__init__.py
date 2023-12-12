@@ -4,6 +4,7 @@ from unittest.mock import Mock
 
 from testfixtures import LogCapture
 
+from deebot_client.command import CommandResult
 from deebot_client.commands.json.common import (
     ExecuteCommand,
     JsonSetCommand,
@@ -12,6 +13,7 @@ from deebot_client.commands.json.common import (
 from deebot_client.event_bus import EventBus
 from deebot_client.events import EnableEvent, Event
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
+from deebot_client.message import HandlingState
 from tests.commands import assert_command as assert_command_base
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
@@ -34,7 +36,9 @@ async def assert_execute_command(
     with LogCapture() as log:
         body = {"code": 500, "msg": "fail"}
         json = get_request_json(body)
-        await assert_command(command, json, None)
+        await assert_command(
+            command, json, None, command_result=CommandResult(HandlingState.FAILED)
+        )
 
         log.check_present(
             (
@@ -74,8 +78,9 @@ async def assert_set_command(
 
 async def assert_set_enable_command(
     command: SetEnableCommand,
-    enabled: bool,
     expected_get_command_event: type[EnableEvent],
+    *,
+    enabled: bool,
 ) -> None:
     args = {"enable": 1 if enabled else 0}
     await assert_set_command(command, args, expected_get_command_event(enabled))

@@ -75,7 +75,6 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         status: State | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":

@@ -1,4 +1,4 @@
-"""Commands module."""
+"""Xml commands module."""
 from deebot_client.command import Command, CommandMqttP2P
 
 # from .advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -148,7 +148,8 @@ _COMMANDS: list[type[XmlCommand]] = [
 # fmt: on
 
 COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd for cmd in _COMMANDS  # type: ignore[misc]
+    cmd.name: cmd
+    for cmd in _COMMANDS  # type: ignore[misc]
 }
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {

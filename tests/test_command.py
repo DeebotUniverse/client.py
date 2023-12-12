@@ -1,4 +1,5 @@
 import logging
+from types import MappingProxyType
 from typing import Any
 
 import pytest
@@ -12,7 +13,7 @@ from deebot_client.exceptions import DeebotError
 class _TestCommand(CommandMqttP2P):
     name = "TestCommand"
     data_type = DataType.JSON
-    _mqtt_params = {"field": InitParam(int), "remove": None}
+    _mqtt_params = MappingProxyType({"field": InitParam(int), "remove": None})
 
     def __init__(self, field: int) -> None:
         pass
@@ -24,7 +25,9 @@ class _TestCommand(CommandMqttP2P):
         return {}
 
     def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
+        self,
+        _: EventBus,
+        response: dict[str, Any],  # noqa: ARG002
     ) -> CommandResult:
         return CommandResult.analyse()
 

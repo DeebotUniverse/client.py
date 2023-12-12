@@ -1,15 +1,16 @@
 """(fan) speed commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult
 
-from .common import JsonCommandWithMessageHandling, JsonSetCommand
+from .common import JsonGetCommand, JsonSetCommand
 
 
-class GetFanSpeed(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetFanSpeed(JsonGetCommand):
     """Get fan speed command."""
 
     name = "getSpeed"
@@ -31,7 +32,7 @@ class SetFanSpeed(JsonSetCommand):
 
     name = "setSpeed"
     get_command = GetFanSpeed
-    _mqtt_params = {"speed": InitParam(FanSpeedLevel)}
+    _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
 
     def __init__(self, speed: FanSpeedLevel | str) -> None:
         if isinstance(speed, str):
