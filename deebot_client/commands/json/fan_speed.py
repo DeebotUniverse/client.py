@@ -5,12 +5,12 @@ from typing import Any
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult
 
-from .common import JsonCommandWithMessageHandling, JsonSetCommand
+from .common import JsonGetCommand, JsonSetCommand
 
 
-class GetFanSpeed(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetFanSpeed(JsonGetCommand):
     """Get fan speed command."""
 
     name = "getSpeed"

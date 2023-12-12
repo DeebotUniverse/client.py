@@ -37,7 +37,7 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-# from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.js
+# from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.json
 _ERROR_CODES = {
     -3: "Error parsing response data",
     -2: "Internal error",
