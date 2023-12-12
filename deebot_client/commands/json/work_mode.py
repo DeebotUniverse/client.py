@@ -5,12 +5,12 @@ from typing import Any
 from deebot_client.command import InitParam
 from deebot_client.event_bus import EventBus
 from deebot_client.events import WorkMode, WorkModeEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult
 
-from .common import JsonCommandWithMessageHandling, JsonSetCommand
+from .common import JsonGetCommand, JsonSetCommand
 
 
-class GetWorkMode(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetWorkMode(JsonGetCommand):
     """Get work mode command."""
 
     name = "getWorkMode"

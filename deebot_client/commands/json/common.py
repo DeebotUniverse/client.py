@@ -7,6 +7,7 @@ from typing import Any
 from deebot_client.command import (
     Command,
     CommandWithMessageHandling,
+    GetCommand,
     InitParam,
     SetCommand,
 )
@@ -17,6 +18,7 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
+    MessageBody,
     MessageBodyDataDict,
 )
 
@@ -46,7 +48,9 @@ class JsonCommand(Command):
         return payload
 
 
-class JsonCommandWithMessageHandling(JsonCommand, CommandWithMessageHandling, ABC):
+class JsonCommandWithMessageHandling(
+    JsonCommand, CommandWithMessageHandling, MessageBody, ABC
+):
     """Command, which handle response by itself."""
 
 
@@ -74,7 +78,20 @@ class JsonSetCommand(ExecuteCommand, SetCommand, ABC):
     """
 
 
-class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC):
+class JsonGetCommand(
+    JsonCommandWithMessageHandling, MessageBodyDataDict, GetCommand, ABC
+):
+    """Json get command."""
+
+    @classmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+        return cls._handle_body_data_dict(event_bus, args)
+
+
+class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
 
     @property  # type: ignore[misc]

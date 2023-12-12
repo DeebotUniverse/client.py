@@ -109,7 +109,7 @@ async def test_getCachedMapInfo() -> None:
         GetCachedMapInfo(),
         json,
         CachedMapInfoEvent(expected_name, active=True),
-        CommandResult(
+        command_result=CommandResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
             [GetMapSet(expected_mid, entry) for entry in MapSetType],
@@ -178,7 +178,7 @@ async def test_getMapSet() -> None:
         GetMapSet(mid),
         json,
         MapSetEvent(MapSetType.ROOMS, subsets),
-        CommandResult(
+        command_result=CommandResult(
             HandlingState.SUCCESS,
             {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
             [
@@ -267,5 +267,7 @@ async def test_getMapTrace() -> None:
         GetMapTrace(start),
         json,
         MapTraceEvent(start=start, total=total, data=trace_value),
-        CommandResult(HandlingState.SUCCESS, {"start": start, "total": total}, []),
+        command_result=CommandResult(
+            HandlingState.SUCCESS, {"start": start, "total": total}, []
+        ),
     )
