@@ -99,6 +99,38 @@ class Message(ABC):
         return cls._handle(event_bus, message)
 
 
+class MessageStr(Message):
+    """String message."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    # @_handle_error_or_analyse @edenhaus will make the decorator to work again
+    @final
+    def __handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        return cls._handle_str(event_bus, message)
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        # This basically means an XML message
+        if isinstance(message, str):
+            return cls.__handle_str(event_bus, message)
+
+        return super()._handle(event_bus, message)
+
+
 class MessageBody(Message):
     """Dict message with body attribute."""
 
