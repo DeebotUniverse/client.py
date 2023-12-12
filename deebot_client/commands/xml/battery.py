@@ -9,6 +9,6 @@ class GetBattery(OnBattery, XmlCommandWithMessageHandling):
 
     name = "GetBatteryInfo"
 
-    def __init__(self, is_available_check: bool = False) -> None:
+    def __init__(self, *, is_available_check: bool = False) -> None:
         super().__init__()
         self._is_available_check = is_available_check

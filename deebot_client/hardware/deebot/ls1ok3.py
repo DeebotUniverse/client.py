@@ -92,7 +92,9 @@ from . import DEVICES
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.XML,
     Capabilities(
-        availability=CapabilityEvent(AvailabilityEvent, [GetBattery(True)]),
+        availability=CapabilityEvent(
+            AvailabilityEvent, [GetBattery(is_available_check=True)]
+        ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),  # todo needs to be re-implemented
         clean=CapabilityClean(  # todo needs to be re-implemented
