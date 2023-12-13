@@ -6,13 +6,12 @@ from collections.abc import Callable, Coroutine
 import dataclasses
 from datetime import UTC, datetime
 from io import BytesIO
+import itertools
 import lzma
-import math
+import re
 import struct
 from typing import Any, Final
 import zlib
-import re
-import itertools
 
 from numpy import float64, reshape, zeros
 from numpy.typing import NDArray
@@ -53,7 +52,20 @@ _SVG_COORDS_COMPACT = re.compile(r"(?:(?<=\D)\s)|(?:\s(?=\D))")
 _SVG_MAP_MARGIN = 5
 
 # Categorigal palette for 12 non related elements
-_ROOM_COLORS = ["#a6cee3", "#1f78b4", "#b2df8a", "#33a02c", "#fb9a99", "#e31a1c", "#fdbf6f", "#ff7f00", "#cab2d6", "#6a3d9a", "#ffff99", "#b15928"]
+_ROOM_COLORS = [
+    "#a6cee3",
+    "#1f78b4",
+    "#b2df8a",
+    "#33a02c",
+    "#fb9a99",
+    "#e31a1c",
+    "#fdbf6f",
+    "#ff7f00",
+    "#cab2d6",
+    "#6a3d9a",
+    "#ffff99",
+    "#b15928",
+]
 
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
@@ -92,7 +104,7 @@ def _calc_value(value: int, min_value: int, max_value: int) -> float:
     try:
         if value is not None:
             # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
-            new_value = (float(value) / _PIXEL_WIDTH) + _OFFSET 
+            new_value = (float(value) / _PIXEL_WIDTH) + _OFFSET
             # return value inside min and max
             return min(max_value, max(min_value, new_value))
 
@@ -113,26 +125,24 @@ def _calc_point(
         _calc_value(y, image_box[1], image_box[3]),
     )
 
-def _points_to_svg_path(
-    points: list[Any]
-) -> None:
-    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to a compacted 
+
+def _points_to_svg_path(points: list[Any]) -> None:
+    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to a compacted
     # SVG path instruction.
     path_points = []
     for prev_p, p in itertools.pairwise([None, *points]):
-        if p != prev_p: # Skip repeated points
-            if (prev_p):
+        if p != prev_p:  # Skip repeated points
+            if prev_p:
                 # Relativize coords in order to generate compacted path
                 path_points.append("l" if len(p) == 2 or p[2] else "m")
-                path_points.extend(map(lambda a, b: str(a - b), p[0 : 2], prev_p[0 : 2]))
+                path_points.extend(map(lambda a, b: str(a - b), p[0:2], prev_p[0:2]))
             else:
                 # No previous point, use absolute coordinates for initial position
                 path_points.append("M")
-                path_points.extend(map(str, p[0 : 2]))
+                path_points.extend(map(str, p[0:2]))
 
     # Further compact the path (keep only whitespaces between two numeric characters)
     return _SVG_COORDS_COMPACT.sub("", " ".join(path_points))
-
 
 
 def _get_svg_positions(
@@ -142,16 +152,19 @@ def _get_svg_positions(
     svg_positions = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG_ORDER[x.type]):
         pos = _calc_point(position.x, position.y, image_box)
-        svg_positions.append(f"<use href='#position_{position.type}' x='{pos[0]}' y='{pos[1]}'/>")
-    
+        svg_positions.append(
+            f"<use href='#position_{position.type}' x='{pos[0]}' y='{pos[1]}'/>"
+        )
+
     return "".join(svg_positions)
+
 
 def _get_svg_subset(
     subset: MapSubsetEvent,
     image_box: tuple[int, int, int, int] | None,
 ) -> str:
     coordinates_ = ast.literal_eval(subset.coordinates)
-    
+
     points: list[tuple[int, int]] = [
         _calc_point(coordinates_[i], coordinates_[i + 1], image_box)
         for i in range(0, len(coordinates_), 2)
@@ -160,11 +173,12 @@ def _get_svg_subset(
     if len(points) == 4:
         # Return polygon
         svg_coords = list(sum(points, ()))
-        return f"""<polygon style='fill: {_COLORS[subset.type]}90; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;' 
+        return f"""<polygon style='fill: {_COLORS[subset.type]}90; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;'
                         points='{_SVG_COORDS_COMPACT.sub('', ' '.join(svg_coords))}' transformation="" />"""
     # Return path
-    return f"""<path style='fill: none; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;' 
+    return f"""<path style='fill: none; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;'
                     d='{_points_to_svg_path(points)}'/>"""
+
 
 class Map:
     """Map representation."""
@@ -226,13 +240,15 @@ class Map:
         for i in range(0, len(trace_points), 5):
             byte_position_x = struct.unpack("<h", trace_points[i : i + 2])
             byte_position_y = struct.unpack("<h", trace_points[i + 2 : i + 4])
-            
+
             point_data = trace_points[i + 4]
 
-            connected = not (((point_data >> 7) & 1) != 0)
+            connected = point_data >> 7 & 1 == 0
             type = point_data & 1
 
-            self._map_data.trace_values.append((byte_position_x[0], byte_position_y[0], connected, type))
+            self._map_data.trace_values.append(
+                (byte_position_x[0], byte_position_y[0], connected, type)
+            )
 
         _LOGGER.debug("[_update_trace_points] finish")
 
@@ -270,54 +286,71 @@ class Map:
     def _get_svg_traces_path(self) -> str:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
-            
-            return f"""<path style='fill: none; stroke: {_COLORS[_TRACE_MAP]}; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke;' 
-                                    transform='translate({_OFFSET} {_OFFSET}) scale(0.2 0.2)' 
+
+            return f"""<path style='fill: none; stroke: {_COLORS[_TRACE_MAP]}; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke;'
+                                    transform='translate({_OFFSET} {_OFFSET}) scale(0.2 0.2)'
                                     d='{_points_to_svg_path(self._map_data.trace_values)}'/>"""
-        
+
         return ""
 
-    def _get_svg_rooms(self, image_box: tuple[int, int, int, int], image_box_center: tuple[float, float]) -> tuple[list[str], list[str]] :
+    def _get_svg_rooms(
+        self,
+        image_box: tuple[int, int, int, int],
+        image_box_center: tuple[float, float],
+    ) -> tuple[list[str], list[str]]:
         svg_rooms_elements = []
         svg_rooms_labels = []
 
-        for room, color in zip(sorted(self._map_data.rooms.keys()), itertools.cycle(_ROOM_COLORS)):
+        for room, color in zip(
+            sorted(self._map_data.rooms.keys()), itertools.cycle(_ROOM_COLORS)
+        ):
             # Split coordinates into a flat sequence
-            room_coords = re.split("[;,]",_decompress_7z_base64_data(self._map_data.rooms[room].coordinates).decode('ascii'))
+            room_coords = re.split(
+                "[;,]",
+                _decompress_7z_base64_data(
+                    self._map_data.rooms[room].coordinates
+                ).decode("ascii"),
+            )
 
             # SVG compacted presentation
             svg_room_coords = _SVG_COORDS_COMPACT.sub("", " ".join(room_coords))
-            
+
             # Append to room svg elements
             svg_rooms_elements.append(
-                f"""<polygon id='room_{room}' 
-                        style='fill: {color}50; stroke: {color}A0; stroke-width: 2; vector-effect: non-scaling-stroke;' 
-                        transform='translate({_OFFSET} {_OFFSET}) scale(0.02 0.02)' 
-                        points='{svg_room_coords}'/>""")
-            
+                f"""<polygon id='room_{room}'
+                        style='fill: {color}50; stroke: {color}A0; stroke-width: 2; vector-effect: non-scaling-stroke;'
+                        transform='translate({_OFFSET} {_OFFSET}) scale(0.02 0.02)'
+                        points='{svg_room_coords}'/>"""
+            )
 
             room_name = self._map_data.rooms[room].name
             if room_name != "Default":
-                # Calculate label positions (cannot use SVG transformations, as they are applied to the whole text, 
+                # Calculate label positions (cannot use SVG transformations, as they are applied to the whole text,
                 # which would result in text to be vertically flipped...)
 
                 # Get a rough room center.
-                room_center_x = sum(float(x) for x in room_coords[0::2]) / (len(room_coords) / 2)
-                room_center_y = sum(float(y) for y in room_coords[1::2]) / (len(room_coords) / 2)
+                room_center_x = sum(float(x) for x in room_coords[0::2]) / (
+                    len(room_coords) / 2
+                )
+                room_center_y = sum(float(y) for y in room_coords[1::2]) / (
+                    len(room_coords) / 2
+                )
 
                 # Get map relative position
                 room_center_pos = _calc_point(room_center_x, room_center_y, image_box)
-                
+
                 # Add the text, with position vertically flipped on map center
-                svg_rooms_labels.append(f"""<text id="room_label_{room}" 
-                                                x="{room_center_pos[0]}" 
-                                                y="{(image_box_center[1] - room_center_pos[1]) + image_box_center[1]}" 
-                                                dominant-baseline="middle" 
+                svg_rooms_labels.append(
+                    f"""<text id="room_label_{room}"
+                                                x="{room_center_pos[0]}"
+                                                y="{(image_box_center[1] - room_center_pos[1]) + image_box_center[1]}"
+                                                dominant-baseline="middle"
                                                 text-anchor="middle"
-                                                style='font: 4pt sans-serif; user-select: none'>{room_name}</text>""")
-            
+                                                style='font: 4pt sans-serif; user-select: none'>{room_name}</text>"""
+                )
+
         return (svg_rooms_elements, svg_rooms_labels)
-    
+
     def enable(self) -> None:
         """Enable map."""
         if self._unsubscribers:
@@ -397,9 +430,9 @@ class Map:
         ):
             _LOGGER.debug("[get_svg_map] No need to update")
             return self._last_image.svg_image
-        
+
         _LOGGER.debug("[get_svg_map] Begin")
-        
+
         image = Image.new("RGBA", (6400, 6400))
         draw = ImageDraw.ImageDraw(image)
         self._draw_map_pieces(draw)
@@ -408,7 +441,10 @@ class Map:
         image_box = image.getbbox()
 
         if image_box:
-            image_box_center = ((image_box[0] + image_box[2]) / 2, (image_box[1] + image_box[3]) / 2)
+            image_box_center = (
+                (image_box[0] + image_box[2]) / 2,
+                (image_box[1] + image_box[3]) / 2,
+            )
 
             _LOGGER.debug("[get_svg_map] Crop Image")
             cropped = image.crop(image_box)
@@ -426,19 +462,24 @@ class Map:
             del cropped
 
             base64_bg = base64.b64encode(buffered.getvalue())
-            
+
             # Build the SVG XML
-            
+
             svg_positions = _get_svg_positions(self._map_data.positions, image_box)
 
-            svg_subset_elements = [_get_svg_subset(subset, image_box) for subset in self._map_data.map_subsets.values()]
+            svg_subset_elements = [
+                _get_svg_subset(subset, image_box)
+                for subset in self._map_data.map_subsets.values()
+            ]
 
-            svg_rooms_elements, svg_rooms_labels = self._get_svg_rooms(image_box, image_box_center)
+            svg_rooms_elements, svg_rooms_labels = self._get_svg_rooms(
+                image_box, image_box_center
+            )
 
             svg_traces_path = self._get_svg_traces_path()
 
             svg_map = f"""<?xml version="1.0" encoding="utf-8"?>
-                <svg xmlns="http://www.w3.org/2000/svg" 
+                <svg xmlns="http://www.w3.org/2000/svg"
                         viewBox="{image_box[0] - _SVG_MAP_MARGIN} {image_box[1] - _SVG_MAP_MARGIN} {(image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2} {image_box[3]  - image_box[1] + _SVG_MAP_MARGIN * 2}">
                     <defs>
                         <radialGradient id="device_bg" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
@@ -460,7 +501,7 @@ class Map:
                     </defs>
                     <!-- Flip everything vertically on map center -->
                     <g transform-origin="{image_box_center[0]} {image_box_center[1]}" transform="scale(1 -1)">
-                        <image x="{image_box[0]}" y="{image_box[1]}" width="{image_box[2] - image_box[0]}" height="{image_box[3] - image_box[1]}" 
+                        <image x="{image_box[0]}" y="{image_box[1]}" width="{image_box[2] - image_box[0]}" height="{image_box[3] - image_box[1]}"
                                 style="image-rendering: pixelated" href="data:image/png;base64,{base64_bg.decode('ascii')}" />
                         {"".join(svg_rooms_elements)}
                         {"".join(svg_subset_elements)}
@@ -473,13 +514,12 @@ class Map:
         else:
             # No map data yet, generate an empty SVG.
             svg_map = """<svg xmlns="http://www.w3.org/2000/svg"/>"""
-        
+
         self._map_data.reset_changed()
         self._last_image = LastImage(svg_map, width)
         _LOGGER.debug("[get_svg_map] Finish")
 
         return svg_map
-
 
     async def teardown(self) -> None:
         """Teardown map."""
@@ -549,6 +589,7 @@ class MapPiece:
 @dataclasses.dataclass(frozen=True)
 class LastImage:
     """Last created image."""
+
     svg_image: str
     width: int | None
 
@@ -570,7 +611,9 @@ class MapData:
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._trace_values: OnChangedList[tuple[int, int, bool, int]] = OnChangedList(on_change)
+        self._trace_values: OnChangedList[tuple[int, int, bool, int]] = OnChangedList(
+            on_change
+        )
 
     @property
     def changed(self) -> bool:
