@@ -2,7 +2,7 @@
 import ast
 import asyncio
 import base64
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Sequence
 import dataclasses
 from datetime import UTC, datetime
 from io import BytesIO
@@ -10,12 +10,14 @@ import itertools
 import lzma
 import re
 import struct
+from textwrap import dedent
 from typing import Any, Final
 import zlib
 
 from numpy import float64, reshape, zeros
 from numpy.typing import NDArray
 from PIL import Image, ImageDraw
+import svg
 
 from deebot_client.events.map import MapChangedEvent
 
@@ -47,8 +49,6 @@ _POSITIONS_SVG_ORDER = {
     PositionType.CHARGER: 1,
 }
 
-_SVG_COORDS_COMPACT = re.compile(r"(?:(?<=\D)\s)|(?:\s(?=\D))")
-
 _SVG_MAP_MARGIN = 5
 
 # Categorigal palette for 12 non related elements
@@ -78,6 +78,31 @@ _COLORS = {
     MapSetType.NO_MOP_ZONES: "#FFA500",
 }
 
+# SVG definitions referred by map elements
+_SVG_DEFS = svg.Defs(
+    text=dedent(
+        f"""
+            <!-- Gradient used by Bot icon -->
+            <radialGradient id="device_bg" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
+                <stop offset="70%" style="stop-color:#0000FF;"/>
+                <stop offset="97%" style="stop-color:#0000FF00;"/>
+            </radialGradient>
+
+            <!-- Bot circular icon -->
+            <g id="position_{PositionType.DEEBOT}">
+                <circle r="5" fill="url(#device_bg)"/>
+                <circle r="3.5" stroke="white" fill="blue" stroke-width="0.5"/>
+            </g>
+
+            <!-- Charger pin icon (pre-flipped vertically) -->
+            <g id="position_{PositionType.CHARGER}" transform="scale(4 -4)">
+                <path d="M 1,-1.6 C 1,-1.05 0,0 0,0 c 0,0 -1,-1.05 -1,-1.6 0,-0.55 0.45,-1 1,-1 0.55,0 1,0.45 1,1 z" style="fill: #ffe605"/>
+                <circle style="fill: #ffffff" id="path4" r="0.7" cy="-1.6" cx="0"/>
+            </g>
+        """
+    )
+)
+
 
 def _decompress_7z_base64_data(data: str) -> bytes:
     _LOGGER.debug("[decompress7zBase64Data] Begin")
@@ -100,7 +125,7 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _calc_value(value: int, min_value: int, max_value: int) -> float:
+def _calc_value(value: float, min_value: float, max_value: float) -> float:
     try:
         if value is not None:
             # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
@@ -115,7 +140,7 @@ def _calc_value(value: int, min_value: int, max_value: int) -> float:
 
 
 def _calc_point(
-    x: int, y: int, image_box: tuple[int, int, int, int] | None
+    x: float, y: float, image_box: tuple[float, float, float, float] | None
 ) -> tuple[float, float]:
     if image_box is None:
         image_box = (0, 0, x, y)
@@ -126,58 +151,72 @@ def _calc_point(
     )
 
 
-def _points_to_svg_path(points: list[Any]) -> None:
+def _points_to_svg_path(
+    points: Sequence[tuple[float, float]] | Sequence[tuple[float, float, bool, int]],
+) -> list[svg.PathData]:
     # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to a compacted
     # SVG path instruction.
-    path_points = []
-    for prev_p, p in itertools.pairwise([None, *points]):
+    path_data: list[svg.PathData] = []
+
+    # First instruction: move to the starting point using absolute coordinates
+    first_p = points[0]
+    path_data.append(svg.MoveTo(first_p[0], first_p[1]))
+
+    for prev_p, p in itertools.pairwise(points):
         if p != prev_p:  # Skip repeated points
-            if prev_p:
-                # Relativize coords in order to generate compacted path
-                path_points.append("l" if len(p) == 2 or p[2] else "m")
-                path_points.extend(map(lambda a, b: str(a - b), p[0:2], prev_p[0:2]))
+            if len(p) == 2 or p[2]:
+                path_data.append(svg.LineToRel(p[0] - prev_p[0], p[1] - prev_p[1]))
             else:
-                # No previous point, use absolute coordinates for initial position
-                path_points.append("M")
-                path_points.extend(map(str, p[0:2]))
+                path_data.append(svg.MoveToRel(p[0] - prev_p[0], p[1] - prev_p[1]))
 
     # Further compact the path (keep only whitespaces between two numeric characters)
-    return _SVG_COORDS_COMPACT.sub("", " ".join(path_points))
+    return path_data
 
 
 def _get_svg_positions(
     positions: list[Position],
     image_box: tuple[int, int, int, int] | None,
-) -> str:
-    svg_positions = []
+) -> list[svg.Element]:
+    svg_positions: list[svg.Element] = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG_ORDER[x.type]):
         pos = _calc_point(position.x, position.y, image_box)
         svg_positions.append(
-            f"<use href='#position_{position.type}' x='{pos[0]}' y='{pos[1]}'/>"
+            svg.Use(href=f"#position_{position.type}", x=pos[0], y=pos[1])
         )
 
-    return "".join(svg_positions)
+    return svg_positions
 
 
 def _get_svg_subset(
     subset: MapSubsetEvent,
     image_box: tuple[int, int, int, int] | None,
-) -> str:
-    coordinates_ = ast.literal_eval(subset.coordinates)
+) -> svg.Path | svg.Polygon:
+    subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
 
-    points: list[tuple[int, int]] = [
-        _calc_point(coordinates_[i], coordinates_[i + 1], image_box)
-        for i in range(0, len(coordinates_), 2)
+    points = [
+        _calc_point(subset_coordinates[i], subset_coordinates[i + 1], image_box)
+        for i in range(0, len(subset_coordinates), 2)
     ]
 
-    if len(points) == 4:
-        # Return polygon
-        svg_coords = list(sum(points, ()))
-        return f"""<polygon style='fill: {_COLORS[subset.type]}90; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;'
-                        points='{_SVG_COORDS_COMPACT.sub('', ' '.join(svg_coords))}' transformation="" />"""
-    # Return path
-    return f"""<path style='fill: none; stroke: {_COLORS[subset.type]}; stroke-width: 1.5; stroke-dasharray: 4; vector-effect: non-scaling-stroke;'
-                    d='{_points_to_svg_path(points)}'/>"""
+    if len(points) == 2:
+        # Only 2 point, use a path
+        return svg.Path(
+            stroke=_COLORS[subset.type],
+            stroke_width=1.5,
+            stroke_dasharray=[4],
+            vector_effect="non-scaling-stroke",
+            d=_points_to_svg_path(points),
+        )
+
+    # For any other points count, return a polygon that should fit any required shape
+    return svg.Polygon(
+        fill=_COLORS[subset.type] + "90",  # Set alpha channel to 90 for fill color
+        stroke=_COLORS[subset.type],
+        stroke_width=1.5,
+        stroke_dasharray=[4],
+        vector_effect="non-scaling-stroke",
+        points=list(sum(points, [])),  # Re-flatten the list of coordinates
+    )
 
 
 class Map:
@@ -238,16 +277,16 @@ class Map:
         trace_points = _decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
-            byte_position_x = struct.unpack("<h", trace_points[i : i + 2])
-            byte_position_y = struct.unpack("<h", trace_points[i + 2 : i + 4])
+            position_x: int = struct.unpack("<h", trace_points[i : i + 2])[0]
+            position_y: int = struct.unpack("<h", trace_points[i + 2 : i + 4])[0]
 
             point_data = trace_points[i + 4]
 
             connected = point_data >> 7 & 1 == 0
-            type = point_data & 1
+            point_type = point_data & 1
 
             self._map_data.trace_values.append(
-                (byte_position_x[0], byte_position_y[0], connected, type)
+                (position_x, position_y, connected, point_type)
             )
 
         _LOGGER.debug("[_update_trace_points] finish")
@@ -283,23 +322,29 @@ class Map:
                         if pixel_type in [0x01, 0x02, 0x03]:
                             draw.point((point_x, point_y), fill=_COLORS[pixel_type])
 
-    def _get_svg_traces_path(self) -> str:
+    def _get_svg_traces_path(self) -> svg.Path | None:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
 
-            return f"""<path style='fill: none; stroke: {_COLORS[_TRACE_MAP]}; stroke-width: 1.5; stroke-linejoin: round; vector-effect: non-scaling-stroke;'
-                                    transform='translate({_OFFSET} {_OFFSET}) scale(0.2 0.2)'
-                                    d='{_points_to_svg_path(self._map_data.trace_values)}'/>"""
+            return svg.Path(
+                fill="none",
+                stroke=_COLORS[_TRACE_MAP],
+                stroke_width=1.5,
+                stroke_linejoin="round",
+                vector_effect="non-scaling-stroke",
+                transform=[svg.Translate(_OFFSET, _OFFSET), svg.Scale(0.2, 0.2)],
+                d=_points_to_svg_path(self._map_data.trace_values),
+            )
 
-        return ""
+        return None
 
     def _get_svg_rooms(
         self,
         image_box: tuple[int, int, int, int],
         image_box_center: tuple[float, float],
-    ) -> tuple[list[str], list[str]]:
-        svg_rooms_elements = []
-        svg_rooms_labels = []
+    ) -> tuple[list[svg.Element], list[svg.Element]]:
+        svg_rooms_elements: list[svg.Element] = []
+        svg_rooms_labels: list[svg.Element] = []
 
         for room, color in zip(
             sorted(self._map_data.rooms.keys()), itertools.cycle(_ROOM_COLORS)
@@ -312,21 +357,23 @@ class Map:
                 ).decode("ascii"),
             )
 
-            # SVG compacted presentation
-            svg_room_coords = _SVG_COORDS_COMPACT.sub("", " ".join(room_coords))
-
             # Append to room svg elements
             svg_rooms_elements.append(
-                f"""<polygon id='room_{room}'
-                        style='fill: {color}50; stroke: {color}A0; stroke-width: 2; vector-effect: non-scaling-stroke;'
-                        transform='translate({_OFFSET} {_OFFSET}) scale(0.02 0.02)'
-                        points='{svg_room_coords}'/>"""
+                svg.Polygon(
+                    id=f"room_{room}",
+                    fill=color + "50",
+                    stroke=color + "A0",
+                    stroke_width=2,
+                    vector_effect="non-scaling-stroke",
+                    transform=[svg.Translate(_OFFSET, _OFFSET), svg.Scale(0.02, 0.02)],
+                    points=list(map(int, room_coords)),
+                )
             )
 
             room_name = self._map_data.rooms[room].name
             if room_name != "Default":
-                # Calculate label positions (cannot use SVG transformations, as they are applied to the whole text,
-                # which would result in text to be vertically flipped...)
+                # Calculate label positions (cannot use SVG transformations to vertically flip coordinates, as transformations are
+                # applied to the whole text, which would result in text to be vertically flipped...)
 
                 # Get a rough room center.
                 room_center_x = sum(float(x) for x in room_coords[0::2]) / (
@@ -337,16 +384,21 @@ class Map:
                 )
 
                 # Get map relative position
-                room_center_pos = _calc_point(room_center_x, room_center_y, image_box)
+                room_center_p = _calc_point(room_center_x, room_center_y, image_box)
 
                 # Add the text, with position vertically flipped on map center
                 svg_rooms_labels.append(
-                    f"""<text id="room_label_{room}"
-                                                x="{room_center_pos[0]}"
-                                                y="{(image_box_center[1] - room_center_pos[1]) + image_box_center[1]}"
-                                                dominant-baseline="middle"
-                                                text-anchor="middle"
-                                                style='font: 4pt sans-serif; user-select: none'>{room_name}</text>"""
+                    svg.Text(
+                        id=f"room_label_{room}",
+                        x=room_center_p[0],
+                        y=image_box_center[1] - room_center_p[1] + image_box_center[1],
+                        dominant_baseline="middle",
+                        text_anchor="middle",
+                        font_family="sans-serif",
+                        font_size=svg.Length(4, "pt"),
+                        style="user_select: none",
+                        text=room_name,
+                    )
                 )
 
         return (svg_rooms_elements, svg_rooms_labels)
@@ -467,7 +519,7 @@ class Map:
 
             svg_positions = _get_svg_positions(self._map_data.positions, image_box)
 
-            svg_subset_elements = [
+            svg_subset_elements: list[svg.Element] = [
                 _get_svg_subset(subset, image_box)
                 for subset in self._map_data.map_subsets.values()
             ]
@@ -478,48 +530,64 @@ class Map:
 
             svg_traces_path = self._get_svg_traces_path()
 
-            svg_map = f"""<?xml version="1.0" encoding="utf-8"?>
-                <svg xmlns="http://www.w3.org/2000/svg"
-                        viewBox="{image_box[0] - _SVG_MAP_MARGIN} {image_box[1] - _SVG_MAP_MARGIN} {(image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2} {image_box[3]  - image_box[1] + _SVG_MAP_MARGIN * 2}">
-                    <defs>
-                        <radialGradient id="device_bg" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                            <stop offset="70%" style="stop-color:#0000FF;" />
-                            <stop offset="97%" style="stop-color:#0000FF00;" />
-                        </radialGradient>
+            # Elements of the SVG Map
+            svg_map_group_elements: list[svg.Element] = []
 
-                        <!-- Cleaning bot circular icon -->
-                        <g id="position_{PositionType.DEEBOT}">
-                            <circle r="5" fill="url(#device_bg)"/>
-                            <circle r="3.5" stroke="white" fill="blue" stroke-width="0.5"/>
-                        </g>
+            # Map background.
+            svg_map_group_elements.append(
+                svg.Image(
+                    x=image_box[0],
+                    y=image_box[1],
+                    width=image_box[2] - image_box[0],
+                    height=image_box[3] - image_box[1],
+                    style="image-rendering: pixelated",
+                    href=f"data:image/png;base64,{base64_bg.decode('ascii')}",
+                )
+            )
 
-                        <!-- Charger pin icon (pre-flipped vertically) -->
-                        <g id="position_{PositionType.CHARGER}" transform="scale(4 -4)">
-                            <path d="M 1,-1.6 C 1,-1.05 0,0 0,0 c 0,0 -1,-1.05 -1,-1.6 3e-8,-0.55 0.45,-1 1,-1 0.55,0 1,0.45 1,1 z" style="fill: #ffe605"/>
-                            <circle style="fill: #ffffff" id="path4" r="0.7" cy="-1.6" cx="0"/>
-                        </g>
-                    </defs>
-                    <!-- Flip everything vertically on map center -->
-                    <g transform-origin="{image_box_center[0]} {image_box_center[1]}" transform="scale(1 -1)">
-                        <image x="{image_box[0]}" y="{image_box[1]}" width="{image_box[2] - image_box[0]}" height="{image_box[3] - image_box[1]}"
-                                style="image-rendering: pixelated" href="data:image/png;base64,{base64_bg.decode('ascii')}" />
-                        {"".join(svg_rooms_elements)}
-                        {"".join(svg_subset_elements)}
-                        {svg_traces_path}
-                        {svg_positions}
-                    </g>
-                    {"".join(svg_rooms_labels)}
-                </svg>
-            """
+            # Rooms
+            svg_map_group_elements.extend(svg_rooms_elements)
+
+            # Additional subsets (VirtualWalls and NoMopZones)
+            svg_map_group_elements.extend(svg_subset_elements)
+
+            # Traces (if any)
+            if svg_traces_path:
+                svg_map_group_elements.append(svg_traces_path)
+
+            # Bot and Charge stations
+            svg_map_group_elements.extend(svg_positions)
+
+            # Build the complete SVG map
+            svg_map = svg.SVG(
+                viewBox=svg.ViewBoxSpec(
+                    image_box[0] - _SVG_MAP_MARGIN,
+                    image_box[1] - _SVG_MAP_MARGIN,
+                    (image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2,
+                    image_box[3] - image_box[1] + _SVG_MAP_MARGIN * 2,
+                ),
+                elements=[
+                    _SVG_DEFS,
+                    svg.G(
+                        id="map_group",
+                        transform_origin=f"{image_box_center[0]} {image_box_center[1]}",
+                        transform=[svg.Scale(1, -1)],
+                        elements=svg_map_group_elements,
+                    ),
+                    svg.G(elements=svg_rooms_labels),
+                ],
+            )
+
         else:
             # No map data yet, generate an empty SVG.
-            svg_map = """<svg xmlns="http://www.w3.org/2000/svg"/>"""
+            svg_map = svg.SVG()
 
+        str_svg_map = str(svg_map)
         self._map_data.reset_changed()
-        self._last_image = LastImage(svg_map, width)
+        self._last_image = LastImage(str_svg_map, width)
         _LOGGER.debug("[get_svg_map] Finish")
 
-        return svg_map
+        return str_svg_map
 
     async def teardown(self) -> None:
         """Teardown map."""
