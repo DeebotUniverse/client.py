@@ -12,9 +12,7 @@ import struct
 from typing import Any, Final
 import zlib
 
-from numpy import float64, reshape, zeros
-from numpy.typing import NDArray
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageColor, ImageDraw, ImageOps, ImagePalette
 
 from deebot_client.events.map import MapChangedEvent
 
@@ -54,6 +52,16 @@ _COLORS = {
     MapSetType.VIRTUAL_WALLS: "#FF0000",
     MapSetType.NO_MOP_ZONES: "#FFA500",
 }
+_MAP_BACKGROUND_COLORS = [
+    "#000000",  # 0 -> transparent
+    "#badaff",  # 1 ->floor
+    "#4e96e2",  # 2 ->wall
+    "#1a81ed",  # 3 -> carpet
+]
+_MAP_BACKGROUND_IMAGE_PALETTE = ImagePalette.ImagePalette(
+    "RGB",
+    [value for color in _MAP_BACKGROUND_COLORS for value in ImageColor.getrgb(color)],
+)
 
 
 def _decompress_7z_base64_data(data: str) -> bytes:
@@ -206,7 +214,7 @@ class Map:
 
         _LOGGER.debug("[_update_trace_points] finish")
 
-    def _draw_map_pieces(self, draw: ImageDraw.ImageDraw) -> None:
+    def _draw_map_pieces(self, image: Image.Image) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
         image_y = 0
@@ -221,21 +229,7 @@ class Map:
 
             current_piece = self._map_data.map_pieces[i]
             if current_piece.in_use:
-                for x in range(100):
-                    current_column = current_piece.points[x]
-                    for y in range(100):
-                        pixel_type = current_column[y]
-                        point_x = image_x + x
-                        point_y = image_y + y
-                        if (point_x > 6400) or (point_y > 6400):
-                            _LOGGER.error(
-                                "[get_base64_map] Map Limit 6400!! X: %d Y: %d",
-                                point_x,
-                                point_y,
-                            )
-                            raise MapError("Map Limit reached!")
-                        if pixel_type in [0x01, 0x02, 0x03]:
-                            draw.point((point_x, point_y), fill=_COLORS[pixel_type])
+                image.paste(current_piece.image, (image_x, image_y))
 
     def enable(self) -> None:
         """Enable map."""
@@ -321,7 +315,12 @@ class Map:
         image = Image.new("RGBA", (6400, 6400))
         draw = DashedImageDraw(image)
 
-        self._draw_map_pieces(draw)
+        # After switching to svg
+        # im = Image.new("P", (6400, 6400))
+        # im.putpalette(_MAP_BACKGROUND_IMAGE_PALETTE)
+        # im.info["transparency"] = 0
+
+        self._draw_map_pieces(image)
 
         # Draw Trace Route
         if len(self._map_data.trace_values) > 0:
@@ -398,15 +397,15 @@ class MapPiece:
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
         self._index = index
-        self._points: NDArray[float64] | None = None
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
+        self._image: Image.Image | None = None
 
     def crc32_indicates_update(self, crc32: str) -> bool:
         """Return True if update is required."""
         crc32_int = int(crc32)
         if crc32_int == MapPiece._NOT_INUSE_CRC32:
             self._crc32 = crc32_int
-            self._points = None
+            self._image = None
             return False
 
         return self._crc32 != crc32_int
@@ -417,11 +416,11 @@ class MapPiece:
         return self._crc32 != MapPiece._NOT_INUSE_CRC32
 
     @property
-    def points(self) -> NDArray[float64]:
+    def image(self) -> Image.Image:
         """I'm the 'x' property."""
-        if not self.in_use or self._points is None:
-            return zeros((100, 100))
-        return self._points
+        if not self.in_use or self._image is None:
+            return Image.new("P", (100, 100))
+        return self._image
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
@@ -433,9 +432,12 @@ class MapPiece:
             self._on_change()
 
         if self.in_use:
-            self._points = reshape(list(decoded), (100, 100))
+            im = Image.frombytes("P", (100, 100), decoded, "raw", "P", 0, -1)
+            im.putpalette(_MAP_BACKGROUND_IMAGE_PALETTE)
+            im.info["transparency"] = 0
+            self._image = im.rotate(-90)
         else:
-            self._points = None
+            self._image = None
 
     def __hash__(self) -> int:
         """Calculate hash on index and crc32."""
