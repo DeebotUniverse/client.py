@@ -10,7 +10,6 @@ import itertools
 import lzma
 import re
 import struct
-from textwrap import dedent
 from typing import Any, Final
 import zlib
 
@@ -80,27 +79,48 @@ _COLORS = {
 
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
-    text=dedent(
-        f"""
-            <!-- Gradient used by Bot icon -->
-            <radialGradient id="device_bg" cx="50%" cy="50%" r="50%" fx="50%" fy="50%">
-                <stop offset="70%" style="stop-color:#0000FF;"/>
-                <stop offset="97%" style="stop-color:#0000FF00;"/>
-            </radialGradient>
-
-            <!-- Bot circular icon -->
-            <g id="position_{PositionType.DEEBOT}">
-                <circle r="5" fill="url(#device_bg)"/>
-                <circle r="3.5" stroke="white" fill="blue" stroke-width="0.5"/>
-            </g>
-
-            <!-- Charger pin icon (pre-flipped vertically) -->
-            <g id="position_{PositionType.CHARGER}" transform="scale(4 -4)">
-                <path d="M 1,-1.6 C 1,-1.05 0,0 0,0 c 0,0 -1,-1.05 -1,-1.6 0,-0.55 0.45,-1 1,-1 0.55,0 1,0.45 1,1 z" style="fill: #ffe605"/>
-                <circle style="fill: #ffffff" id="path4" r="0.7" cy="-1.6" cx="0"/>
-            </g>
-        """
-    )
+    elements=[
+        # Gradient used by Bot icon
+        svg.RadialGradient(
+            id="device_bg",
+            cx=svg.Length(50, "%"),
+            cy=svg.Length(50, "%"),
+            r=svg.Length(50, "%"),
+            fx=svg.Length(50, "%"),
+            fy=svg.Length(50, "%"),
+            elements=[
+                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#0000FF;"),
+                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#0000FF00;"),
+            ],
+        ),
+        # Bot circular icon
+        svg.G(
+            id=f"position_{PositionType.DEEBOT}",
+            elements=[
+                svg.Circle(r=5, fill="url(#device_bg)"),
+                svg.Circle(r=3.5, stroke="white", fill="blue", stroke_width=0.5),
+            ],
+        ),
+        # Charger pin icon (pre-flipped vertically)
+        svg.G(
+            id=f"position_{PositionType.CHARGER}",
+            transform=[svg.Scale(4, -4)],
+            elements=[
+                svg.Path(
+                    fill="#ffe605",
+                    d=[
+                        svg.M(1, -1.6),
+                        svg.C(1, -1.05, 0, 0, 0, 0),
+                        svg.c(0, 0, -1, -1.05, -1, -1.6),
+                        svg.c(0, -0.55, 0.45, -1, 1, -1),
+                        svg.c(0.55, 0, 1, 0.45, 1, 1),
+                        svg.Z(),
+                    ],
+                ),
+                svg.Circle(fill="white", r=0.7, cy=-1.6, cx=0),
+            ],
+        ),
+    ]
 )
 
 
@@ -154,8 +174,8 @@ def _calc_point(
 def _points_to_svg_path(
     points: Sequence[tuple[float, float]] | Sequence[tuple[float, float, bool, int]],
 ) -> list[svg.PathData]:
-    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to a compacted
-    # SVG path instruction.
+    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to
+    # SVG path instructions.
     path_data: list[svg.PathData] = []
 
     # First instruction: move to the starting point using absolute coordinates
@@ -169,7 +189,6 @@ def _points_to_svg_path(
             else:
                 path_data.append(svg.MoveToRel(p[0] - prev_p[0], p[1] - prev_p[1]))
 
-    # Further compact the path (keep only whitespaces between two numeric characters)
     return path_data
 
 
@@ -490,7 +509,7 @@ class Map:
         self._draw_map_pieces(draw)
         del draw
 
-
+        svg_map = svg.SVG()
         if image_box := image.getbbox():
             image_box_center = (
                 (image_box[0] + image_box[2]) / 2,
@@ -514,7 +533,7 @@ class Map:
 
             base64_bg = base64.b64encode(buffered.getvalue())
 
-            # Build the SVG XML
+            # Build the SVG elements
 
             svg_positions = _get_svg_positions(self._map_data.positions, image_box)
 
@@ -529,7 +548,7 @@ class Map:
 
             svg_traces_path = self._get_svg_traces_path()
 
-            # Elements of the SVG Map
+            # Elements of the SVG Map to vertically flip
             svg_map_group_elements: list[svg.Element] = []
 
             # Map background.
@@ -557,30 +576,32 @@ class Map:
             # Bot and Charge stations
             svg_map_group_elements.extend(svg_positions)
 
-            # Build the complete SVG map
-            svg_map = svg.SVG(
-                viewBox=svg.ViewBoxSpec(
-                    image_box[0] - _SVG_MAP_MARGIN,
-                    image_box[1] - _SVG_MAP_MARGIN,
-                    (image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2,
-                    image_box[3] - image_box[1] + _SVG_MAP_MARGIN * 2,
-                ),
-                elements=[
-                    _SVG_DEFS,
-                    svg.G(
-                        id="map_group",
-                        transform_origin=f"{image_box_center[0]} {image_box_center[1]}",
-                        transform=[svg.Scale(1, -1)],
-                        elements=svg_map_group_elements,
-                    ),
-                    svg.G(elements=svg_rooms_labels),
-                ],
+            # Set map viewBox based on background map bounding box.
+            svg_map.viewBox = svg.ViewBoxSpec(
+                image_box[0] - _SVG_MAP_MARGIN,
+                image_box[1] - _SVG_MAP_MARGIN,
+                (image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2,
+                image_box[3] - image_box[1] + _SVG_MAP_MARGIN * 2,
             )
 
+            # Add all elements to the SVG map
+            svg_map.elements = [
+                _SVG_DEFS,
+                # Elements to vertically flip
+                svg.G(
+                    transform_origin=f"{image_box_center[0]} {image_box_center[1]}",
+                    transform=[svg.Scale(1, -1)],
+                    elements=svg_map_group_elements,
+                ),
+                # Elements with already flipped coordinates.
+                svg.G(elements=svg_rooms_labels),
+            ]
 
-        str_svg_map = str(svg_map or svg.SVG())
+        str_svg_map = str(svg_map)
+
         self._map_data.reset_changed()
         self._last_image = LastImage(str_svg_map, width)
+
         _LOGGER.debug("[get_svg_map] Finish")
 
         return str_svg_map
