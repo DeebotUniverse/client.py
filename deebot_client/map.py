@@ -8,7 +8,6 @@ from datetime import UTC, datetime
 from io import BytesIO
 import itertools
 import lzma
-import re
 import struct
 from typing import Any, Final
 import zlib
@@ -49,22 +48,6 @@ _POSITIONS_SVG_ORDER = {
 }
 
 _SVG_MAP_MARGIN = 5
-
-# Categorigal palette for 12 non related elements
-_ROOM_COLORS = [
-    "#a6cee3",
-    "#1f78b4",
-    "#b2df8a",
-    "#33a02c",
-    "#fb9a99",
-    "#e31a1c",
-    "#fdbf6f",
-    "#ff7f00",
-    "#cab2d6",
-    "#6a3d9a",
-    "#ffff99",
-    "#b15928",
-]
 
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
@@ -357,71 +340,6 @@ class Map:
 
         return None
 
-    def _get_svg_rooms(
-        self,
-        image_box: tuple[int, int, int, int],
-        image_box_center: tuple[float, float],
-    ) -> tuple[list[svg.Element], list[svg.Element]]:
-        svg_rooms_elements: list[svg.Element] = []
-        svg_rooms_labels: list[svg.Element] = []
-
-        for room, color in zip(
-            sorted(self._map_data.rooms.keys()), itertools.cycle(_ROOM_COLORS)
-        ):
-            # Split coordinates into a flat sequence
-            room_coords = re.split(
-                "[;,]",
-                _decompress_7z_base64_data(
-                    self._map_data.rooms[room].coordinates
-                ).decode("ascii"),
-            )
-
-            # Append to room svg elements
-            svg_rooms_elements.append(
-                svg.Polygon(
-                    id=f"room_{room}",
-                    fill=color + "50",
-                    stroke=color + "A0",
-                    stroke_width=2,
-                    vector_effect="non-scaling-stroke",
-                    transform=[svg.Translate(_OFFSET, _OFFSET), svg.Scale(0.02, 0.02)],
-                    points=list(map(int, room_coords)),
-                )
-            )
-
-            room_name = self._map_data.rooms[room].name
-            if room_name != "Default":
-                # Calculate label positions (cannot use SVG transformations to vertically flip coordinates, as transformations are
-                # applied to the whole text, which would result in text to be vertically flipped...)
-
-                # Get a rough room center.
-                room_center_x = sum(float(x) for x in room_coords[0::2]) / (
-                    len(room_coords) / 2
-                )
-                room_center_y = sum(float(y) for y in room_coords[1::2]) / (
-                    len(room_coords) / 2
-                )
-
-                # Get map relative position
-                room_center_p = _calc_point(room_center_x, room_center_y, image_box)
-
-                # Add the text, with position vertically flipped on map center
-                svg_rooms_labels.append(
-                    svg.Text(
-                        id=f"room_label_{room}",
-                        x=room_center_p[0],
-                        y=image_box_center[1] - room_center_p[1] + image_box_center[1],
-                        dominant_baseline="middle",
-                        text_anchor="middle",
-                        font_family="sans-serif",
-                        font_size=svg.Length(4, "pt"),
-                        style="user_select: none",
-                        text=room_name,
-                    )
-                )
-
-        return (svg_rooms_elements, svg_rooms_labels)
-
     def enable(self) -> None:
         """Enable map."""
         if self._unsubscribers:
@@ -542,10 +460,6 @@ class Map:
                 for subset in self._map_data.map_subsets.values()
             ]
 
-            svg_rooms_elements, svg_rooms_labels = self._get_svg_rooms(
-                image_box, image_box_center
-            )
-
             svg_traces_path = self._get_svg_traces_path()
 
             # Elements of the SVG Map to vertically flip
@@ -562,9 +476,6 @@ class Map:
                     href=f"data:image/png;base64,{base64_bg.decode('ascii')}",
                 )
             )
-
-            # Rooms
-            svg_map_group_elements.extend(svg_rooms_elements)
 
             # Additional subsets (VirtualWalls and NoMopZones)
             svg_map_group_elements.extend(svg_subset_elements)
@@ -593,8 +504,6 @@ class Map:
                     transform=[svg.Scale(1, -1)],
                     elements=svg_map_group_elements,
                 ),
-                # Elements with already flipped coordinates.
-                svg.G(elements=svg_rooms_labels),
             ]
 
         str_svg_map = str(svg_map)
