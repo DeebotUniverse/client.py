@@ -15,9 +15,9 @@ from deebot_client.map import Map, MapData, _calc_point
 from deebot_client.models import Room
 
 _test_calc_point_data = [
-    (0, 10, None, (0, 10)),
-    (10, 100, (100, 0, 200, 50), (200, 50)),
-    (10, 100, (0, 0, 1000, 1000), (400, 402)),
+    (0, 10, None, (0.0, 10.0)),
+    (10, 100, (100, 0, 200, 50), (200.0, 50.0)),
+    (10, 100, (0, 0, 1000, 1000), (400.2, 402.0)),
 ]
 
 
@@ -26,7 +26,7 @@ def test_calc_point(
     x: int,
     y: int,
     image_box: tuple[int, int, int, int] | None,
-    expected: tuple[int, int],
+    expected: tuple[float, float],
 ) -> None:
     result = _calc_point(x, y, image_box)
     assert result == expected
