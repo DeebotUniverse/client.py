@@ -53,9 +53,9 @@ _COLORS = {
     MapSetType.NO_MOP_ZONES: "#FFA500",
 }
 _MAP_BACKGROUND_COLORS = [
-    "#000000",  # 0 -> transparent
-    "#badaff",  # 1 ->floor
-    "#4e96e2",  # 2 ->wall
+    "#000000",  # 0 -> unknown (will be transparent)
+    "#badaff",  # 1 -> floor
+    "#4e96e2",  # 2 -> wall
     "#1a81ed",  # 3 -> carpet
 ]
 _MAP_BACKGROUND_IMAGE_PALETTE = ImagePalette.ImagePalette(
