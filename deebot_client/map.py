@@ -490,9 +490,8 @@ class Map:
         self._draw_map_pieces(draw)
         del draw
 
-        image_box = image.getbbox()
 
-        if image_box:
+        if image_box := image.getbbox():
             image_box_center = (
                 (image_box[0] + image_box[2]) / 2,
                 (image_box[1] + image_box[3]) / 2,
@@ -578,11 +577,8 @@ class Map:
                 ],
             )
 
-        else:
-            # No map data yet, generate an empty SVG.
-            svg_map = svg.SVG()
 
-        str_svg_map = str(svg_map)
+        str_svg_map = str(svg_map or svg.SVG())
         self._map_data.reset_changed()
         self._last_image = LastImage(str_svg_map, width)
         _LOGGER.debug("[get_svg_map] Finish")
