@@ -87,20 +87,19 @@ _SVG_DEFS = svg.Defs(
         # Charger pin icon (pre-flipped vertically)
         svg.G(
             id=f"position_{PositionType.CHARGER}",
-            transform=[svg.Scale(4, -4)],
             elements=[
                 svg.Path(
                     fill="#ffe605",
                     d=[
-                        svg.M(1, -1.6),
-                        svg.C(1, -1.05, 0, 0, 0, 0),
-                        svg.c(0, 0, -1, -1.05, -1, -1.6),
-                        svg.c(0, -0.55, 0.45, -1, 1, -1),
-                        svg.c(0.55, 0, 1, 0.45, 1, 1),
+                        svg.M(4, 6.4),
+                        svg.C(4, 4.2, 0, 0, 0, 0),
+                        svg.C(0, 0, -4, 4.2, -4, 6.4),
+                        svg.C(-4, 8.6, -2.2, 10.4, 0, 10.4),
+                        svg.C(2.2, 10.4, 4, 8.6, 4, 6.4),
                         svg.Z(),
                     ],
                 ),
-                svg.Circle(fill="white", r=0.7, cy=-1.6, cx=0),
+                svg.Circle(fill="white", r=2.8, cy=6.4, cx=0),
             ],
         ),
     ]
@@ -453,14 +452,6 @@ class Map:
 
             # Build the SVG elements
 
-            svg_positions = _get_svg_positions(self._map_data.positions, image_box)
-
-            svg_subset_elements: list[svg.Element] = [
-                _get_svg_subset(subset, image_box)
-                for subset in self._map_data.map_subsets.values()
-            ]
-
-            svg_traces_path = self._get_svg_traces_path()
 
             # Elements of the SVG Map to vertically flip
             svg_map_group_elements: list[svg.Element] = []
@@ -478,14 +469,17 @@ class Map:
             )
 
             # Additional subsets (VirtualWalls and NoMopZones)
-            svg_map_group_elements.extend(svg_subset_elements)
+            svg_map_group_elements.extend([
+                _get_svg_subset(subset, image_box)
+                for subset in self._map_data.map_subsets.values()
+            ])
 
             # Traces (if any)
-            if svg_traces_path:
+            if svg_traces_path := self._get_svg_traces_path():
                 svg_map_group_elements.append(svg_traces_path)
 
             # Bot and Charge stations
-            svg_map_group_elements.extend(svg_positions)
+            svg_map_group_elements.extend(_get_svg_positions(self._map_data.positions, image_box))
 
             # Set map viewBox based on background map bounding box.
             svg_map.viewBox = svg.ViewBoxSpec(
