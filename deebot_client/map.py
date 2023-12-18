@@ -336,8 +336,7 @@ class Map:
         trace_points = _decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
-            position_x: int = struct.unpack("<h", trace_points[i : i + 2])[0]
-            position_y: int = struct.unpack("<h", trace_points[i + 2 : i + 4])[0]
+            position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
 
             point_data = trace_points[i + 4]
 
