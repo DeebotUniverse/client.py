@@ -1,4 +1,5 @@
 """Pads cleaning interval commands."""
+from types import MappingProxyType
 from typing import Any
 
 from deebot_client.command import InitParam
