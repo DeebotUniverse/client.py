@@ -32,7 +32,7 @@ class SetWashInterval(JsonSetCommand):
 
     name = "setWashInterval"
     get_command = GetWashInterval
-    _mqtt_params = {"interval": InitParam(int)}
+    _mqtt_params = MappingProxyType({"interval": InitParam(int)})
 
     def __init__(self, interval: int) -> None:
         if interval <= 0:
