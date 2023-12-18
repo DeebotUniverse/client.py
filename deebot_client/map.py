@@ -9,7 +9,7 @@ from io import BytesIO
 import itertools
 import lzma
 import struct
-from typing import Any, Final
+from typing import Any, Final, NamedTuple
 import zlib
 
 from PIL import Image, ImageColor, ImagePalette
@@ -93,6 +93,23 @@ _MAP_BACKGROUND_IMAGE_PALETTE = ImagePalette.ImagePalette(
     "RGB",
     [value for color in _MAP_BACKGROUND_COLORS for value in ImageColor.getrgb(color)],
 )
+
+
+class Point(NamedTuple):
+    """Point."""
+
+    x: float
+    y: float
+
+
+class TracePoint(NamedTuple):
+    """Trace point."""
+
+    x: int
+    y: int
+    connected: bool
+    type: int
+
 
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
@@ -178,18 +195,18 @@ def _calc_value(value: float, min_value: float, max_value: float) -> float:
 
 def _calc_point(
     x: float, y: float, image_box: tuple[float, float, float, float] | None
-) -> tuple[float, float]:
+) -> Point:
     if image_box is None:
         image_box = (0, 0, x, y)
 
-    return (
+    return Point(
         _calc_value(x, image_box[0], image_box[2]),
         _calc_value(y, image_box[1], image_box[3]),
     )
 
 
 def _points_to_svg_path(
-    points: Sequence[tuple[float, float]] | Sequence[tuple[float, float, bool, int]],
+    points: Sequence[Point | TracePoint],
 ) -> list[svg.PathData]:
     # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to
     # SVG path instructions.
@@ -197,15 +214,21 @@ def _points_to_svg_path(
 
     # First instruction: move to the starting point using absolute coordinates
     first_p = points[0]
-    path_data.append(svg.MoveTo(first_p[0], first_p[1]))
+    path_data.append(svg.MoveTo(first_p.x, first_p.y))
 
     for prev_p, p in itertools.pairwise(points):
-        if p != prev_p:  # Skip repeated points
-            if len(p) == 2 or p[2]:
-                path_data.append(svg.LineToRel(p[0] - prev_p[0], p[1] - prev_p[1]))
-            else:
-                path_data.append(svg.MoveToRel(p[0] - prev_p[0], p[1] - prev_p[1]))
-
+        x = p.x - prev_p.x
+        y = p.y - prev_p.y
+        if isinstance(p, TracePoint) and not p.connected:
+            path_data.append(svg.MoveToRel(x, y))
+        elif x == 0:
+            if y == 0:
+                continue
+            path_data.append(svg.VerticalLineToRel(y))
+        elif y == 0:
+            path_data.append(svg.HorizontalLineToRel(x))
+        else:
+            path_data.append(svg.LineToRel(x, y))
     return path_data
 
 
@@ -322,7 +345,7 @@ class Map:
             point_type = point_data & 1
 
             self._map_data.trace_values.append(
-                (position_x, position_y, connected, point_type)
+                TracePoint(position_x, position_y, connected, point_type)
             )
 
         _LOGGER.debug("[_update_trace_points] finish")
@@ -628,9 +651,7 @@ class MapData:
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._trace_values: OnChangedList[tuple[int, int, bool, int]] = OnChangedList(
-            on_change
-        )
+        self._trace_values: OnChangedList[TracePoint] = OnChangedList(on_change)
 
     @property
     def changed(self) -> bool:
@@ -665,7 +686,7 @@ class MapData:
         return self._rooms
 
     @property
-    def trace_values(self) -> OnChangedList[tuple[int, int, bool, int]]:
+    def trace_values(self) -> OnChangedList[TracePoint]:
         """Return trace values."""
         return self._trace_values
 
