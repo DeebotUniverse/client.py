@@ -49,6 +49,10 @@ from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
+from deebot_client.commands.json.wash_interval import (
+    GetWashInterval,
+    SetWashInterval,
+)
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
@@ -81,6 +85,7 @@ from deebot_client.events import (
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
+    WashIntervalEvent,
     WaterAmount,
     WaterInfoEvent,
     WorkMode,
@@ -110,6 +115,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
+            ),
+            wash_interval=CapabilitySet(
+                event=WashIntervalEvent,
+                get=[GetWashInterval()],
+                set=SetWashInterval,
             ),
             work_mode=CapabilitySetTypes(
                 event=WorkModeEvent,
