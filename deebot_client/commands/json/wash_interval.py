@@ -26,7 +26,7 @@ class GetWashInterval(CommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class SeWashInterval(SetCommand):
+class SetWashInterval(SetCommand):
     """Set pads cleaning interval command."""
 
     name = "setWashInterval"
