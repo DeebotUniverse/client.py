@@ -27,7 +27,7 @@ class GetWashInterval(JsonGetCommand):
         return HandlingResult.success()
 
 
-class SetWashInterval(SetCommand):
+class SetWashInterval(JsonSetCommand):
     """Set pads cleaning interval command."""
 
     name = "setWashInterval"
