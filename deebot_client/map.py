@@ -37,6 +37,32 @@ from .logging_filter import get_logger
 from .models import Room
 from .util import OnChangedDict, OnChangedList, cancel, create_task
 
+
+def _path_data_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
+    points = []
+    for p in dataclasses.astuple(self):
+        value = p
+        if isinstance(p, bool):
+            value = int(p)
+        points.append(str(value))
+    joined = " ".join(points)
+    return f"{self.command}{joined}"
+
+
+svg.PathData.__str__ = _path_data_str  # type: ignore[method-assign]
+
+
+@dataclasses.dataclass
+class Path(svg.Path):
+    """Path which removes unnecessary spaces."""
+
+    @classmethod
+    def _as_str(cls, val: Any) -> str:
+        if isinstance(val, list) and val and isinstance(val[0], svg.PathData):
+            return "".join(cls._as_str(v) for v in val)
+        return super()._as_str(val)
+
+
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
 
@@ -97,7 +123,7 @@ _SVG_DEFS = svg.Defs(
             id=f"position_{PositionType.CHARGER}",
             transform=[svg.Scale(4, -4)],
             elements=[
-                svg.Path(
+                Path(
                     fill="#ffe605",
                     d=[
                         svg.M(1, -1.6),
@@ -210,7 +236,7 @@ def _get_svg_subset(
 
     if len(points) == 2:
         # Only 2 point, use a path
-        return svg.Path(
+        return Path(
             stroke=_COLORS[subset.type],
             stroke_width=1.5,
             stroke_dasharray=[4],
@@ -322,7 +348,7 @@ class Map:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
 
-            return svg.Path(
+            return Path(
                 fill="none",
                 stroke=_COLORS[_TRACE_MAP],
                 stroke_width=1.5,
