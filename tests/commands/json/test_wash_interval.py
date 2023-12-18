@@ -15,8 +15,8 @@ from . import assert_command, assert_set_command
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        ({"interval": 6}, PadsCleaningIntervalEvent(6)),
-        ({"interval": 10}, PadsCleaningIntervalEvent(10)),
+        ({"interval": 6}, WashIntervalEvent(6)),
+        ({"interval": 10}, WashIntervalEvent(10)),
     ],
 )
 async def test_GetPadsCleaningInterval(
