@@ -452,7 +452,6 @@ class Map:
 
             # Build the SVG elements
 
-
             # Elements of the SVG Map to vertically flip
             svg_map_group_elements: list[svg.Element] = []
 
@@ -469,17 +468,21 @@ class Map:
             )
 
             # Additional subsets (VirtualWalls and NoMopZones)
-            svg_map_group_elements.extend([
-                _get_svg_subset(subset, image_box)
-                for subset in self._map_data.map_subsets.values()
-            ])
+            svg_map_group_elements.extend(
+                [
+                    _get_svg_subset(subset, image_box)
+                    for subset in self._map_data.map_subsets.values()
+                ]
+            )
 
             # Traces (if any)
             if svg_traces_path := self._get_svg_traces_path():
                 svg_map_group_elements.append(svg_traces_path)
 
             # Bot and Charge stations
-            svg_map_group_elements.extend(_get_svg_positions(self._map_data.positions, image_box))
+            svg_map_group_elements.extend(
+                _get_svg_positions(self._map_data.positions, image_box)
+            )
 
             # Set map viewBox based on background map bounding box.
             svg_map.viewBox = svg.ViewBoxSpec(
