@@ -47,8 +47,6 @@ _POSITIONS_SVG_ORDER = {
     PositionType.CHARGER: 1,
 }
 
-_SVG_MAP_MARGIN = 5
-
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
@@ -154,7 +152,7 @@ def _calc_point(
 
 
 def _points_to_svg_path(
-    points: Sequence[tuple[float, float]] | Sequence[tuple[float, float, bool, int]],
+    points: Sequence[tuple[float, float]] | Sequence[tuple[float, float, bool]],
 ) -> list[svg.PathData]:
     # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to
     # SVG path instructions.
@@ -284,11 +282,8 @@ class Map:
             point_data = trace_points[i + 4]
 
             connected = point_data >> 7 & 1 == 0
-            point_type = point_data & 1
 
-            self._map_data.trace_values.append(
-                (position_x, position_y, connected, point_type)
-            )
+            self._map_data.trace_values.append((position_x, position_y, connected))
 
         _LOGGER.debug("[_update_trace_points] finish")
 
@@ -486,10 +481,10 @@ class Map:
 
             # Set map viewBox based on background map bounding box.
             svg_map.viewBox = svg.ViewBoxSpec(
-                image_box[0] - _SVG_MAP_MARGIN,
-                image_box[1] - _SVG_MAP_MARGIN,
-                (image_box[2] - image_box[0]) + _SVG_MAP_MARGIN * 2,
-                image_box[3] - image_box[1] + _SVG_MAP_MARGIN * 2,
+                image_box[0],
+                image_box[1],
+                image_box[2] - image_box[0],
+                image_box[3] - image_box[1],
             )
 
             # Add all elements to the SVG map
@@ -602,7 +597,7 @@ class MapData:
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._trace_values: OnChangedList[tuple[int, int, bool, int]] = OnChangedList(
+        self._trace_values: OnChangedList[tuple[int, int, bool]] = OnChangedList(
             on_change
         )
 
@@ -639,7 +634,7 @@ class MapData:
         return self._rooms
 
     @property
-    def trace_values(self) -> OnChangedList[tuple[int, int, bool, int]]:
+    def trace_values(self) -> OnChangedList[tuple[int, int, bool]]:
         """Return trace values."""
         return self._trace_values
 
