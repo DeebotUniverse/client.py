@@ -44,7 +44,7 @@ _MessageT = TypeVar("_MessageT", bound="Message")
 
 
 def _handle_error_or_analyse(
-    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]
+    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult],
 ) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
