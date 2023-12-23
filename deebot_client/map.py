@@ -12,7 +12,7 @@ import struct
 from typing import Any, Final, NamedTuple
 import zlib
 
-from PIL import Image, ImageColor, ImagePalette
+from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
 
 from deebot_client.events.map import MapChangedEvent
@@ -74,9 +74,6 @@ _POSITIONS_SVG_ORDER = {
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
-    0x01: "#badaff",  # floor
-    0x02: "#4e96e2",  # wall
-    0x03: "#1a81ed",  # carpet
     _TRACE_MAP: "#FFFFFF",
     MapSetType.VIRTUAL_WALLS: "#FF0000",
     MapSetType.NO_MOP_ZONES: "#FFA500",
@@ -472,7 +469,7 @@ class Map:
             )
 
             _LOGGER.debug("[get_svg_map] Crop Image")
-            cropped = image.crop(image_box)
+            cropped = ImageOps.flip(image.crop(image_box))
             del image
 
             _LOGGER.debug(
@@ -489,12 +486,10 @@ class Map:
             base64_bg = base64.b64encode(buffered.getvalue())
 
             # Build the SVG elements
-
-            # Elements of the SVG Map to vertically flip
-            svg_map_group_elements: list[svg.Element] = []
+            svg_map.elements = [_SVG_DEFS]
 
             # Map background.
-            svg_map_group_elements.append(
+            svg_map.elements.append(
                 svg.Image(
                     x=image_box[0],
                     y=image_box[1],
@@ -504,6 +499,9 @@ class Map:
                     href=f"data:image/png;base64,{base64_bg.decode('ascii')}",
                 )
             )
+
+            # Elements of the SVG Map to vertically flip
+            svg_map_group_elements: list[svg.Element] = []
 
             # Additional subsets (VirtualWalls and NoMopZones)
             svg_map_group_elements.extend(
@@ -531,15 +529,14 @@ class Map:
             )
 
             # Add all elements to the SVG map
-            svg_map.elements = [
-                _SVG_DEFS,
+            svg_map.elements.append(
                 # Elements to vertically flip
                 svg.G(
                     transform_origin=f"{image_box_center[0]} {image_box_center[1]}",
                     transform=[svg.Scale(1, -1)],
                     elements=svg_map_group_elements,
-                ),
-            ]
+                )
+            )
 
         str_svg_map = str(svg_map)
 
@@ -601,8 +598,6 @@ class MapPiece:
 
         if self.in_use:
             im = Image.frombytes("P", (100, 100), decoded, "raw", "P", 0, -1)
-            im.putpalette(_MAP_BACKGROUND_IMAGE_PALETTE)
-            im.info["transparency"] = 0
             self._image = im.rotate(-90)
         else:
             self._image = None
