@@ -106,7 +106,6 @@ class TracePoint(NamedTuple):
     x: int
     y: int
     connected: bool
-    type: int
 
 
 # SVG definitions referred by map elements
@@ -338,10 +337,9 @@ class Map:
             point_data = trace_points[i + 4]
 
             connected = point_data >> 7 & 1 == 0
-            point_type = point_data & 1
 
             self._map_data.trace_values.append(
-                TracePoint(position_x, position_y, connected, point_type)
+                TracePoint(position_x, position_y, connected)
             )
 
         _LOGGER.debug("[_update_trace_points] finish")
