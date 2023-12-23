@@ -74,9 +74,9 @@ _POSITIONS_SVG_ORDER = {
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
-    _TRACE_MAP: "#FFFFFF",
-    MapSetType.VIRTUAL_WALLS: "#FF0000",
-    MapSetType.NO_MOP_ZONES: "#FFA500",
+    _TRACE_MAP: "#fff",
+    MapSetType.VIRTUAL_WALLS: "#f00",
+    MapSetType.NO_MOP_ZONES: "#ffa500",
 }
 _MAP_BACKGROUND_COLORS = [
     "#000000",  # 0 -> unknown (will be transparent)
@@ -117,8 +117,8 @@ _SVG_DEFS = svg.Defs(
             fx=svg.Length(50, "%"),
             fy=svg.Length(50, "%"),
             elements=[
-                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#0000FF;"),
-                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#0000FF00;"),
+                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#00f;"),
+                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#00f0;"),
             ],
         ),
         # Bot circular icon
@@ -144,7 +144,7 @@ _SVG_DEFS = svg.Defs(
                         svg.Z(),
                     ],
                 ),
-                svg.Circle(fill="white", r=2.8, cy=6.4, cx=0),
+                svg.Circle(fill="#fff", r=2.8, cy=6.4),
             ],
         ),
     ]
