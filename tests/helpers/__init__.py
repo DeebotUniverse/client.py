@@ -58,7 +58,7 @@ def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
 
 
 def mock_static_device_info(
-    events: Mapping[type[Event], list[Command]] | None = None
+    events: Mapping[type[Event], list[Command]] | None = None,
 ) -> StaticDeviceInfo:
     """Mock static device info."""
     if events is None:
