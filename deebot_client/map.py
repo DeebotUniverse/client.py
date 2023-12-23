@@ -9,7 +9,7 @@ from io import BytesIO
 import itertools
 import lzma
 import struct
-from typing import Any, Final, NamedTuple
+from typing import Any, Final
 import zlib
 
 from PIL import Image, ImageColor, ImageOps, ImagePalette
@@ -91,18 +91,22 @@ _MAP_BACKGROUND_IMAGE_PALETTE = ImagePalette.ImagePalette(
 )
 
 
-class Point(NamedTuple):
+@dataclasses.dataclass(frozen=True)
+class Point:
     """Point."""
 
     x: float
     y: float
 
+    def flatten(self) -> tuple[float, float]:
+        """Flatten point."""
+        return (self.x, self.y)
 
-class TracePoint(NamedTuple):
+
+@dataclasses.dataclass(frozen=True)
+class TracePoint(Point):
     """Trace point."""
 
-    x: int
-    y: int
     connected: bool
 
 
@@ -262,7 +266,7 @@ def _get_svg_positions(
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG_ORDER[x.type]):
         pos = _calc_point(position.x, position.y, map_manipulation)
         svg_positions.append(
-            svg.Use(href=f"#position_{position.type}", x=pos[0], y=pos[1])
+            svg.Use(href=f"#position_{position.type}", x=pos.x, y=pos.y)
         )
 
     return svg_positions
@@ -300,7 +304,7 @@ def _get_svg_subset(
         stroke_width=1.5,
         stroke_dasharray=[4],
         vector_effect="non-scaling-stroke",
-        points=list(sum(points, [])),  # Re-flatten the list of coordinates
+        points=[num for p in points for num in p.flatten()],
     )
 
 
