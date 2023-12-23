@@ -65,6 +65,7 @@ class Path(svg.Path):  # noqa: TID251
 
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
+_ROUND_TO_DIGITS = 3
 
 _POSITIONS_SVG_ORDER = {
     PositionType.DEEBOT: 0,
@@ -103,6 +104,30 @@ class TracePoint(NamedTuple):
     x: int
     y: int
     connected: bool
+
+
+@dataclasses.dataclass
+class AxisManipulation:
+    """Map manipulation."""
+
+    map_shift: float
+    svg_max: float
+    _transform: Callable[[float, float], float]
+
+    def __post_init__(self) -> None:
+        self._svg_center = self.svg_max / 2
+
+    def transform(self, value: float) -> float:
+        """Transform value."""
+        return self._transform(self._svg_center, value)
+
+
+@dataclasses.dataclass
+class MapManipulation:
+    """Map manipulation."""
+
+    x: AxisManipulation
+    y: AxisManipulation
 
 
 # SVG definitions referred by map elements
@@ -172,29 +197,33 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _calc_value(value: float, min_value: float, max_value: float) -> float:
+def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     try:
         if value is not None:
             # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
-            new_value = (float(value) / _PIXEL_WIDTH) + _OFFSET
+            new_value = (
+                (float(value) / _PIXEL_WIDTH) + _OFFSET - axis_manipulation.map_shift
+            )
+            new_value = axis_manipulation.transform(new_value)
             # return value inside min and max
-            return min(max_value, max(min_value, new_value))
+            return round(
+                min(axis_manipulation.svg_max, max(0, new_value)), _ROUND_TO_DIGITS
+            )
 
     except (ZeroDivisionError, ValueError):
         pass
 
-    return min_value or 0
+    return 0
 
 
 def _calc_point(
-    x: float, y: float, image_box: tuple[float, float, float, float] | None
+    x: float,
+    y: float,
+    map_manipulation: MapManipulation,
 ) -> Point:
-    if image_box is None:
-        image_box = (0, 0, x, y)
-
     return Point(
-        _calc_value(x, image_box[0], image_box[2]),
-        _calc_value(y, image_box[1], image_box[3]),
+        _calc_value(x, map_manipulation.x),
+        _calc_value(y, map_manipulation.y),
     )
 
 
@@ -210,8 +239,8 @@ def _points_to_svg_path(
     path_data.append(svg.MoveTo(first_p.x, first_p.y))
 
     for prev_p, p in itertools.pairwise(points):
-        x = p.x - prev_p.x
-        y = p.y - prev_p.y
+        x = round(p.x - prev_p.x, _ROUND_TO_DIGITS)
+        y = round(p.y - prev_p.y, _ROUND_TO_DIGITS)
         if isinstance(p, TracePoint) and not p.connected:
             path_data.append(svg.MoveToRel(x, y))
         elif x == 0:
@@ -227,11 +256,11 @@ def _points_to_svg_path(
 
 def _get_svg_positions(
     positions: list[Position],
-    image_box: tuple[int, int, int, int] | None,
+    map_manipulation: MapManipulation,
 ) -> list[svg.Element]:
     svg_positions: list[svg.Element] = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG_ORDER[x.type]):
-        pos = _calc_point(position.x, position.y, image_box)
+        pos = _calc_point(position.x, position.y, map_manipulation)
         svg_positions.append(
             svg.Use(href=f"#position_{position.type}", x=pos[0], y=pos[1])
         )
@@ -241,12 +270,16 @@ def _get_svg_positions(
 
 def _get_svg_subset(
     subset: MapSubsetEvent,
-    image_box: tuple[int, int, int, int] | None,
+    map_manipulation: MapManipulation,
 ) -> Path | svg.Polygon:
     subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
 
     points = [
-        _calc_point(subset_coordinates[i], subset_coordinates[i + 1], image_box)
+        _calc_point(
+            subset_coordinates[i],
+            subset_coordinates[i + 1],
+            map_manipulation,
+        )
         for i in range(0, len(subset_coordinates), 2)
     ]
 
@@ -358,17 +391,25 @@ class Map:
             if current_piece.in_use:
                 image.paste(current_piece.image, (image_x, image_y))
 
-    def _get_svg_traces_path(self) -> Path | None:
+    def _get_svg_traces_path(
+        self,
+        map_manipulation: MapManipulation,
+    ) -> Path | None:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
-
             return Path(
                 fill="none",
                 stroke=_COLORS[_TRACE_MAP],
                 stroke_width=1.5,
                 stroke_linejoin="round",
                 vector_effect="non-scaling-stroke",
-                transform=[svg.Translate(_OFFSET, _OFFSET), svg.Scale(0.2, 0.2)],
+                transform=[
+                    svg.Translate(
+                        _OFFSET - map_manipulation.x.map_shift,
+                        _OFFSET - map_manipulation.y.map_shift,
+                    ),
+                    svg.Scale(0.2, 0.2),
+                ],
                 d=_points_to_svg_path(self._map_data.trace_values),
             )
 
@@ -463,11 +504,6 @@ class Map:
 
         svg_map = svg.SVG()
         if image_box := image.getbbox():
-            image_box_center = (
-                (image_box[0] + image_box[2]) / 2,
-                (image_box[1] + image_box[3]) / 2,
-            )
-
             _LOGGER.debug("[get_svg_map] Crop Image")
             cropped = ImageOps.flip(image.crop(image_box))
             del image
@@ -487,55 +523,57 @@ class Map:
 
             # Build the SVG elements
             svg_map.elements = [_SVG_DEFS]
+            manipulation = MapManipulation(
+                AxisManipulation(
+                    map_shift=image_box[0],
+                    svg_max=image_box[2] - image_box[0],
+                    _transform=lambda _, y: y,
+                ),
+                AxisManipulation(
+                    map_shift=image_box[1],
+                    svg_max=image_box[3] - image_box[1],
+                    _transform=lambda x, y: 2 * x - y,
+                ),
+            )
+
+            # Set map viewBox based on background map bounding box.
+            svg_map.viewBox = svg.ViewBoxSpec(
+                0,
+                0,
+                manipulation.x.svg_max,
+                manipulation.y.svg_max,
+            )
 
             # Map background.
             svg_map.elements.append(
                 svg.Image(
-                    x=image_box[0],
-                    y=image_box[1],
-                    width=image_box[2] - image_box[0],
-                    height=image_box[3] - image_box[1],
                     style="image-rendering: pixelated",
                     href=f"data:image/png;base64,{base64_bg.decode('ascii')}",
                 )
             )
 
-            # Elements of the SVG Map to vertically flip
-            svg_map_group_elements: list[svg.Element] = []
-
             # Additional subsets (VirtualWalls and NoMopZones)
-            svg_map_group_elements.extend(
+            svg_map.elements.extend(
                 [
-                    _get_svg_subset(subset, image_box)
+                    _get_svg_subset(subset, manipulation)
                     for subset in self._map_data.map_subsets.values()
                 ]
             )
 
             # Traces (if any)
-            if svg_traces_path := self._get_svg_traces_path():
-                svg_map_group_elements.append(svg_traces_path)
+            if svg_traces_path := self._get_svg_traces_path(manipulation):
+                svg_map.elements.append(
+                    # Elements to vertically flip
+                    svg.G(
+                        transform_origin=r"50% 50%",
+                        transform=[svg.Scale(1, -1)],
+                        elements=[svg_traces_path],
+                    )
+                )
 
             # Bot and Charge stations
-            svg_map_group_elements.extend(
-                _get_svg_positions(self._map_data.positions, image_box)
-            )
-
-            # Set map viewBox based on background map bounding box.
-            svg_map.viewBox = svg.ViewBoxSpec(
-                image_box[0],
-                image_box[1],
-                image_box[2] - image_box[0],
-                image_box[3] - image_box[1],
-            )
-
-            # Add all elements to the SVG map
-            svg_map.elements.append(
-                # Elements to vertically flip
-                svg.G(
-                    transform_origin=f"{image_box_center[0]} {image_box_center[1]}",
-                    transform=[svg.Scale(1, -1)],
-                    elements=svg_map_group_elements,
-                )
+            svg_map.elements.extend(
+                _get_svg_positions(self._map_data.positions, manipulation)
             )
 
         str_svg_map = str(svg_map)
