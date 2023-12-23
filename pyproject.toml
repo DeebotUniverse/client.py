@@ -102,6 +102,10 @@ ignore = [
     "T201",  # print found
 ]
 
+[tool.ruff.lint.flake8-tidy-imports.banned-api]
+"svg.Path".msg = "Use map.Path instead"
+
+
 [tool.ruff.mccabe]
 max-complexity = 12
 

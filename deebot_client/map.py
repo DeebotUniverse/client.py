@@ -53,7 +53,7 @@ svg.PathData.__str__ = _path_data_str  # type: ignore[method-assign]
 
 
 @dataclasses.dataclass
-class Path(svg.Path):
+class Path(svg.Path):  # noqa: TID251
     """Path which removes unnecessary spaces."""
 
     @classmethod
@@ -133,7 +133,7 @@ _SVG_DEFS = svg.Defs(
         svg.G(
             id=f"position_{PositionType.CHARGER}",
             elements=[
-                svg.Path(
+                Path(
                     fill="#ffe605",
                     d=[
                         svg.M(4, 6.4),
@@ -242,7 +242,7 @@ def _get_svg_positions(
 def _get_svg_subset(
     subset: MapSubsetEvent,
     image_box: tuple[int, int, int, int] | None,
-) -> svg.Path | svg.Polygon:
+) -> Path | svg.Polygon:
     subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
 
     points = [
@@ -358,11 +358,11 @@ class Map:
             if current_piece.in_use:
                 image.paste(current_piece.image, (image_x, image_y))
 
-    def _get_svg_traces_path(self) -> svg.Path | None:
+    def _get_svg_traces_path(self) -> Path | None:
         if len(self._map_data.trace_values) > 0:
             _LOGGER.debug("[get_svg_map] Draw Trace")
 
-            return svg.Path(
+            return Path(
                 fill="none",
                 stroke=_COLORS[_TRACE_MAP],
                 stroke_width=1.5,
