@@ -153,8 +153,8 @@ _SVG_DEFS = svg.Defs(
             fx=svg.Length(50, "%"),
             fy=svg.Length(50, "%"),
             elements=[
-                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#00f;"),
-                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#00f0;"),
+                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#00f"),
+                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#00f0"),
             ],
         ),
         # Bot circular icon
@@ -176,9 +176,9 @@ _SVG_DEFS = svg.Defs(
                     d=[
                         svg.M(4, -6.4),
                         svg.C(4, -4.2, 0, 0, 0, 0),
-                        svg.C(0, 0, -4, -4.2, -4, -6.4),
-                        svg.C(-4, -8.6, -2.2, -10.4, 0, -10.4),
-                        svg.C(2.2, -10.4, 4, -8.6, 4, -6.4),
+                        svg.s(-4, -4.2, -4, -6.4),
+                        svg.s(1.8, -4, 4, -4),
+                        svg.s(4, 1.8, 4, 4),
                         svg.Z(),
                     ],
                 ),
