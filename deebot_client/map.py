@@ -67,9 +67,16 @@ _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
 _ROUND_TO_DIGITS = 3
 
-_POSITIONS_SVG_ORDER = {
-    PositionType.DEEBOT: 0,
-    PositionType.CHARGER: 1,
+
+@dataclasses.dataclass(frozen=True)
+class _PositionSvg:
+    order: int
+    svg_id: str
+
+
+_POSITIONS_SVG = {
+    PositionType.DEEBOT: _PositionSvg(0, "d"),
+    PositionType.CHARGER: _PositionSvg(1, "c"),
 }
 
 _OFFSET = 400
@@ -139,7 +146,7 @@ _SVG_DEFS = svg.Defs(
     elements=[
         # Gradient used by Bot icon
         svg.RadialGradient(
-            id="device_bg",
+            id=f"{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg",
             cx=svg.Length(50, "%"),
             cy=svg.Length(50, "%"),
             r=svg.Length(50, "%"),
@@ -152,15 +159,17 @@ _SVG_DEFS = svg.Defs(
         ),
         # Bot circular icon
         svg.G(
-            id=f"position_{PositionType.DEEBOT}",
+            id=_POSITIONS_SVG[PositionType.DEEBOT].svg_id,
             elements=[
-                svg.Circle(r=5, fill="url(#device_bg)"),
+                svg.Circle(
+                    r=5, fill=f"url(#{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg)"
+                ),
                 svg.Circle(r=3.5, stroke="white", fill="blue", stroke_width=0.5),
             ],
         ),
         # Charger pin icon (pre-flipped vertically)
         svg.G(
-            id=f"position_{PositionType.CHARGER}",
+            id=_POSITIONS_SVG[PositionType.CHARGER].svg_id,
             elements=[
                 Path(
                     fill="#ffe605",
@@ -263,10 +272,10 @@ def _get_svg_positions(
     map_manipulation: MapManipulation,
 ) -> list[svg.Element]:
     svg_positions: list[svg.Element] = []
-    for position in sorted(positions, key=lambda x: _POSITIONS_SVG_ORDER[x.type]):
+    for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
         pos = _calc_point(position.x, position.y, map_manipulation)
         svg_positions.append(
-            svg.Use(href=f"#position_{position.type}", x=pos.x, y=pos.y)
+            svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
         )
 
     return svg_positions
