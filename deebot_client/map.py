@@ -5,6 +5,7 @@ import base64
 from collections.abc import Callable, Coroutine, Sequence
 import dataclasses
 from datetime import UTC, datetime
+from decimal import Decimal
 from io import BytesIO
 import itertools
 import lzma
@@ -38,18 +39,22 @@ from .models import Room
 from .util import OnChangedDict, OnChangedList, cancel, create_task
 
 
-def _path_data_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
-    points = []
+def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
+    """Return attributes as compact svg string."""
+    result = ""
     for p in dataclasses.astuple(self):
         value = p
         if isinstance(p, bool):
             value = int(p)
-        points.append(str(value))
-    joined = " ".join(points)
-    return f"{self.command}{joined}"
+        if result == "" or (isinstance(value, Decimal | float | int) and value < 0):
+            result += f"{value}"
+        else:
+            # only positive values need to have a space
+            result += f" {value}"
+    return result
 
 
-svg.PathData.__str__ = _path_data_str  # type: ignore[method-assign]
+svg.PathData.attributes_as_str = _attributes_as_str  # type: ignore[attr-defined]
 
 
 @dataclasses.dataclass
@@ -59,7 +64,23 @@ class Path(svg.Path):  # noqa: TID251
     @classmethod
     def _as_str(cls, val: Any) -> str:
         if isinstance(val, list) and val and isinstance(val[0], svg.PathData):
-            return "".join(cls._as_str(v) for v in val)
+            result = ""
+            current = None
+            for elem in val:
+                if hasattr(elem, "attributes_as_str"):
+                    attributes = elem.attributes_as_str()
+                    # if the command is the same as the previous one, we can omit it
+                    if current != elem.command:
+                        current = elem.command
+                        result += elem.command
+                    elif attributes[0] != "-":
+                        # only positive values need to have a space
+                        result += " "
+                    result += elem.attributes_as_str()
+                else:
+                    current = None
+                    result += cls._as_str(elem)
+            return result
         return super()._as_str(val)
 
 
