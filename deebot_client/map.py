@@ -56,6 +56,11 @@ def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN
 
 svg.PathData.attributes_as_str = _attributes_as_str  # type: ignore[attr-defined]
 
+_ALWAYS_WRITE_COMMAND_NAME: tuple[str, ...] = (
+    svg.MoveTo.command,
+    svg.MoveToRel.command,
+)
+
 
 @dataclasses.dataclass
 class Path(svg.Path):  # noqa: TID251
@@ -70,7 +75,10 @@ class Path(svg.Path):  # noqa: TID251
                 if hasattr(elem, "attributes_as_str"):
                     attributes = elem.attributes_as_str()
                     # if the command is the same as the previous one, we can omit it
-                    if current != elem.command:
+                    if (
+                        current != elem.command
+                        or elem.command in _ALWAYS_WRITE_COMMAND_NAME
+                    ):
                         current = elem.command
                         result += elem.command
                     elif attributes[0] != "-":
