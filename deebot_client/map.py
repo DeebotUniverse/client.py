@@ -107,16 +107,14 @@ _COLORS = {
     MapSetType.VIRTUAL_WALLS: "#f00",
     MapSetType.NO_MOP_ZONES: "#ffa500",
 }
-_MAP_BACKGROUND_COLORS = [
-    "#000000",  # 0 -> unknown (will be transparent)
-    "#badaff",  # 1 -> floor
-    "#4e96e2",  # 2 -> wall
-    "#1a81ed",  # 3 -> carpet
-]
-_MAP_BACKGROUND_IMAGE_PALETTE = ImagePalette.ImagePalette(
-    "RGB",
-    [value for color in _MAP_BACKGROUND_COLORS for value in ImageColor.getrgb(color)],
-)
+_DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
+_MAP_BACKGROUND_COLORS = {
+    0: ImageColor.getrgb("#000000"),  # unknown (will be transparent)
+    1: _DEFAULT_MAP_BACKGROUND_COLOR,  # floor
+    2: ImageColor.getrgb("#4e96e2"),  # wall
+    3: ImageColor.getrgb("#1a81ed"),  # carpet
+    # fallsback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
+}
 
 
 @dataclasses.dataclass(frozen=True)
@@ -338,6 +336,23 @@ def _get_svg_subset(
     )
 
 
+def _set_image_palette(image: Image.Image) -> None:
+    """Dynamically create color palette for map image."""
+    palette_colors: list[int] = []
+    for value in [c[1] for c in image.getcolors()]:
+        palette_colors.extend(
+            _MAP_BACKGROUND_COLORS.get(value, _DEFAULT_MAP_BACKGROUND_COLOR)
+        )
+
+    image.putpalette(
+        ImagePalette.ImagePalette(
+            "RGB",
+            palette_colors,
+        )
+    )
+    image.info["transparency"] = 0
+
+
 class Map:
     """Map representation."""
 
@@ -532,9 +547,8 @@ class Map:
         _LOGGER.debug("[get_svg_map] Begin")
 
         image = Image.new("P", (6400, 6400))
-        image.putpalette(_MAP_BACKGROUND_IMAGE_PALETTE)
-        image.info["transparency"] = 0
         self._draw_map_pieces(image)
+        _set_image_palette(image)
 
         svg_map = svg.SVG()
         if image_box := image.getbbox():
