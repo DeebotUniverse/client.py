@@ -116,11 +116,13 @@ _COLORS = {
     MapSetType.NO_MOP_ZONES: "#ffa500",
 }
 _DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
-_MAP_BACKGROUND_COLORS = {
+_MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
     0: ImageColor.getrgb("#000000"),  # unknown (will be transparent)
     1: _DEFAULT_MAP_BACKGROUND_COLOR,  # floor
     2: ImageColor.getrgb("#4e96e2"),  # wall
     3: ImageColor.getrgb("#1a81ed"),  # carpet
+    4: ImageColor.getrgb("#dee9fb"),  # not scanned space
+    5: ImageColor.getrgb("#edf3fb"),  # possible obstacle
     # fallsback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
 }
 
