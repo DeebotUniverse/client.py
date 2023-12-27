@@ -170,6 +170,14 @@ class MapManipulation:
     y: AxisManipulation
 
 
+@dataclasses.dataclass
+class BackgroundImage:
+    """Background image."""
+
+    bounding_box: tuple[float, float, float, float]
+    image: bytes
+
+
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
     elements=[
@@ -346,21 +354,20 @@ def _get_svg_subset(
     )
 
 
-def _set_image_palette(image: Image.Image) -> None:
+def _set_image_palette(image: Image.Image) -> Image.Image:
     """Dynamically create color palette for map image."""
     palette_colors: list[int] = []
-    for value in [c[1] for c in image.getcolors()]:
+    for idx in range(256):
         palette_colors.extend(
-            _MAP_BACKGROUND_COLORS.get(value, _DEFAULT_MAP_BACKGROUND_COLOR)
+            _MAP_BACKGROUND_COLORS.get(idx, _DEFAULT_MAP_BACKGROUND_COLOR)
         )
+    source_palette = ImagePalette.ImagePalette("RGB", palette_colors)
 
-    image.putpalette(
-        ImagePalette.ImagePalette(
-            "RGB",
-            palette_colors,
-        )
-    )
     image.info["transparency"] = 0
+
+    return image.remap_palette(
+        [c[1] for c in image.getcolors()], source_palette.tobytes()
+    )
 
 
 class Map:
@@ -541,6 +548,26 @@ class Map:
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
 
+    def _get_background_image(self) -> BackgroundImage | None:
+        """Return background image."""
+        image = Image.new("P", (6400, 6400))
+        self._draw_map_pieces(image)
+
+        bounding_box = image.getbbox()
+        if bounding_box is None:
+            return None
+
+        image = ImageOps.flip(image.crop(bounding_box))
+        image = _set_image_palette(image)
+
+        buffered = BytesIO()
+        image.save(buffered, format="PNG", optimize=True)
+
+        return BackgroundImage(
+            bounding_box,
+            buffered.getvalue(),
+        )
+
     def get_svg_map(self, width: int | None = None) -> str:
         """Return map as SVG string."""
         if not self._unsubscribers:
@@ -556,40 +583,19 @@ class Map:
 
         _LOGGER.debug("[get_svg_map] Begin")
 
-        image = Image.new("P", (6400, 6400))
-        self._draw_map_pieces(image)
-        _set_image_palette(image)
-
         svg_map = svg.SVG()
-        if image_box := image.getbbox():
-            _LOGGER.debug("[get_svg_map] Crop Image")
-            cropped = ImageOps.flip(image.crop(image_box))
-            del image
-
-            _LOGGER.debug(
-                "[get_svg_map] Map current Size: X: %d Y: %d",
-                cropped.size[0],
-                cropped.size[1],
-            )
-
-            _LOGGER.debug("[get_svg_map] Saving to buffer")
-            buffered = BytesIO()
-            cropped.save(buffered, format="PNG")
-            del cropped
-
-            base64_bg = base64.b64encode(buffered.getvalue())
-
+        if background := self._get_background_image():
             # Build the SVG elements
             svg_map.elements = [_SVG_DEFS]
             manipulation = MapManipulation(
                 AxisManipulation(
-                    map_shift=image_box[0],
-                    svg_max=image_box[2] - image_box[0],
+                    map_shift=background.bounding_box[0],
+                    svg_max=background.bounding_box[2] - background.bounding_box[0],
                     _transform=lambda _, y: y,
                 ),
                 AxisManipulation(
-                    map_shift=image_box[1],
-                    svg_max=image_box[3] - image_box[1],
+                    map_shift=background.bounding_box[1],
+                    svg_max=background.bounding_box[3] - background.bounding_box[1],
                     _transform=lambda x, y: 2 * x - y,
                 ),
             )
@@ -606,7 +612,7 @@ class Map:
             svg_map.elements.append(
                 svg.Image(
                     style="image-rendering: pixelated",
-                    href=f"data:image/png;base64,{base64_bg.decode('ascii')}",
+                    href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
                 )
             )
 
