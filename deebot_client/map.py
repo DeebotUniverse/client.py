@@ -291,11 +291,11 @@ def _points_to_svg_path(
     for prev_p, p in itertools.pairwise(points):
         x = round(p.x - prev_p.x, _ROUND_TO_DIGITS)
         y = round(p.y - prev_p.y, _ROUND_TO_DIGITS)
+        if x == 0 and y == 0:
+            continue
         if isinstance(p, TracePoint) and not p.connected:
             path_data.append(svg.MoveToRel(x, y))
         elif x == 0:
-            if y == 0:
-                continue
             path_data.append(svg.VerticalLineToRel(y))
         elif y == 0:
             path_data.append(svg.HorizontalLineToRel(x))

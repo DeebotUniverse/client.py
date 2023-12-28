@@ -1,8 +1,19 @@
 import asyncio
+from collections.abc import Sequence
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
-import svg
+from svg import (
+    ClosePath,
+    CubicBezier,
+    HorizontalLineToRel,
+    LineToRel,
+    MoveTo,
+    MoveToRel,
+    PathData,
+    SmoothCubicBezierRel,
+    VerticalLineToRel,
+)
 
 from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
@@ -19,7 +30,9 @@ from deebot_client.map import (
     MapManipulation,
     Path,
     Point,
+    TracePoint,
     _calc_point,
+    _points_to_svg_path,
 )
 from deebot_client.models import Room
 
@@ -96,12 +109,12 @@ def test_compact_path() -> None:
     path = Path(
         fill="#ffe605",
         d=[
-            svg.M(4, -6.4),
-            svg.C(4, -4.2, 0, 0, 0, 0),
-            svg.s(-4, -4.2, -4, -6.4),
-            svg.l(0, -3.2),
-            svg.l(4, 0),
-            svg.Z(),
+            MoveTo(4, -6.4),
+            CubicBezier(4, -4.2, 0, 0, 0, 0),
+            SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
+            LineToRel(0, -3.2),
+            LineToRel(4, 0),
+            ClosePath(),
         ],
     )
 
@@ -109,3 +122,40 @@ def test_compact_path() -> None:
         str(path)
         == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0Z" fill="#ffe605"/>'
     )
+
+
+@pytest.mark.parametrize(
+    ("points", "expected"),
+    [
+        (
+            [Point(x=45.58, y=176.12), Point(x=18.78, y=175.94)],
+            [MoveTo(45.58, 176.12), LineToRel(-26.8, -0.18)],
+        ),
+        (
+            [
+                TracePoint(x=-215, y=-70, connected=False),
+                TracePoint(x=-215, y=-70, connected=True),
+                TracePoint(x=-212, y=-73, connected=True),
+                TracePoint(x=-213, y=-73, connected=True),
+                TracePoint(x=-227, y=-72, connected=True),
+                TracePoint(x=-227, y=-70, connected=True),
+                TracePoint(x=-227, y=-70, connected=True),
+                TracePoint(x=-256, y=-69, connected=False),
+                TracePoint(x=-260, y=-80, connected=True),
+            ],
+            [
+                MoveTo(x=-215, y=-70),
+                LineToRel(dx=3, dy=-3),
+                HorizontalLineToRel(dx=-1),
+                LineToRel(dx=-14, dy=1),
+                VerticalLineToRel(dy=2),
+                MoveToRel(dx=-29, dy=1),
+                LineToRel(dx=-4, dy=-11),
+            ],
+        ),
+    ],
+)
+def test_points_to_svg_path(
+    points: Sequence[Point | TracePoint], expected: list[PathData]
+) -> None:
+    assert _points_to_svg_path(points) == expected
