@@ -385,7 +385,7 @@ class Map:
 
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
-        self._last_image: LastImage | None = None
+        self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
         self._unsubscribers_internal: list[Callable[[], None]] = []
         self._tasks: set[asyncio.Future[Any]] = set()
@@ -570,18 +570,14 @@ class Map:
             buffered.getvalue(),
         )
 
-    def get_svg_map(self, width: int | None = None) -> str:
+    def get_svg_map(self) -> str:
         """Return map as SVG string."""
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
-        if (
-            self._last_image is not None
-            and width == self._last_image.width
-            and not self._map_data.changed
-        ):
+        if self._last_image and not self._map_data.changed:
             _LOGGER.debug("[get_svg_map] No need to update")
-            return self._last_image.svg_image
+            return self._last_image
 
         _LOGGER.debug("[get_svg_map] Begin")
 
@@ -646,7 +642,7 @@ class Map:
 
         str_svg_map = str(svg_map)
 
-        self._last_image = LastImage(str_svg_map, width)
+        self._last_image = str_svg_map
 
         _LOGGER.debug("[get_svg_map] Finish")
 
@@ -716,14 +712,6 @@ class MapPiece:
             return False
 
         return self._crc32 == obj._crc32 and self._index == obj._index
-
-
-@dataclasses.dataclass(frozen=True)
-class LastImage:
-    """Last created image."""
-
-    svg_image: str
-    width: int | None
 
 
 class MapData:
