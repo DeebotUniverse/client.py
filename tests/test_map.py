@@ -40,6 +40,7 @@ from deebot_client.models import Room
 _test_calc_point_data = [
     (10, 100, (100, 0, 200, 50), Point(100.0, 0.0)),
     (10, 100, (0, 0, 1000, 1000), Point(400.2, 598.0)),
+    (None, 100, (0, 0, 1000, 1000), Point(0, 598.0)),
 ]
 
 
@@ -54,16 +55,37 @@ def test_calc_point(
         AxisManipulation(
             map_shift=image_box[0],
             svg_max=image_box[2] - image_box[0],
-            _transform=lambda _, y: y,
         ),
         AxisManipulation(
             map_shift=image_box[1],
             svg_max=image_box[3] - image_box[1],
-            _transform=lambda x, y: 2 * x - y,
+            _transform=lambda c, v: 2 * c - v,
         ),
     )
     result = _calc_point(x, y, manipulation)
     assert result == expected
+
+
+@pytest.mark.parametrize(("error"), [ValueError(), ZeroDivisionError()])
+def test_calc_point_exceptions(
+    error: Exception,
+) -> None:
+    def transform(_: float, __: float) -> float:
+        raise error
+
+    manipulation = MapManipulation(
+        AxisManipulation(
+            map_shift=50,
+            svg_max=100,
+            _transform=transform,
+        ),
+        AxisManipulation(
+            map_shift=50,
+            svg_max=100,
+        ),
+    )
+    result = _calc_point(100, 100, manipulation)
+    assert result == Point(0, 100)
 
 
 async def test_MapData(event_bus: EventBus) -> None:

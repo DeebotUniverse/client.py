@@ -152,13 +152,15 @@ class AxisManipulation:
 
     map_shift: float
     svg_max: float
-    _transform: Callable[[float, float], float]
+    _transform: Callable[[float, float], float] | None = None
 
     def __post_init__(self) -> None:
         self._svg_center = self.svg_max / 2
 
     def transform(self, value: float) -> float:
         """Transform value."""
+        if self._transform is None:
+            return value
         return self._transform(self._svg_center, value)
 
 
@@ -591,12 +593,11 @@ class Map:
                 AxisManipulation(
                     map_shift=background.bounding_box[0],
                     svg_max=background.bounding_box[2] - background.bounding_box[0],
-                    _transform=lambda _, y: y,
                 ),
                 AxisManipulation(
                     map_shift=background.bounding_box[1],
                     svg_max=background.bounding_box[3] - background.bounding_box[1],
-                    _transform=lambda x, y: 2 * x - y,
+                    _transform=lambda c, v: 2 * c - v,
                 ),
             )
 
