@@ -34,11 +34,11 @@ from . import assert_command, assert_execute_command
                         {"type": "heap", "left": 7179, "total": 7200},
                         {"type": "sideBrush", "left": 8977, "total": 9000},
                         {"type": "unitCare", "left": 265, "total": 1800},
-                        {"type": 'roundMop', "left": 6820, "total": 9000},
-                        {"type": 'dModule', "left": 17537, "total": 18000},
-                        {"type": 'uv', "left": 898586, "total": 900000},
-                        {"type": 'humidify', "left": 191547, "total": 194400},
-                        {"type": 'wbCare', "left": 22260, "total": 43200}
+                        {"type": "roundMop", "left": 6820, "total": 9000},
+                        {"type": "dModule", "left": 17537, "total": 18000},
+                        {"type": "uv", "left": 898586, "total": 900000},
+                        {"type": "humidify", "left": 191547, "total": 194400},
+                        {"type": "wbCare", "left": 22260, "total": 43200},
                     ]
                 )
             ),
@@ -106,7 +106,9 @@ from . import assert_command, assert_execute_command
         (
             GetLifeSpan({LifeSpan.HUMIDIFY}),
             get_request_json(
-                get_success_body([{"type": "humidify", "left": 191547, "total": 194400}])
+                get_success_body(
+                    [{"type": "humidify", "left": 191547, "total": 194400}]
+                )
             ),
             [LifeSpanEvent(LifeSpan.HUMIDIFY, 98.53, 191547)],
         ),
