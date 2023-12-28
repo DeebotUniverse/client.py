@@ -92,7 +92,7 @@ from . import assert_command, assert_execute_command
         (
             GetLifeSpan({LifeSpan.AIR_FRESHENER}),
             get_request_json(
-                get_success_body([{"type": "unitCare", "left": 17537, "total": 18000}])
+                get_success_body([{"type": "dModule", "left": 17537, "total": 18000}])
             ),
             [LifeSpanEvent(LifeSpan.AIR_FRESHENER, 97.43, 17537)],
         ),
