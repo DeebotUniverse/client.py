@@ -123,6 +123,11 @@ class LifeSpan(str, Enum):
     FILTER = "heap"
     SIDE_BRUSH = "sideBrush"
     UNIT_CARE = "unitCare"
+    ROUND_MOP = "roundMop"
+    AIR_FRESHENER = "dModule"
+    UV_SANITIZER = "uv"
+    HUMIDIFY = "humidify"
+    HUMIDIFY_MAINTENANCE = "wbCare"
 
 
 @dataclass(frozen=True)
