@@ -4,6 +4,7 @@ from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 from svg import (
+    ArcRel,
     ClosePath,
     CubicBezier,
     HorizontalLineToRel,
@@ -114,13 +115,14 @@ def test_compact_path() -> None:
             SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
             LineToRel(0, -3.2),
             LineToRel(4, 0),
+            ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
             ClosePath(),
         ],
     )
 
     assert (
         str(path)
-        == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0Z" fill="#ffe605"/>'
+        == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0a1 2 3 1 0 4 5Z" fill="#ffe605"/>'
     )
 
 
