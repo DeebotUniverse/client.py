@@ -570,7 +570,7 @@ class Map:
             buffered.getvalue(),
         )
 
-    def get_svg_map(self) -> str:
+    def get_svg_map(self) -> str | None:
         """Return map as SVG string."""
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
@@ -584,69 +584,69 @@ class Map:
         # Reset change before starting to build the SVG
         self._map_data.reset_changed()
 
+        background = self._get_background_image()
+        if background is None:
+            self._last_image = None
+            return None
+
+        # Build the SVG elements
         svg_map = svg.SVG()
-        if background := self._get_background_image():
-            # Build the SVG elements
-            svg_map.elements = [_SVG_DEFS]
-            manipulation = MapManipulation(
-                AxisManipulation(
-                    map_shift=background.bounding_box[0],
-                    svg_max=background.bounding_box[2] - background.bounding_box[0],
-                ),
-                AxisManipulation(
-                    map_shift=background.bounding_box[1],
-                    svg_max=background.bounding_box[3] - background.bounding_box[1],
-                    _transform=lambda c, v: 2 * c - v,
-                ),
-            )
+        svg_map.elements = [_SVG_DEFS]
+        manipulation = MapManipulation(
+            AxisManipulation(
+                map_shift=background.bounding_box[0],
+                svg_max=background.bounding_box[2] - background.bounding_box[0],
+            ),
+            AxisManipulation(
+                map_shift=background.bounding_box[1],
+                svg_max=background.bounding_box[3] - background.bounding_box[1],
+                _transform=lambda c, v: 2 * c - v,
+            ),
+        )
 
-            # Set map viewBox based on background map bounding box.
-            svg_map.viewBox = svg.ViewBoxSpec(
-                0,
-                0,
-                manipulation.x.svg_max,
-                manipulation.y.svg_max,
-            )
+        # Set map viewBox based on background map bounding box.
+        svg_map.viewBox = svg.ViewBoxSpec(
+            0,
+            0,
+            manipulation.x.svg_max,
+            manipulation.y.svg_max,
+        )
 
-            # Map background.
+        # Map background.
+        svg_map.elements.append(
+            svg.Image(
+                style="image-rendering: pixelated",
+                href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
+            )
+        )
+
+        # Additional subsets (VirtualWalls and NoMopZones)
+        svg_map.elements.extend(
+            [
+                _get_svg_subset(subset, manipulation)
+                for subset in self._map_data.map_subsets.values()
+            ]
+        )
+
+        # Traces (if any)
+        if svg_traces_path := self._get_svg_traces_path(manipulation):
             svg_map.elements.append(
-                svg.Image(
-                    style="image-rendering: pixelated",
-                    href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
+                # Elements to vertically flip
+                svg.G(
+                    transform_origin=r"50% 50%",
+                    transform=[svg.Scale(1, -1)],
+                    elements=[svg_traces_path],
                 )
             )
 
-            # Additional subsets (VirtualWalls and NoMopZones)
-            svg_map.elements.extend(
-                [
-                    _get_svg_subset(subset, manipulation)
-                    for subset in self._map_data.map_subsets.values()
-                ]
-            )
+        # Bot and Charge stations
+        svg_map.elements.extend(
+            _get_svg_positions(self._map_data.positions, manipulation)
+        )
 
-            # Traces (if any)
-            if svg_traces_path := self._get_svg_traces_path(manipulation):
-                svg_map.elements.append(
-                    # Elements to vertically flip
-                    svg.G(
-                        transform_origin=r"50% 50%",
-                        transform=[svg.Scale(1, -1)],
-                        elements=[svg_traces_path],
-                    )
-                )
-
-            # Bot and Charge stations
-            svg_map.elements.extend(
-                _get_svg_positions(self._map_data.positions, manipulation)
-            )
-
-        str_svg_map = str(svg_map)
-
-        self._last_image = str_svg_map
-
+        self._last_image = str(svg_map)
         _LOGGER.debug("[get_svg_map] Finish")
-
-        return str_svg_map
+        return self._last_image
 
     async def teardown(self) -> None:
         """Teardown map."""
