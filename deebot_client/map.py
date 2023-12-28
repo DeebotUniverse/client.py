@@ -585,6 +585,9 @@ class Map:
 
         _LOGGER.debug("[get_svg_map] Begin")
 
+        # Reset change before starting to build the SVG
+        self._map_data.reset_changed()
+
         svg_map = svg.SVG()
         if background := self._get_background_image():
             # Build the SVG elements
@@ -643,7 +646,6 @@ class Map:
 
         str_svg_map = str(svg_map)
 
-        self._map_data.reset_changed()
         self._last_image = LastImage(str_svg_map, width)
 
         _LOGGER.debug("[get_svg_map] Finish")
