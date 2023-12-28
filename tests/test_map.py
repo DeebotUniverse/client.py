@@ -2,6 +2,7 @@ import asyncio
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
+import svg
 
 from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
@@ -16,6 +17,7 @@ from deebot_client.map import (
     Map,
     MapData,
     MapManipulation,
+    Path,
     Point,
     _calc_point,
 )
@@ -87,3 +89,23 @@ async def test_Map_internal_subscriptions(
 
     await map.teardown()
     assert not map._unsubscribers_internal
+
+
+def test_compact_path() -> None:
+    """Test that the path is compacted correctly."""
+    path = Path(
+        fill="#ffe605",
+        d=[
+            svg.M(4, -6.4),
+            svg.C(4, -4.2, 0, 0, 0, 0),
+            svg.s(-4, -4.2, -4, -6.4),
+            svg.l(0, -3.2),
+            svg.l(4, 0),
+            svg.Z(),
+        ],
+    )
+
+    assert (
+        str(path)
+        == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0Z" fill="#ffe605"/>'
+    )
