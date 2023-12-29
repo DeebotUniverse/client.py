@@ -11,7 +11,7 @@ from .common import JsonGetCommand, JsonSetCommand
 
 
 class GetWashInterval(JsonGetCommand):
-    """Get pads cleaning interval command."""
+    """Get wash interval command."""
 
     name = "getWashInterval"
 
