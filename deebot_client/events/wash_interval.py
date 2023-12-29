@@ -6,6 +6,6 @@ from .base import Event
 
 @dataclass(frozen=True)
 class WashIntervalEvent(Event):
-    """Cleaning pads interval event representation."""
+    """Wash interval event representation."""
 
     interval: int
