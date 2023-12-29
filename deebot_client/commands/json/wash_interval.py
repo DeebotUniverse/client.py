@@ -28,7 +28,7 @@ class GetWashInterval(JsonGetCommand):
 
 
 class SetWashInterval(JsonSetCommand):
-    """Set pads cleaning interval command."""
+    """Set wash interval command."""
 
     name = "setWashInterval"
     get_command = GetWashInterval
