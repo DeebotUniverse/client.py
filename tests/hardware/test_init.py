@@ -64,7 +64,7 @@ from deebot_client.events.map import (
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.hardware import get_static_device_info
-from deebot_client.hardware.deebot import DEVICES, FALLBACK
+from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -202,3 +202,25 @@ def test_capabilities_event_extraction(
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert capabilities.get_refresh_commands(event) == expected_commands
+
+
+def test_all_models_loaded() -> None:
+    """Test that all models are loaded."""
+    _load()
+    assert list(DEVICES) == [
+        "2o4lnm",
+        "626v6g",
+        "85nbtp",
+        "9ku8nu",
+        "clojes",
+        "fallback",
+        "lx3j7m",
+        "p1jij8",
+        "p95mgv",
+        "rss8xk",
+        "umwv6z",
+        "vi829v",
+        "x5d34r",
+        "yna5xi",
+        "zjavof",
+    ]
