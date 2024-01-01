@@ -101,6 +101,9 @@ ignore = [
     "SLF001", # Private member accessed: {access}
     "T201",  # print found
 ]
+"deebot_client/hardware/deebot/*" = [
+    "N999",  # Invalid module name
+]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
 "svg.Path".msg = "Use map.Path instead"
@@ -150,6 +153,7 @@ disable = [
     "too-many-locals",
     "too-many-ancestors",
     "too-few-public-methods",
+    "invalid-name",
 ]
 enable = [
     "useless-suppression",
