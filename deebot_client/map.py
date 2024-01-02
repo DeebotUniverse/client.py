@@ -2,19 +2,19 @@
 import ast
 import asyncio
 import base64
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine, Sequence
 import dataclasses
 from datetime import UTC, datetime
+from decimal import Decimal
 from io import BytesIO
+import itertools
 import lzma
-import math
 import struct
 from typing import Any, Final
 import zlib
 
-from numpy import float64, reshape, zeros
-from numpy.typing import NDArray
-from PIL import Image, ImageDraw, ImageOps
+from PIL import Image, ImageColor, ImageOps, ImagePalette
+import svg
 
 from deebot_client.events.map import MapChangedEvent
 
@@ -38,22 +38,194 @@ from .logging_filter import get_logger
 from .models import Room
 from .util import OnChangedDict, OnChangedList, cancel, create_task
 
+
+def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
+    """Return attributes as compact svg string."""
+    result = ""
+    for p in dataclasses.astuple(self):
+        value = p
+        if isinstance(p, bool):
+            value = int(p)
+        if result == "" or (isinstance(value, Decimal | float | int) and value < 0):
+            result += f"{value}"
+        else:
+            # only positive values need to have a space
+            result += f" {value}"
+    return result
+
+
+svg.PathData.attributes_as_str = _attributes_as_str  # type: ignore[attr-defined]
+
+_ALWAYS_WRITE_COMMAND_NAME: tuple[str, ...] = (
+    svg.MoveTo.command,
+    svg.MoveToRel.command,
+)
+
+
+@dataclasses.dataclass
+class Path(svg.Path):  # noqa: TID251
+    """Path which removes unnecessary spaces."""
+
+    @classmethod
+    def _as_str(cls, val: Any) -> str:
+        if isinstance(val, list) and val and isinstance(val[0], svg.PathData):
+            result = ""
+            current = None
+            for elem in val:
+                if hasattr(elem, "attributes_as_str"):
+                    attributes = elem.attributes_as_str()
+                    # if the command is the same as the previous one, we can omit it
+                    if (
+                        current != elem.command
+                        or elem.command in _ALWAYS_WRITE_COMMAND_NAME
+                    ):
+                        current = elem.command
+                        result += elem.command
+                    elif attributes[0] != "-":
+                        # only positive values need to have a space
+                        result += " "
+                    result += elem.attributes_as_str()
+                else:
+                    current = None
+                    result += cls._as_str(elem)
+            return result
+        return super()._as_str(val)
+
+
 _LOGGER = get_logger(__name__)
 _PIXEL_WIDTH = 50
-_POSITION_PNG = {
-    PositionType.DEEBOT: "iVBORw0KGgoAAAANSUhEUgAAAAYAAAAGCAIAAABvrngfAAAACXBIWXMAAAsTAAALEwEAmpwYAAAF0WlUWHRYTUw6Y29tLmFkb2JlLnhtcAAAAAAAPD94cGFja2V0IGJlZ2luPSLvu78iIGlkPSJXNU0wTXBDZWhpSHpyZVN6TlRjemtjOWQiPz4gPHg6eG1wbWV0YSB4bWxuczp4PSJhZG9iZTpuczptZXRhLyIgeDp4bXB0az0iQWRvYmUgWE1QIENvcmUgNS42LWMxNDUgNzkuMTYzNDk5LCAyMDE4LzA4LzEzLTE2OjQwOjIyICAgICAgICAiPiA8cmRmOlJERiB4bWxuczpyZGY9Imh0dHA6Ly93d3cudzMub3JnLzE5OTkvMDIvMjItcmRmLXN5bnRheC1ucyMiPiA8cmRmOkRlc2NyaXB0aW9uIHJkZjphYm91dD0iIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtbG5zOnhtcE1NPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvbW0vIiB4bWxuczpzdEV2dD0iaHR0cDovL25zLmFkb2JlLmNvbS94YXAvMS4wL3NUeXBlL1Jlc291cmNlRXZlbnQjIiB4bWxuczpkYz0iaHR0cDovL3B1cmwub3JnL2RjL2VsZW1lbnRzLzEuMS8iIHhtbG5zOnBob3Rvc2hvcD0iaHR0cDovL25zLmFkb2JlLmNvbS9waG90b3Nob3AvMS4wLyIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHhtcDpDcmVhdGVEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TWV0YWRhdGFEYXRlPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiB4bXA6TW9kaWZ5RGF0ZT0iMjAyMC0wNS0yNFQxMjowMzoxNiswMjowMCIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDo0YWM4NWY5MC1hNWMwLTE2NDktYTQ0MC0xMWM0NWY5OGQ1MDYiIHhtcE1NOkRvY3VtZW50SUQ9ImFkb2JlOmRvY2lkOnBob3Rvc2hvcDo3Zjk3MTZjMi1kZDM1LWJiNDItYjMzZS1hYjYwY2Y4ZTZlZDYiIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIGRjOmZvcm1hdD0iaW1hZ2UvcG5nIiBwaG90b3Nob3A6Q29sb3JNb2RlPSIzIj4gPHhtcE1NOkhpc3Rvcnk+IDxyZGY6U2VxPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0iY3JlYXRlZCIgc3RFdnQ6aW5zdGFuY2VJRD0ieG1wLmlpZDpiMzhiNGZlMS1lOGNkLTJjNDctYmQwZC1lNmZiNzRhMjFkMDciIHN0RXZ0OndoZW49IjIwMjAtMDUtMjRUMTI6MDM6MTYrMDI6MDAiIHN0RXZ0OnNvZnR3YXJlQWdlbnQ9IkFkb2JlIFBob3Rvc2hvcCBDQyAyMDE5IChXaW5kb3dzKSIvPiA8cmRmOmxpIHN0RXZ0OmFjdGlvbj0ic2F2ZWQiIHN0RXZ0Omluc3RhbmNlSUQ9InhtcC5paWQ6NGFjODVmOTAtYTVjMC0xNjQ5LWE0NDAtMTFjNDVmOThkNTA2IiBzdEV2dDp3aGVuPSIyMDIwLTA1LTI0VDEyOjAzOjE2KzAyOjAwIiBzdEV2dDpzb2Z0d2FyZUFnZW50PSJBZG9iZSBQaG90b3Nob3AgQ0MgMjAxOSAoV2luZG93cykiIHN0RXZ0OmNoYW5nZWQ9Ii8iLz4gPC9yZGY6U2VxPiA8L3htcE1NOkhpc3Rvcnk+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+AP7+NwAAAFpJREFUCJllzEEKgzAQhtFvMkSsEKj30oUXrYserELA1obhd+nCd4BnksZ53X4Cnr193ov59Iq+o2SA2vz4p/iKkgkRouTYlbhJ/jBqww03avPBTNI4rdtx9ScfWyYCg52e0gAAAABJRU5ErkJggg==",  # nopep8
-    PositionType.CHARGER: "iVBORw0KGgoAAAANSUhEUgAAAAoAAAAOCAYAAAAWo42rAAAAdUlEQVQoU2NkQAP/nzD8BwkxyjAwIkuhcEASRCmEKYKZhGwq3ER0ReiKSVOIyzRkU8EmwhUyKzAwSNyHyL9QZGD4+wDMBLmVEasimFHIiuEKpcHBhwmeQryBMJFohcjuw2s1SBKHZ8BWo/gauyshvobJEYoZAEOSPXnhzwZnAAAAAElFTkSuQmCC",  # nopep8
+_ROUND_TO_DIGITS = 3
+
+
+@dataclasses.dataclass(frozen=True)
+class _PositionSvg:
+    order: int
+    svg_id: str
+
+
+_POSITIONS_SVG = {
+    PositionType.DEEBOT: _PositionSvg(0, "d"),
+    PositionType.CHARGER: _PositionSvg(1, "c"),
 }
+
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
-    0x01: "#badaff",  # floor
-    0x02: "#4e96e2",  # wall
-    0x03: "#1a81ed",  # carpet
-    _TRACE_MAP: "#FFFFFF",
-    MapSetType.VIRTUAL_WALLS: "#FF0000",
-    MapSetType.NO_MOP_ZONES: "#FFA500",
+    _TRACE_MAP: "#fff",
+    MapSetType.VIRTUAL_WALLS: "#f00",
+    MapSetType.NO_MOP_ZONES: "#ffa500",
 }
+_DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
+_MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
+    0: ImageColor.getrgb("#000000"),  # unknown (will be transparent)
+    1: _DEFAULT_MAP_BACKGROUND_COLOR,  # floor
+    2: ImageColor.getrgb("#4e96e2"),  # wall
+    3: ImageColor.getrgb("#1a81ed"),  # carpet
+    4: ImageColor.getrgb("#dee9fb"),  # not scanned space
+    5: ImageColor.getrgb("#edf3fb"),  # possible obstacle
+    # fallsback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
+}
+
+
+@dataclasses.dataclass(frozen=True)
+class Point:
+    """Point."""
+
+    x: float
+    y: float
+
+    def flatten(self) -> tuple[float, float]:
+        """Flatten point."""
+        return (self.x, self.y)
+
+
+@dataclasses.dataclass(frozen=True)
+class TracePoint(Point):
+    """Trace point."""
+
+    connected: bool
+
+
+@dataclasses.dataclass
+class AxisManipulation:
+    """Map manipulation."""
+
+    map_shift: float
+    svg_max: float
+    _transform: Callable[[float, float], float] | None = None
+
+    def __post_init__(self) -> None:
+        self._svg_center = self.svg_max / 2
+
+    def transform(self, value: float) -> float:
+        """Transform value."""
+        if self._transform is None:
+            return value
+        return self._transform(self._svg_center, value)
+
+
+@dataclasses.dataclass
+class MapManipulation:
+    """Map manipulation."""
+
+    x: AxisManipulation
+    y: AxisManipulation
+
+
+@dataclasses.dataclass
+class BackgroundImage:
+    """Background image."""
+
+    bounding_box: tuple[float, float, float, float]
+    image: bytes
+
+
+# SVG definitions referred by map elements
+_SVG_DEFS = svg.Defs(
+    elements=[
+        # Gradient used by Bot icon
+        svg.RadialGradient(
+            id=f"{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg",
+            cx=svg.Length(50, "%"),
+            cy=svg.Length(50, "%"),
+            r=svg.Length(50, "%"),
+            fx=svg.Length(50, "%"),
+            fy=svg.Length(50, "%"),
+            elements=[
+                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#00f"),
+                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#00f0"),
+            ],
+        ),
+        # Bot circular icon
+        svg.G(
+            id=_POSITIONS_SVG[PositionType.DEEBOT].svg_id,
+            elements=[
+                svg.Circle(
+                    r=5, fill=f"url(#{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg)"
+                ),
+                svg.Circle(r=3.5, stroke="white", fill="blue", stroke_width=0.5),
+            ],
+        ),
+        # Charger pin icon (pre-flipped vertically)
+        svg.G(
+            id=_POSITIONS_SVG[PositionType.CHARGER].svg_id,
+            elements=[
+                Path(
+                    fill="#ffe605",
+                    d=[
+                        svg.M(4, -6.4),
+                        svg.C(4, -4.2, 0, 0, 0, 0),
+                        svg.s(-4, -4.2, -4, -6.4),
+                        svg.s(1.8, -4, 4, -4),
+                        svg.s(4, 1.8, 4, 4),
+                        svg.Z(),
+                    ],
+                ),
+                svg.Circle(fill="#fff", r=2.8, cy=-6.4),
+            ],
+        ),
+    ]
+)
 
 
 def _decompress_7z_base64_data(data: str) -> bytes:
@@ -77,67 +249,131 @@ def _decompress_7z_base64_data(data: str) -> bytes:
     return decompressed_data
 
 
-def _calc_value(value: int, min_value: int, max_value: int) -> int:
+def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     try:
         if value is not None:
-            new_value = int((int(value) / _PIXEL_WIDTH) + _OFFSET)
+            # SVG allows sub-pixel precision, so we use floating point coordinates for better placement.
+            new_value = (
+                (float(value) / _PIXEL_WIDTH) + _OFFSET - axis_manipulation.map_shift
+            )
+            new_value = axis_manipulation.transform(new_value)
             # return value inside min and max
-            return min(max_value, max(min_value, new_value))
+            return round(
+                min(axis_manipulation.svg_max, max(0, new_value)), _ROUND_TO_DIGITS
+            )
 
     except (ZeroDivisionError, ValueError):
         pass
 
-    return min_value or 0
+    return 0
 
 
 def _calc_point(
-    x: int, y: int, image_box: tuple[int, int, int, int] | None
-) -> tuple[int, int]:
-    if image_box is None:
-        image_box = (0, 0, x, y)
-
-    return (
-        _calc_value(x, image_box[0], image_box[2]),
-        _calc_value(y, image_box[1], image_box[3]),
+    x: float,
+    y: float,
+    map_manipulation: MapManipulation,
+) -> Point:
+    return Point(
+        _calc_value(x, map_manipulation.x),
+        _calc_value(y, map_manipulation.y),
     )
 
 
-def _draw_positions(
+def _points_to_svg_path(
+    points: Sequence[Point | TracePoint],
+) -> list[svg.PathData]:
+    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to
+    # SVG path instructions.
+    path_data: list[svg.PathData] = []
+
+    # First instruction: move to the starting point using absolute coordinates
+    first_p = points[0]
+    path_data.append(svg.MoveTo(first_p.x, first_p.y))
+
+    for prev_p, p in itertools.pairwise(points):
+        x = round(p.x - prev_p.x, _ROUND_TO_DIGITS)
+        y = round(p.y - prev_p.y, _ROUND_TO_DIGITS)
+        if x == 0 and y == 0:
+            continue
+        if isinstance(p, TracePoint) and not p.connected:
+            path_data.append(svg.MoveToRel(x, y))
+        elif x == 0:
+            path_data.append(svg.VerticalLineToRel(y))
+        elif y == 0:
+            path_data.append(svg.HorizontalLineToRel(x))
+        else:
+            path_data.append(svg.LineToRel(x, y))
+    return path_data
+
+
+def _get_svg_positions(
     positions: list[Position],
-    image: Image.Image,
-    image_box: tuple[int, int, int, int] | None,
-) -> None:
-    for position in positions:
-        icon = Image.open(BytesIO(base64.b64decode(_POSITION_PNG[position.type])))
-        image.paste(
-            icon,
-            _calc_point(position.x, position.y, image_box),
-            icon.convert("RGBA"),
+    map_manipulation: MapManipulation,
+) -> list[svg.Element]:
+    svg_positions: list[svg.Element] = []
+    for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
+        pos = _calc_point(position.x, position.y, map_manipulation)
+        svg_positions.append(
+            svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
         )
 
+    return svg_positions
 
-def _draw_subset(
+
+def _get_svg_subset(
     subset: MapSubsetEvent,
-    draw: "DashedImageDraw",
-    image_box: tuple[int, int, int, int] | None,
-) -> None:
-    coordinates_ = ast.literal_eval(subset.coordinates)
-    points: list[tuple[int, int]] = [
-        _calc_point(coordinates_[i], coordinates_[i + 1], image_box)
-        for i in range(0, len(coordinates_), 2)
+    map_manipulation: MapManipulation,
+) -> Path | svg.Polygon:
+    subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
+
+    points = [
+        _calc_point(
+            subset_coordinates[i],
+            subset_coordinates[i + 1],
+            map_manipulation,
+        )
+        for i in range(0, len(subset_coordinates), 2)
     ]
 
-    if len(points) == 4:
-        # close rectangle
-        points.append(points[0])
+    if len(points) == 2:
+        # Only 2 point, use a path
+        return Path(
+            stroke=_COLORS[subset.type],
+            stroke_width=1.5,
+            stroke_dasharray=[4],
+            vector_effect="non-scaling-stroke",
+            d=_points_to_svg_path(points),
+        )
 
-    draw.dashed_line(points, dash=(3, 2), fill=_COLORS[subset.type], width=1)
+    # For any other points count, return a polygon that should fit any required shape
+    return svg.Polygon(
+        fill=_COLORS[subset.type] + "90",  # Set alpha channel to 90 for fill color
+        stroke=_COLORS[subset.type],
+        stroke_width=1.5,
+        stroke_dasharray=[4],
+        vector_effect="non-scaling-stroke",
+        points=[num for p in points for num in p.flatten()],
+    )
+
+
+def _set_image_palette(image: Image.Image) -> Image.Image:
+    """Dynamically create color palette for map image."""
+    palette_colors: list[int] = []
+    for idx in range(256):
+        palette_colors.extend(
+            _MAP_BACKGROUND_COLORS.get(idx, _DEFAULT_MAP_BACKGROUND_COLOR)
+        )
+    source_palette = ImagePalette.ImagePalette("RGB", palette_colors)
+
+    image.info["transparency"] = 0
+
+    return image.remap_palette(
+        [c[1] for c in image.getcolors()], source_palette.tobytes()
+    )
 
 
 class Map:
     """Map representation."""
-
-    RESIZE_FACTOR = 3
 
     def __init__(
         self,
@@ -149,7 +385,7 @@ class Map:
 
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
-        self._last_image: LastImage | None = None
+        self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
         self._unsubscribers_internal: list[Callable[[], None]] = []
         self._tasks: set[asyncio.Future[Any]] = set()
@@ -194,19 +430,19 @@ class Map:
         trace_points = _decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
-            byte_position_x = struct.unpack("<h", trace_points[i : i + 2])
-            byte_position_y = struct.unpack("<h", trace_points[i + 2 : i + 4])
+            position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
 
-            # Add To List
-            position_x = (int(byte_position_x[0] / 5)) + 400
-            position_y = (int(byte_position_y[0] / 5)) + 400
+            point_data = trace_points[i + 4]
 
-            self._map_data.trace_values.append(position_x)
-            self._map_data.trace_values.append(position_y)
+            connected = point_data >> 7 & 1 == 0
+
+            self._map_data.trace_values.append(
+                TracePoint(position_x, position_y, connected)
+            )
 
         _LOGGER.debug("[_update_trace_points] finish")
 
-    def _draw_map_pieces(self, draw: ImageDraw.ImageDraw) -> None:
+    def _draw_map_pieces(self, image: Image.Image) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
         image_y = 0
@@ -221,21 +457,31 @@ class Map:
 
             current_piece = self._map_data.map_pieces[i]
             if current_piece.in_use:
-                for x in range(100):
-                    current_column = current_piece.points[x]
-                    for y in range(100):
-                        pixel_type = current_column[y]
-                        point_x = image_x + x
-                        point_y = image_y + y
-                        if (point_x > 6400) or (point_y > 6400):
-                            _LOGGER.error(
-                                "[get_base64_map] Map Limit 6400!! X: %d Y: %d",
-                                point_x,
-                                point_y,
-                            )
-                            raise MapError("Map Limit reached!")
-                        if pixel_type in [0x01, 0x02, 0x03]:
-                            draw.point((point_x, point_y), fill=_COLORS[pixel_type])
+                image.paste(current_piece.image, (image_x, image_y))
+
+    def _get_svg_traces_path(
+        self,
+        map_manipulation: MapManipulation,
+    ) -> Path | None:
+        if len(self._map_data.trace_values) > 0:
+            _LOGGER.debug("[get_svg_map] Draw Trace")
+            return Path(
+                fill="none",
+                stroke=_COLORS[_TRACE_MAP],
+                stroke_width=1.5,
+                stroke_linejoin="round",
+                vector_effect="non-scaling-stroke",
+                transform=[
+                    svg.Translate(
+                        _OFFSET - map_manipulation.x.map_shift,
+                        _OFFSET - map_manipulation.y.map_shift,
+                    ),
+                    svg.Scale(0.2, 0.2),
+                ],
+                d=_points_to_svg_path(self._map_data.trace_values),
+            )
+
+        return None
 
     def enable(self) -> None:
         """Enable map."""
@@ -304,84 +550,103 @@ class Map:
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
 
-    def get_base64_map(self, width: int | None = None) -> bytes:
-        """Return map as base64 image string."""
+    def _get_background_image(self) -> BackgroundImage | None:
+        """Return background image."""
+        image = Image.new("P", (6400, 6400))
+        self._draw_map_pieces(image)
+
+        bounding_box = image.getbbox()
+        if bounding_box is None:
+            return None
+
+        image = ImageOps.flip(image.crop(bounding_box))
+        image = _set_image_palette(image)
+
+        buffered = BytesIO()
+        image.save(buffered, format="PNG", optimize=True)
+
+        return BackgroundImage(
+            bounding_box,
+            buffered.getvalue(),
+        )
+
+    def get_svg_map(self) -> str | None:
+        """Return map as SVG string."""
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
-        if (
-            self._last_image is not None
-            and width == self._last_image.width
-            and not self._map_data.changed
-        ):
-            _LOGGER.debug("[get_base64_map] No need to update")
-            return self._last_image.base64_image
+        if self._last_image and not self._map_data.changed:
+            _LOGGER.debug("[get_svg_map] No need to update")
+            return self._last_image
 
-        _LOGGER.debug("[get_base64_map] Begin")
-        image = Image.new("RGBA", (6400, 6400))
-        draw = DashedImageDraw(image)
+        _LOGGER.debug("[get_svg_map] Begin")
 
-        self._draw_map_pieces(draw)
+        # Reset change before starting to build the SVG
+        self._map_data.reset_changed()
 
-        # Draw Trace Route
-        if len(self._map_data.trace_values) > 0:
-            _LOGGER.debug("[get_base64_map] Draw Trace")
-            draw.line(self._map_data.trace_values, fill=_COLORS[_TRACE_MAP], width=1)
+        background = self._get_background_image()
+        if background is None:
+            self._last_image = None
+            return None
 
-        image_box = image.getbbox()
-        for subset in self._map_data.map_subsets.values():
-            _draw_subset(subset, draw, image_box)
-
-        del draw
-
-        _draw_positions(self._map_data.positions, image, image_box)
-
-        _LOGGER.debug("[get_base64_map] Crop Image")
-        cropped = image.crop(image_box)
-        del image
-
-        _LOGGER.debug("[get_base64_map] Flipping Image")
-        cropped = ImageOps.flip(cropped)
-
-        _LOGGER.debug(
-            "[get_base64_map] Map current Size: X: %d Y: %d",
-            cropped.size[0],
-            cropped.size[1],
+        # Build the SVG elements
+        svg_map = svg.SVG()
+        svg_map.elements = [_SVG_DEFS]
+        manipulation = MapManipulation(
+            AxisManipulation(
+                map_shift=background.bounding_box[0],
+                svg_max=background.bounding_box[2] - background.bounding_box[0],
+            ),
+            AxisManipulation(
+                map_shift=background.bounding_box[1],
+                svg_max=background.bounding_box[3] - background.bounding_box[1],
+                _transform=lambda c, v: 2 * c - v,
+            ),
         )
 
-        new_size = None
-        if width is not None and width > 0:
-            height = int((width / cropped.size[0]) * cropped.size[1])
-            _LOGGER.debug(
-                "[get_base64_map] Resize based on the requested width: %d and calculated height %d",
-                width,
-                height,
+        # Set map viewBox based on background map bounding box.
+        svg_map.viewBox = svg.ViewBoxSpec(
+            0,
+            0,
+            manipulation.x.svg_max,
+            manipulation.y.svg_max,
+        )
+
+        # Map background.
+        svg_map.elements.append(
+            svg.Image(
+                style="image-rendering: pixelated",
+                href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
             )
-            new_size = (width, height)
-        elif cropped.size[0] > 400 or cropped.size[1] > 400:
-            _LOGGER.debug("[get_base64_map] Resize disabled.. map over 400")
-        else:
-            resize_factor = Map.RESIZE_FACTOR
-            _LOGGER.debug("[get_base64_map] Resize factor: %d", resize_factor)
-            new_size = (
-                cropped.size[0] * resize_factor,
-                cropped.size[1] * resize_factor,
+        )
+
+        # Additional subsets (VirtualWalls and NoMopZones)
+        svg_map.elements.extend(
+            [
+                _get_svg_subset(subset, manipulation)
+                for subset in self._map_data.map_subsets.values()
+            ]
+        )
+
+        # Traces (if any)
+        if svg_traces_path := self._get_svg_traces_path(manipulation):
+            svg_map.elements.append(
+                # Elements to vertically flip
+                svg.G(
+                    transform_origin=r"50% 50%",
+                    transform=[svg.Scale(1, -1)],
+                    elements=[svg_traces_path],
+                )
             )
 
-        if new_size is not None:
-            cropped = cropped.resize(new_size, Image.Resampling.NEAREST)
+        # Bot and Charge stations
+        svg_map.elements.extend(
+            _get_svg_positions(self._map_data.positions, manipulation)
+        )
 
-        _LOGGER.debug("[get_base64_map] Saving to buffer")
-        buffered = BytesIO()
-        cropped.save(buffered, format="PNG")
-        del cropped
-
-        base64_image = base64.b64encode(buffered.getvalue())
-        self._map_data.reset_changed()
-        self._last_image = LastImage(base64_image, width)
-        _LOGGER.debug("[get_base64_map] Finish")
-
-        return base64_image
+        self._last_image = str(svg_map)
+        _LOGGER.debug("[get_svg_map] Finish")
+        return self._last_image
 
     async def teardown(self) -> None:
         """Teardown map."""
@@ -398,15 +663,15 @@ class MapPiece:
     def __init__(self, on_change: Callable[[], None], index: int) -> None:
         self._on_change = on_change
         self._index = index
-        self._points: NDArray[float64] | None = None
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
+        self._image: Image.Image | None = None
 
     def crc32_indicates_update(self, crc32: str) -> bool:
         """Return True if update is required."""
         crc32_int = int(crc32)
         if crc32_int == MapPiece._NOT_INUSE_CRC32:
             self._crc32 = crc32_int
-            self._points = None
+            self._image = None
             return False
 
         return self._crc32 != crc32_int
@@ -417,11 +682,11 @@ class MapPiece:
         return self._crc32 != MapPiece._NOT_INUSE_CRC32
 
     @property
-    def points(self) -> NDArray[float64]:
+    def image(self) -> Image.Image:
         """I'm the 'x' property."""
-        if not self.in_use or self._points is None:
-            return zeros((100, 100))
-        return self._points
+        if not self.in_use or self._image is None:
+            return Image.new("P", (100, 100))
+        return self._image
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
@@ -433,9 +698,10 @@ class MapPiece:
             self._on_change()
 
         if self.in_use:
-            self._points = reshape(list(decoded), (100, 100))
+            im = Image.frombytes("P", (100, 100), decoded, "raw", "P", 0, -1)
+            self._image = im.rotate(-90)
         else:
-            self._points = None
+            self._image = None
 
     def __hash__(self) -> int:
         """Calculate hash on index and crc32."""
@@ -446,98 +712,6 @@ class MapPiece:
             return False
 
         return self._crc32 == obj._crc32 and self._index == obj._index
-
-
-class DashedImageDraw(ImageDraw.ImageDraw):
-    """Class extend ImageDraw by dashed line."""
-
-    # Copied from https://stackoverflow.com/a/65893631 Credits ands
-    _FILL = str | int | tuple[int, int, int] | tuple[int, int, int, int] | None
-
-    def _thick_line(
-        self,
-        xy: list[tuple[int, int]],
-        direction: list[tuple[int, int]],
-        fill: _FILL = None,
-        width: int = 0,
-    ) -> None:
-        if xy[0] != xy[1]:
-            self.line(xy, fill=fill, width=width)
-        else:
-            x1, y1 = xy[0]
-            delta_x = direction[1][0] - direction[0][0]
-            delta_y = direction[1][1] - direction[0][1]
-
-            if delta_x < 0:
-                y1 -= 1
-
-            if delta_y < 0:
-                x1 -= 1
-
-            if delta_y != 0:
-                if delta_x != 0:
-                    k = -delta_x / delta_y
-                    a = 1 / math.sqrt(1 + k**2)
-                    b = (width * a - 1) / 2
-                else:
-                    k = 0
-                    b = (width - 1) / 2
-                x1 = x1 - math.floor(b)
-                y1 = y1 - int(k * b)
-                x2 = x1 + math.ceil(b)
-                y2 = y1 + int(k * b)
-            else:
-                y1 = y1 - math.floor((width - 1) / 2)
-                x2 = x1
-                y2 = y1 + math.ceil((width - 1) / 2)
-            self.line([(x1, y1), (x2, y2)], fill=fill, width=1)
-
-    def dashed_line(
-        self,
-        xy: list[tuple[int, int]],
-        dash: tuple[int, int] = (2, 2),
-        fill: _FILL = None,
-        width: int = 0,
-    ) -> None:
-        """Draw a dashed line, or a connected sequence of line segments."""
-        for i in range(len(xy) - 1):
-            x1, y1 = xy[i]
-            x2, y2 = xy[i + 1]
-            x_length = x2 - x1
-            y_length = y2 - y1
-            length = math.sqrt(x_length**2 + y_length**2)
-            dash_enabled = True
-            position = 0
-            while position < length:
-                for dash_step in dash:
-                    if dash_enabled:
-                        start = position / length
-                        end = min((position + dash_step - 1) / length, 1)
-                        self._thick_line(
-                            [
-                                (
-                                    round(x1 + start * x_length),
-                                    round(y1 + start * y_length),
-                                ),
-                                (
-                                    round(x1 + end * x_length),
-                                    round(y1 + end * y_length),
-                                ),
-                            ],
-                            xy,
-                            fill,
-                            width,
-                        )
-                    dash_enabled = not dash_enabled
-                    position += dash_step
-
-
-@dataclasses.dataclass(frozen=True)
-class LastImage:
-    """Last created image."""
-
-    base64_image: bytes
-    width: int | None
 
 
 class MapData:
@@ -557,7 +731,7 @@ class MapData:
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._trace_values: OnChangedList[int] = OnChangedList(on_change)
+        self._trace_values: OnChangedList[TracePoint] = OnChangedList(on_change)
 
     @property
     def changed(self) -> bool:
@@ -592,7 +766,7 @@ class MapData:
         return self._rooms
 
     @property
-    def trace_values(self) -> OnChangedList[int]:
+    def trace_values(self) -> OnChangedList[TracePoint]:
         """Return trace values."""
         return self._trace_values
 

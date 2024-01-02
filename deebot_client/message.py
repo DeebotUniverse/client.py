@@ -44,7 +44,7 @@ _MessageT = TypeVar("_MessageT", bound="Message")
 
 
 def _handle_error_or_analyse(
-    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]
+    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult],
 ) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
     """Handle error or None response."""
 
@@ -125,8 +125,7 @@ class MessageBody(Message):
         :return: A message response
         """
         if isinstance(message, dict):
-            data_body = message.get("body", message)
-            return cls.__handle_body(event_bus, data_body)
+            return cls.__handle_body(event_bus, message["body"])
 
         return super()._handle(event_bus, message)
 
@@ -165,8 +164,10 @@ class MessageBodyData(MessageBody):
 
         :return: A message response
         """
-        data = body.get("data", body)
-        return cls.__handle_body_data(event_bus, data)
+        if "data" in body:
+            return cls.__handle_body_data(event_bus, body["data"])
+
+        return super()._handle_body(event_bus, body)
 
 
 class MessageBodyDataDict(MessageBodyData):
