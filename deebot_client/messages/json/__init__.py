@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .stats import ReportStats
+from .wash_info import OnWashInfo
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -13,6 +14,7 @@ if TYPE_CHECKING:
 __all__ = [
     "OnBattery",
     "OnMapSetV2",
+    "OnWashInfo",
     "ReportStats",
 ]
 

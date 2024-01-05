@@ -51,6 +51,7 @@ if TYPE_CHECKING:
 
     from deebot_client.command import Command, SetCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
+    from deebot_client.events.wash_info import WashInfoEvent, WashMode
     from deebot_client.models import CleanAction, CleanMode
 
 
@@ -131,6 +132,8 @@ class CapabilityClean:
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
+    wash_info_mode: CapabilitySetTypes[WashInfoEvent, WashMode] | None = None
+    wash_info_hot_wash_amount: CapabilitySet[WashInfoEvent, int] | None = None
 
 
 @dataclass(frozen=True)
