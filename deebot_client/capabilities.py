@@ -32,6 +32,7 @@ from deebot_client.events import (
     RoomsEvent,
     StateEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
@@ -173,6 +174,7 @@ class CapabilitySettings:
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
     ) = None
+    sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]
