@@ -48,6 +48,7 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
+    "SweepModeEvent",
     "WaterAmount",
     "WaterInfoEvent",
     "WorkMode",
@@ -235,3 +236,10 @@ class TrueDetectEvent(EnableEvent):
 @dataclass(frozen=True)
 class VoiceAssistantStateEvent(EnableEvent):
     """VoiceAssistantState event."""
+
+
+@dataclass(frozen=True)
+class SweepModeEvent(Event):
+    """SweepMode event ("Mop-Only" option)."""
+
+    type: bool

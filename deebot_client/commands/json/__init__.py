@@ -29,6 +29,7 @@ from .network import GetNetInfo
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
+from .sweep_mode import GetSweepMode, SetSweepMode
 from .stats import GetStats, GetTotalStats
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
@@ -74,6 +75,8 @@ __all__ = [
     "GetPos",
     "SetRelocationState",
     "GetStats",
+    "GetSweepMode",
+    "SetSweepMode",
     "GetTotalStats",
     "GetTrueDetect",
     "SetTrueDetect",
@@ -145,6 +148,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetPos,
 
     SetRelocationState,
+
+    GetSweepMode,
+    SetSweepMode,
 
     GetStats,
     GetTotalStats,
