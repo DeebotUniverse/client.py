@@ -1,7 +1,7 @@
 """Fan speed event module."""
 
-
 from dataclasses import dataclass
+from enum import Enum
 
 from deebot_client.util import DisplayNameIntEnum
 
@@ -18,8 +18,16 @@ class FanSpeedLevel(DisplayNameIntEnum):
     MAX_PLUS = 2
 
 
+class FanSpeedLevelXml(Enum):
+    """Enum class for fan speed levels for the MQTT + XML based models."""
+
+    # Currently used for the Deebot 900 / MQTT + XML based devices
+    STRONG = "strong"
+    STANDARD = "standard"
+
+
 @dataclass(frozen=True)
 class FanSpeedEvent(Event):
     """Fan speed event representation."""
 
-    speed: FanSpeedLevel
+    speed: FanSpeedLevel | FanSpeedLevelXml

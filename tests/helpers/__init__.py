@@ -32,6 +32,10 @@ def get_request_json(body: dict[str, Any]) -> dict[str, Any]:
     return {"id": "ALZf", "ret": "ok", "resp": get_message_json(body)}
 
 
+def get_request_xml(data: str | None) -> dict[str, Any]:
+    return {"id": "ALZf", "ret": "ok", "resp": data, "payloadType": "x"}
+
+
 def get_success_body(data: dict[str, Any] | None | list[Any] = None) -> dict[str, Any]:
     body = {
         "code": 0,
