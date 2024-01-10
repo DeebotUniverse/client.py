@@ -20,8 +20,8 @@ class GetSweepMode(JsonGetCommand):
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
-        """
-        Handle message->body->data and notify the correct event subscribers.
+        """Handle message->body->data and notify the correct event subscribers.
+
         :return: A message response
         """
         event_bus.notify(SweepModeEvent(data["type"]))
@@ -33,7 +33,7 @@ class SetSweepMode(JsonSetCommand):
 
     name = "setSweepMode"
     get_command = GetSweepMode
-    _mqtt_params = MappingProxyType({"type": InitParam(bool)})
+    _mqtt_params = MappingProxyType({"type": bool})
 
     def __init__(self, enabled: bool) -> None:
         super().__init__({"type": enabled})
