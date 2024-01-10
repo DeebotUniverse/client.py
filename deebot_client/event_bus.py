@@ -149,7 +149,10 @@ class EventBus:
         processing_data = self._event_processing_dict[event_class]
         semaphore = processing_data.semaphore
         if semaphore.locked():
-            _LOGGER.debug("Already refresh function running. Skipping...")
+            _LOGGER.debug(
+                "Already refresh function running for %s. Skipping...",
+                event_class.__name__,
+            )
             return
 
         async with semaphore:
