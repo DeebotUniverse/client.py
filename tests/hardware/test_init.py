@@ -7,6 +7,7 @@ import pytest
 
 from deebot_client.command import Command
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
@@ -51,6 +52,7 @@ from deebot_client.events import (
     VoiceAssistantStateEvent,
     VolumeEvent,
 )
+from deebot_client.events.auto_empty import AutoEmptyModeEvent
 from deebot_client.events.base import Event
 from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
@@ -155,6 +157,7 @@ def test_get_static_device_info(
             "p95mgv",
             {
                 AdvancedModeEvent: [GetAdvancedMode()],
+                AutoEmptyModeEvent: [GetAutoEmpty()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],
                 CachedMapInfoEvent: [GetCachedMapInfo()],

@@ -41,6 +41,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.auto_empty import AutoEmptyMode, AutoEmptyModeEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from deebot_client.models import CleanAction, CleanMode
 
@@ -108,6 +109,15 @@ class CapabilitySetTypes(CapabilitySet[_EVENT, _T | str], CapabilityTypes[_T]):
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityCleanAutoEmpty(
+    CapabilityEvent[AutoEmptyModeEvent], CapabilityTypes[AutoEmptyMode]
+):
+    """Capabilities for clean auto empty."""
+
+    set: Callable[[bool, AutoEmptyMode | str | None], SetCommand]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityCleanAction:
     """Capabilities for clean action."""
 
@@ -119,6 +129,7 @@ class CapabilityCleanAction:
 class CapabilityClean:
     """Capabilities for clean."""
 
+    auto_empty: CapabilityCleanAutoEmpty | None = None
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent]
     count: CapabilitySet[CleanCountEvent, int] | None = None
