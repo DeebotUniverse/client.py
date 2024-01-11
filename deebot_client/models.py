@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Required, TypedDict
 from aiohttp import ClientSession
 
 from deebot_client.const import DataType
+from deebot_client.util.continents import get_continent
 
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
@@ -182,13 +183,13 @@ class Configuration:
         *,
         device_id: str,
         country: str,
-        continent: str,
+        continent: str | None = None,
         verify_ssl: bool | str = True,
     ) -> None:
         self._session = session
         self._device_id = device_id
         self._country = country
-        self._continent = continent
+        self._continent = continent or get_continent(country)
         self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
 
     @property
