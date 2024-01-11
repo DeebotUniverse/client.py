@@ -188,8 +188,8 @@ class Configuration:
     ) -> None:
         self._session = session
         self._device_id = device_id
-        self._country = country
-        self._continent = continent or get_continent(country)
+        self._country = country.lower()
+        self._continent = (continent or get_continent(country)).lower()
         self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
 
     @property

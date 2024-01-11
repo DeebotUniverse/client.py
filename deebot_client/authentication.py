@@ -132,7 +132,7 @@ class _AuthClient:
 
         url = _USER_LOGIN_URL_FORMAT.format(**self._meta, tld=self._tld)
 
-        if self._config.country.lower() == "cn":
+        if self._config.country == "cn":
             url += "CheckMobile"
 
         return await self.__do_auth_response(
