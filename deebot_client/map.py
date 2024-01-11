@@ -12,6 +12,7 @@ import lzma
 import struct
 from typing import Any, Final
 import zlib
+import shapely.geometry
 
 from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
@@ -407,7 +408,10 @@ class Map:
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
             if event.type == MapSetType.ROOMS and event.name:
-                room = Room(event.name, event.id, event.coordinates)
+                decompressed_coords = _decompress_7z_base64_data(event.coordinates).decode('utf-8')
+                coordinates = [tuple(map(float, pair.split(','))) for pair in decompressed_coords.split(';')]
+                room = Room(event.name, event.id, decompressed_coords, shapely.geometry.Polygon(coordinates))
+
                 if self._map_data.rooms.get(event.id, None) != room:
                     self._map_data.rooms[room.id] = room
 

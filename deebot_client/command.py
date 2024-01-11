@@ -13,7 +13,7 @@ from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
-from .models import DeviceInfo
+from .models import DeviceInfo, Room
 
 _LOGGER = get_logger(__name__)
 
@@ -63,7 +63,7 @@ class Command(ABC):
 
     @final
     async def execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus, rooms: list[Room] = []
     ) -> bool:
         """Execute command.
 
@@ -73,14 +73,14 @@ class Command(ABC):
                                 This value is not indicating if the command was executed successfully.
         """
         try:
-            result = await self._execute(authenticator, device_info, event_bus)
+            result = await self._execute(authenticator, device_info, event_bus, rooms)
             if result.state == HandlingState.SUCCESS:
                 # Execute command which are requested by the handler
                 async with asyncio.TaskGroup() as tg:
                     for requested_command in result.requested_commands:
                         tg.create_task(
                             requested_command.execute(
-                                authenticator, device_info, event_bus
+                                authenticator, device_info, event_bus, rooms
                             )
                         )
 
@@ -94,10 +94,13 @@ class Command(ABC):
         return False
 
     async def _execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus, rooms: list[Room] = []
     ) -> CommandResult:
         """Execute command."""
         response = await self._execute_api_request(authenticator, device_info)
+
+        if self.name == "getPos":
+            response["resp"]["body"]["data"]["rooms"] = rooms
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:

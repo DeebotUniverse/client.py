@@ -96,7 +96,7 @@ async def test_MapData(event_bus: EventBus) -> None:
 
     async def test_cycle() -> None:
         for x in range(10000):
-            map_data.positions.append(Position(PositionType.DEEBOT, x, x))
+            map_data.positions.append(Position(PositionType.DEEBOT, x, x, -1))
             map_data.rooms[x] = Room("test", x, "1,2")
 
         assert map_data.changed is True

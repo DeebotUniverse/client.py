@@ -8,6 +8,7 @@ from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 from .common import JsonCommandWithMessageHandling
 
+from shapely.geometry import Point
 
 class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
@@ -27,26 +28,44 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         positions = []
 
+        rooms = data.get("rooms", [])
+
         for type_str in ["deebotPos", "chargePos"]:
+
+            room_name = None
             data_positions = data.get(type_str, [])
 
             if isinstance(data_positions, dict):
+                point = Point(data_positions.get("x"), data_positions.get("y"))
+                for room in rooms:
+                    if room.polygon is not None and room.polygon.contains(point):
+                        room_name = room.name
+                        break
+
                 positions.append(
                     Position(
                         type=PositionType(type_str),
-                        x=data_positions["x"],
-                        y=data_positions["y"],
+                        x=data_positions.get("x"),
+                        y=data_positions.get("y"),
+                        room=room_name
                     )
                 )
             else:
-                positions.extend(
-                    [
+                for entry in data_positions:
+                    point = Point(entry.get("x"), entry.get("y"))
+                    for room in rooms:
+                        if room.polygon is not None and room.polygon.contains(point):
+                            room_name = room.name
+                            break
+
+                    positions.append(
                         Position(
-                            type=PositionType(type_str), x=entry["x"], y=entry["y"]
+                            type=PositionType(type_str),
+                            x=entry.get("x"),
+                            y=entry.get("y"),
+                            room=room_name
                         )
-                        for entry in data_positions
-                    ]
-                )
+                    )
 
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))
