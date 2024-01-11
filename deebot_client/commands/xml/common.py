@@ -3,7 +3,7 @@ from abc import ABC, abstractmethod
 from typing import cast
 from xml.etree.ElementTree import Element, SubElement
 
-from defusedxml import ElementTree  # type: ignore[import]
+from defusedxml import ElementTree  # type: ignore[import-untyped]
 
 from deebot_client.command import Command, CommandWithMessageHandling
 from deebot_client.const import DataType
