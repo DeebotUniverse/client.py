@@ -29,8 +29,8 @@ from .network import GetNetInfo
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
-from .sweep_mode import GetSweepMode, SetSweepMode
 from .stats import GetStats, GetTotalStats
+from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
 from .volume import GetVolume, SetVolume
