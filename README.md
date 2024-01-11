@@ -36,16 +36,13 @@ from deebot_client.device import Device
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
 password_hash = md5("yourPassword")
-continent = "eu"
 country = "de"
 
 
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    config = Configuration(session,
-                           device_id=device_id, country=country, continent=continent,
-                           )
+    config = Configuration(session, device_id=device_id, country=country)
 
     authenticator = Authenticator(config, account_id, password_hash)
     api_client = ApiClient(authenticator)

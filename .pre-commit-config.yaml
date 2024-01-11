@@ -29,9 +29,10 @@ repos:
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=hass,deebot
+          - --ignore-words-list=deebot
           - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
+          - --exclude-file=deebot_client/util/continents.py
         exclude_types:
           - csv
           - json
