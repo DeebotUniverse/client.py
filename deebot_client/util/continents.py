@@ -3,11 +3,11 @@
 
 def get_continent(country: str) -> str:
     """Return the continent for the given country or ww."""
-    return _COUNTRIES_TO_CONTINENTS.get(country, "WW")
+    return COUNTRIES_TO_CONTINENTS.get(country, "WW")
 
 
-# Co pied from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/countries.json on 11.01.2024
-_COUNTRIES_TO_CONTINENTS = {
+# Copied from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/countries.json on 11.01.2024
+COUNTRIES_TO_CONTINENTS = {
     "AD": "EU",
     "AE": "AS",
     "AF": "AS",
