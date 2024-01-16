@@ -16,13 +16,13 @@ if TYPE_CHECKING:
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
-        "company": str,
+        "company": Required[str],
         "did": Required[str],
         "name": Required[str],
         "nick": str,
         "resource": Required[str],
-        "deviceName": Required[str],
-        "status": Required[int],
+        "deviceName": str,
+        "status": int,
         "class": Required[str],
     },
     total=False,
@@ -75,16 +75,6 @@ class DeviceInfo:
     def resource(self) -> str:
         """Return resource."""
         return str(self._api_device_info["resource"])
-
-    @property
-    def device_name(self) -> str:
-        """Return device name."""
-        return str(self._api_device_info["deviceName"])
-
-    @property
-    def status(self) -> int:
-        """Return device status."""
-        return int(self._api_device_info["status"])
 
     @property
     def get_class(self) -> str:
