@@ -1,8 +1,10 @@
 """Continents module."""
 
 
-def get_continent(country: str) -> str:
+def get_continent(country: str | None) -> str:
     """Return the continent for the given country or ww."""
+    if not country:
+        return "WW"
     return COUNTRIES_TO_CONTINENTS.get(country, "WW")
 
 
