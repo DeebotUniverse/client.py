@@ -145,7 +145,7 @@ class MqttClient:
             username=credentials.user_id,
             password=credentials.token,
             logger=_CLIENT_LOGGER,
-            client_id=client_id,
+            identifier=client_id,
             tls_context=self._config.ssl_context,
         )
 
@@ -166,9 +166,8 @@ class MqttClient:
                                 await client.subscribe(topic)
 
                         async def listen() -> None:
-                            async with client.messages() as messages:
-                                async for message in messages:
-                                    self._handle_message(message)
+                            async for message in client.messages:
+                                self._handle_message(message)
 
                         tasks = [
                             asyncio.create_task(listen()),

@@ -88,7 +88,7 @@ async def test_client_reconnect_on_broker_error(
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
-        client_id="Test-helper",
+        identifier="Test-helper",
         tls_context=mqtt_config.ssl_context,
     ) as client:
         # test client cannot be used as we restart the broker in this test
@@ -118,7 +118,7 @@ async def test_client_reconnect_on_broker_error(
             async with Client(
                 hostname=mqtt_config.hostname,
                 port=mqtt_config.port,
-                client_id="Test-helper",
+                identifier="Test-helper",
                 tls_context=mqtt_config.ssl_context,
             ) as client:
                 # test client cannot be used as we restart the broker in this test
