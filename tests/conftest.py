@@ -99,7 +99,7 @@ async def test_mqtt_client(
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
-        client_id="Test-helper",
+        identifier="Test-helper",
         tls_context=mqtt_config.ssl_context,
     ) as client:
         yield client
