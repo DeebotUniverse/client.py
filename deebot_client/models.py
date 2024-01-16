@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Required, TypedDict
 from aiohttp import ClientSession
 
 from deebot_client.const import DataType
+from deebot_client.util.continents import get_continent
 
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
@@ -15,13 +16,13 @@ if TYPE_CHECKING:
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
-        "company": str,
+        "company": Required[str],
         "did": Required[str],
         "name": Required[str],
         "nick": str,
         "resource": Required[str],
-        "deviceName": Required[str],
-        "status": Required[int],
+        "deviceName": str,
+        "status": int,
         "class": Required[str],
     },
     total=False,
@@ -74,16 +75,6 @@ class DeviceInfo:
     def resource(self) -> str:
         """Return resource."""
         return str(self._api_device_info["resource"])
-
-    @property
-    def device_name(self) -> str:
-        """Return device name."""
-        return str(self._api_device_info["deviceName"])
-
-    @property
-    def status(self) -> int:
-        """Return device status."""
-        return int(self._api_device_info["status"])
 
     @property
     def get_class(self) -> str:
@@ -182,13 +173,13 @@ class Configuration:
         *,
         device_id: str,
         country: str,
-        continent: str,
+        continent: str | None = None,
         verify_ssl: bool | str = True,
     ) -> None:
         self._session = session
         self._device_id = device_id
-        self._country = country
-        self._continent = continent
+        self._country = country.lower()
+        self._continent = (continent or get_continent(country)).lower()
         self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
 
     @property

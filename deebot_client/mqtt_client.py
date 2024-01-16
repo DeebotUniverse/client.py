@@ -69,10 +69,7 @@ class MqttConfiguration:
 
         object.__setattr__(self, "device_id", config.device_id)
 
-        if (
-            self.hostname == MqttConfiguration.hostname
-            and config.country.lower() != "cn"
-        ):
+        if self.hostname == MqttConfiguration.hostname and config.country != "cn":
             object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
 
 
