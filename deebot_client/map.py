@@ -185,6 +185,22 @@ class BackgroundImage:
     image: bytes
 
 
+@dataclasses.dataclass
+class CalibrationPoint:
+    """Calibration point."""
+
+    vacuum: Point
+    map: Point
+
+
+@dataclasses.dataclass
+class CalibratedMap:
+    """Map image with calibration points."""
+
+    calibration_points: tuple[CalibrationPoint, CalibrationPoint, CalibrationPoint]
+    image: str
+
+
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
     elements=[
@@ -262,10 +278,8 @@ def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
                 (float(value) / _PIXEL_WIDTH) + _OFFSET - axis_manipulation.map_shift
             )
             new_value = axis_manipulation.transform(new_value)
-            # return value inside min and max
-            return round(
-                min(axis_manipulation.svg_max, max(0, new_value)), _ROUND_TO_DIGITS
-            )
+
+            return round(new_value, _ROUND_TO_DIGITS)
 
     except (ZeroDivisionError, ValueError):
         pass
@@ -273,7 +287,7 @@ def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     return 0
 
 
-def _calc_point(
+def _calc_unbounded_point(
     x: float,
     y: float,
     map_manipulation: MapManipulation,
@@ -281,6 +295,19 @@ def _calc_point(
     return Point(
         _calc_value(x, map_manipulation.x),
         _calc_value(y, map_manipulation.y),
+    )
+
+
+def _calc_point(
+    x: float,
+    y: float,
+    map_manipulation: MapManipulation,
+) -> Point:
+    unbounded = _calc_unbounded_point(x, y, map_manipulation)
+
+    return Point(
+        min(map_manipulation.x.svg_max, max(0, unbounded.x)),
+        min(map_manipulation.y.svg_max, max(0, unbounded.y)),
     )
 
 
@@ -390,7 +417,7 @@ class Map:
 
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
-        self._last_image: str | None = None
+        self._last_image: CalibratedMap | None = None
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
@@ -564,6 +591,13 @@ class Map:
         )
 
     def get_svg_map(self) -> str | None:
+        """Return map as SVG string and set of calibration points."""
+        map = self.get_calibrated_map()
+        if map is None:
+            return None
+        return map.image
+
+    def get_calibrated_map(self) -> CalibratedMap | None:
         """Return map as SVG string."""
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
@@ -637,7 +671,26 @@ class Map:
             _get_svg_positions(self._map_data.positions, manipulation)
         )
 
-        self._last_image = str(svg_map)
+        p0 = Point(0, 0)
+        p1 = Point(0, 100000)
+        p2 = Point(100000, 0)
+
+        points = (
+            CalibrationPoint(
+                vacuum=p0,
+                map=_calc_unbounded_point(p0.x, p0.y, manipulation),
+            ),
+            CalibrationPoint(
+                vacuum=p1,
+                map=_calc_unbounded_point(p1.x, p1.y, manipulation),
+            ),
+            CalibrationPoint(
+                vacuum=p2,
+                map=_calc_unbounded_point(p2.x, p2.y, manipulation),
+            ),
+        )
+
+        self._last_image = CalibratedMap(calibration_points=points, image=str(svg_map))
         _LOGGER.debug("[get_svg_map] Finish")
         return self._last_image
 
