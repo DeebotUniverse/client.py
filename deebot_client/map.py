@@ -616,9 +616,6 @@ class Map:
             self._last_image = None
             return None
 
-        # Build the SVG elements
-        svg_map = svg.SVG()
-        svg_map.elements = [_SVG_DEFS]
         manipulation = MapManipulation(
             AxisManipulation(
                 map_shift=background.bounding_box[0],
@@ -630,6 +627,10 @@ class Map:
                 _transform=lambda c, v: 2 * c - v,
             ),
         )
+
+        # Build the SVG elements
+        svg_map = svg.SVG(width=manipulation.x.svg_max, height=manipulation.y.svg_max)
+        svg_map.elements = [_SVG_DEFS]
 
         # Set map viewBox based on background map bounding box.
         svg_map.viewBox = svg.ViewBoxSpec(
