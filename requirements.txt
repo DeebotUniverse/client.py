@@ -5,4 +5,4 @@ defusedxml
 numpy>=1.23.2,<2.0
 Pillow>=10.0.1,<11.0
 svg.py>=1.4.2
-shapely~=2.0.2
+shapely>=2.0.2
