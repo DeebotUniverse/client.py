@@ -236,6 +236,6 @@ class EventBus:
 
         if self.has_subscribers(event_type):
             # There are already subscribers
-            create_task(self._tasks, callback())
+            create_task(self._tasks, data.call())
 
         return unsubscribe
