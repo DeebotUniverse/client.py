@@ -138,8 +138,8 @@ def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
 
 
 @pytest.fixture
-def event_bus_mock() -> Mock:
-    return Mock(spec_set=EventBus)
+def event_bus_mock(event_bus: EventBus) -> Mock:
+    return Mock(spec_set=EventBus, wraps=event_bus)
 
 
 @pytest.fixture(name="caplog")

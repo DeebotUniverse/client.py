@@ -18,6 +18,26 @@ _LOGGER = get_logger(__name__)
 T = TypeVar("T", bound=Event)
 
 
+class _OnSubscriptionCallback:
+    def __init__(
+        self, callback: Callable[[], Coroutine[Any, Any, Callable[[], None]]]
+    ) -> None:
+        """Init."""
+        self._callback = callback
+        self._unsub: Callable[[], None] | None = None
+
+    async def call(self) -> None:
+        """Execute callback."""
+        if not self._unsub:
+            self._unsub = await self._callback()
+
+    def unsubcribe(self) -> None:
+        """Execute unsubscribe."""
+        if self._unsub:
+            self._unsub()
+            self._unsub = None
+
+
 class _EventProcessingData(Generic[T]):
     """Data class, which holds all needed data per EventDto."""
 
@@ -31,6 +51,7 @@ class _EventProcessingData(Generic[T]):
         self.last_event: T | None = None
         self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
+        self.on_subscription_callbacks: Final[list[_OnSubscriptionCallback]] = []
 
 
 class EventBus:
@@ -66,6 +87,9 @@ class EventBus:
 
         def unsubscribe() -> None:
             event_processing_data.subscriber_callbacks.remove(callback)
+            if not event_processing_data.subscriber_callbacks:
+                for _callback in event_processing_data.on_subscription_callbacks:
+                    _callback.unsubcribe()
 
         event_processing_data.subscriber_callbacks.append(callback)
 
@@ -75,6 +99,9 @@ class EventBus:
         elif len(event_processing_data.subscriber_callbacks) == 1:
             # first subscriber therefore do refresh
             self.request_refresh(event_type)
+            _LOGGER.debug("Calling on_first_subscription callbacks for %s", event_type)
+            for _callback in event_processing_data.on_subscription_callbacks:
+                create_task(self._tasks, _callback.call())
 
         return unsubscribe
 
@@ -190,3 +217,25 @@ class EventBus:
             return event_processing.last_event
 
         return None
+
+    def add_on_subscription_callback(
+        self,
+        event_type: type[T],
+        callback: Callable[[], Coroutine[Any, Any, Callable[[], None]]],
+    ) -> Callable[[], None]:
+        """Add callback, which is called on the first subscription of the given event and the returned callable is called after the last subscriber has unsubscriven."""
+        event_processing_data = self._get_or_create_event_processing_data(event_type)
+
+        data = _OnSubscriptionCallback(callback)
+
+        def unsubscribe() -> None:
+            data.unsubcribe()
+            event_processing_data.on_subscription_callbacks.remove(data)
+
+        event_processing_data.on_subscription_callbacks.append(data)
+
+        if self.has_subscribers(event_type):
+            # There are already subscribers
+            create_task(self._tasks, data.call())
+
+        return unsubscribe
