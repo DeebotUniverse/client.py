@@ -16,10 +16,10 @@ import zlib
 from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
 
-from deebot_client.events.map import MapChangedEvent
+from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .command import Command
-from .commands.json import GetCachedMapInfo, GetMinorMap
+from .commands.json import GetMinorMap
 from .event_bus import EventBus
 from .events import (
     MajorMapEvent,
@@ -36,7 +36,7 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .util import OnChangedDict, OnChangedList, cancel, create_task
+from .util import OnChangedDict, OnChangedList
 
 
 def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
@@ -387,8 +387,6 @@ class Map:
         self._amount_rooms: int = 0
         self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
-        self._unsubscribers_internal: list[Callable[[], None]] = []
-        self._tasks: set[asyncio.Future[Any]] = set()
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
@@ -401,9 +399,7 @@ class Map:
                     if subset.type == event.type and subset_id not in event.subsets:
                         self._map_data.map_subsets.pop(subset_id, None)
 
-        self._unsubscribers_internal.append(
-            self._event_bus.subscribe(MapSetEvent, on_map_set)
-        )
+        self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
             if event.type == MapSetType.ROOMS and event.name:
@@ -419,8 +415,12 @@ class Map:
             elif self._map_data.map_subsets.get(event.id, None) != event:
                 self._map_data.map_subsets[event.id] = event
 
-        self._unsubscribers_internal.append(
-            self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
+        self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
+
+        self._unsubscribers.append(
+            event_bus.add_on_subscription_callback(
+                MapChangedEvent, self._on_first_map_changed_subscription
+            )
         )
 
     # ---------------------------- METHODS ----------------------------
@@ -483,29 +483,9 @@ class Map:
 
         return None
 
-    def enable(self) -> None:
-        """Enable map."""
-        if self._unsubscribers:
-            return
-
-        create_task(self._tasks, self._execute_command(GetCachedMapInfo()))
-
-        async def on_position(event: PositionsEvent) -> None:
-            self._map_data.positions = event.positions
-
-        self._unsubscribers.append(
-            self._event_bus.subscribe(PositionsEvent, on_position)
-        )
-
-        async def on_map_trace(event: MapTraceEvent) -> None:
-            if event.start == 0:
-                self._map_data.trace_values.clear()
-
-            self._update_trace_points(event.data)
-
-        self._unsubscribers.append(
-            self._event_bus.subscribe(MapTraceEvent, on_map_trace)
-        )
+    async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
+        """On first MapChanged subscription."""
+        unsubscribers = []
 
         async def on_major_map(event: MajorMapEvent) -> None:
             async with asyncio.TaskGroup() as tg:
@@ -520,25 +500,33 @@ class Map:
                             )
                         )
 
-        self._unsubscribers.append(
-            self._event_bus.subscribe(MajorMapEvent, on_major_map)
-        )
+        unsubscribers.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
 
         async def on_minor_map(event: MinorMapEvent) -> None:
             self._map_data.map_pieces[event.index].update_points(event.value)
 
-        self._unsubscribers.append(
-            self._event_bus.subscribe(MinorMapEvent, on_minor_map)
-        )
+        unsubscribers.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
 
-    def disable(self) -> None:
-        """Disable map."""
-        self._unsubscribe_from(self._unsubscribers)
+        self._event_bus.request_refresh(CachedMapInfoEvent)
 
-    def _unsubscribe_from(self, unsubscribers: list[Callable[[], None]]) -> None:
-        for unsubscribe in unsubscribers:
-            unsubscribe()
-        unsubscribers.clear()
+        async def on_position(event: PositionsEvent) -> None:
+            self._map_data.positions = event.positions
+
+        unsubscribers.append(self._event_bus.subscribe(PositionsEvent, on_position))
+
+        async def on_map_trace(event: MapTraceEvent) -> None:
+            if event.start == 0:
+                self._map_data.trace_values.clear()
+
+            self._update_trace_points(event.data)
+
+        unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+
+        def unsub() -> None:
+            for unsub in unsubscribers:
+                unsub()
+
+        return unsub
 
     def refresh(self) -> None:
         """Manually refresh map."""
@@ -650,9 +638,9 @@ class Map:
 
     async def teardown(self) -> None:
         """Teardown map."""
-        self.disable()
-        self._unsubscribe_from(self._unsubscribers_internal)
-        await cancel(self._tasks)
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()
 
 
 class MapPiece:
