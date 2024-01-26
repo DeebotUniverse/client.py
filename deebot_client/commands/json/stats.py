@@ -1,5 +1,4 @@
 """Stats commands."""
-from math import floor
 from typing import Any
 
 from deebot_client.event_bus import EventBus
@@ -44,10 +43,6 @@ class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        stats_event = TotalStatsEvent(
-            data["area"],
-            floor(data["time"] / 60),  # Convert seconds to minutes
-            data["count"],
-        )
+        stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
         event_bus.notify(stats_event)
         return HandlingResult.success()
