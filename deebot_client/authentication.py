@@ -1,9 +1,10 @@
 """Authentication module."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable, Coroutine, Mapping
 from http import HTTPStatus
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, hdrs
@@ -13,6 +14,9 @@ from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationErro
 from .logging_filter import get_logger
 from .models import Configuration, Credentials
 from .util import cancel, create_task, md5
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Mapping
 
 _LOGGER = get_logger(__name__)
 

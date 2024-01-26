@@ -1,16 +1,18 @@
 """Models module."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
-from aiohttp import ClientSession
-
-from deebot_client.const import DataType
 from deebot_client.util.continents import get_continent
 
 if TYPE_CHECKING:
+    from aiohttp import ClientSession
+
     from deebot_client.capabilities import Capabilities
+    from deebot_client.const import DataType
 
 
 ApiDeviceInfo = TypedDict(
@@ -34,7 +36,7 @@ class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
-    capabilities: "Capabilities"
+    capabilities: Capabilities
 
 
 class DeviceInfo:
@@ -87,7 +89,7 @@ class DeviceInfo:
         return self._static_device_info.data_type
 
     @property
-    def capabilities(self) -> "Capabilities":
+    def capabilities(self) -> Capabilities:
         """Return capabilities."""
         return self._static_device_info.capabilities
 

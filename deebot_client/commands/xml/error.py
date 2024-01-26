@@ -1,13 +1,19 @@
 """Error commands."""
-from xml.etree.ElementTree import Element
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 from deebot_client.const import ERROR_CODES
-from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult
 from deebot_client.models import State
 
 from .common import XmlCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from xml.etree.ElementTree import Element
+
+    from deebot_client.event_bus import EventBus
 
 
 class GetError(XmlCommandWithMessageHandling):

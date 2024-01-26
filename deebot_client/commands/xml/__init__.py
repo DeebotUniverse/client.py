@@ -1,8 +1,14 @@
 """Xml commands module."""
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
 from deebot_client.command import Command, CommandMqttP2P
 
-from .common import XmlCommand
 from .error import GetError
+
+if TYPE_CHECKING:
+    from .common import XmlCommand
 
 __all__ = [
     "GetError",

@@ -1,6 +1,7 @@
 """Event emitter module."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable, Coroutine
 from datetime import UTC, datetime, timedelta
 import threading
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
@@ -11,6 +12,8 @@ from .models import State
 from .util import cancel, create_task
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine
+
     from .command import Command
 
 _LOGGER = get_logger(__name__)
@@ -41,7 +44,7 @@ class _OnSubscriptionCallback:
 class _EventProcessingData(Generic[T]):
     """Data class, which holds all needed data per EventDto."""
 
-    def __init__(self, refresh_commands: list["Command"]) -> None:
+    def __init__(self, refresh_commands: list[Command]) -> None:
         self.refresh_commands: Final = refresh_commands
 
         self.subscriber_callbacks: Final[
@@ -59,8 +62,8 @@ class EventBus:
 
     def __init__(
         self,
-        execute_command: Callable[["Command"], Coroutine[Any, Any, None]],
-        get_refresh_commands: Callable[[type[Event]], list["Command"]],
+        execute_command: Callable[[Command], Coroutine[Any, Any, None]],
+        get_refresh_commands: Callable[[type[Event]], list[Command]],
     ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()

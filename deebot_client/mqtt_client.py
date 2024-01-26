@@ -1,6 +1,7 @@
 """MQTT module."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable, MutableMapping
 from contextlib import suppress
 from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
 from datetime import datetime
@@ -12,16 +13,19 @@ from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.const import DataType
-from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import AuthenticationError
 
-from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
-from .models import Configuration, Credentials, DeviceInfo
 
 if TYPE_CHECKING:
+    from collections.abc import Callable, MutableMapping
+
     from deebot_client.command import CommandMqttP2P
+    from deebot_client.event_bus import EventBus
+
+    from .authentication import Authenticator
+    from .models import Configuration, Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
 

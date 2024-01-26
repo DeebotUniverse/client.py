@@ -1,8 +1,9 @@
 """Map module."""
+from __future__ import annotations
+
 import ast
 import asyncio
 import base64
-from collections.abc import Callable, Coroutine, Sequence
 import dataclasses
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -10,7 +11,7 @@ from io import BytesIO
 import itertools
 import lzma
 import struct
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 import zlib
 
 from PIL import Image, ImageColor, ImageOps, ImagePalette
@@ -18,9 +19,7 @@ import svg
 
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
-from .command import Command
 from .commands.json import GetMinorMap
-from .event_bus import EventBus
 from .events import (
     MajorMapEvent,
     MapSetEvent,
@@ -37,6 +36,12 @@ from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
 from .util import OnChangedDict, OnChangedList
+
+if TYPE_CHECKING:
+    from collections.abc import Callable, Coroutine, Sequence
+
+    from .command import Command
+    from .event_bus import EventBus
 
 
 def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001

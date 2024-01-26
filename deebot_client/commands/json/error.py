@@ -1,13 +1,17 @@
 """Error commands."""
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.const import ERROR_CODES
-from deebot_client.event_bus import EventBus
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
 from .common import JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):

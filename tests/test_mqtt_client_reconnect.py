@@ -1,15 +1,20 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Generator
 import logging
+from typing import TYPE_CHECKING
 
 from aiomqtt import Client
 import pytest
 
-from deebot_client.models import DeviceInfo
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration
-
 from .fixtures.mqtt_server import MqttServer
 from .mqtt_util import subscribe, verify_subscribe
+
+if TYPE_CHECKING:
+    from collections.abc import Generator
+
+    from deebot_client.models import DeviceInfo
+    from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 _WAITING_AFTER_RESTART = 30
 
