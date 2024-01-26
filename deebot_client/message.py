@@ -1,13 +1,18 @@
 """Base messages."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
 import functools
-from typing import Any, TypeVar, final
+from typing import TYPE_CHECKING, Any, TypeVar, final
 
-from .event_bus import EventBus
 from .logging_filter import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
 
@@ -30,12 +35,12 @@ class HandlingResult:
     args: dict[str, Any] | None = None
 
     @classmethod
-    def success(cls) -> "HandlingResult":
+    def success(cls) -> HandlingResult:
         """Create result with handling success."""
         return HandlingResult(HandlingState.SUCCESS)
 
     @classmethod
-    def analyse(cls) -> "HandlingResult":
+    def analyse(cls) -> HandlingResult:
         """Create result with handling analyse."""
         return HandlingResult(HandlingState.ANALYSE)
 

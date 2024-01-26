@@ -1,4 +1,5 @@
 """Continents module."""
+from __future__ import annotations
 
 
 def get_continent(country: str | None) -> str:

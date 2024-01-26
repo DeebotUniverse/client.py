@@ -1,9 +1,14 @@
 """Hardware deebot module."""
+from __future__ import annotations
+
 import importlib
 import pkgutil
+from typing import TYPE_CHECKING
 
 from deebot_client.logging_filter import get_logger
-from deebot_client.models import StaticDeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.models import StaticDeviceInfo
 
 __all__ = ["get_static_device_info"]
 

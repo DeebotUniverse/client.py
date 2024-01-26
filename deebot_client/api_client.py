@@ -1,13 +1,17 @@
 """Api client module."""
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.hardware.deebot import get_static_device_info
 
-from .authentication import Authenticator
 from .const import PATH_API_APPSVR_APP, PATH_API_PIM_PRODUCT_IOT_MAP
 from .exceptions import ApiError
 from .logging_filter import get_logger
 from .models import ApiDeviceInfo, DeviceInfo
+
+if TYPE_CHECKING:
+    from .authentication import Authenticator
 
 _LOGGER = get_logger(__name__)
 

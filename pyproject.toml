@@ -42,17 +42,6 @@ include = ["deebot_client*"]
 target-version = ['py311']
 safe = true
 
-[tool.ruff.flake8-pytest-style]
-fixture-parentheses = false
-
-
-[tool.ruff.isort]
-combine-as-imports = true
-force-sort-within-sections = true
-known-first-party = [
-    "deebot_client",
-]
-
 
 
 [tool.ruff]
@@ -88,6 +77,18 @@ ignore = [
     "BLE001", # Do not catch blind exception: `Exception`
 
 ]
+
+[tool.ruff.flake8-pytest-style]
+fixture-parentheses = false
+
+
+[tool.ruff.isort]
+combine-as-imports = true
+force-sort-within-sections = true
+known-first-party = [
+    "deebot_client",
+]
+required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.per-file-ignores]

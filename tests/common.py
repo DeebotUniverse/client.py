@@ -1,6 +1,10 @@
-import asyncio
+from __future__ import annotations
 
-from deebot_client.event_bus import EventBus
+import asyncio
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 async def block_till_done(event_bus: EventBus) -> None:

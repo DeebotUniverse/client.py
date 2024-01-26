@@ -1,5 +1,7 @@
-from collections.abc import AsyncGenerator, Generator
+from __future__ import annotations
+
 import logging
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock
 
 import aiohttp
@@ -19,6 +21,9 @@ from deebot_client.models import (
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 from .fixtures.mqtt_server import MqttServer
+
+if TYPE_CHECKING:
+    from collections.abc import AsyncGenerator, Generator
 
 
 @pytest.fixture

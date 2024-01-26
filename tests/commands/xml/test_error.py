@@ -1,13 +1,19 @@
-from collections.abc import Sequence
+from __future__ import annotations
+
+from typing import TYPE_CHECKING
 
 import pytest
 
 from deebot_client.commands.xml import GetError
 from deebot_client.events import ErrorEvent, StateEvent
-from deebot_client.events.base import Event
 from deebot_client.models import State
 
 from . import assert_command, get_request_xml
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from deebot_client.events.base import Event
 
 
 @pytest.mark.parametrize(

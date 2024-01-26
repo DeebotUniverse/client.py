@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
@@ -16,7 +18,6 @@ from svg import (
     VerticalLineToRel,
 )
 
-from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
     MajorMapEvent,
     MapChangedEvent,
@@ -42,6 +43,11 @@ from deebot_client.map import (
 from deebot_client.models import Room
 
 from .common import block_till_done
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from deebot_client.event_bus import EventBus
 
 _test_calc_point_data = [
     (10, 100, (100, 0, 200, 50), Point(100.0, 0.0)),

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import pytest
 
 from deebot_client.util.continents import get_continent

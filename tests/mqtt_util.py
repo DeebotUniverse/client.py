@@ -1,15 +1,21 @@
 """Utilities for testing MQTT."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable
 import datetime
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock
 
-from aiomqtt import Client
-
 from deebot_client.event_bus import EventBus
-from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from aiomqtt import Client
+
+    from deebot_client.models import DeviceInfo
 
 
 async def verify_subscribe(

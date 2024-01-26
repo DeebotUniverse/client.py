@@ -1,17 +1,17 @@
+from __future__ import annotations
+
 import asyncio
 import datetime
 import json
 import logging
 import ssl
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
-from aiohttp import ClientSession
 from aiomqtt import Client, Message
 from cachetools import TTLCache
 import pytest
 
-from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
 from deebot_client.const import DataType
@@ -20,6 +20,11 @@ from deebot_client.models import Configuration, DeviceInfo
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 from .mqtt_util import subscribe, verify_subscribe
+
+if TYPE_CHECKING:
+    from aiohttp import ClientSession
+
+    from deebot_client.authentication import Authenticator
 
 
 async def test_last_message_received_at(
