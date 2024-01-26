@@ -9,6 +9,8 @@ from aiohttp import ClientSession
 from deebot_client.const import DataType
 from deebot_client.util.continents import get_continent
 
+from shapely.geometry import Polygon
+
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
 
@@ -99,6 +101,7 @@ class Room:
     name: str
     id: int
     coordinates: str
+    polygon: Polygon = None
 
 
 @unique

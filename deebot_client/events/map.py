@@ -22,6 +22,7 @@ class Position:
     type: PositionType
     x: int
     y: int
+    room: str | None
 
 
 @dataclass(frozen=True)

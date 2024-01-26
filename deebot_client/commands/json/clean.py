@@ -7,7 +7,7 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
+from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State, Room
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
@@ -23,7 +23,7 @@ class Clean(ExecuteCommand):
         super().__init__(self.__get_args(action))
 
     async def _execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus, rooms: list[Room] = []
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
@@ -39,7 +39,7 @@ class Clean(ExecuteCommand):
             ):
                 self._args = self.__get_args(CleanAction.RESUME)
 
-        return await super()._execute(authenticator, device_info, event_bus)
+        return await super()._execute(authenticator, device_info, event_bus, rooms)
 
     @staticmethod
     def __get_args(action: CleanAction) -> dict[str, Any]:

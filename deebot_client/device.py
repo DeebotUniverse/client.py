@@ -22,11 +22,14 @@ from .events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
+    RoomsEvent, Position
 )
 from .logging_filter import get_logger
-from .map import Map
+from .map import Map, Room
 from .messages import get_message
 from .models import DeviceInfo, State
+
+from shapely.geometry import Point
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -52,6 +55,8 @@ class Device:
         self._last_time_available: datetime = datetime.now()
         self._available_task: asyncio.Task[Any] | None = None
         self._unsubscribe: Callable[[], None] | None = None
+
+        self.rooms: list[Room] = []
 
         self.fw_version: str | None = None
         self.mac: str | None = None
@@ -79,6 +84,12 @@ class Device:
                     self.events.request_refresh(StateEvent)
 
         self.events.subscribe(PositionsEvent, on_pos)
+
+        async def on_rooms(event: RoomsEvent) -> None:
+            self.rooms = event.rooms
+            self.events.request_refresh(PositionsEvent)
+
+        self.events.subscribe(RoomsEvent, on_rooms)
 
         async def on_state(event: StateEvent) -> None:
             if event.state == State.DOCKED:
@@ -155,7 +166,7 @@ class Device:
         """Execute given command."""
         async with self._semaphore:
             if await command.execute(
-                self._authenticator, self.device_info, self.events
+                self._authenticator, self.device_info, self.events, self.rooms
             ):
                 self._set_available(available=True)
                 return True
@@ -184,10 +195,17 @@ class Device:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
             if message := get_message(message_name, self.device_info.data_type):
+
+                rooms = self.rooms
+
                 if isinstance(message_data, dict):
                     data = message_data
+                    if message_name == "onPos":
+                        data["rooms"] = rooms
                 else:
                     data = json.loads(message_data)
+                    if message_name == "onPos":
+                        data["body"]["data"]["rooms"] = rooms
 
                 fw_version = data.get("header", {}).get("fwVer", None)
                 if fw_version:
