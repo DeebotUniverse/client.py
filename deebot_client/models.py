@@ -1,12 +1,16 @@
 """Models module."""
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import InitVar, dataclass, field
 from enum import IntEnum, StrEnum, unique
 from pathlib import Path
+import ssl
 from typing import TYPE_CHECKING, Required, TypedDict
+from urllib.parse import urlparse
 
-from deebot_client.util.continents import get_continent
+from deebot_client.const import COUNTRY_CHINA
+from deebot_client.exceptions import DeebotError
+from deebot_client.util.continents import get_continent_url_postfix
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -166,45 +170,77 @@ def _str_to_bool_or_cert(value: bool | str) -> bool | str:
     raise ValueError(msg)
 
 
+@dataclass(frozen=True, kw_only=True)
+class MqttConfiguration:
+    """Mqtt configuration."""
+
+    hostname: str
+    port: int
+    ssl_context: ssl.SSLContext | None
+    device_id: str
+
+
+@dataclass(frozen=True, kw_only=True)
 class Configuration:
     """Configuration representation."""
 
-    def __init__(
-        self,
-        session: ClientSession,
-        *,
-        device_id: str,
-        country: str,
-        continent: str | None = None,
-        verify_ssl: bool | str = True,
+    session: ClientSession
+    device_id: str
+    country: str
+
+    portal_url: str = field(init=False)
+    login_url: str = field(init=False)
+    authcode_url: str = field(init=False)
+    mqtt: MqttConfiguration = field(init=False)
+    override_mqtt_url: InitVar[str | None] = None
+    override_portal_url: InitVar[str | None] = None
+
+    def __post_init__(
+        self, override_mqtt_url: str | None, override_rest_url: str | None
     ) -> None:
-        self._session = session
-        self._device_id = device_id
-        self._country = country.lower()
-        self._continent = (continent or get_continent(country)).lower()
-        self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
+        continent_postfix = get_continent_url_postfix(self.country)
+        if override_rest_url:
+            portal_url = login_url = authcode_url = override_rest_url
+        else:
+            portal_url = f"https://portal{continent_postfix}.ecouser.net/"
+            tld = country = self.country.lower()
+            if self.country != COUNTRY_CHINA:
+                tld = "com"
+            login_url = f"https://gl-{country}-api.ecovacs.{tld}"
+            authcode_url = f"https://gl-{country}-openapi.ecovacs.{tld}"
 
-    @property
-    def session(self) -> ClientSession:
-        """Client session."""
-        return self._session
+        object.__setattr__(self, "portal_url", portal_url)
+        object.__setattr__(self, "login_url", login_url)
+        object.__setattr__(self, "authcode_url", authcode_url)
 
-    @property
-    def device_id(self) -> str:
-        """Device id."""
-        return self._device_id
+        if override_mqtt_url:
+            url = urlparse(override_mqtt_url)
+            match url.scheme:
+                case "mqtt":
+                    default_port = 1883
+                    ssl_ctx = None
+                case "mqtts":
+                    default_port = 8883
+                    ssl_ctx = ssl.create_default_context()
+                case _:
+                    raise DeebotError("Invalid scheme. Expecting mqtt or mqtts")
 
-    @property
-    def country(self) -> str:
-        """Country code."""
-        return self._country
+            if not url.hostname:
+                raise DeebotError("Hostame is required")
 
-    @property
-    def continent(self) -> str:
-        """Continent code."""
-        return self._continent
+            hostname = url.hostname
+            port = url.port or default_port
+        else:
+            hostname = f"mq{continent_postfix}.ecouser.net"
+            port = 443
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
 
-    @property
-    def verify_ssl(self) -> bool | str:
-        """Return bool or path to cert."""
-        return self._verify_ssl
+        mqtt = MqttConfiguration(
+            hostname=hostname,
+            port=port,
+            ssl_context=ssl_ctx,
+            device_id=self.device_id,
+        )
+        object.__setattr__(self, "mqtt", mqtt)

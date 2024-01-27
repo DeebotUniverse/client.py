@@ -16,9 +16,10 @@ from deebot_client.models import (
     Configuration,
     Credentials,
     DeviceInfo,
+    MqttConfiguration,
     StaticDeviceInfo,
 )
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration
+from deebot_client.mqtt_client import MqttClient
 
 from .fixtures.mqtt_server import MqttServer
 
@@ -36,10 +37,9 @@ async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
 @pytest.fixture
 async def config(session: aiohttp.ClientSession) -> Configuration:
     return Configuration(
-        session,
+        session=session,
         device_id="Test_device",
-        country="it",
-        continent="eu",
+        country="IT",
     )
 
 
@@ -79,12 +79,13 @@ def mqtt_server() -> Generator[MqttServer, None, None]:
 
 @pytest.fixture
 def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConfiguration:
-    return MqttConfiguration(
-        config=config,
-        hostname="localhost",
-        port=mqtt_server.get_port(),
-        ssl_context=None,
+    new_config = Configuration(
+        session=config.session,
+        device_id=config.device_id,
+        country=config.country,
+        override_mqtt_url=f"mqtt://localhost:{mqtt_server.get_port()}",
     )
+    return new_config.mqtt
 
 
 @pytest.fixture
