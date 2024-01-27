@@ -9,14 +9,17 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, hdrs
 
-from .const import REALM
+from .const import COUNTRY_CHINA, REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
-from .models import Configuration, Credentials
+from .models import Credentials
 from .util import cancel, create_task, md5
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
+
+    from .configuration import RestConfiguration
+
 
 _LOGGER = get_logger(__name__)
 
@@ -24,13 +27,8 @@ _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
 _AUTH_CLIENT_KEY = "1520391491841"
 _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
-_USER_LOGIN_URL_FORMAT = (
-    "https://gl-{country}-api.ecovacs.{tld}/v1/private/{country}/{lang}/{deviceId}/{appCode}/"
-    "{appVersion}/{channel}/{deviceType}/user/login"
-)
-_GLOBAL_AUTHCODE_URL_FORMAT = (
-    "https://gl-{country}-openapi.ecovacs.{tld}/v1/global/auth/getAuthCode"
-)
+_USER_LOGIN_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/user/login"
+_GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _PATH_USERS_USER = "users/user.do"
 _META = {
     "lang": "EN",
@@ -42,28 +40,22 @@ _META = {
 MAX_RETRIES = 3
 
 
-def _get_portal_url(config: Configuration, path: str) -> str:
-    subdomain = f"portal-{config.continent}" if config.country != "cn" else "portal"
-    return urljoin(f"https://{subdomain}.ecouser.net/api/", path)
-
-
 class _AuthClient:
     """Ecovacs auth client."""
 
     def __init__(
         self,
-        config: Configuration,
+        config: RestConfiguration,
         account_id: str,
         password_hash: str,
     ) -> None:
         self._config = config
         self._account_id = account_id
         self._password_hash = password_hash
-        self._tld = "com" if self._config.country != "cn" else "cn"
 
         self._meta: dict[str, str] = {
             **_META,
-            "country": self._config.country,
+            "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
 
@@ -102,9 +94,7 @@ class _AuthClient:
     async def __do_auth_response(
         self, url: str, params: dict[str, Any]
     ) -> dict[str, Any]:
-        async with self._config.session.get(
-            url, params=params, timeout=60, ssl=self._config.verify_ssl
-        ) as res:
+        async with self._config.session.get(url, params=params, timeout=60) as res:
             res.raise_for_status()
 
             # ecovacs returns a json but content_type header is set to text
@@ -134,9 +124,11 @@ class _AuthClient:
             "authTimeZone": "GMT-8",
         }
 
-        url = _USER_LOGIN_URL_FORMAT.format(**self._meta, tld=self._tld)
+        url = urljoin(
+            self._config.login_url, _USER_LOGIN_PATH_FORMAT.format(**self._meta)
+        )
 
-        if self._config.country == "cn":
+        if self._config.country == COUNTRY_CHINA:
             url += "CheckMobile"
 
         return await self.__do_auth_response(
@@ -170,7 +162,7 @@ class _AuthClient:
             "authTimespan": int(time.time() * 1000),
         }
 
-        url = _GLOBAL_AUTHCODE_URL_FORMAT.format(**self._meta, tld=self._tld)
+        url = urljoin(self._config.auth_code_url, _GLOBAL_AUTHCODE_PATH)
 
         res = await self.__do_auth_response(
             url,
@@ -189,10 +181,10 @@ class _AuthClient:
             "token": auth_code,
             "realm": REALM,
             "resource": self._config.device_id,
-            "org": "ECOWW" if self._config.country != "cn" else "ECOCN",
+            "org": "ECOWW" if self._config.country != COUNTRY_CHINA else "ECOCN",
             "last": "",
-            "country": self._config.country.upper()
-            if self._config.country != "cn"
+            "country": self._config.country
+            if self._config.country != COUNTRY_CHINA
             else "Chinese",
             "todo": "loginByItToken",
         }
@@ -224,7 +216,7 @@ class _AuthClient:
         credentials: Credentials | None = None,
     ) -> dict[str, Any]:
         """Perform a post request."""
-        url = _get_portal_url(self._config, path)
+        url = urljoin(self._config.portal_url, "api/" + path)
         logger_requst_params = f"url={url}, params={query_params}, json={json}"
 
         if credentials is not None:
@@ -250,12 +242,7 @@ class _AuthClient:
 
             try:
                 async with self._config.session.post(
-                    url,
-                    json=json,
-                    params=query_params,
-                    headers=headers,
-                    timeout=60,
-                    ssl=self._config.verify_ssl,
+                    url, json=json, params=query_params, headers=headers, timeout=60
                 ) as res:
                     if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
@@ -303,7 +290,7 @@ class Authenticator:
 
     def __init__(
         self,
-        config: Configuration,
+        config: RestConfiguration,
         account_id: str,
         password_hash: str,
     ) -> None:

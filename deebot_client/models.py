@@ -6,11 +6,7 @@ from enum import IntEnum, StrEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
-from deebot_client.util.continents import get_continent
-
 if TYPE_CHECKING:
-    from aiohttp import ClientSession
-
     from deebot_client.capabilities import Capabilities
     from deebot_client.const import DataType
 
@@ -164,47 +160,3 @@ def _str_to_bool_or_cert(value: bool | str) -> bool | str:
 
     msg = f'Cannot convert "{value}" to a bool or certificate path'
     raise ValueError(msg)
-
-
-class Configuration:
-    """Configuration representation."""
-
-    def __init__(
-        self,
-        session: ClientSession,
-        *,
-        device_id: str,
-        country: str,
-        continent: str | None = None,
-        verify_ssl: bool | str = True,
-    ) -> None:
-        self._session = session
-        self._device_id = device_id
-        self._country = country.lower()
-        self._continent = (continent or get_continent(country)).lower()
-        self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
-
-    @property
-    def session(self) -> ClientSession:
-        """Client session."""
-        return self._session
-
-    @property
-    def device_id(self) -> str:
-        """Device id."""
-        return self._device_id
-
-    @property
-    def country(self) -> str:
-        """Country code."""
-        return self._country
-
-    @property
-    def continent(self) -> str:
-        """Continent code."""
-        return self._continent
-
-    @property
-    def verify_ssl(self) -> bool | str:
-        """Return bool or path to cert."""
-        return self._verify_ssl

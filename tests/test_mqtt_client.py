@@ -4,7 +4,6 @@ import asyncio
 import datetime
 import json
 import logging
-import ssl
 from typing import TYPE_CHECKING, Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
@@ -16,21 +15,20 @@ from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
 from deebot_client.const import DataType
 from deebot_client.exceptions import AuthenticationError
-from deebot_client.models import Configuration, DeviceInfo
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration
+from deebot_client.mqtt_client import MqttClient
 
 from .mqtt_util import subscribe, verify_subscribe
 
 if TYPE_CHECKING:
-    from aiohttp import ClientSession
-
     from deebot_client.authentication import Authenticator
+    from deebot_client.configuration import Configuration, MqttConfiguration
+    from deebot_client.models import DeviceInfo
 
 
 async def test_last_message_received_at(
     config: Configuration, authenticator: Authenticator
 ) -> None:
-    mqtt_client = MqttClient(MqttConfiguration(config), authenticator)
+    mqtt_client = MqttClient(config.mqtt, authenticator)
     assert mqtt_client.last_message_received_at is None
     await asyncio.sleep(4)
 
@@ -45,53 +43,6 @@ async def test_last_message_received_at(
         )
 
         assert mqtt_client.last_message_received_at == expected
-
-
-_test_MqttConfiguration_data = [
-    ("cn", None, "mq.ecouser.net"),
-    ("cn", "localhost", "localhost"),
-    ("it", None, "mq-eu.ecouser.net"),
-    ("it", "localhost", "localhost"),
-]
-
-
-@pytest.mark.parametrize("set_ssl_context", [True, False])
-@pytest.mark.parametrize(
-    ("country", "hostname", "expected_hostname"), _test_MqttConfiguration_data
-)
-@pytest.mark.parametrize("device_id", ["test", "123"])
-def test_MqttConfiguration(
-    country: str,
-    hostname: str | None,
-    expected_hostname: str,
-    session: ClientSession,
-    device_id: str,
-    *,
-    set_ssl_context: bool,
-) -> None:
-    args: dict[str, Any] = {
-        "config": Configuration(
-            session, device_id=device_id, country=country, continent="eu"
-        )
-    }
-    if set_ssl_context:
-        args["ssl_context"] = None
-
-    if hostname is not None:
-        args["hostname"] = hostname
-
-    mqtt = MqttConfiguration(**args)
-    assert mqtt.hostname == expected_hostname
-    assert mqtt.device_id == device_id
-    if set_ssl_context:
-        assert mqtt.ssl_context is None
-    else:
-        assert isinstance(mqtt.ssl_context, ssl.SSLContext)
-
-
-def test_MqttConfiguration_hostname_none(config: Configuration) -> None:
-    mqtt = MqttConfiguration(config=config, hostname=None)  # type: ignore[arg-type]
-    assert mqtt.hostname == "mq-eu.ecouser.net"
 
 
 async def test_client_bot_subscription(

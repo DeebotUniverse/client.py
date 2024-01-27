@@ -1,12 +1,22 @@
 """Continents module."""
 from __future__ import annotations
 
+from deebot_client.const import COUNTRY_CHINA
+
 
 def get_continent(country: str | None) -> str:
     """Return the continent for the given country or ww."""
     if not country:
         return "ww"
     return COUNTRIES_TO_CONTINENTS.get(country.upper(), "ww")
+
+
+def get_continent_url_postfix(country: str) -> str:
+    """Return the url contintent postfix for the given country."""
+    if country.upper() == COUNTRY_CHINA:
+        return ""
+
+    return f"-{get_continent(country).lower()}"
 
 
 # Copied from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/countries.json on 11.01.2024
@@ -58,7 +68,7 @@ COUNTRIES_TO_CONTINENTS = {
     "CK": "ww",
     "CL": "ww",
     "CM": "ww",
-    "CN": "ww",
+    COUNTRY_CHINA: "ww",
     "CO": "ww",
     "CR": "na",
     "CU": "na",

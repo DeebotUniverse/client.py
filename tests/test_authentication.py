@@ -2,15 +2,19 @@ from __future__ import annotations
 
 import asyncio
 import time
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from deebot_client.authentication import Authenticator
-from deebot_client.models import Configuration, Credentials
+from deebot_client.models import Credentials
+
+if TYPE_CHECKING:
+    from deebot_client.configuration import RestConfiguration
 
 
-async def test_authenticator_authenticate(config: Configuration) -> None:
+async def test_authenticator_authenticate(rest_config: RestConfiguration) -> None:
     on_changed_called = asyncio.Event()
 
     async def on_changed(_: Credentials) -> None:
@@ -23,7 +27,7 @@ async def test_authenticator_authenticate(config: Configuration) -> None:
         login_mock.return_value = Credentials(
             "token", "user_id", int(time.time() + 123456789)
         )
-        authenticator = Authenticator(config, "test", "test")
+        authenticator = Authenticator(rest_config, "test", "test")
 
         unsub = authenticator.subscribe(on_changed)
 

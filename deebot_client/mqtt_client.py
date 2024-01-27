@@ -3,10 +3,9 @@ from __future__ import annotations
 
 import asyncio
 from contextlib import suppress
-from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
+from dataclasses import dataclass
 from datetime import datetime
 import json
-import ssl
 from typing import TYPE_CHECKING, Any
 
 from aiomqtt import Client, Message, MqttError
@@ -21,11 +20,11 @@ from .logging_filter import get_logger
 if TYPE_CHECKING:
     from collections.abc import Callable, MutableMapping
 
-    from deebot_client.command import CommandMqttP2P
-    from deebot_client.event_bus import EventBus
-
     from .authentication import Authenticator
-    from .models import Configuration, Credentials, DeviceInfo
+    from .command import CommandMqttP2P
+    from .configuration import MqttConfiguration
+    from .event_bus import EventBus
+    from .models import Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
 
@@ -43,38 +42,6 @@ def _get_topics(device_info: DeviceInfo) -> list[str]:
         f"iot/p2p/+/+/+/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/+/j",
         f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j",
     ]
-
-
-def _default_ssl_context() -> ssl.SSLContext:
-    ssl_ctx = ssl.create_default_context()
-    ssl_ctx.check_hostname = False
-    ssl_ctx.verify_mode = ssl.CERT_NONE
-    return ssl_ctx
-
-
-@dataclass(frozen=True)
-class MqttConfiguration:
-    """Mqtt configuration."""
-
-    config: InitVar[Configuration]
-    port: int = 443
-    hostname: str = "mq.ecouser.net"
-    ssl_context: ssl.SSLContext | None = field(default_factory=_default_ssl_context)
-    device_id: str = field(init=False)
-
-    def __post_init__(self, config: Configuration) -> None:
-        for _field in fields(self):
-            # If there is a default and the value of the field is none we can assign a value
-            if (
-                not isinstance(_field.default, _MISSING_TYPE)
-                and getattr(self, _field.name) is None
-            ):
-                object.__setattr__(self, _field.name, _field.default)
-
-        object.__setattr__(self, "device_id", config.device_id)
-
-        if self.hostname == MqttConfiguration.hostname and config.country != "cn":
-            object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
 
 
 @dataclass(frozen=True)
