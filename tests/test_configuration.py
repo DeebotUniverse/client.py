@@ -81,17 +81,60 @@ def test_config_override_mqtt_url_invalid(
         )
 
 
+@pytest.mark.parametrize(
+    (
+        "country",
+        "override_rest_url",
+        "expected_portal_url",
+        "expected_login_url",
+        "expected_auth_code_url",
+    ),
+    [
+        (
+            "CN",
+            "http://example.com",
+            "http://example.com",
+            "http://example.com",
+            "http://example.com",
+        ),
+        (
+            "CN",
+            None,
+            "https://portal.ecouser.net",
+            "https://gl-cn-api.ecovacs.cn",
+            "https://gl-cn-openapi.ecovacs.cn",
+        ),
+        (
+            "IT",
+            "http://example.com",
+            "http://example.com",
+            "http://example.com",
+            "http://example.com",
+        ),
+        (
+            "IT",
+            None,
+            "https://portal-eu.ecouser.net",
+            "https://gl-it-api.ecovacs.com",
+            "https://gl-it-openapi.ecovacs.com",
+        ),
+    ],
+)
 def test_config_override_rest_url(
     session: ClientSession,
+    country: str,
+    override_rest_url: str | None,
+    expected_portal_url: str,
+    expected_login_url: str,
+    expected_auth_code_url: str,
 ) -> None:
-    """Test overriding the rest url in the configuration."""
-    url = "https://test.example.com"
+    """Test rest configuration."""
     config = create_config(
         session=session,
         device_id="123",
-        country="IT",
-        override_rest_url=url,
+        country=country,
+        override_rest_url=override_rest_url,
     )
-    assert config.rest.portal_url == url
-    assert config.rest.login_url == url
-    assert config.rest.auth_code_url == url
+    assert config.rest.portal_url == expected_portal_url
+    assert config.rest.login_url == expected_login_url
+    assert config.rest.auth_code_url == expected_auth_code_url
