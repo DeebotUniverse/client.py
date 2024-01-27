@@ -35,5 +35,8 @@ def get_static_device_info(class_: str) -> StaticDeviceInfo:
         _LOGGER.debug("Capabilities found for %s", class_)
         return device
 
-    _LOGGER.warning("No capabilities found for %s. Using fallback.", class_)
+    _LOGGER.info(
+        "No capabilities found for %s, therefore not all features are available. trying to use fallback...",
+        class_,
+    )
     return DEVICES[FALLBACK]
