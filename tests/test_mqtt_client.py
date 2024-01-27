@@ -21,7 +21,8 @@ from .mqtt_util import subscribe, verify_subscribe
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.models import Configuration, DeviceInfo, MqttConfiguration
+    from deebot_client.configuration import Configuration, MqttConfiguration
+    from deebot_client.models import DeviceInfo
 
 
 async def test_last_message_received_at(

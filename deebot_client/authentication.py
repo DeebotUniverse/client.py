@@ -12,11 +12,14 @@ from aiohttp import ClientResponseError, hdrs
 from .const import COUNTRY_CHINA, REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
-from .models import Configuration, Credentials
+from .models import Credentials
 from .util import cancel, create_task, md5
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
+
+    from .configuration import RestConfiguration
+
 
 _LOGGER = get_logger(__name__)
 
@@ -42,7 +45,7 @@ class _AuthClient:
 
     def __init__(
         self,
-        config: Configuration,
+        config: RestConfiguration,
         account_id: str,
         password_hash: str,
     ) -> None:
@@ -159,7 +162,7 @@ class _AuthClient:
             "authTimespan": int(time.time() * 1000),
         }
 
-        url = urljoin(self._config.authcode_url, _GLOBAL_AUTHCODE_PATH)
+        url = urljoin(self._config.auth_code_url, _GLOBAL_AUTHCODE_PATH)
 
         res = await self.__do_auth_response(
             url,
@@ -287,7 +290,7 @@ class Authenticator:
 
     def __init__(
         self,
-        config: Configuration,
+        config: RestConfiguration,
         account_id: str,
         password_hash: str,
     ) -> None:

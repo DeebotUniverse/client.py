@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from deebot_client.configuration import create_config
 from deebot_client.exceptions import DeebotError
-from deebot_client.models import Configuration
 
 if TYPE_CHECKING:
     from aiohttp import ClientSession
@@ -44,7 +44,7 @@ def test_config_mqtt(
     expect_ssl_context: bool,
 ) -> None:
     """Test mqtt part of the configuration."""
-    config = Configuration(
+    config = create_config(
         session=session,
         device_id=device_id,
         country=country,
@@ -73,9 +73,25 @@ def test_config_override_mqtt_url_invalid(
 ) -> None:
     """Test that an invalid mqtt override url will raise a DeebotError."""
     with pytest.raises(DeebotError, match=error_msg):
-        Configuration(
+        create_config(
             session=session,
             device_id="123",
             country="IT",
             override_mqtt_url=override_mqtt_url,
         )
+
+
+def test_config_override_rest_url(
+    session: ClientSession,
+) -> None:
+    """Test overriding the rest url in the configuration."""
+    url = "https://test.example.com"
+    config = create_config(
+        session=session,
+        device_id="123",
+        country="IT",
+        override_rest_url=url,
+    )
+    assert config.rest.portal_url == url
+    assert config.rest.login_url == url
+    assert config.rest.auth_code_url == url

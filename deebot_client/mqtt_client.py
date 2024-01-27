@@ -20,11 +20,11 @@ from .logging_filter import get_logger
 if TYPE_CHECKING:
     from collections.abc import Callable, MutableMapping
 
-    from deebot_client.command import CommandMqttP2P
-    from deebot_client.event_bus import EventBus
-
     from .authentication import Authenticator
-    from .models import Credentials, DeviceInfo, MqttConfiguration
+    from .command import CommandMqttP2P
+    from .configuration import MqttConfiguration
+    from .event_bus import EventBus
+    from .models import Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
 
