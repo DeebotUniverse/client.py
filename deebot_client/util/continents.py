@@ -13,10 +13,10 @@ def get_continent(country: str | None) -> str:
 
 def get_continent_url_postfix(country: str) -> str:
     """Return the url contintent postfix for the given country."""
-    if country.upper() == COUNTRY_CHINA:
+    if country == COUNTRY_CHINA:
         return ""
 
-    return f"-{get_continent(country).lower()}"
+    return f"-{get_continent(country)}"
 
 
 # Copied from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/countries.json on 11.01.2024

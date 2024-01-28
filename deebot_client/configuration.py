@@ -53,15 +53,16 @@ def create_config(
     override_rest_url: str | None = None,
 ) -> Configuration:
     """Create configuration."""
+    country = country.upper()
     continent_postfix = get_continent_url_postfix(country)
     if override_rest_url:
         portal_url = login_url = auth_code_url = override_rest_url
     else:
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
-        tld = "com" if country != COUNTRY_CHINA else "cn"
-        country = country.lower()
-        login_url = f"https://gl-{country}-api.ecovacs.{tld}"
-        auth_code_url = f"https://gl-{country}-openapi.ecovacs.{tld}"
+        country_url = country.lower()
+        tld = "com" if country != COUNTRY_CHINA else country_url
+        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
+        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
 
     rest_config = RestConfiguration(
         session=session,
