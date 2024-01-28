@@ -77,6 +77,11 @@ if __name__ == '__main__':
 
 A more advanced example can be found [here](https://github.com/And3rsL/Deebot-for-Home-Assistant).
 
+### Note for Windows users
+
+This library cannot be used out of the box with Windows due a limitation in the requirement `aiomqtt`.
+More information and a workaround can be found [here](https://github.com/sbtinstruments/aiomqtt#note-for-windows-users)
+
 ## Thanks
 
 My heartfelt thanks to:
