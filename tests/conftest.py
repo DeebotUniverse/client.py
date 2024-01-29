@@ -12,7 +12,7 @@ from deebot_client.api_client import ApiClient
 from deebot_client.authentication import (
     Authenticator,
     RestConfiguration,
-    create_config as create_config_rest,
+    create_rest_config as create_config_rest,
 )
 from deebot_client.event_bus import EventBus
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
@@ -24,7 +24,7 @@ from deebot_client.models import (
 from deebot_client.mqtt_client import (
     MqttClient,
     MqttConfiguration,
-    create_config as create_config_mqtt,
+    create_mqtt_config as create_config_mqtt,
 )
 
 from .fixtures.mqtt_server import MqttServer

@@ -1,7 +1,7 @@
 """Constants module."""
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import Enum, StrEnum
 from typing import Self
 
 REALM = "ecouser.net"
@@ -29,6 +29,14 @@ class DataType(StrEnum):
         except ValueError:
             return None
 
+
+class UndefinedType(Enum):
+    """Singleton type for use with not set sentinel values."""
+
+    _singleton = 0
+
+
+UNDEFINED = UndefinedType._singleton  # pylint: disable=protected-access  # noqa: SLF001
 
 # from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.json
 ERROR_CODES = {

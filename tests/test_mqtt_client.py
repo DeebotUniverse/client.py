@@ -14,9 +14,9 @@ import pytest
 
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
-from deebot_client.const import DataType
+from deebot_client.const import UNDEFINED, DataType, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_config
+from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_mqtt_config
 
 from .mqtt_util import subscribe, verify_subscribe
 
@@ -343,7 +343,7 @@ async def test_mqtt_task_exceptions(
     ],
 )
 @pytest.mark.parametrize("device_id", ["test", "123"])
-@pytest.mark.parametrize("disable_ssl_context_validation", [True, False])
+@pytest.mark.parametrize("ssl_context", [UNDEFINED, None, ssl.create_default_context()])
 def test_config(
     authenticator: Authenticator,
     country: str,
@@ -351,17 +351,17 @@ def test_config(
     override_mqtt_url: str | None,
     expected_hostname: str,
     expected_port: int,
+    ssl_context: ssl.SSLContext | None | UndefinedType,
     *,
-    disable_ssl_context_validation: bool,
     expect_ssl_context: bool,
 ) -> None:
     """Test mqtt part of the configuration."""
     client = MqttClient(
-        create_config(
+        create_mqtt_config(
             device_id=device_id,
             country=country,
             override_mqtt_url=override_mqtt_url,
-            disable_ssl_context_validation=disable_ssl_context_validation,
+            ssl_context=ssl_context,
         ),
         authenticator,
     )
@@ -369,7 +369,9 @@ def test_config(
     assert config.hostname == expected_hostname
     assert config.device_id == device_id
     assert config.port == expected_port
-    if expect_ssl_context or disable_ssl_context_validation:
+    if isinstance(ssl_context, ssl.SSLContext) or (
+        expect_ssl_context and isinstance(ssl_context, UndefinedType)
+    ):
         assert isinstance(config.ssl_context, ssl.SSLContext)
     else:
         assert config.ssl_context is None
@@ -389,7 +391,7 @@ def test_config_override_mqtt_url_invalid(
     """Test that an invalid mqtt override url will raise a DeebotError."""
     with pytest.raises(MqttError, match=error_msg):
         MqttClient(
-            create_config(
+            create_mqtt_config(
                 device_id="123",
                 country="IT",
                 override_mqtt_url=override_mqtt_url,
@@ -401,7 +403,7 @@ def test_config_override_mqtt_url_invalid(
 async def test_verify_config(authenticator: Authenticator) -> None:
     with patch("deebot_client.mqtt_client.Client", autospec=True) as client_mock:
         client = MqttClient(
-            create_config(
+            create_mqtt_config(
                 device_id="123",
                 country="IT",
             ),
@@ -416,7 +418,7 @@ async def test_verify_config_fails(authenticator: Authenticator) -> None:
     with patch("deebot_client.mqtt_client.Client", autospec=True) as client_mock:
         client_mock.return_value.__aenter__.side_effect = AioMqttError
         client = MqttClient(
-            create_config(
+            create_mqtt_config(
                 device_id="123",
                 country="IT",
             ),

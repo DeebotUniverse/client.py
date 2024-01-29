@@ -52,8 +52,9 @@ class RestConfiguration:
     auth_code_url: str
 
 
-def create_config(
+def create_rest_config(
     session: ClientSession,
+    *,
     device_id: str,
     country: str,
     override_rest_url: str | None = None,
