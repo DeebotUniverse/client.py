@@ -13,7 +13,7 @@ from urllib.parse import urlparse
 from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
 
-from deebot_client.const import DataType
+from deebot_client.const import UNDEFINED, DataType, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
@@ -56,22 +56,22 @@ class MqttConfiguration:
     device_id: str
 
 
-def create_config(
+def create_mqtt_config(
+    *,
     device_id: str,
     country: str,
     override_mqtt_url: str | None = None,
-    *,
-    disable_ssl_context_validation: bool = False,
+    ssl_context: ssl.SSLContext | None | UndefinedType = UNDEFINED,
 ) -> MqttConfiguration:
     """Create configuration."""
     continent_postfix = get_continent_url_postfix(country.upper())
 
-    ssl_ctx = None
     if override_mqtt_url:
         url = urlparse(override_mqtt_url)
         match url.scheme:
             case "mqtt":
                 default_port = 1883
+                ssl_ctx = None
             case "mqtts":
                 default_port = 8883
                 ssl_ctx = ssl.create_default_context()
@@ -86,11 +86,12 @@ def create_config(
     else:
         hostname = f"mq{continent_postfix}.ecouser.net"
         port = 443
-
-    if not override_mqtt_url or disable_ssl_context_validation:
         ssl_ctx = ssl.create_default_context()
         ssl_ctx.check_hostname = False
         ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    if ssl_context is not UNDEFINED:
+        ssl_ctx = ssl_context
 
     return MqttConfiguration(
         hostname=hostname,

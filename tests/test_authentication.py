@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from deebot_client.authentication import Authenticator, create_config
+from deebot_client.authentication import Authenticator, create_rest_config
 from deebot_client.models import Credentials
 
 if TYPE_CHECKING:
@@ -103,7 +103,7 @@ def test_config_override_rest_url(
     expected_auth_code_url: str,
 ) -> None:
     """Test rest configuration."""
-    config = create_config(
+    config = create_rest_config(
         session=session,
         device_id="123",
         country=country,

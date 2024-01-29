@@ -24,12 +24,11 @@ import logging
 import time
 
 from deebot_client.api_client import ApiClient
-from deebot_client.authentication import Authenticator
+from deebot_client.authentication import Authenticator, create_rest_config
 from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
 from deebot_client.events import BatteryEvent
-from deebot_client.configuration import Configuration
-from deebot_client.mqtt_client import MqttClient
+from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5
 from deebot_client.device import Device
 
@@ -42,16 +41,17 @@ country = "de"
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    config = create_config(session, device_id=device_id, country=country)
+    rest_config = create_rest_config(session, device_id=device_id, country=country)
 
-    authenticator = Authenticator(config.rest, account_id, password_hash)
+    authenticator = Authenticator(rest_config, account_id, password_hash)
     api_client = ApiClient(authenticator)
 
     devices_ = await api_client.get_devices()
 
     bot = Device(devices_[0], authenticator)
 
-    mqtt = MqttClient(config.mqtt, authenticator)
+    mqtt_config = create_mqtt_config(device_id=device_id, country=country)
+    mqtt = MqttClient(mqtt_config, authenticator)
     await bot.initialize(mqtt)
 
     async def on_battery(event: BatteryEvent):
