@@ -20,3 +20,7 @@ class ApiError(DeebotError):
 
 class MapError(DeebotError):
     """Map error."""
+
+
+class MqttError(DeebotError):
+    """Mqtt error."""

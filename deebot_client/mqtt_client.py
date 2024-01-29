@@ -10,11 +10,11 @@ import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
-from aiomqtt import Client, Message, MqttError
+from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
 
 from deebot_client.const import DataType
-from deebot_client.exceptions import AuthenticationError, DeebotError
+from deebot_client.exceptions import AuthenticationError, MqttError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
@@ -76,10 +76,10 @@ def create_config(
                 default_port = 8883
                 ssl_ctx = ssl.create_default_context()
             case _:
-                raise DeebotError("Invalid scheme. Expecting mqtt or mqtts")
+                raise MqttError("Invalid scheme. Expecting mqtt or mqtts")
 
         if not url.hostname:
-            raise DeebotError("Hostame is required")
+            raise MqttError("Hostame is required")
 
         hostname = url.hostname
         port = url.port or default_port
@@ -140,6 +140,15 @@ class MqttClient:
     def last_message_received_at(self) -> datetime | None:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
+
+    async def verify_config(self) -> None:
+        """Verify config by connecting to the broker."""
+        try:
+            async with await self._get_client():
+                _LOGGER.debug("Connection successfully")
+        except AioMqttError as ex:
+            _LOGGER.warning("Cannot connect", exc_info=True)
+            raise MqttError("Cannot connect") from ex
 
     async def subscribe(self, info: SubscriberInfo) -> Callable[[], None]:
         """Subscribe for messages from given device."""
@@ -210,7 +219,7 @@ class MqttClient:
                         finally:
                             for task in tasks:
                                 task.cancel()
-                except MqttError:
+                except AioMqttError:
                     _LOGGER.warning(
                         "Connection lost; Reconnecting in %d seconds ...",
                         RECONNECT_INTERVAL,

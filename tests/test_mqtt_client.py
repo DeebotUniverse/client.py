@@ -8,14 +8,14 @@ import ssl
 from typing import TYPE_CHECKING, Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
-from aiomqtt import Client, Message
+from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
 import pytest
 
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
 from deebot_client.const import DataType
-from deebot_client.exceptions import AuthenticationError, DeebotError
+from deebot_client.exceptions import AuthenticationError, MqttError
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_config
 
 from .mqtt_util import subscribe, verify_subscribe
@@ -387,7 +387,7 @@ def test_config_override_mqtt_url_invalid(
     authenticator: Authenticator, override_mqtt_url: str, error_msg: str
 ) -> None:
     """Test that an invalid mqtt override url will raise a DeebotError."""
-    with pytest.raises(DeebotError, match=error_msg):
+    with pytest.raises(MqttError, match=error_msg):
         MqttClient(
             create_config(
                 device_id="123",
@@ -396,3 +396,34 @@ def test_config_override_mqtt_url_invalid(
             ),
             authenticator,
         )
+
+
+async def test_verify_config(authenticator: Authenticator) -> None:
+    with patch("deebot_client.mqtt_client.Client", autospec=True) as client_mock:
+        client = MqttClient(
+            create_config(
+                device_id="123",
+                country="IT",
+            ),
+            authenticator,
+        )
+
+        await client.verify_config()
+        client_mock.return_value.__aenter__.assert_called()
+
+
+async def test_verify_config_fails(authenticator: Authenticator) -> None:
+    with patch("deebot_client.mqtt_client.Client", autospec=True) as client_mock:
+        client_mock.return_value.__aenter__.side_effect = AioMqttError
+        client = MqttClient(
+            create_config(
+                device_id="123",
+                country="IT",
+            ),
+            authenticator,
+        )
+
+        with pytest.raises(MqttError, match="Cannot connect"):
+            await client.verify_config()
+
+        client_mock.return_value.__aenter__.assert_called()
