@@ -6,23 +6,25 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import ssl
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
 from aiomqtt import Client, Message, MqttError
 from cachetools import TTLCache
 
 from deebot_client.const import DataType
-from deebot_client.exceptions import AuthenticationError
+from deebot_client.exceptions import AuthenticationError, DeebotError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
+from .util.continents import get_continent_url_postfix
 
 if TYPE_CHECKING:
     from collections.abc import Callable, MutableMapping
 
     from .authentication import Authenticator
     from .command import CommandMqttP2P
-    from .configuration import MqttConfiguration
     from .event_bus import EventBus
     from .models import Credentials, DeviceInfo
 
@@ -42,6 +44,60 @@ def _get_topics(device_info: DeviceInfo) -> list[str]:
         f"iot/p2p/+/+/+/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/+/j",
         f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j",
     ]
+
+
+@dataclass(frozen=True, kw_only=True)
+class MqttConfiguration:
+    """Mqtt configuration."""
+
+    hostname: str
+    port: int
+    ssl_context: ssl.SSLContext | None
+    device_id: str
+
+
+def create_config(
+    device_id: str,
+    country: str,
+    override_mqtt_url: str | None = None,
+    *,
+    disable_ssl_context_validation: bool = False,
+) -> MqttConfiguration:
+    """Create configuration."""
+    continent_postfix = get_continent_url_postfix(country.upper())
+
+    ssl_ctx = None
+    if override_mqtt_url:
+        url = urlparse(override_mqtt_url)
+        match url.scheme:
+            case "mqtt":
+                default_port = 1883
+            case "mqtts":
+                default_port = 8883
+                ssl_ctx = ssl.create_default_context()
+            case _:
+                raise DeebotError("Invalid scheme. Expecting mqtt or mqtts")
+
+        if not url.hostname:
+            raise DeebotError("Hostame is required")
+
+        hostname = url.hostname
+        port = url.port or default_port
+    else:
+        hostname = f"mq{continent_postfix}.ecouser.net"
+        port = 443
+
+    if not override_mqtt_url or disable_ssl_context_validation:
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    return MqttConfiguration(
+        hostname=hostname,
+        port=port,
+        ssl_context=ssl_ctx,
+        device_id=device_id,
+    )
 
 
 @dataclass(frozen=True)

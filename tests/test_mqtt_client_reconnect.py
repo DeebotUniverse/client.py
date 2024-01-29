@@ -13,9 +13,8 @@ from .mqtt_util import subscribe, verify_subscribe
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from deebot_client.configuration import MqttConfiguration
     from deebot_client.models import DeviceInfo
-    from deebot_client.mqtt_client import MqttClient
+    from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 _WAITING_AFTER_RESTART = 30
 

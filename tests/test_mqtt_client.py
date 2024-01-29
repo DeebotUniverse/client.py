@@ -4,6 +4,7 @@ import asyncio
 import datetime
 import json
 import logging
+import ssl
 from typing import TYPE_CHECKING, Any
 from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
@@ -14,21 +15,20 @@ import pytest
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
 from deebot_client.const import DataType
-from deebot_client.exceptions import AuthenticationError
-from deebot_client.mqtt_client import MqttClient
+from deebot_client.exceptions import AuthenticationError, DeebotError
+from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_config
 
 from .mqtt_util import subscribe, verify_subscribe
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.configuration import Configuration, MqttConfiguration
     from deebot_client.models import DeviceInfo
 
 
 async def test_last_message_received_at(
-    config: Configuration, authenticator: Authenticator
+    mqtt_config: MqttConfiguration, authenticator: Authenticator
 ) -> None:
-    mqtt_client = MqttClient(config.mqtt, authenticator)
+    mqtt_client = MqttClient(mqtt_config, authenticator)
     assert mqtt_client.last_message_received_at is None
     await asyncio.sleep(4)
 
@@ -321,3 +321,78 @@ async def test_mqtt_task_exceptions(
         await asyncio.sleep(0.1)
 
         assert not mqtt_client._mqtt_task.done()
+
+
+@pytest.mark.parametrize(
+    (
+        "country",
+        "override_mqtt_url",
+        "expected_hostname",
+        "expected_port",
+        "expect_ssl_context",
+    ),
+    [
+        ("CN", None, "mq.ecouser.net", 443, True),
+        ("CN", "mqtt://localhost", "localhost", 1883, False),
+        ("CN", "mqtts://localhost", "localhost", 8883, True),
+        ("IT", None, "mq-eu.ecouser.net", 443, True),
+        ("IT", "mqtt://localhost", "localhost", 1883, False),
+        ("IT", "mqtt://localhost:8080", "localhost", 8080, False),
+        ("IT", "mqtts://localhost", "localhost", 8883, True),
+        ("IT", "mqtts://localhost:443", "localhost", 443, True),
+    ],
+)
+@pytest.mark.parametrize("device_id", ["test", "123"])
+@pytest.mark.parametrize("disable_ssl_context_validation", [True, False])
+def test_config(
+    authenticator: Authenticator,
+    country: str,
+    device_id: str,
+    override_mqtt_url: str | None,
+    expected_hostname: str,
+    expected_port: int,
+    *,
+    disable_ssl_context_validation: bool,
+    expect_ssl_context: bool,
+) -> None:
+    """Test mqtt part of the configuration."""
+    client = MqttClient(
+        create_config(
+            device_id=device_id,
+            country=country,
+            override_mqtt_url=override_mqtt_url,
+            disable_ssl_context_validation=disable_ssl_context_validation,
+        ),
+        authenticator,
+    )
+    config = client._config
+    assert config.hostname == expected_hostname
+    assert config.device_id == device_id
+    assert config.port == expected_port
+    if expect_ssl_context or disable_ssl_context_validation:
+        assert isinstance(config.ssl_context, ssl.SSLContext)
+    else:
+        assert config.ssl_context is None
+
+
+@pytest.mark.parametrize(
+    ("override_mqtt_url", "error_msg"),
+    [
+        ("http://test", "Invalid scheme. Expecting mqtt or mqtts"),
+        ("mqtt://:80", "Hostame is required"),
+        ("mqtt://", "Hostame is required"),
+    ],
+)
+def test_config_override_mqtt_url_invalid(
+    authenticator: Authenticator, override_mqtt_url: str, error_msg: str
+) -> None:
+    """Test that an invalid mqtt override url will raise a DeebotError."""
+    with pytest.raises(DeebotError, match=error_msg):
+        MqttClient(
+            create_config(
+                device_id="123",
+                country="IT",
+                override_mqtt_url=override_mqtt_url,
+            ),
+            authenticator,
+        )

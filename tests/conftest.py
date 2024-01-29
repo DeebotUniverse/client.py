@@ -4,17 +4,15 @@ import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock
 
-import aiohttp
+from aiohttp import ClientSession
 from aiomqtt import Client
 import pytest
 
 from deebot_client.api_client import ApiClient
-from deebot_client.authentication import Authenticator
-from deebot_client.configuration import (
-    Configuration,
-    MqttConfiguration,
+from deebot_client.authentication import (
+    Authenticator,
     RestConfiguration,
-    create_config,
+    create_config as create_config_rest,
 )
 from deebot_client.event_bus import EventBus
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
@@ -23,7 +21,11 @@ from deebot_client.models import (
     DeviceInfo,
     StaticDeviceInfo,
 )
-from deebot_client.mqtt_client import MqttClient
+from deebot_client.mqtt_client import (
+    MqttClient,
+    MqttConfiguration,
+    create_config as create_config_mqtt,
+)
 
 from .fixtures.mqtt_server import MqttServer
 
@@ -32,24 +34,26 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-async def session() -> AsyncGenerator[aiohttp.ClientSession, None]:
-    async with aiohttp.ClientSession() as client_session:
+async def session() -> AsyncGenerator[ClientSession, None]:
+    async with ClientSession() as client_session:
         logging.basicConfig(level=logging.DEBUG)
         yield client_session
 
 
 @pytest.fixture
-def config(session: aiohttp.ClientSession) -> Configuration:
-    return create_config(
-        session=session,
-        device_id="Test_device",
-        country="IT",
-    )
+def device_id_and_country() -> tuple[str, str]:
+    return ("Test_device", "IT")
 
 
 @pytest.fixture
-def rest_config(config: Configuration) -> RestConfiguration:
-    return config.rest
+def rest_config(
+    session: ClientSession, device_id_and_country: tuple[str, str]
+) -> RestConfiguration:
+    return create_config_rest(
+        session=session,
+        device_id=device_id_and_country[0],
+        country=device_id_and_country[1],
+    )
 
 
 @pytest.fixture
@@ -87,14 +91,14 @@ def mqtt_server() -> Generator[MqttServer, None, None]:
 
 
 @pytest.fixture
-def mqtt_config(config: Configuration, mqtt_server: MqttServer) -> MqttConfiguration:
-    new_config = create_config(
-        session=config.rest.session,
-        device_id=config.rest.device_id,
-        country=config.rest.country,
+def mqtt_config(
+    device_id_and_country: tuple[str, str], mqtt_server: MqttServer
+) -> MqttConfiguration:
+    return create_config_mqtt(
+        device_id=device_id_and_country[0],
+        country=device_id_and_country[1],
         override_mqtt_url=f"mqtt://localhost:{mqtt_server.get_port()}",
     )
-    return new_config.mqtt
 
 
 @pytest.fixture
