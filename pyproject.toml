@@ -98,6 +98,7 @@ required-imports = ["from __future__ import annotations"]
     "D104",  # Missing docstring in public package
     "N802",  # Function name {name} should be lowercase
     "N816",  # Variable {name} in global scope should not be mixedCase
+    "PLR0913", # Too many arguments in function definition
     "S101",  # Use of assert detected
     "SLF001", # Private member accessed: {access}
     "T201",  # print found

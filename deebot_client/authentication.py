@@ -2,23 +2,23 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from http import HTTPStatus
 import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-from aiohttp import ClientResponseError, hdrs
+from aiohttp import ClientResponseError, ClientSession, hdrs
 
 from .const import COUNTRY_CHINA, REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
 from .logging_filter import get_logger
 from .models import Credentials
 from .util import cancel, create_task, md5
+from .util.continents import get_continent_url_postfix
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
-
-    from .configuration import RestConfiguration
 
 
 _LOGGER = get_logger(__name__)
@@ -38,6 +38,46 @@ _META = {
     "deviceType": "1",
 }
 MAX_RETRIES = 3
+
+
+@dataclass(frozen=True, kw_only=True)
+class RestConfiguration:
+    """Rest configuration."""
+
+    session: ClientSession
+    device_id: str
+    country: str
+    portal_url: str
+    login_url: str
+    auth_code_url: str
+
+
+def create_config(
+    session: ClientSession,
+    device_id: str,
+    country: str,
+    override_rest_url: str | None = None,
+) -> RestConfiguration:
+    """Create configuration."""
+    country = country.upper()
+    continent_postfix = get_continent_url_postfix(country)
+    if override_rest_url:
+        portal_url = login_url = auth_code_url = override_rest_url
+    else:
+        portal_url = f"https://portal{continent_postfix}.ecouser.net"
+        country_url = country.lower()
+        tld = "com" if country != COUNTRY_CHINA else country_url
+        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
+        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+
+    return RestConfiguration(
+        session=session,
+        device_id=device_id,
+        country=country,
+        portal_url=portal_url,
+        login_url=login_url,
+        auth_code_url=auth_code_url,
+    )
 
 
 class _AuthClient:
