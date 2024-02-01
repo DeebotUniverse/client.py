@@ -49,6 +49,7 @@ from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
+from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import (
     GetVoiceAssistantState,
@@ -83,6 +84,7 @@ from deebot_client.events import (
     RoomsEvent,
     StateEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
@@ -175,6 +177,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 CarpetAutoFanBoostEvent,
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
+            ),
+            sweep_mode=CapabilitySetEnable(
+                SweepModeEvent, [GetSweepMode()], SetSweepMode
             ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect

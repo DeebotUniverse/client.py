@@ -33,6 +33,7 @@ from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
 from .stats import GetStats, GetTotalStats
+from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
 from .volume import GetVolume, SetVolume
@@ -80,6 +81,8 @@ __all__ = [
     "GetPos",
     "SetRelocationState",
     "GetStats",
+    "GetSweepMode",
+    "SetSweepMode",
     "GetTotalStats",
     "GetTrueDetect",
     "SetTrueDetect",
@@ -151,6 +154,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetPos,
 
     SetRelocationState,
+
+    GetSweepMode,
+    SetSweepMode,
 
     GetStats,
     GetTotalStats,
