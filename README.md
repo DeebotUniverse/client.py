@@ -24,37 +24,33 @@ import logging
 import time
 
 from deebot_client.api_client import ApiClient
-from deebot_client.authentication import Authenticator
+from deebot_client.authentication import Authenticator, create_rest_config
 from deebot_client.commands import *
 from deebot_client.commands.clean import CleanAction
 from deebot_client.events import BatteryEvent
-from deebot_client.models import Configuration
-from deebot_client.mqtt_client import MqttClient, MqttConfiguration
+from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5
 from deebot_client.device import Device
 
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
 password_hash = md5("yourPassword")
-continent = "eu"
 country = "de"
 
 
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    config = Configuration(session,
-                           device_id=device_id, country=country, continent=continent,
-                           )
+    rest_config = create_rest_config(session, device_id=device_id, country=country)
 
-    authenticator = Authenticator(config, account_id, password_hash)
+    authenticator = Authenticator(rest_config, account_id, password_hash)
     api_client = ApiClient(authenticator)
 
     devices_ = await api_client.get_devices()
 
     bot = Device(devices_[0], authenticator)
 
-    mqtt_config = MqttConfiguration(config=config)
+    mqtt_config = create_mqtt_config(device_id=device_id, country=country)
     mqtt = MqttClient(mqtt_config, authenticator)
     await bot.initialize(mqtt)
 
@@ -80,6 +76,11 @@ if __name__ == '__main__':
 ```
 
 A more advanced example can be found [here](https://github.com/And3rsL/Deebot-for-Home-Assistant).
+
+### Note for Windows users
+
+This library cannot be used out of the box with Windows due a limitation in the requirement `aiomqtt`.
+More information and a workaround can be found [here](https://github.com/sbtinstruments/aiomqtt#note-for-windows-users)
 
 ## Thanks
 

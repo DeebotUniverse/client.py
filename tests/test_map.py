@@ -1,5 +1,7 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
@@ -16,12 +18,15 @@ from svg import (
     VerticalLineToRel,
 )
 
-from deebot_client.event_bus import EventBus
 from deebot_client.events.map import (
+    MajorMapEvent,
     MapChangedEvent,
     MapSetEvent,
     MapSubsetEvent,
+    MapTraceEvent,
+    MinorMapEvent,
     Position,
+    PositionsEvent,
     PositionType,
 )
 from deebot_client.map import (
@@ -36,6 +41,13 @@ from deebot_client.map import (
     _points_to_svg_path,
 )
 from deebot_client.models import Room
+
+from .common import block_till_done
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+
+    from deebot_client.event_bus import EventBus
 
 _test_calc_point_data = [
     (10, 100, (100, 0, 200, 50), Point(100.0, 0.0)),
@@ -114,17 +126,41 @@ async def test_MapData(event_bus: EventBus) -> None:
     await test_cycle()
 
 
-async def test_Map_internal_subscriptions(
-    execute_mock: AsyncMock, event_bus_mock: Mock
+async def test_Map_subscriptions(
+    execute_mock: AsyncMock, event_bus_mock: Mock, event_bus: EventBus
 ) -> None:
     map = Map(execute_mock, event_bus_mock)
 
     calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
     event_bus_mock.subscribe.assert_has_calls(calls)
-    assert len(map._unsubscribers_internal) == len(calls)
+    event_bus_mock.add_on_subscription_callback.assert_called_once_with(
+        MapChangedEvent, ANY
+    )
+    # +1 is for the on_first_subscription call
+    num_unsubs = len(calls) + 1
+    assert len(map._unsubscribers) == num_unsubs
+
+    async def on_change() -> None:
+        pass
+
+    event_unsub = event_bus_mock.subscribe(MapChangedEvent, on_change)
+    await block_till_done(event_bus)
+
+    events = [MajorMapEvent, MinorMapEvent, PositionsEvent, MapTraceEvent]
+
+    calls.append(call(MapChangedEvent, on_change))
+    calls.extend([call(event, ANY) for event in events])
+    event_bus_mock.subscribe.assert_has_calls(calls)
+    assert len(map._unsubscribers) == num_unsubs
+    for event in events:
+        assert event_bus.has_subscribers(event)
+
+    event_unsub()
+    for event in events:
+        assert not event_bus.has_subscribers(event)
 
     await map.teardown()
-    assert not map._unsubscribers_internal
+    assert not map._unsubscribers
 
 
 def test_compact_path() -> None:

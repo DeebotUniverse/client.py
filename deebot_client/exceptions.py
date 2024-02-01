@@ -1,4 +1,5 @@
 """Deebot client exception module."""
+from __future__ import annotations
 
 
 class DeebotError(Exception):
@@ -19,3 +20,7 @@ class ApiError(DeebotError):
 
 class MapError(DeebotError):
     """Map error."""
+
+
+class MqttError(DeebotError):
+    """Mqtt error."""

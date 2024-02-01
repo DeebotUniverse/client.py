@@ -1,12 +1,16 @@
 """Custom command module."""
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.json.common import JsonCommand
-from deebot_client.event_bus import EventBus
 from deebot_client.events import CustomCommandEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingState
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
 

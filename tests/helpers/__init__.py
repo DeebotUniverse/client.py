@@ -1,13 +1,18 @@
-from collections.abc import Mapping
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 from deebot_client.capabilities import Capabilities
-from deebot_client.command import Command
 from deebot_client.const import DataType
-from deebot_client.events.base import Event
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import DisplayNameIntEnum
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
+    from deebot_client.command import Command
+    from deebot_client.events.base import Event
 
 
 def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]) -> None:
