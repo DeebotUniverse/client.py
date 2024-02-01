@@ -1,4 +1,5 @@
 """Logging filter module."""
+from __future__ import annotations
 
 import copy
 from logging import Filter, Logger, LogRecord, getLogger

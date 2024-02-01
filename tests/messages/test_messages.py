@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from deebot_client.messages import MESSAGES
 
 

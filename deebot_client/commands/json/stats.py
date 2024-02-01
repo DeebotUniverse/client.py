@@ -1,11 +1,15 @@
 """Stats commands."""
-from typing import Any
+from __future__ import annotations
 
-from deebot_client.event_bus import EventBus
+from typing import TYPE_CHECKING, Any
+
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 from .common import JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):

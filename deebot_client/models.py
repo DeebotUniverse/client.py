@@ -1,27 +1,26 @@
 """Models module."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
-from aiohttp import ClientSession
-
-from deebot_client.const import DataType
-
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
+    from deebot_client.const import DataType
 
 
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
-        "company": str,
+        "company": Required[str],
         "did": Required[str],
         "name": Required[str],
         "nick": str,
         "resource": Required[str],
-        "deviceName": Required[str],
-        "status": Required[int],
+        "deviceName": str,
+        "status": int,
         "class": Required[str],
     },
     total=False,
@@ -33,7 +32,7 @@ class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
-    capabilities: "Capabilities"
+    capabilities: Capabilities
 
 
 class DeviceInfo:
@@ -76,16 +75,6 @@ class DeviceInfo:
         return str(self._api_device_info["resource"])
 
     @property
-    def device_name(self) -> str:
-        """Return device name."""
-        return str(self._api_device_info["deviceName"])
-
-    @property
-    def status(self) -> int:
-        """Return device status."""
-        return int(self._api_device_info["status"])
-
-    @property
     def get_class(self) -> str:
         """Return device class."""
         return str(self._api_device_info["class"])
@@ -96,7 +85,7 @@ class DeviceInfo:
         return self._static_device_info.data_type
 
     @property
-    def capabilities(self) -> "Capabilities":
+    def capabilities(self) -> Capabilities:
         """Return capabilities."""
         return self._static_device_info.capabilities
 
@@ -171,47 +160,3 @@ def _str_to_bool_or_cert(value: bool | str) -> bool | str:
 
     msg = f'Cannot convert "{value}" to a bool or certificate path'
     raise ValueError(msg)
-
-
-class Configuration:
-    """Configuration representation."""
-
-    def __init__(
-        self,
-        session: ClientSession,
-        *,
-        device_id: str,
-        country: str,
-        continent: str,
-        verify_ssl: bool | str = True,
-    ) -> None:
-        self._session = session
-        self._device_id = device_id
-        self._country = country
-        self._continent = continent
-        self._verify_ssl = _str_to_bool_or_cert(verify_ssl)
-
-    @property
-    def session(self) -> ClientSession:
-        """Client session."""
-        return self._session
-
-    @property
-    def device_id(self) -> str:
-        """Device id."""
-        return self._device_id
-
-    @property
-    def country(self) -> str:
-        """Country code."""
-        return self._country
-
-    @property
-    def continent(self) -> str:
-        """Continent code."""
-        return self._continent
-
-    @property
-    def verify_ssl(self) -> bool | str:
-        """Return bool or path to cert."""
-        return self._verify_ssl

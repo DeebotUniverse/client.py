@@ -1,21 +1,25 @@
+from __future__ import annotations
+
 from functools import partial
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 from testfixtures import LogCapture
 
 from deebot_client.command import CommandResult
-from deebot_client.commands.json.common import (
-    ExecuteCommand,
-    JsonSetCommand,
-    SetEnableCommand,
-)
 from deebot_client.event_bus import EventBus
-from deebot_client.events import EnableEvent, Event
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
 from deebot_client.message import HandlingState
 from tests.commands import assert_command as assert_command_base
 from tests.helpers import get_message_json, get_request_json, get_success_body
+
+if TYPE_CHECKING:
+    from deebot_client.commands.json.common import (
+        ExecuteCommand,
+        JsonSetCommand,
+        SetEnableCommand,
+    )
+    from deebot_client.events import EnableEvent, Event
 
 assert_command = partial(
     assert_command_base, static_device_info=get_static_device_info(FALLBACK)

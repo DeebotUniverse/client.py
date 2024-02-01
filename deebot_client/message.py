@@ -1,13 +1,18 @@
 """Base messages."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
-from collections.abc import Callable
 from dataclasses import dataclass
 from enum import IntEnum, auto
 import functools
-from typing import Any, TypeVar, final
+from typing import TYPE_CHECKING, Any, TypeVar, final
 
-from .event_bus import EventBus
 from .logging_filter import get_logger
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
 
@@ -30,12 +35,12 @@ class HandlingResult:
     args: dict[str, Any] | None = None
 
     @classmethod
-    def success(cls) -> "HandlingResult":
+    def success(cls) -> HandlingResult:
         """Create result with handling success."""
         return HandlingResult(HandlingState.SUCCESS)
 
     @classmethod
-    def analyse(cls) -> "HandlingResult":
+    def analyse(cls) -> HandlingResult:
         """Create result with handling analyse."""
         return HandlingResult(HandlingState.ANALYSE)
 
@@ -97,6 +102,38 @@ class Message(ABC):
         :return: A message response
         """
         return cls._handle(event_bus, message)
+
+
+class MessageStr(Message):
+    """String message."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    # @_handle_error_or_analyse @edenhaus will make the decorator to work again
+    @final
+    def __handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
+        return cls._handle_str(event_bus, message)
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        # This basically means an XML message
+        if isinstance(message, str):
+            return cls.__handle_str(event_bus, message)
+
+        return super()._handle(event_bus, message)
 
 
 class MessageBody(Message):

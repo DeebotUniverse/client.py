@@ -1,11 +1,11 @@
 """Events module."""
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events.base import Event
-from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -26,6 +26,9 @@ from .map import (
 from .network import NetworkInfoEvent
 from .water_info import WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
+
+if TYPE_CHECKING:
+    from deebot_client.models import Room, State
 
 __all__ = [
     "BatteryEvent",

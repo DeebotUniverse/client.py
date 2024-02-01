@@ -1,9 +1,13 @@
 """Stats messages."""
-from typing import Any
+from __future__ import annotations
 
-from deebot_client.event_bus import EventBus
+from typing import TYPE_CHECKING, Any
+
 from deebot_client.events import CleanJobStatus, ReportStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class ReportStats(MessageBodyDataDict):

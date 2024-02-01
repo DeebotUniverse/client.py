@@ -1,12 +1,16 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from deebot_client.commands.json import GetChargeState
-from deebot_client.events import StateEvent
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
+
+if TYPE_CHECKING:
+    from deebot_client.events import StateEvent
 
 
 @pytest.mark.parametrize(

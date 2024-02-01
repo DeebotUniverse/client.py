@@ -1,10 +1,14 @@
 """Map event module."""
+from __future__ import annotations
+
 from dataclasses import dataclass, field
-from datetime import datetime
 from enum import Enum, unique
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import Event
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @unique

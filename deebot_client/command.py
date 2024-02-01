@@ -1,19 +1,24 @@
 """Base command."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
-from types import MappingProxyType
-from typing import Any, final
+from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
 from deebot_client.exceptions import DeebotError
 
-from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
-from .event_bus import EventBus
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
-from .models import DeviceInfo
+
+if TYPE_CHECKING:
+    from types import MappingProxyType
+
+    from .authentication import Authenticator
+    from .event_bus import EventBus
+    from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -22,15 +27,15 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] = field(default_factory=list)
+    requested_commands: list[Command] = field(default_factory=list)
 
     @classmethod
-    def success(cls) -> "CommandResult":
+    def success(cls) -> CommandResult:
         """Create result with handling success."""
         return CommandResult(HandlingState.SUCCESS)
 
     @classmethod
-    def analyse(cls) -> "CommandResult":
+    def analyse(cls) -> CommandResult:
         """Create result with handling analyse."""
         return CommandResult(HandlingState.ANALYSE)
 
@@ -252,7 +257,7 @@ class CommandMqttP2P(Command, ABC):
         """Handle response received over the mqtt channel "p2p"."""
 
     @classmethod
-    def create_from_mqtt(cls, data: dict[str, Any]) -> "CommandMqttP2P":
+    def create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
         """Create a command from the mqtt data."""
         values: dict[str, Any] = {}
         if not hasattr(cls, "_mqtt_params"):

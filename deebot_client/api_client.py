@@ -1,13 +1,17 @@
 """Api client module."""
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.hardware.deebot import get_static_device_info
 
-from .authentication import Authenticator
 from .const import PATH_API_APPSVR_APP, PATH_API_PIM_PRODUCT_IOT_MAP
 from .exceptions import ApiError
 from .logging_filter import get_logger
 from .models import ApiDeviceInfo, DeviceInfo
+
+if TYPE_CHECKING:
+    from .authentication import Authenticator
 
 _LOGGER = get_logger(__name__)
 
@@ -18,7 +22,7 @@ class ApiClient:
     def __init__(self, authenticator: Authenticator) -> None:
         self._authenticator = authenticator
 
-    async def get_devices(self) -> list[DeviceInfo]:
+    async def get_devices(self) -> list[DeviceInfo | ApiDeviceInfo]:
         """Get compatible devices."""
         credentials = await self._authenticator.authenticate()
         json = {
@@ -28,14 +32,19 @@ class ApiClient:
         resp = await self._authenticator.post_authenticated(PATH_API_APPSVR_APP, json)
 
         if resp.get("code", None) == 0:
-            devices: list[DeviceInfo] = []
+            devices: list[DeviceInfo | ApiDeviceInfo] = []
             device: ApiDeviceInfo
             for device in resp["devices"]:
-                if device.get("company") == "eco-ng":
-                    static_device_info = get_static_device_info(device["class"])
-                    devices.append(DeviceInfo(device, static_device_info))
-                else:
-                    _LOGGER.debug("Skipping device as it is not supported: %s", device)
+                match device.get("company"):
+                    case "eco-ng":
+                        static_device_info = get_static_device_info(device["class"])
+                        devices.append(DeviceInfo(device, static_device_info))
+                    case "eco-legacy":
+                        devices.append(device)
+                    case _:
+                        _LOGGER.debug(
+                            "Skipping device as it is not supported: %s", device
+                        )
             return devices
         _LOGGER.error("Failed to get devices: %s", resp)
         msg = f"failure {resp.get('error', '')} ({resp.get('errno', '')}) on getting devices"
