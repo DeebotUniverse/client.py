@@ -35,5 +35,5 @@ class SetSweepMode(JsonSetCommand):
     get_command = GetSweepMode
     _mqtt_params = MappingProxyType({"type": InitParam(bool)})
 
-    def __init__(self, type: bool) -> None:
-        super().__init__({"type": 1 if type else 0})
+    def __init__(self, enabled: bool) -> None:
+        super().__init__({"type": 1 if enabled else 0})
