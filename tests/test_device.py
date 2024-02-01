@@ -1,17 +1,22 @@
+from __future__ import annotations
+
 import asyncio
 from collections.abc import Callable
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
+
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.models import DeviceInfo
 
 
 @patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval

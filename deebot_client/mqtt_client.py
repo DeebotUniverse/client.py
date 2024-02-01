@@ -1,27 +1,32 @@
 """MQTT module."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable, MutableMapping
 from contextlib import suppress
-from dataclasses import _MISSING_TYPE, InitVar, dataclass, field, fields
+from dataclasses import dataclass
 from datetime import datetime
 import json
 import ssl
 from typing import TYPE_CHECKING, Any
+from urllib.parse import urlparse
 
-from aiomqtt import Client, Message, MqttError
+from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
 
-from deebot_client.const import DataType
-from deebot_client.event_bus import EventBus
-from deebot_client.exceptions import AuthenticationError
+from deebot_client.const import UNDEFINED, DataType, UndefinedType
+from deebot_client.exceptions import AuthenticationError, MqttError
 
-from .authentication import Authenticator
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
-from .models import Configuration, Credentials, DeviceInfo
+from .util.continents import get_continent_url_postfix
 
 if TYPE_CHECKING:
-    from deebot_client.command import CommandMqttP2P
+    from collections.abc import Callable, MutableMapping
+
+    from .authentication import Authenticator
+    from .command import CommandMqttP2P
+    from .event_bus import EventBus
+    from .models import Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
 
@@ -41,39 +46,59 @@ def _get_topics(device_info: DeviceInfo) -> list[str]:
     ]
 
 
-def _default_ssl_context() -> ssl.SSLContext:
-    ssl_ctx = ssl.create_default_context()
-    ssl_ctx.check_hostname = False
-    ssl_ctx.verify_mode = ssl.CERT_NONE
-    return ssl_ctx
-
-
-@dataclass(frozen=True)
+@dataclass(frozen=True, kw_only=True)
 class MqttConfiguration:
     """Mqtt configuration."""
 
-    config: InitVar[Configuration]
-    port: int = 443
-    hostname: str = "mq.ecouser.net"
-    ssl_context: ssl.SSLContext | None = field(default_factory=_default_ssl_context)
-    device_id: str = field(init=False)
+    hostname: str
+    port: int
+    ssl_context: ssl.SSLContext | None
+    device_id: str
 
-    def __post_init__(self, config: Configuration) -> None:
-        for _field in fields(self):
-            # If there is a default and the value of the field is none we can assign a value
-            if (
-                not isinstance(_field.default, _MISSING_TYPE)
-                and getattr(self, _field.name) is None
-            ):
-                object.__setattr__(self, _field.name, _field.default)
 
-        object.__setattr__(self, "device_id", config.device_id)
+def create_mqtt_config(
+    *,
+    device_id: str,
+    country: str,
+    override_mqtt_url: str | None = None,
+    ssl_context: ssl.SSLContext | None | UndefinedType = UNDEFINED,
+) -> MqttConfiguration:
+    """Create configuration."""
+    continent_postfix = get_continent_url_postfix(country.upper())
 
-        if (
-            self.hostname == MqttConfiguration.hostname
-            and config.country.lower() != "cn"
-        ):
-            object.__setattr__(self, "hostname", f"mq-{config.continent}.ecouser.net")
+    if override_mqtt_url:
+        url = urlparse(override_mqtt_url)
+        match url.scheme:
+            case "mqtt":
+                default_port = 1883
+                ssl_ctx = None
+            case "mqtts":
+                default_port = 8883
+                ssl_ctx = ssl.create_default_context()
+            case _:
+                raise MqttError("Invalid scheme. Expecting mqtt or mqtts")
+
+        if not url.hostname:
+            raise MqttError("Hostame is required")
+
+        hostname = url.hostname
+        port = url.port or default_port
+    else:
+        hostname = f"mq{continent_postfix}.ecouser.net"
+        port = 443
+        ssl_ctx = ssl.create_default_context()
+        ssl_ctx.check_hostname = False
+        ssl_ctx.verify_mode = ssl.CERT_NONE
+
+    if ssl_context is not UNDEFINED:
+        ssl_ctx = ssl_context
+
+    return MqttConfiguration(
+        hostname=hostname,
+        port=port,
+        ssl_context=ssl_ctx,
+        device_id=device_id,
+    )
 
 
 @dataclass(frozen=True)
@@ -117,6 +142,15 @@ class MqttClient:
         """Return the datetime of the last received message or None."""
         return self._last_message_received_at
 
+    async def verify_config(self) -> None:
+        """Verify config by connecting to the broker."""
+        try:
+            async with await self._get_client():
+                _LOGGER.debug("Connection successfully")
+        except AioMqttError as ex:
+            _LOGGER.warning("Cannot connect", exc_info=True)
+            raise MqttError("Cannot connect") from ex
+
     async def subscribe(self, info: SubscriberInfo) -> Callable[[], None]:
         """Subscribe for messages from given device."""
         await self.connect()
@@ -148,7 +182,7 @@ class MqttClient:
             username=credentials.user_id,
             password=credentials.token,
             logger=_CLIENT_LOGGER,
-            client_id=client_id,
+            identifier=client_id,
             tls_context=self._config.ssl_context,
         )
 
@@ -169,9 +203,8 @@ class MqttClient:
                                 await client.subscribe(topic)
 
                         async def listen() -> None:
-                            async with client.messages() as messages:
-                                async for message in messages:
-                                    self._handle_message(message)
+                            async for message in client.messages:
+                                self._handle_message(message)
 
                         tasks = [
                             asyncio.create_task(listen()),
@@ -187,7 +220,7 @@ class MqttClient:
                         finally:
                             for task in tasks:
                                 task.cancel()
-                except MqttError:
+                except AioMqttError:
                     _LOGGER.warning(
                         "Connection lost; Reconnecting in %d seconds ...",
                         RECONNECT_INTERVAL,

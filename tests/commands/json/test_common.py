@@ -1,16 +1,21 @@
-from collections.abc import Callable
+from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
 
-from deebot_client.command import CommandWithMessageHandling
 from deebot_client.commands.json import GetBattery
 from deebot_client.commands.json.map import GetCachedMapInfo
 from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent
-from deebot_client.models import DeviceInfo
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deebot_client.command import CommandWithMessageHandling
+    from deebot_client.models import DeviceInfo
 
 _ERROR_500 = {"ret": "fail", "errno": 500, "debug": "wait for response timed out"}
 _ERROR_4200 = {

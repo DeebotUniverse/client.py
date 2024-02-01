@@ -1,13 +1,17 @@
+from __future__ import annotations
+
 import logging
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from deebot_client.command import CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
-from deebot_client.event_bus import EventBus
 from deebot_client.exceptions import DeebotError
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class _TestCommand(CommandMqttP2P):

@@ -1,11 +1,11 @@
 """Events module."""
+from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import Enum, unique
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events.base import Event
-from deebot_client.models import Room, State
 from deebot_client.util import DisplayNameIntEnum
 
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -27,6 +27,9 @@ from .network import NetworkInfoEvent
 from .wash_interval import WashIntervalEvent
 from .water_info import WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
+
+if TYPE_CHECKING:
+    from deebot_client.models import Room, State
 
 __all__ = [
     "BatteryEvent",
@@ -50,6 +53,7 @@ __all__ = [
     "PositionType",
     "PositionsEvent",
     "WashIntervalEvent",
+    "SweepModeEvent",
     "WaterAmount",
     "WaterInfoEvent",
     "WorkMode",
@@ -125,6 +129,11 @@ class LifeSpan(str, Enum):
     FILTER = "heap"
     SIDE_BRUSH = "sideBrush"
     UNIT_CARE = "unitCare"
+    ROUND_MOP = "roundMop"
+    AIR_FRESHENER = "dModule"
+    UV_SANITIZER = "uv"
+    HUMIDIFY = "humidify"
+    HUMIDIFY_MAINTENANCE = "wbCare"
 
 
 @dataclass(frozen=True)
@@ -232,3 +241,8 @@ class TrueDetectEvent(EnableEvent):
 @dataclass(frozen=True)
 class VoiceAssistantStateEvent(EnableEvent):
     """VoiceAssistantState event."""
+
+
+@dataclass(frozen=True)
+class SweepModeEvent(EnableEvent):
+    """SweepMode event ("Mop-Only" option)."""

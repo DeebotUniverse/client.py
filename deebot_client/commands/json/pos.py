@@ -1,12 +1,15 @@
 """Position command module."""
+from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
-from deebot_client.event_bus import EventBus
 from deebot_client.events import Position, PositionsEvent, PositionType
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 from .common import JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):

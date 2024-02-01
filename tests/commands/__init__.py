@@ -1,12 +1,16 @@
+from __future__ import annotations
+
 from collections.abc import Callable, Sequence
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, call
 
 from deebot_client.authentication import Authenticator
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
-from deebot_client.events import Event
 from deebot_client.models import Credentials, DeviceInfo, StaticDeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.events import Event
 
 
 def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], None]]:

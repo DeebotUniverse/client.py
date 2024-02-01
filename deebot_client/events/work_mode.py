@@ -1,4 +1,6 @@
 """Work mode event module."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from deebot_client.util import DisplayNameIntEnum
