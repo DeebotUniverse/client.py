@@ -98,6 +98,8 @@ class JsonGetCommand(
 class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
 
+    _field_name: str = "enable"
+
     @property  # type: ignore[misc]
     @classmethod
     @abstractmethod
@@ -112,15 +114,22 @@ class GetEnableCommand(JsonGetCommand, ABC):
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore[call-arg, assignment]
+        event: EnableEvent = cls.event_type(bool(data[cls._field_name]))  # type: ignore[call-arg, assignment]
         event_bus.notify(event)
         return HandlingResult.success()
+
+
+_ENABLE = "enable"
 
 
 class SetEnableCommand(JsonSetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = MappingProxyType({"enable": InitParam(bool)})
+    _field_name = _ENABLE
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        cls._mqtt_params = MappingProxyType({cls._field_name: InitParam(bool, _ENABLE)})
+        super().__init_subclass__(**kwargs)
 
     def __init__(self, enable: bool) -> None:  # noqa: FBT001
-        super().__init__({"enable": 1 if enable else 0})
+        super().__init__({self._field_name: 1 if enable else 0})

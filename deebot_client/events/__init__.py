@@ -242,7 +242,5 @@ class VoiceAssistantStateEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
-class SweepModeEvent(Event):
+class SweepModeEvent(EnableEvent):
     """SweepMode event ("Mop-Only" option)."""
-
-    type: bool

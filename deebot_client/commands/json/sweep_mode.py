@@ -1,39 +1,22 @@
 """SweepMode command module for "Mop-Only" option."""
+from __future__ import annotations
 
-from types import MappingProxyType
-from typing import Any
-
-from deebot_client.command import InitParam
-from deebot_client.event_bus import EventBus
 from deebot_client.events import SweepModeEvent
-from deebot_client.message import HandlingResult
 
-from .common import JsonGetCommand, JsonSetCommand
+from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetSweepMode(JsonGetCommand):
+class GetSweepMode(GetEnableCommand):
     """GetSweepMode command."""
 
     name = "getSweepMode"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        event_bus.notify(SweepModeEvent(data["type"]))
-        return HandlingResult.success()
+    event_type = SweepModeEvent
+    _field_name = "type"
 
 
-class SetSweepMode(JsonSetCommand):
+class SetSweepMode(SetEnableCommand):
     """SetSweepMode command."""
 
     name = "setSweepMode"
     get_command = GetSweepMode
-    _mqtt_params = MappingProxyType({"type": InitParam(bool)})
-
-    def __init__(self, enabled: bool) -> None:
-        super().__init__({"type": 1 if enabled else 0})
+    _field_name = "type"

@@ -85,6 +85,7 @@ async def assert_set_enable_command(
     expected_get_command_event: type[EnableEvent],
     *,
     enabled: bool,
+    field_name: str = "enable",
 ) -> None:
-    args = {"enable": 1 if enabled else 0}
+    args = {field_name: 1 if enabled else 0}
     await assert_set_command(command, args, expected_get_command_event(enabled))
