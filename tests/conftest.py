@@ -52,7 +52,7 @@ def rest_config(
     return create_config_rest(
         session=session,
         device_id=device_id_and_country[0],
-        country=device_id_and_country[1],
+        alpha_2_country=device_id_and_country[1],
     )
 
 

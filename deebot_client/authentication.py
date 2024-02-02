@@ -16,6 +16,7 @@ from .logging_filter import get_logger
 from .models import Credentials
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
+from .util.countries import get_ecovacs_country
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
@@ -56,18 +57,18 @@ def create_rest_config(
     session: ClientSession,
     *,
     device_id: str,
-    country: str,
+    alpha_2_country: str,
     override_rest_url: str | None = None,
 ) -> RestConfiguration:
     """Create configuration."""
-    country = country.upper()
-    continent_postfix = get_continent_url_postfix(country)
+    continent_postfix = get_continent_url_postfix(alpha_2_country)
+    country = get_ecovacs_country(alpha_2_country)
     if override_rest_url:
         portal_url = login_url = auth_code_url = override_rest_url
     else:
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
-        tld = "com" if country != COUNTRY_CHINA else country_url
+        tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
         login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
         auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
 
