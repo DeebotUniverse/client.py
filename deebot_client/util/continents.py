@@ -4,19 +4,19 @@ from __future__ import annotations
 from deebot_client.const import COUNTRY_CHINA
 
 
-def get_continent(country: str | None) -> str:
+def get_continent(alpha_2_country: str | None) -> str:
     """Return the continent for the given country or ww."""
-    if not country:
+    if not alpha_2_country:
         return "ww"
-    return COUNTRIES_TO_CONTINENTS.get(country.upper(), "ww")
+    return COUNTRIES_TO_CONTINENTS.get(alpha_2_country, "ww")
 
 
-def get_continent_url_postfix(country: str) -> str:
+def get_continent_url_postfix(alpha_2_country: str) -> str:
     """Return the url contintent postfix for the given country."""
-    if country == COUNTRY_CHINA:
+    if alpha_2_country == COUNTRY_CHINA:
         return ""
 
-    return f"-{get_continent(country)}"
+    return f"-{get_continent(alpha_2_country)}"
 
 
 # Copied from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/countries.json on 11.01.2024
@@ -180,7 +180,7 @@ COUNTRIES_TO_CONTINENTS = {
     "MX": "na",
     "MY": "as",
     "MZ": "ww",
-    "na": "ww",
+    "NA": "ww",
     "NC": "ww",
     "NE": "ww",
     "NF": "ww",
@@ -252,7 +252,6 @@ COUNTRIES_TO_CONTINENTS = {
     "TZ": "ww",
     "UA": "eu",
     "UG": "ww",
-    "UK": "eu",
     "UM": "ww",
     "US": "na",
     "UY": "ww",
@@ -266,7 +265,6 @@ COUNTRIES_TO_CONTINENTS = {
     "VU": "ww",
     "WF": "ww",
     "WS": "ww",
-    "XK": "eu",
     "YE": "as",
     "YT": "ww",
     "ZA": "ww",

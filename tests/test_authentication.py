@@ -106,7 +106,7 @@ def test_config_override_rest_url(
     config = create_rest_config(
         session=session,
         device_id="123",
-        country=country,
+        alpha_2_country=country,
         override_rest_url=override_rest_url,
     )
     assert config.portal_url == expected_portal_url
