@@ -5,16 +5,15 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, auto
 import functools
+import logging
 from typing import TYPE_CHECKING, Any, TypeVar, final
-
-from .logging_filter import get_logger
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from .event_bus import EventBus
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class HandlingState(IntEnum):

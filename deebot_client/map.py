@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
 import itertools
+import logging
 import lzma
 import struct
 from typing import TYPE_CHECKING, Any, Final
@@ -33,7 +34,6 @@ from .events import (
     RoomsEvent,
 )
 from .exceptions import MapError
-from .logging_filter import get_logger
 from .models import Room
 from .util import OnChangedDict, OnChangedList
 
@@ -97,7 +97,7 @@ class Path(svg.Path):  # noqa: TID251
         return super()._as_str(val)
 
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 _PIXEL_WIDTH = 50
 _ROUND_TO_DIGITS = 3
 

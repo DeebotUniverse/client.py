@@ -3,11 +3,11 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
+import logging
 import threading
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
-from .logging_filter import get_logger
 from .models import State
 from .util import cancel, create_task
 
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 
     from .command import Command
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 T = TypeVar("T", bound=Event)
 

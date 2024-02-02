@@ -2,7 +2,7 @@
 from __future__ import annotations
 
 import copy
-from logging import Filter, Logger, LogRecord, getLogger
+from logging import Filter, LogRecord
 from typing import Any
 
 
@@ -51,10 +51,3 @@ class SanitizeFilter(Filter):
                 sanitized_data[key] = self._sanitize_data(value)
 
         return sanitized_data if sanitized_data else data
-
-
-def get_logger(name: str) -> Logger:
-    """Get logger with filter."""
-    logger = getLogger(name)
-    logger.addFilter(SanitizeFilter())
-    return logger

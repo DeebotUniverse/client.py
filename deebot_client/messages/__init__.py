@@ -1,15 +1,15 @@
 """Messages module."""
 from __future__ import annotations
 
+import logging
 import re
 
 from deebot_client.const import DataType
-from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
 
 from .json import MESSAGES as JSON_MESSAGES
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 MESSAGES = {
     DataType.JSON: JSON_MESSAGES,

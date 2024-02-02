@@ -5,6 +5,7 @@ import asyncio
 from contextlib import suppress
 from datetime import datetime
 import json
+import logging
 from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
@@ -23,7 +24,6 @@ from .events import (
     StatsEvent,
     TotalStatsEvent,
 )
-from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
@@ -34,7 +34,7 @@ if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import Command
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
 

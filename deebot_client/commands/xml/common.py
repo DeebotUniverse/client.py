@@ -9,13 +9,10 @@ from defusedxml import ElementTree  # type: ignore[import-untyped]
 
 from deebot_client.command import Command, CommandWithMessageHandling
 from deebot_client.const import DataType
-from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageStr
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
-
-_LOGGER = get_logger(__name__)
 
 
 class XmlCommand(Command):

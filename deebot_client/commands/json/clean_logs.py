@@ -1,12 +1,12 @@
 """clean log commands."""
 from __future__ import annotations
 
+import logging
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import CommandResult
 from deebot_client.const import PATH_API_LG_LOG, REQUEST_HEADERS
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
-from deebot_client.logging_filter import get_logger
 
 from .common import JsonCommand
 
@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.models import DeviceInfo
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class GetCleanLogs(JsonCommand):

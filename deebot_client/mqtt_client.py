@@ -6,6 +6,7 @@ from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
 import json
+import logging
 import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -17,7 +18,6 @@ from deebot_client.const import UNDEFINED, DataType, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
-from .logging_filter import get_logger
 from .util.continents import get_continent_url_postfix
 
 if TYPE_CHECKING:
@@ -30,8 +30,8 @@ if TYPE_CHECKING:
 
 RECONNECT_INTERVAL = 5  # seconds
 
-_LOGGER = get_logger(__name__)
-_CLIENT_LOGGER = get_logger(f"{__name__}.client")
+_LOGGER = logging.getLogger(__name__)
+_CLIENT_LOGGER = logging.getLogger(f"{__name__}.client")
 
 
 def _get_topics(device_info: DeviceInfo) -> list[str]:

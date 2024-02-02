@@ -4,6 +4,7 @@ from __future__ import annotations
 import asyncio
 from dataclasses import dataclass
 from http import HTTPStatus
+import logging
 import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
@@ -12,7 +13,6 @@ from aiohttp import ClientResponseError, ClientSession, hdrs
 
 from .const import COUNTRY_CHINA, REALM
 from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
-from .logging_filter import get_logger
 from .models import Credentials
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
@@ -22,7 +22,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
 
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105

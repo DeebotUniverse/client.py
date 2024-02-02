@@ -4,13 +4,13 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
+import logging
 from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
 from deebot_client.exceptions import DeebotError
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
-from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
 if TYPE_CHECKING:
@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     from .event_bus import EventBus
     from .models import DeviceInfo
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)

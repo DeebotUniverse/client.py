@@ -2,17 +2,16 @@
 from __future__ import annotations
 
 import importlib
+import logging
 import pkgutil
 from typing import TYPE_CHECKING
-
-from deebot_client.logging_filter import get_logger
 
 if TYPE_CHECKING:
     from deebot_client.models import StaticDeviceInfo
 
 __all__ = ["get_static_device_info"]
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 FALLBACK = "fallback"

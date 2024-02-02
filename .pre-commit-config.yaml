@@ -4,7 +4,6 @@ ci:
     # This steps run in the ci workflow. Keep in sync
     - mypy
     - pylint
-    - verifyNoGetLogger
 
 default_language_version:
   python: python3.12
@@ -79,8 +78,3 @@ repos:
           - python
         require_serial: true
         exclude: ^tests/.+
-      - id: verifyNoGetLogger
-        name: Verify no getLogger usages
-        entry: scripts/check_getLogger.sh
-        language: script
-        require_serial: true

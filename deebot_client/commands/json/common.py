@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from datetime import datetime
+import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
@@ -14,7 +15,6 @@ from deebot_client.command import (
     SetCommand,
 )
 from deebot_client.const import DataType
-from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.events import EnableEvent
 
-_LOGGER = get_logger(__name__)
+_LOGGER = logging.getLogger(__name__)
 
 
 class JsonCommand(Command):
