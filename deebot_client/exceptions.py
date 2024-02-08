@@ -18,6 +18,13 @@ class ApiError(DeebotError):
     """Api error."""
 
 
+class ApiTimeoutError(ApiError):
+    """Api timeout error."""
+
+    def __init__(self, path: str, timeout: int, *args: object) -> None:
+        super().__init__(f"Timeout ({timeout}) reached on path: {path}", *args)
+
+
 class MapError(DeebotError):
     """Map error."""
 

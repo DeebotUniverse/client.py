@@ -11,7 +11,12 @@ from urllib.parse import urljoin
 from aiohttp import ClientResponseError, ClientSession, hdrs
 
 from .const import COUNTRY_CHINA, REALM
-from .exceptions import ApiError, AuthenticationError, InvalidAuthenticationError
+from .exceptions import (
+    ApiError,
+    ApiTimeoutError,
+    AuthenticationError,
+    InvalidAuthenticationError,
+)
 from .logging_filter import get_logger
 from .models import Credentials
 from .util import cancel, create_task, md5
@@ -82,6 +87,9 @@ def create_rest_config(
     )
 
 
+_TIMEOUT = 60
+
+
 class _AuthClient:
     """Ecovacs auth client."""
 
@@ -136,7 +144,9 @@ class _AuthClient:
     async def __do_auth_response(
         self, url: str, params: dict[str, Any]
     ) -> dict[str, Any]:
-        async with self._config.session.get(url, params=params, timeout=60) as res:
+        async with self._config.session.get(
+            url, params=params, timeout=_TIMEOUT
+        ) as res:
             res.raise_for_status()
 
             # ecovacs returns a json but content_type header is set to text
@@ -284,7 +294,11 @@ class _AuthClient:
 
             try:
                 async with self._config.session.post(
-                    url, json=json, params=query_params, headers=headers, timeout=60
+                    url,
+                    json=json,
+                    params=query_params,
+                    headers=headers,
+                    timeout=_TIMEOUT,
                 ) as res:
                     if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
@@ -306,10 +320,8 @@ class _AuthClient:
                         headers=res.headers,
                     )
             except TimeoutError as ex:
-                _LOGGER.warning(
-                    "Timeout reached on api path: %s%s", path, json.get("cmdName", "")
-                )
-                raise ApiError("Timeout reached") from ex
+                _LOGGER.debug("Timeout (%d) reached on path: %s", _TIMEOUT, path)
+                raise ApiTimeoutError(path=path, timeout=_TIMEOUT) from ex
             except ClientResponseError as ex:
                 _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
                 if ex.status == HTTPStatus.BAD_GATEWAY:
