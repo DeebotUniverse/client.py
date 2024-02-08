@@ -26,24 +26,18 @@ def md5(text: str) -> str:
 
 def decompress_7z_base64_data(data: str) -> bytes:
     """Decomporess base64 decoded 7z compressed string."""
-    _LOGGER.debug("[decompress7zBase64Data] Begin")
     final_array = bytearray()
 
     # Decode Base64
     decoded = base64.b64decode(data)
 
-    i = 0
-    for idx in decoded:
+    for i, idx in enumerate(decoded):
         if i == 8:
-            final_array += b"\x00\x00\x00\x00"
+            final_array.extend(b"\x00\x00\x00\x00")
         final_array.append(idx)
-        i += 1
 
     dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
-    decompressed_data = dec.decompress(final_array)
-
-    _LOGGER.debug("[decompress7zBase64Data] Done")
-    return decompressed_data
+    return dec.decompress(final_array)
 
 
 def create_task(

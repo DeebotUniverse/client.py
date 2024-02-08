@@ -29,12 +29,20 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getCachedMapInfo"
     # version definition for using type of getMapSet v1 or v2
-    get_map_set_version: int = 1
+    _map_set_command: type[GetMapSet | GetMapSetV2] | None = None
 
     def __init__(
         self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
     ) -> None:
-        self.get_map_set_version = version
+        match version:
+            case 1:
+                self._map_set_command = GetMapSet
+            case 2:
+                self._map_set_command = GetMapSetV2
+            case _:
+                error_wrong_version = f"version={version} is not supported"
+                raise ValueError(error_wrong_version)
+
         super().__init__(args)
 
     @classmethod
@@ -65,14 +73,19 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
+        if (
+            result.state == HandlingState.SUCCESS
+            and result.args
+            and self._map_set_command
+        ):
             return CommandResult(
                 result.state,
                 result.args,
                 # an if check for getmapset, as newer bot use different api version
-                [GetMapSetV2(result.args["map_id"], entry) for entry in MapSetType]
-                if self.get_map_set_version == 2
-                else [GetMapSet(result.args["map_id"], entry) for entry in MapSetType],
+                [
+                    self._map_set_command(result.args["map_id"], entry)
+                    for entry in MapSetType
+                ],
             )
 
         return result
@@ -111,7 +124,7 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         subsets = [int(subset["mssid"]) for subset in data["subsets"]]
         args = {
             cls._ARGS_ID: data["mid"],
-            cls._ARGS_SET_ID: data.get("msid", None),
+            cls._ARGS_SET_ID: data.get("msid"),
             cls._ARGS_TYPE: data["type"],
             cls._ARGS_SUBSETS: subsets,
         }
@@ -182,7 +195,8 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             type = type.value
 
         if msid is None and type == MapSetType.ROOMS.value:
-            raise ValueError("msid is required when type='ar'")
+            error_msid_type = f"msid is required when type='{MapSetType.ROOMS.value}'"
+            raise ValueError(error_msid_type)
 
         super().__init__(
             {
@@ -202,10 +216,10 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         if MapSetType.has_value(data["type"]):
-            subtype = data.get("subtype", data.get("subType", None))
+            subtype = data.get("subtype", data.get("subType"))
             name = None
             if subtype == "15":
-                name = data.get("name", None)
+                name = data.get("name")
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
