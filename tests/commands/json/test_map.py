@@ -122,7 +122,7 @@ async def test_getCachedMapInfo() -> None:
         GetCachedMapInfo(version=2),
         json,
         CachedMapInfoEvent(expected_name, active=True),
-        CommandResult(
+        command_result=CommandResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
             [GetMapSetV2(expected_mid, entry) for entry in MapSetType],
