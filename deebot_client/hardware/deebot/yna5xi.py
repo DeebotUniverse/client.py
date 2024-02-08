@@ -1,4 +1,6 @@
 """Deebot Ozmo 920/950 Capabilities."""
+from __future__ import annotations
+
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,

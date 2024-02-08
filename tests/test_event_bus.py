@@ -1,16 +1,22 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
-from deebot_client.events.base import Event
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import State
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deebot_client.event_bus import EventBus
+    from deebot_client.events.base import Event
 
 
 def _verify_event_command_called(

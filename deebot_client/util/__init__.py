@@ -9,7 +9,7 @@ import hashlib
 import lzma
 from typing import TYPE_CHECKING, Any, Self, TypeVar
 
-from .logging_filter import get_logger
+from deebot_client.logging_filter import get_logger
 
 _LOGGER = get_logger(__name__)
 

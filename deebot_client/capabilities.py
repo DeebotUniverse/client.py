@@ -1,10 +1,10 @@
 """Device capabilities module."""
-from collections.abc import Callable
+from __future__ import annotations
+
 from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
-from deebot_client.command import Command, SetCommand
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
@@ -32,6 +32,7 @@ from deebot_client.events import (
     RoomsEvent,
     StateEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
@@ -41,11 +42,15 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
-from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
-from deebot_client.models import CleanAction, CleanMode
 
 if TYPE_CHECKING:
+    from collections.abc import Callable
+
     from _typeshed import DataclassInstance
+
+    from deebot_client.command import Command, SetCommand
+    from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
+    from deebot_client.models import CleanAction, CleanMode
 
 
 _T = TypeVar("_T")
@@ -53,7 +58,7 @@ _EVENT = TypeVar("_EVENT", bound=Event)
 
 
 def _get_events(
-    capabilities: "DataclassInstance",
+    capabilities: DataclassInstance,
 ) -> MappingProxyType[type[Event], list[Command]]:
     events = {}
     for field_ in fields(capabilities):
@@ -173,6 +178,7 @@ class CapabilitySettings:
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
     ) = None
+    sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, int]

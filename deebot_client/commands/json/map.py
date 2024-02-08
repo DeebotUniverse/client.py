@@ -1,10 +1,11 @@
 """Maps commands."""
+from __future__ import annotations
+
 import json
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import Command, CommandResult
-from deebot_client.event_bus import EventBus
 from deebot_client.events import (
     MajorMapEvent,
     MapSetEvent,
@@ -18,6 +19,9 @@ from deebot_client.message import HandlingResult, HandlingState, MessageBodyData
 from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):

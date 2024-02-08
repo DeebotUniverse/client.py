@@ -1,9 +1,13 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 from deebot_client.event_bus import EventBus
-from deebot_client.events import Event
 from deebot_client.message import HandlingState, Message
+
+if TYPE_CHECKING:
+    from deebot_client.events import Event
 
 
 def assert_message(

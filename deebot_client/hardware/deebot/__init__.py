@@ -1,9 +1,14 @@
 """Hardware deebot module."""
+from __future__ import annotations
+
 import importlib
 import pkgutil
+from typing import TYPE_CHECKING
 
 from deebot_client.logging_filter import get_logger
-from deebot_client.models import StaticDeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.models import StaticDeviceInfo
 
 __all__ = ["get_static_device_info"]
 
@@ -30,5 +35,8 @@ def get_static_device_info(class_: str) -> StaticDeviceInfo:
         _LOGGER.debug("Capabilities found for %s", class_)
         return device
 
-    _LOGGER.warning("No capabilities found for %s. Using fallback.", class_)
+    _LOGGER.info(
+        "No capabilities found for %s, therefore not all features are available. trying to use fallback...",
+        class_,
+    )
     return DEVICES[FALLBACK]

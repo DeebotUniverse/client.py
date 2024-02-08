@@ -1,4 +1,6 @@
 """Device module."""
+from __future__ import annotations
+
 import asyncio
 from contextlib import suppress
 from datetime import datetime
@@ -9,8 +11,6 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
-from .authentication import Authenticator
-from .command import Command
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
@@ -30,6 +30,9 @@ from .models import DeviceInfo, State
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from .authentication import Authenticator
+    from .command import Command
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60

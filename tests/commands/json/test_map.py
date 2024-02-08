@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
     GetCachedMapInfo,
