@@ -118,18 +118,10 @@ _POSITIONS_SVG = {
 
 _OFFSET = 400
 _TRACE_MAP = "trace_map"
-_COLOR_LIST_EXCLUDE = [0x00]
-_COLOR_LIST_INCLUDE = [
-    0x01,  # 1
-    0x02,  # 2
-    0x03,  # 3
-    0x04,  # 4
-    0x05,  # 5
-]
 _COLORS = {
-    _TRACE_MAP: "#FFFFFF",
-    MapSetType.VIRTUAL_WALLS: "#FF0000",
-    MapSetType.NO_MOP_ZONES: "#FFA500",
+    _TRACE_MAP: "#fff",
+    MapSetType.VIRTUAL_WALLS: "#f00",
+    MapSetType.NO_MOP_ZONES: "#ffa500",
 }
 _DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
 _MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
