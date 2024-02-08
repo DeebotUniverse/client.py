@@ -7,7 +7,7 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
-from deebot_client.exceptions import DeebotError
+from deebot_client.exceptions import ApiTimeoutError, DeebotError
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
@@ -102,7 +102,14 @@ class Command(ABC):
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         """Execute command."""
-        response = await self._execute_api_request(authenticator, device_info)
+        try:
+            response = await self._execute_api_request(authenticator, device_info)
+        except ApiTimeoutError:
+            _LOGGER.warning(
+                "Could not execute command %s: Timeout reached",
+                self.name,
+            )
+            return CommandResult(HandlingState.ERROR)
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
