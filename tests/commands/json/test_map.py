@@ -1,3 +1,6 @@
+from __future__ import annotations
+
+from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -13,6 +16,7 @@ from deebot_client.events import (
     MapTraceEvent,
 )
 from deebot_client.events.map import CachedMapInfoEvent
+from deebot_client.message import HandlingState
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -104,13 +108,12 @@ async def test_getCachedMapInfo() -> None:
     await assert_command(
         GetCachedMapInfo(),
         json,
-        CachedMapInfoEvent(expected_name, True),
-        # todo check requested command be called
-        # CommandResult(
-        #    HandlingState.SUCCESS,
-        #    {"map_id": expected_mid},
-        #    [GetMapSet(expected_mid, entry) for entry in MapSetType],
-        # ),
+        CachedMapInfoEvent(expected_name, active=True),
+        command_result=CommandResult(
+            HandlingState.SUCCESS,
+            {"map_id": expected_mid},
+            [GetMapSet(expected_mid, entry) for entry in MapSetType],
+        ),
     )
 
 
@@ -131,20 +134,22 @@ async def test_getMajorMap() -> None:
         )
     )
     await assert_command(
-        GetMajorMap(), json, MajorMapEvent(True, expected_mid, value.split(","))
+        GetMajorMap(),
+        json,
+        MajorMapEvent(expected_mid, value.split(","), requested=True),
     )
 
 
 async def test_getMapSet() -> None:
     mid = "199390082"
-    # msid = "8"
+    msid = "8"
     json = get_request_json(
         get_success_body(
             {
                 "type": "ar",
                 "count": 7,
                 "mid": mid,
-                "msid": "8",
+                "msid": msid,
                 "subsets": [
                     {"mssid": "7"},
                     {"mssid": "12"},
@@ -162,15 +167,14 @@ async def test_getMapSet() -> None:
         GetMapSet(mid),
         json,
         MapSetEvent(MapSetType.ROOMS, subsets),
-        # todo check requested command be called
-        # CommandResult(
-        #    HandlingState.SUCCESS,
-        #    {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
-        #    [
-        #        GetMapSubSet(mid=mid, msid=msid, type=MapSetType.ROOMS, mssid=s)
-        #        for s in subsets
-        #    ],
-        # ),
+        command_result=CommandResult(
+            HandlingState.SUCCESS,
+            {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
+            [
+                GetMapSubSet(mid=mid, msid=msid, type=MapSetType.ROOMS, mssid=s)
+                for s in subsets
+            ],
+        ),
     )
 
 
@@ -193,8 +197,7 @@ async def test_getMapTrace() -> None:
         GetMapTrace(start),
         json,
         MapTraceEvent(start=start, total=total, data=trace_value),
-        # todo check requested command be called
-        # CommandResult(
-        #    HandlingState.SUCCESS, {"start": start, "total": total}, [GetMapTrace(200)]
-        # ),
+        command_result=CommandResult(
+            HandlingState.SUCCESS, {"start": start, "total": total}, []
+        ),
     )

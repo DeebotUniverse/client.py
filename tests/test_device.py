@@ -1,17 +1,22 @@
+from __future__ import annotations
+
 import asyncio
 from collections.abc import Callable
 import json
+from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
-from deebot_client.authentication import Authenticator
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
+
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.models import DeviceInfo
 
 
 @patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
@@ -24,7 +29,7 @@ async def test_available_check_and_teardown(
     async def on_status(event: AvailabilityEvent) -> None:
         received_statuses.put_nowait(event)
 
-    async def assert_received_status(expected: bool) -> None:
+    async def assert_received_status(*, expected: bool) -> None:
         await asyncio.sleep(0.1)
         assert received_statuses.get_nowait().available is expected
 
@@ -62,14 +67,14 @@ async def test_available_check_and_teardown(
     await asyncio.sleep(2.1)
     # Verify command call for available check
     execute_mock.assert_awaited_once()
-    await assert_received_status(False)
+    await assert_received_status(expected=False)
 
     # Simulate bot reached by returning True
     execute_mock.return_value = True
 
     await asyncio.sleep(2)
     execute_mock.await_count = 2
-    await assert_received_status(True)
+    await assert_received_status(expected=True)
 
     # reset mock for easier handling
     battery_mock.reset_mock()

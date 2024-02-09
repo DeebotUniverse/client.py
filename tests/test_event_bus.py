@@ -1,23 +1,30 @@
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable
 from datetime import UTC, datetime
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
-from deebot_client.events.base import Event
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.models import State
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deebot_client.event_bus import EventBus
+    from deebot_client.events.base import Event
 
 
 def _verify_event_command_called(
     execute_mock: AsyncMock,
     event: type[Event],
-    expected_call: bool,
     event_bus: EventBus,
+    *,
+    expected_call: bool,
 ) -> None:
     for command in event_bus._get_refresh_commands(event):
         assert (call(command) in execute_mock.call_args_list) == expected_call
@@ -27,12 +34,15 @@ async def _subscribeAndVerify(
     execute_mock: AsyncMock,
     event_bus: EventBus,
     to_subscribe: type[Event],
+    *,
     expected_call: bool,
 ) -> Callable[[], None]:
     unsubscribe = event_bus.subscribe(to_subscribe, AsyncMock())
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, to_subscribe, expected_call, event_bus)
+    _verify_event_command_called(
+        execute_mock, to_subscribe, event_bus, expected_call=expected_call
+    )
 
     execute_mock.reset_mock()
     return unsubscribe
@@ -43,11 +53,13 @@ async def test_subscription(
     execute_mock: AsyncMock, event_bus: EventBus, event: type[Event]
 ) -> None:
     # on first should subscription the refresh should be triggered
-    unsubscribers = [await _subscribeAndVerify(execute_mock, event_bus, event, True)]
+    unsubscribers = [
+        await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
+    ]
 
     # this time no refresh should be happen
     unsubscribers.append(
-        await _subscribeAndVerify(execute_mock, event_bus, event, False)
+        await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=False)
     )
 
     # unscubscrbe from all
@@ -56,7 +68,7 @@ async def test_subscription(
 
     # as there are no subscriber...
     # the first one, should trigger a refresh
-    await _subscribeAndVerify(execute_mock, event_bus, event, True)
+    await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
 
 
 async def test_refresh_when_coming_back_online(
@@ -64,8 +76,8 @@ async def test_refresh_when_coming_back_online(
 ) -> None:
     available_mock = AsyncMock()
 
-    async def notify(available: bool) -> None:
-        event = AvailabilityEvent(available)
+    async def notify(*, available: bool) -> None:
+        event = AvailabilityEvent(available=available)
         event_bus.notify(event)
         await asyncio.sleep(0.1)
         available_mock.assert_awaited_with(event)
@@ -78,12 +90,18 @@ async def test_refresh_when_coming_back_online(
     # Only calls made after coming back online are of interest
     execute_mock.reset_mock()
 
-    await notify(False)
-    await notify(True)
+    await notify(available=False)
+    await notify(available=True)
 
-    _verify_event_command_called(execute_mock, WaterInfoEvent, True, event_bus)
-    _verify_event_command_called(execute_mock, StateEvent, True, event_bus)
-    _verify_event_command_called(execute_mock, AvailabilityEvent, False, event_bus)
+    _verify_event_command_called(
+        execute_mock, WaterInfoEvent, event_bus, expected_call=True
+    )
+    _verify_event_command_called(
+        execute_mock, StateEvent, event_bus, expected_call=True
+    )
+    _verify_event_command_called(
+        execute_mock, AvailabilityEvent, event_bus, expected_call=False
+    )
 
 
 async def test_get_last_event(event_bus: EventBus) -> None:
@@ -106,7 +124,7 @@ async def test_get_last_event(event_bus: EventBus) -> None:
 async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> None:
     event = BatteryEvent
     event_bus.request_refresh(event)
-    _verify_event_command_called(execute_mock, event, False, event_bus)
+    _verify_event_command_called(execute_mock, event, event_bus, expected_call=False)
 
     event_bus.subscribe(event, AsyncMock())
     execute_mock.reset_mock()
@@ -114,7 +132,7 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
     event_bus.request_refresh(event)
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, event, True, event_bus)
+    _verify_event_command_called(execute_mock, event, event_bus, expected_call=True)
 
 
 @pytest.mark.parametrize(
@@ -164,7 +182,7 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
 
     with patch("deebot_client.event_bus.asyncio", wraps=asyncio) as aio:
 
-        async def test_cycle(call_expected: bool) -> MapChangedEvent:
+        async def test_cycle(*, call_expected: bool) -> MapChangedEvent:
             event = MapChangedEvent(datetime.now(UTC))
             await notify(event, debounce_time)
             if call_expected:
@@ -183,11 +201,11 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
         for i in range(2):
             if i > 0:
                 await asyncio.sleep(debounce_time)
-            await test_cycle(True)
+            await test_cycle(call_expected=True)
             await asyncio.sleep(sleep_time)
-            event = await test_cycle(debounce_time <= 0)
+            event = await test_cycle(call_expected=debounce_time <= 0)
             await asyncio.sleep(sleep_time)
-            event = await test_cycle(debounce_time <= 0)
+            event = await test_cycle(call_expected=debounce_time <= 0)
 
             if debounce_time > 0:
                 await asyncio.sleep(debounce_time)

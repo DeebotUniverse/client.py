@@ -1,17 +1,21 @@
-from typing import Any
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
 
-from deebot_client.authentication import Authenticator
 from deebot_client.commands.json import GetCleanInfo
-from deebot_client.commands.json.clean import Clean, CleanAction
+from deebot_client.commands.json.clean import Clean
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.models import DeviceInfo, State
+from deebot_client.models import CleanAction, DeviceInfo, State
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
+
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
 
 
 @pytest.mark.parametrize(

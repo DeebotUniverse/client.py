@@ -1,18 +1,26 @@
+from __future__ import annotations
+
 import logging
-from typing import Any
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from deebot_client.command import CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
-from deebot_client.event_bus import EventBus
-from deebot_client.exceptions import DeebotError
+from deebot_client.exceptions import ApiTimeoutError, DeebotError
+
+if TYPE_CHECKING:
+    from unittest.mock import Mock
+
+    from deebot_client.event_bus import EventBus
+    from deebot_client.models import DeviceInfo
 
 
 class _TestCommand(CommandMqttP2P):
     name = "TestCommand"
     data_type = DataType.JSON
-    _mqtt_params = {"field": InitParam(int), "remove": None}
+    _mqtt_params = MappingProxyType({"field": InitParam(int), "remove": None})
 
     def __init__(self, field: int) -> None:
         pass
@@ -24,7 +32,9 @@ class _TestCommand(CommandMqttP2P):
         return {}
 
     def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
+        self,
+        _: EventBus,
+        response: dict[str, Any],  # noqa: ARG002
     ) -> CommandResult:
         return CommandResult.analyse()
 
@@ -59,4 +69,21 @@ def test_CommandMqttP2P_create_from_mqtt_additional_fields(
         "deebot_client.command",
         logging.DEBUG,
         "Following data will be ignored: {'additional': 1}",
+    ) in caplog.record_tuples
+
+
+async def test_execute_api_timeout_error(
+    caplog: pytest.LogCaptureFixture,
+    authenticator: Mock,
+    device_info: DeviceInfo,
+    event_bus_mock: Mock,
+) -> None:
+    """Test that on api timeout the stack trace is not logged."""
+    command = _TestCommand(1)
+    authenticator.post_authenticated.side_effect = ApiTimeoutError("test", 60)
+    assert not await command.execute(authenticator, device_info, event_bus_mock)
+    assert (
+        "deebot_client.command",
+        logging.WARNING,
+        "Could not execute command TestCommand: Timeout reached",
     ) in caplog.record_tuples

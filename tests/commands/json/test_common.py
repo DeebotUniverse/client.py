@@ -1,16 +1,21 @@
-from collections.abc import Callable
+from __future__ import annotations
+
 import logging
-from typing import Any
+from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
 import pytest
 
-from deebot_client.command import CommandWithMessageHandling
 from deebot_client.commands.json import GetBattery
 from deebot_client.commands.json.map import GetCachedMapInfo
 from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent
-from deebot_client.models import DeviceInfo
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deebot_client.command import CommandWithMessageHandling
+    from deebot_client.models import DeviceInfo
 
 _ERROR_500 = {"ret": "fail", "errno": 500, "debug": "wait for response timed out"}
 _ERROR_4200 = {
@@ -21,14 +26,12 @@ _ERROR_4200 = {
 }
 
 
-def _assert_false_and_not_called(available: bool, event_bus: Mock) -> None:
-    assert available is False
+def _assert_false_and_not_called(event_bus: Mock) -> None:
     event_bus.assert_not_called()
 
 
-def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> None:
-    assert available is False
-    event_bus.notify.assert_called_with(AvailabilityEvent(False))
+def _assert_false_and_avalable_event_false(event_bus: Mock) -> None:
+    event_bus.notify.assert_called_with(AvailabilityEvent(available=False))
 
 
 @pytest.mark.parametrize(
@@ -61,7 +64,7 @@ def _assert_false_and_avalable_event_false(available: bool, event_bus: Mock) -> 
     ],
 )
 @pytest.mark.parametrize(
-    "command", [GetBattery(), GetBattery(True), GetCachedMapInfo()]
+    "command", [GetBattery(), GetBattery(is_available_check=True), GetCachedMapInfo()]
 )
 async def test_common_functionality(
     authenticator: Mock,
@@ -69,7 +72,7 @@ async def test_common_functionality(
     command: CommandWithMessageHandling,
     repsonse_json: dict[str, Any],
     expected_log: tuple[int, str],
-    assert_func: Callable[[bool, Mock], None],
+    assert_func: Callable[[Mock], None],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     authenticator.post_authenticated.return_value = repsonse_json
@@ -91,4 +94,5 @@ async def test_common_functionality(
             expected_log[1].format(command.name),
         ) in caplog.record_tuples
 
-    assert_func(available, event_bus)
+    assert available is False
+    assert_func(event_bus)

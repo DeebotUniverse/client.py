@@ -1,25 +1,32 @@
 """Base commands."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 from datetime import datetime
-from typing import Any
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import (
     Command,
     CommandWithMessageHandling,
+    GetCommand,
     InitParam,
     SetCommand,
 )
 from deebot_client.const import DataType
-from deebot_client.event_bus import EventBus
-from deebot_client.events import EnableEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
+    MessageBody,
     MessageBodyDataDict,
 )
 
 from .const import CODE
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
+    from deebot_client.events import EnableEvent
 
 _LOGGER = get_logger(__name__)
 
@@ -45,7 +52,9 @@ class JsonCommand(Command):
         return payload
 
 
-class JsonCommandWithMessageHandling(JsonCommand, CommandWithMessageHandling, ABC):
+class JsonCommandWithMessageHandling(
+    JsonCommand, CommandWithMessageHandling, MessageBody, ABC
+):
     """Command, which handle response by itself."""
 
 
@@ -53,7 +62,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+    def _handle_body(cls, _: EventBus, body: dict[str, Any]) -> HandlingResult:
         """Handle message->body and notify the correct event subscribers.
 
         :return: A message response
@@ -73,8 +82,23 @@ class JsonSetCommand(ExecuteCommand, SetCommand, ABC):
     """
 
 
-class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC):
+class JsonGetCommand(
+    JsonCommandWithMessageHandling, MessageBodyDataDict, GetCommand, ABC
+):
+    """Json get command."""
+
+    @classmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+        return cls._handle_body_data_dict(event_bus, args)
+
+
+class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
+
+    _field_name: str = "enable"
 
     @property  # type: ignore[misc]
     @classmethod
@@ -90,15 +114,22 @@ class GetEnableCommand(JsonCommandWithMessageHandling, MessageBodyDataDict, ABC)
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data["enable"]))  # type: ignore
+        event: EnableEvent = cls.event_type(bool(data[cls._field_name]))  # type: ignore[call-arg, assignment]
         event_bus.notify(event)
         return HandlingResult.success()
+
+
+_ENABLE = "enable"
 
 
 class SetEnableCommand(JsonSetCommand, ABC):
     """Abstract set enable command."""
 
-    _mqtt_params = {"enable": InitParam(bool)}
+    _field_name = _ENABLE
 
-    def __init__(self, enable: bool) -> None:
-        super().__init__({"enable": 1 if enable else 0})
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        cls._mqtt_params = MappingProxyType({cls._field_name: InitParam(bool, _ENABLE)})
+        super().__init_subclass__(**kwargs)
+
+    def __init__(self, enable: bool) -> None:  # noqa: FBT001
+        super().__init__({self._field_name: 1 if enable else 0})

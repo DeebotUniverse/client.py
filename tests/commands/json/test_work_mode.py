@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import pytest
@@ -26,18 +28,18 @@ def test_WorkMode_unique() -> None:
         ({"mode": 3}, WorkModeEvent(WorkMode.MOP_AFTER_VACUUM)),
     ],
 )
-async def test_GetWaterInfo(json: dict[str, Any], expected: WorkModeEvent) -> None:
+async def test_GetWorkMode(json: dict[str, Any], expected: WorkModeEvent) -> None:
     json = get_request_json(get_success_body(json))
     await assert_command(GetWorkMode(), json, expected)
 
 
 @pytest.mark.parametrize(("value"), [WorkMode.MOP_AFTER_VACUUM, "mop_after_vacuum"])
-async def test_SetWaterInfo(value: WorkMode | str) -> None:
+async def test_SetWorkMode(value: WorkMode | str) -> None:
     command = SetWorkMode(value)
     args = {"mode": 3}
     await assert_set_command(command, args, WorkModeEvent(WorkMode.MOP_AFTER_VACUUM))
 
 
-def test_SetWaterInfo_inexisting_value() -> None:
+def test_SetWorkMode_inexisting_value() -> None:
     with pytest.raises(ValueError, match="'INEXSTING' is not a valid WorkMode member"):
         SetWorkMode("inexsting")

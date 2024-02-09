@@ -1,10 +1,14 @@
 """Map event module."""
-from dataclasses import dataclass
-from datetime import datetime
+from __future__ import annotations
+
+from dataclasses import dataclass, field
 from enum import Enum, unique
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import Event
+
+if TYPE_CHECKING:
+    from datetime import datetime
 
 
 @unique
@@ -44,9 +48,9 @@ class MapTraceEvent(Event):
 class MajorMapEvent(Event):
     """Major map event."""
 
-    requested: bool
     map_id: str
     values: list[str]
+    requested: bool = field(kw_only=True)
 
 
 @dataclass(frozen=True)
@@ -68,7 +72,6 @@ class MapSetType(str, Enum):
     @classmethod
     def has_value(cls, value: Any) -> bool:
         """Check if value exists."""
-
         return value in cls._value2member_map_
 
 
@@ -95,7 +98,7 @@ class CachedMapInfoEvent(Event):
     """Cached map info event."""
 
     name: str
-    active: bool
+    active: bool = field(kw_only=True)
 
 
 @dataclass(frozen=True)

@@ -8,7 +8,7 @@ on:
   pull_request:
 
 env:
-  DEFAULT_PYTHON: "3.11"
+  DEFAULT_PYTHON: "3.12"
 
 jobs:
   code-quality:
@@ -18,7 +18,7 @@ jobs:
       - uses: "actions/checkout@v4"
       - name: Set up Python ${{ env.DEFAULT_PYTHON }}
         id: python
-        uses: actions/setup-python@v4.7.1
+        uses: actions/setup-python@v5.0.0
         with:
           python-version: ${{ env.DEFAULT_PYTHON }}
           cache: "pip"
@@ -38,13 +38,16 @@ jobs:
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests
+    strategy:
+      matrix:
+        python-version: ["3.11", "3.12"]
     steps:
       - uses: "actions/checkout@v4"
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
+      - name: Set up Python ${{ matrix.python-version }}
         id: python
-        uses: actions/setup-python@v4.7.1
+        uses: actions/setup-python@v5.0.0
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
+          python-version: ${{ matrix.python-version }}
           cache: "pip"
           cache-dependency-path: "requirements*"
       - name: Install dependencies

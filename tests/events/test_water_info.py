@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from deebot_client.events import WaterAmount
 from tests.helpers import verify_DisplayNameEnum_unique
 

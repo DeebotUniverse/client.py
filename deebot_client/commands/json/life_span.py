@@ -1,13 +1,18 @@
 """Life span commands."""
-from typing import Any
+from __future__ import annotations
+
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import CommandMqttP2P, InitParam
-from deebot_client.event_bus import EventBus
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
-from deebot_client.util import LST
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
+    from deebot_client.util import LST
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
@@ -45,7 +50,7 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"
-    _mqtt_params = {"type": InitParam(LifeSpan, "life_span")}
+    _mqtt_params = MappingProxyType({"type": InitParam(LifeSpan, "life_span")})
 
     def __init__(self, life_span: LifeSpan) -> None:
         super().__init__({"type": life_span.value})

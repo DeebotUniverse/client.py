@@ -1,17 +1,16 @@
 """Device module."""
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Callable
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import Any, Final
+from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
-from .authentication import Authenticator
-from .command import Command
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
@@ -29,6 +28,12 @@ from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
 
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .authentication import Authenticator
+    from .command import Command
+
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
@@ -40,7 +45,7 @@ class Device:
         self,
         device_info: DeviceInfo,
         authenticator: Authenticator,
-    ):
+    ) -> None:
         self.device_info: Final[DeviceInfo] = device_info
         self.capabilities: Final = device_info.capabilities
         self._authenticator = authenticator
@@ -140,7 +145,7 @@ class Device:
                         tasks.add(asyncio.create_task(self._execute_command(command)))
 
                     result = await asyncio.gather(*tasks)
-                    self._set_available(all(result))
+                    self._set_available(available=all(result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
@@ -155,17 +160,17 @@ class Device:
             if await command.execute(
                 self._authenticator, self.device_info, self.events
             ):
-                self._set_available(True)
+                self._set_available(available=True)
                 return True
 
         return False
 
-    def _set_available(self, available: bool) -> None:
+    def _set_available(self, *, available: bool) -> None:
         """Set available."""
         if available:
             self._last_time_available = datetime.now()
 
-        self.events.notify(AvailabilityEvent(available))
+        self.events.notify(AvailabilityEvent(available=available))
 
     def _handle_message(
         self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]
@@ -176,7 +181,7 @@ class Device:
         :param message_data: message data
         :return: None
         """
-        self._set_available(True)
+        self._set_available(available=True)
 
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)

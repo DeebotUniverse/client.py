@@ -1,15 +1,19 @@
 """Clean commands."""
-from typing import Any
+from __future__ import annotations
 
-from deebot_client.authentication import Authenticator
-from deebot_client.command import CommandResult
-from deebot_client.event_bus import EventBus
+from typing import TYPE_CHECKING, Any
+
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.command import CommandResult
+    from deebot_client.event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
 
@@ -75,7 +79,6 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-
         status: State | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":

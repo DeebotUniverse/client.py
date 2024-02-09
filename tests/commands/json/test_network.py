@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from deebot_client.commands.json import GetNetInfo
 from deebot_client.events import NetworkInfoEvent
 from tests.commands.json import assert_command
