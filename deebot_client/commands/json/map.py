@@ -29,7 +29,7 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     name = "getCachedMapInfo"
     # version definition for using type of getMapSet v1 or v2
-    _map_set_command: type[GetMapSet | GetMapSetV2] | None = None
+    _map_set_command: type[GetMapSet | GetMapSetV2]
 
     def __init__(
         self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
@@ -73,20 +73,51 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if (
-            result.state == HandlingState.SUCCESS
-            and result.args
-            and self._map_set_command
-        ):
+        if result.state == HandlingState.SUCCESS and result.args:
             return CommandResult(
                 result.state,
                 result.args,
-                # an if check for getmapset, as newer bot use different api version
                 [
                     self._map_set_command(result.args["map_id"], entry)
                     for entry in MapSetType
                 ],
             )
+
+        return result
+
+
+class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get major map command."""
+
+    name = "getMajorMap"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, _: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        values = data["value"].split(",")
+        map_id = data["mid"]
+
+        return HandlingResult(
+            HandlingState.SUCCESS,
+            {"map_id": map_id, "values": values},
+        )
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            event_bus.notify(MajorMapEvent(requested=True, **result.args))
+            return CommandResult.success()
 
         return result
 
@@ -223,11 +254,10 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
-            coordinates: str | None = None
             if data.get("compress", 0) == 1:
                 # NOTE: newer bot's return coordinates as base64 decoded string
                 coordinates = decompress_7z_base64_data(data["value"]).decode()
-            if coordinates is None:
+            else:
                 # NOTE: older bot's return coordinates direct as comma separated list
                 coordinates = data["value"]
 
@@ -340,42 +370,6 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
             start = result.args["start"] + self._TRACE_POINT_COUNT
             if start < result.args["total"]:
                 return CommandResult(result.state, result.args, [GetMapTrace(start)])
-
-        return result
-
-
-class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get major map command."""
-
-    name = "getMajorMap"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, _: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        values = data["value"].split(",")
-        map_id = data["mid"]
-
-        return HandlingResult(
-            HandlingState.SUCCESS,
-            {"map_id": map_id, "values": values},
-        )
-
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(requested=True, **result.args))
-            return CommandResult.success()
 
         return result
 

@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import pytest
+
 from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
     GetCachedMapInfo,
@@ -79,7 +81,17 @@ async def test_getMapSubSet_living_room() -> None:
     )
 
 
-async def test_getCachedMapInfo() -> None:
+@pytest.mark.parametrize(
+    ("command", "map_set_type"),
+    [
+        (GetCachedMapInfo(), GetMapSet),
+        (GetCachedMapInfo(version=1), GetMapSet),
+        (GetCachedMapInfo(version=2), GetMapSetV2),
+    ],
+)
+async def test_getCachedMapInfo(
+    command: GetCachedMapInfo, map_set_type: type[GetMapSet | GetMapSetV2]
+) -> None:
     expected_mid = "199390082"
     expected_name = "Erdgeschoss"
     json = get_request_json(
@@ -108,24 +120,13 @@ async def test_getCachedMapInfo() -> None:
         )
     )
     await assert_command(
-        GetCachedMapInfo(),
+        command,
         json,
         CachedMapInfoEvent(expected_name, active=True),
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
-            [GetMapSet(expected_mid, entry) for entry in MapSetType],
-        ),
-    )
-
-    await assert_command(
-        GetCachedMapInfo(version=2),
-        json,
-        CachedMapInfoEvent(expected_name, active=True),
-        command_result=CommandResult(
-            HandlingState.SUCCESS,
-            {"map_id": expected_mid},
-            [GetMapSetV2(expected_mid, entry) for entry in MapSetType],
+            [map_set_type(expected_mid, entry) for entry in MapSetType],
         ),
     )
 
