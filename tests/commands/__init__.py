@@ -56,8 +56,6 @@ async def assert_command(
             "name": "name",
             "nick": "nick",
             "resource": "resource",
-            "deviceName": "device_name",
-            "status": 1,
             "class": "get_class",
         },
         static_device_info,
