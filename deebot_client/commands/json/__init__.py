@@ -14,6 +14,7 @@ from .clean import Clean, CleanArea, GetCleanInfo
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
+from .clear_map import ClearMap
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
