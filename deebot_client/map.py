@@ -120,7 +120,7 @@ _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
     _TRACE_MAP: "#fff",
-    MapSetType.VIRTUAL_WALLS: "#f00",
+    MapSetType.VIRTUAL_WALLS: "#f00000",
     MapSetType.NO_MOP_ZONES: "#ffa500",
 }
 _DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
@@ -334,7 +334,7 @@ def _get_svg_subset(
 
     # For any other points count, return a polygon that should fit any required shape
     return svg.Polygon(
-        fill=_COLORS[subset.type] + "90",  # Set alpha channel to 90 for fill color
+        fill=_COLORS[subset.type] + "30",  # Set alpha channel to 90 for fill color
         stroke=_COLORS[subset.type],
         stroke_width=1.5,
         stroke_dasharray=[4],
