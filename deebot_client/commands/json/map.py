@@ -254,18 +254,11 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
-            if data.get("compress", 0) == 1:
-                # NOTE: newer bot's return coordinates as base64 decoded string
-                coordinates = decompress_7z_base64_data(data["value"]).decode()
-            else:
-                # NOTE: older bot's return coordinates direct as comma separated list
-                coordinates = data["value"]
-
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
                     type=MapSetType(data["type"]),
-                    coordinates=coordinates,
+                    coordinates=data["value"],
                     name=name,
                 )
             )
