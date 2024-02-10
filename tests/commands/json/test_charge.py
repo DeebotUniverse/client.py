@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any
 
@@ -37,7 +39,9 @@ async def test_Charge(json: dict[str, Any], expected: StateEvent) -> None:
 
 async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:
     json = _prepare_json(500, "fail")
-    await assert_command(Charge(), json, None, CommandResult(HandlingState.FAILED))
+    await assert_command(
+        Charge(), json, None, command_result=CommandResult(HandlingState.FAILED)
+    )
 
     assert (
         "deebot_client.commands.json.common",

@@ -3,11 +3,15 @@
 
 
 # How long to wait to log tasks that are blocking
+from __future__ import annotations
+
 import asyncio
-from collections.abc import Collection
 from logging import getLogger
 from time import monotonic
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from collections.abc import Collection
 
 _LOGGER = getLogger(__name__)
 

@@ -1,19 +1,24 @@
 """Base command."""
+from __future__ import annotations
+
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
-from types import MappingProxyType
-from typing import Any, final
+from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
-from deebot_client.exceptions import DeebotError
+from deebot_client.exceptions import ApiTimeoutError, DeebotError
 
-from .authentication import Authenticator
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
-from .event_bus import EventBus
 from .logging_filter import get_logger
-from .message import HandlingResult, HandlingState, MessageBody
-from .models import DeviceInfo
+from .message import HandlingResult, HandlingState, Message
+
+if TYPE_CHECKING:
+    from types import MappingProxyType
+
+    from .authentication import Authenticator
+    from .event_bus import EventBus
+    from .models import DeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -22,15 +27,15 @@ _LOGGER = get_logger(__name__)
 class CommandResult(HandlingResult):
     """Command result object."""
 
-    requested_commands: list["Command"] = field(default_factory=list)
+    requested_commands: list[Command] = field(default_factory=list)
 
     @classmethod
-    def success(cls) -> "CommandResult":
+    def success(cls) -> CommandResult:
         """Create result with handling success."""
         return CommandResult(HandlingState.SUCCESS)
 
     @classmethod
-    def analyse(cls) -> "CommandResult":
+    def analyse(cls) -> CommandResult:
         """Create result with handling analyse."""
         return CommandResult(HandlingState.ANALYSE)
 
@@ -69,7 +74,7 @@ class Command(ABC):
 
         Returns
         -------
-            bot_reached (bool): True if the command was targeting the bot and it responded in time. False otherwise.
+            bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
         """
         try:
@@ -97,7 +102,14 @@ class Command(ABC):
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
     ) -> CommandResult:
         """Execute command."""
-        response = await self._execute_api_request(authenticator, device_info)
+        try:
+            response = await self._execute_api_request(authenticator, device_info)
+        except ApiTimeoutError:
+            _LOGGER.warning(
+                "Could not execute command %s: Timeout reached",
+                self.name,
+            )
+            return CommandResult(HandlingState.ERROR)
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
@@ -191,7 +203,7 @@ class Command(ABC):
         return hash(self.name) + hash(self._args)
 
 
-class CommandWithMessageHandling(Command, MessageBody, ABC):
+class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
 
     _is_available_check: bool = False
@@ -252,7 +264,7 @@ class CommandMqttP2P(Command, ABC):
         """Handle response received over the mqtt channel "p2p"."""
 
     @classmethod
-    def create_from_mqtt(cls, data: dict[str, Any]) -> "CommandMqttP2P":
+    def create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
         """Create a command from the mqtt data."""
         values: dict[str, Any] = {}
         if not hasattr(cls, "_mqtt_params"):
@@ -284,6 +296,17 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
         raise DeebotError(msg) from err
 
 
+class GetCommand(CommandWithMessageHandling, ABC):
+    """Base get command."""
+
+    @classmethod
+    @abstractmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+
+
 class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
     """Base set command.
 
@@ -292,7 +315,7 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
 
     @property
     @abstractmethod
-    def get_command(self) -> type[CommandWithMessageHandling]:
+    def get_command(self) -> type[GetCommand]:
         """Return the corresponding "get" command."""
         raise NotImplementedError  # pragma: no cover
 
@@ -300,4 +323,4 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):
-            self.get_command.handle(event_bus, self._args)
+            self.get_command.handle_set_args(event_bus, self._args)

@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 from typing import Any
 
@@ -127,7 +129,7 @@ async def test_GetCleanLogs_analyse_logged(
         GetCleanLogs(),
         json,
         None,
-        CommandResult(HandlingState.ANALYSE_LOGGED),
+        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
     )
 
     assert (
@@ -142,7 +144,7 @@ async def test_GetCleanLogs_handle_error(caplog: pytest.LogCaptureFixture) -> No
         GetCleanLogs(),
         {},
         None,
-        CommandResult(HandlingState.ERROR),
+        command_result=CommandResult(HandlingState.ERROR),
     )
 
     assert (

@@ -1,11 +1,10 @@
 """Hardware init tests."""
+from __future__ import annotations
 
-
-from collections.abc import Callable
+from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import Command
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
@@ -53,7 +52,6 @@ from deebot_client.events import (
     VoiceAssistantStateEvent,
     VolumeEvent,
 )
-from deebot_client.events.base import Event
 from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
 from deebot_client.events.map import (
@@ -66,8 +64,14 @@ from deebot_client.events.map import (
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.hardware import get_static_device_info
-from deebot_client.hardware.deebot import DEVICES, FALLBACK
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from deebot_client.command import Command
+    from deebot_client.events.base import Event
+    from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
@@ -205,3 +209,26 @@ def test_capabilities_event_extraction(
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert capabilities.get_refresh_commands(event) == expected_commands
+
+
+def test_all_models_loaded() -> None:
+    """Test that all models are loaded."""
+    _load()
+    assert list(DEVICES) == [
+        "2o4lnm",
+        "55aiho",
+        "626v6g",
+        "85nbtp",
+        "9ku8nu",
+        "clojes",
+        "fallback",
+        "lx3j7m",
+        "p1jij8",
+        "p95mgv",
+        "rss8xk",
+        "umwv6z",
+        "vi829v",
+        "x5d34r",
+        "yna5xi",
+        "zjavof",
+    ]

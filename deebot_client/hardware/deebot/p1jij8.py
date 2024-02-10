@@ -1,4 +1,6 @@
 """Deebot T20 Omni Capabilities."""
+from __future__ import annotations
+
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,

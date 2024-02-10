@@ -1,14 +1,18 @@
 """Life span commands."""
+from __future__ import annotations
+
 from types import MappingProxyType
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import CommandMqttP2P, InitParam
-from deebot_client.event_bus import EventBus
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
-from deebot_client.util import LST
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
+    from deebot_client.util import LST
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):

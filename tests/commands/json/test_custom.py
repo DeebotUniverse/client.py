@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 from typing import Any
 
 import pytest
@@ -31,4 +33,4 @@ async def test_CustomCommand(
     expected: CustomCommandEvent | None,
     command_result: CommandResult,
 ) -> None:
-    await assert_command(command, json, expected, command_result)
+    await assert_command(command, json, expected, command_result=command_result)
