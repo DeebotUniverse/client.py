@@ -308,7 +308,29 @@ class GetMapSetV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
             decompress_7z_base64_data(data["subsets"]).decode()
         )
 
-        # NOTE: MapSetType.ROOMS is here ignored for now, to be checked if it is needed
+        # handle rooms
+        if data["type"] in (MapSetType.ROOMS):
+            for subset in subsets:
+                room_id = subset[0]  # room id
+                room_name = subset[1]  # room name
+                # subset[2] not sure what the value is for
+                # subset[3] not sure what the value is for
+                # subset[4] room clean order
+                room_coordinate = f"{subset[5]},{subset[6]}"
+                # subset[7] room clean configs as '<count>-<speed>-<water>'
+                # subset[8] named all as 'settingName1'
+
+                if not room_name or room_name == " ":
+                    room_name = "Default"
+
+                event_bus.notify(
+                    MapSubsetEvent(
+                        id=int(room_id),
+                        type=MapSetType(data["type"]),
+                        coordinates=room_coordinate,
+                        name=room_name,
+                    )
+                )
 
         # virtual walls and no map zones are same handled
         if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
