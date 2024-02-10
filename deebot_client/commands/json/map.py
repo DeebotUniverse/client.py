@@ -300,30 +300,55 @@ class GetMapSetV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        if MapSetType.has_value(data["type"]):
-            # subset is based64 7z compressed
-            subsets: list[list[str]] = json.loads(
-                decompress_7z_base64_data(data["subsets"]).decode()
+        # check if type is know
+        if not MapSetType.has_value(data["type"]):
+            return HandlingResult.analyse()
+
+        # if subsets is not given, it was an event/atr handling (this is to be done)
+        if not data.get("subsets") and data.get("mid"):
+            return HandlingResult(
+                HandlingState.SUCCESS, {"mid": data["mid"], "type": data["type"]}
             )
-            # NOTE: MapSetType.ROOMS is here ignored for now, to be checked if it is needed
 
-            # virtual walls and no map zones are same handled
-            if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
-                for subset in subsets:
-                    mssid = subset[0]  # first entry in list is mssid
-                    coordinates = str(subset[1:])  # all other in list are coordinates
+        # subset is based64 7z compressed
+        subsets: list[list[str]] = json.loads(
+            decompress_7z_base64_data(data["subsets"]).decode()
+        )
 
-                    event_bus.notify(
-                        MapSubsetEvent(
-                            id=int(mssid),
-                            type=MapSetType(data["type"]),
-                            coordinates=coordinates,
-                        )
+        # NOTE: MapSetType.ROOMS is here ignored for now, to be checked if it is needed
+
+        # virtual walls and no map zones are same handled
+        if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
+            for subset in subsets:
+                mssid = subset[0]  # first entry in list is mssid
+                coordinates = str(subset[1:])  # all other in list are coordinates
+
+                event_bus.notify(
+                    MapSubsetEvent(
+                        id=int(mssid),
+                        type=MapSetType(data["type"]),
+                        coordinates=coordinates,
                     )
+                )
 
-                return HandlingResult.success()
+        return HandlingResult.success()
 
-        return HandlingResult.analyse()
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            return CommandResult(
+                result.state,
+                result.args,
+                [GetMapSetV2(result.args["mid"], result.args["type"])],
+            )
+
+        return result
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
