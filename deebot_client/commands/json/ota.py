@@ -18,7 +18,6 @@ class GetOta(JsonGetCommand):
     """Get ota command."""
 
     name = "getOta"
-    event_type = OtaEvent
 
     @classmethod
     def _handle_body_data_dict(
@@ -28,7 +27,15 @@ class GetOta(JsonGetCommand):
 
         :return: A message response
         """
-        event_bus.notify(cls.event_type(bool(data["autoSwitch"])))
+        support_auto = data.get("supportAuto")
+        ota_event = OtaEvent(
+            enable=bool(data.get("autoSwitch", True)),
+            support_auto=None if support_auto is None else bool(support_auto),
+            version=data.get("ver"),
+            status=data.get("status"),
+            progress=data.get("progress"),
+        )
+        event_bus.notify(ota_event)
         return HandlingResult.success()
 
 

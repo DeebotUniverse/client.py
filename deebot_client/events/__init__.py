@@ -235,6 +235,11 @@ class MultimapStateEvent(EnableEvent):
 class OtaEvent(EnableEvent):
     """Ota event."""
 
+    support_auto: bool | None
+    version: str | None
+    status: str | None
+    progress: int | None
+
 
 @dataclass(frozen=True)
 class TrueDetectEvent(EnableEvent):
