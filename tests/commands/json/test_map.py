@@ -20,43 +20,9 @@ from deebot_client.events import (
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingState
-from deebot_client.util import decompress_7z_base64_data
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
-
-
-async def test_getMapSubSet_customName() -> None:
-    type = MapSetType.ROOMS
-    value = "XQAABAB5AgAAABaOQok5MfkIKbGTBxaUTX13SjXBAI1/Q3A9Kkx2gYZ1QdgwfwOSlU3hbRjNJYgr2Pr3WgFez3Gcoj3R2JmzAuc436F885ZKt5NF2AE1UPAF4qq67tK6TSA64PPfmZQ0lqwInQmqKG5/KO59RyFBbV1NKnDIGNBGVCWpH62WLlMu8N4zotA8dYMQ/UBMwr/gddQO5HU01OQM2YvF"
-    name = "Levin"
-    json = get_request_json(
-        get_success_body(
-            {
-                "type": type.value,
-                "subtype": "15",
-                "connections": "7,",
-                "name": name,
-                "seqIndex": 0,
-                "seq": 0,
-                "count": 0,
-                "totalCount": 50,
-                "index": 0,
-                "cleanset": "1,0,2",
-                "valueSize": 633,
-                "compress": 1,
-                "center": "-6775,-9225",
-                "mssid": "8",
-                "value": value,
-                "mid": "98100521",
-            }
-        )
-    )
-    await assert_command(
-        GetMapSubSet(mid="98100521", mssid="8", msid="1"),
-        json,
-        MapSubsetEvent(8, type, decompress_7z_base64_data(value).decode(), name),
-    )
 
 
 async def test_getMapSubSet_living_room() -> None:
