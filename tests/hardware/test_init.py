@@ -147,6 +147,7 @@ def test_get_static_device_info(
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
+                OtaEvent: [GetOta()],
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
