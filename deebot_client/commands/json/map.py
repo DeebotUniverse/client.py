@@ -310,25 +310,37 @@ class GetMapSetV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         # handle rooms
         if data["type"] in (MapSetType.ROOMS):
-            for subset in subsets:
-                room_id = subset[0]  # room id
-                room_name = subset[1]  # room name
-                # subset[2] not sure what the value is for
-                # subset[3] not sure what the value is for
-                # subset[4] room clean order
-                room_coordinate = f"{subset[5]},{subset[6]}"
-                # subset[7] room clean configs as '<count>-<speed>-<water>'
-                # subset[8] named all as 'settingName1'
+            room_subsets: list[dict[str, Any]] = [
+                {
+                    "id": int(subset[0]),  # room id
+                    "name": subset[1]
+                    if subset[1] and subset[1] != " "
+                    else "Default",  # room name
+                    # subset[2] not sure what the value is for
+                    # subset[3] not sure what the value is for
+                    # subset[4] room clean order
+                    "coordinates": f"{subset[5]},{subset[6]}",  # room center coordinates
+                    # subset[7] room clean configs as '<count>-<speed>-<water>'
+                    # subset[8] named all as 'settingName1'
+                }
+                for subset in subsets
+            ]
 
-                if not room_name or room_name == " ":
-                    room_name = "Default"
+            # notify first MapSetType to set room count
+            event_bus.notify(
+                MapSetEvent(
+                    MapSetType(data["type"]), [subset["id"] for subset in room_subsets]
+                )
+            )
 
+            # afterwards notify MapSubsetEvent to set room details
+            for room in room_subsets:
                 event_bus.notify(
                     MapSubsetEvent(
-                        id=int(room_id),
+                        id=room["id"],
                         type=MapSetType(data["type"]),
-                        coordinates=room_coordinate,
-                        name=room_name,
+                        coordinates=room["coordinates"],
+                        name=room["name"],
                     )
                 )
 
