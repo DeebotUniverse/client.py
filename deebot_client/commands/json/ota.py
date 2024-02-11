@@ -29,7 +29,7 @@ class GetOta(JsonGetCommand):
         """
         support_auto = data.get("supportAuto")
         ota_event = OtaEvent(
-            enable=bool(data.get("autoSwitch", True)),
+            enable=bool(data.get("autoSwitch", False)),
             support_auto=None if support_auto is None else bool(support_auto),
             version=data.get("ver"),
             status=data.get("status"),
@@ -45,7 +45,7 @@ class SetOta(JsonSetCommand):
     name = "setOta"
     get_command = GetOta
 
-    _mqtt_params = MappingProxyType({"autoSwitch": InitParam(bool, "enable")})
+    _mqtt_params = MappingProxyType({"autoSwitch": InitParam(bool, "auto_enabled")})
 
-    def __init__(self, enable: bool) -> None:  # noqa: FBT001
-        super().__init__({"autoSwitch": 1 if enable else 0})
+    def __init__(self, auto_enabled: bool) -> None:  # noqa: FBT001
+        super().__init__({"autoSwitch": 1 if auto_enabled else 0})
