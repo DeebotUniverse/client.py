@@ -334,7 +334,7 @@ def _get_svg_subset(
 
     # For any other points count, return a polygon that should fit any required shape
     return svg.Polygon(
-        fill=_COLORS[subset.type] + "30",  # Set alpha channel to 90 for fill color
+        fill=_COLORS[subset.type] + "30",  # Set alpha channel to 30 for fill color
         stroke=_COLORS[subset.type],
         stroke_width=1.5,
         stroke_dasharray=[4],
