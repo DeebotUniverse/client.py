@@ -10,7 +10,7 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, hdrs
 
-from .const import COUNTRY_CHINA, REALM
+from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
 from .exceptions import (
     ApiError,
     ApiTimeoutError,
@@ -35,7 +35,6 @@ _AUTH_CLIENT_KEY = "1520391491841"
 _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
 _USER_LOGIN_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/user/login"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
-_PATH_USERS_USER = "users/user.do"
 _META = {
     "lang": "EN",
     "appCode": "global_e",
@@ -242,7 +241,7 @@ class _AuthClient:
         }
 
         for i in range(3):
-            resp = await self.post(_PATH_USERS_USER, data)
+            resp = await self.post(PATH_API_USERS_USER, data)
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
@@ -250,10 +249,8 @@ class _AuthClient:
                 _LOGGER.warning("loginByItToken set token error, attempt %d/3", i + 2)
                 continue
 
-            _LOGGER.error("call to %s failed with %s", _PATH_USERS_USER, resp)
-            msg = (
-                f"failure {resp['error']} ({resp['errno']}) for call {_PATH_USERS_USER}"
-            )
+            _LOGGER.error("call to %s failed with %s", PATH_API_USERS_USER, resp)
+            msg = f"failure {resp['error']} ({resp['errno']}) for call {PATH_API_USERS_USER}"
             raise AuthenticationError(msg)
 
         raise AuthenticationError("failed to login with token")

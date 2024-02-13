@@ -138,8 +138,6 @@ def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
             "name": "name",
             "nick": "nick",
             "resource": "resource",
-            "deviceName": "device_name",
-            "status": 1,
             "class": "get_class",
         },
         static_device_info,

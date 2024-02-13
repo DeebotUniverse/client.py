@@ -14,14 +14,12 @@ if TYPE_CHECKING:
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
+        "class": Required[str],
         "company": Required[str],
         "did": Required[str],
         "name": Required[str],
         "nick": str,
         "resource": Required[str],
-        "deviceName": str,
-        "status": int,
-        "class": Required[str],
     },
     total=False,
 )
