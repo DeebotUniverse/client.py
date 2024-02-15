@@ -1,6 +1,7 @@
 """Maps commands."""
 from __future__ import annotations
 
+import json
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
@@ -15,6 +16,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
 
@@ -26,6 +28,22 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     name = "getCachedMapInfo"
+    # version definition for using type of getMapSet v1 or v2
+    _map_set_command: type[GetMapSet | GetMapSetV2]
+
+    def __init__(
+        self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
+    ) -> None:
+        match version:
+            case 1:
+                self._map_set_command = GetMapSet
+            case 2:
+                self._map_set_command = GetMapSetV2
+            case _:
+                error_wrong_version = f"version={version} is not supported"
+                raise ValueError(error_wrong_version)
+
+        super().__init__(args)
 
     @classmethod
     def _handle_body_data_dict(
@@ -59,7 +77,10 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return CommandResult(
                 result.state,
                 result.args,
-                [GetMapSet(result.args["map_id"], entry) for entry in MapSetType],
+                [
+                    self._map_set_command(result.args["map_id"], entry)
+                    for entry in MapSetType
+                ],
             )
 
         return result
@@ -131,16 +152,24 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        subsets = [int(subset["mssid"]) for subset in data["subsets"]]
-        args = {
-            cls._ARGS_ID: data["mid"],
-            cls._ARGS_SET_ID: data.get("msid", None),
-            cls._ARGS_TYPE: data["type"],
-            cls._ARGS_SUBSETS: subsets,
-        }
+        if not MapSetType.has_value(data["type"]) or not data.get("subsets"):
+            return HandlingResult.analyse()
 
-        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
-        return HandlingResult(HandlingState.SUCCESS, args)
+        if subset_ids := cls._get_subset_ids(event_bus, data):
+            event_bus.notify(MapSetEvent(MapSetType(data["type"]), subset_ids))
+            args = {
+                cls._ARGS_ID: data["mid"],
+                cls._ARGS_SET_ID: data.get("msid"),
+                cls._ARGS_TYPE: data["type"],
+                cls._ARGS_SUBSETS: subset_ids,
+            }
+            return HandlingResult(HandlingState.SUCCESS, args)
+        return HandlingResult(HandlingState.SUCCESS)
+
+    @classmethod
+    def _get_subset_ids(cls, _: EventBus, data: dict[str, Any]) -> list[int] | None:
+        """Return subset ids."""
+        return [int(subset["mssid"]) for subset in data["subsets"]]
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -205,7 +234,8 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             type = type.value
 
         if msid is None and type == MapSetType.ROOMS.value:
-            raise ValueError("msid is required when type='vw'")
+            error_msid_type = f"msid is required when type='{MapSetType.ROOMS.value}'"
+            raise ValueError(error_msid_type)
 
         super().__init__(
             {
@@ -225,18 +255,26 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         if MapSetType.has_value(data["type"]):
-            subtype = data.get("subtype", data.get("subType", None))
+            subtype = data.get("subtype", data.get("subType"))
             name = None
             if subtype == "15":
-                name = data.get("name", None)
+                name = data.get("name")
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
+
+            # This command is used by new and old bots
+            if data.get("compress", 0) == 1:
+                # Newer bot's return coordinates as base64 decoded string
+                coordinates = decompress_7z_base64_data(data["value"]).decode()
+            else:
+                # Older bot's return coordinates direct as comma/semicolon separated list
+                coordinates = data["value"]
 
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
                     type=MapSetType(data["type"]),
-                    coordinates=data["value"],
+                    coordinates=coordinates,
                     name=name,
                 )
             )
@@ -244,6 +282,48 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class GetMapSetV2(GetMapSet):
+    """Get map set v2 command."""
+
+    name = "getMapSet_V2"
+
+    @classmethod
+    def _get_subset_ids(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> list[int] | None:
+        """Return subset ids."""
+        # subset is based64 7z compressed
+        subsets = json.loads(decompress_7z_base64_data(data["subsets"]).decode())
+
+        match data["type"]:
+            case MapSetType.ROOMS:
+                # subset values
+                # 1 -> id
+                # 2 -> unknown
+                # 3 -> unknown
+                # 4 -> room clean order
+                # 5 -> room center x
+                # 6 -> room center y
+                # 7 -> room clean configs as '<count>-<speed>-<water>'
+                # 8 -> named all as 'settingName1'
+                return [int(subset[0]) for subset in subsets]
+
+            case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
+                for subset in subsets:
+                    mssid = subset[0]  # first entry in list is mssid
+                    coordinates = str(subset[1:])  # all other in list are coordinates
+
+                    event_bus.notify(
+                        MapSubsetEvent(
+                            id=int(mssid),
+                            type=MapSetType(data["type"]),
+                            coordinates=coordinates,
+                        )
+                    )
+
+        return None
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):

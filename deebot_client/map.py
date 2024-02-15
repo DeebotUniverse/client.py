@@ -9,7 +9,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
 import itertools
-import lzma
 import struct
 from typing import TYPE_CHECKING, Any, Final
 import zlib
@@ -35,7 +34,11 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .util import OnChangedDict, OnChangedList
+from .util import (
+    OnChangedDict,
+    OnChangedList,
+    decompress_7z_base64_data,
+)
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Sequence
@@ -117,7 +120,7 @@ _OFFSET = 400
 _TRACE_MAP = "trace_map"
 _COLORS = {
     _TRACE_MAP: "#fff",
-    MapSetType.VIRTUAL_WALLS: "#f00",
+    MapSetType.VIRTUAL_WALLS: "#f00000",
     MapSetType.NO_MOP_ZONES: "#ffa500",
 }
 _DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
@@ -233,27 +236,6 @@ _SVG_DEFS = svg.Defs(
 )
 
 
-def _decompress_7z_base64_data(data: str) -> bytes:
-    _LOGGER.debug("[decompress7zBase64Data] Begin")
-    final_array = bytearray()
-
-    # Decode Base64
-    decoded = base64.b64decode(data)
-
-    i = 0
-    for idx in decoded:
-        if i == 8:
-            final_array += b"\x00\x00\x00\x00"
-        final_array.append(idx)
-        i += 1
-
-    dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
-    decompressed_data = dec.decompress(final_array)
-
-    _LOGGER.debug("[decompress7zBase64Data] Done")
-    return decompressed_data
-
-
 def _calc_value(value: float, axis_manipulation: AxisManipulation) -> float:
     try:
         if value is not None:
@@ -352,7 +334,7 @@ def _get_svg_subset(
 
     # For any other points count, return a polygon that should fit any required shape
     return svg.Polygon(
-        fill=_COLORS[subset.type] + "90",  # Set alpha channel to 90 for fill color
+        fill=_COLORS[subset.type] + "30",  # Set alpha channel to 30 for fill color
         stroke=_COLORS[subset.type],
         stroke_width=1.5,
         stroke_dasharray=[4],
@@ -432,7 +414,7 @@ class Map:
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = _decompress_7z_base64_data(data)
+        trace_points = decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
             position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
@@ -683,7 +665,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = _decompress_7z_base64_data(base64_data)
+        decoded = decompress_7z_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 
