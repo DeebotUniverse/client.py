@@ -26,6 +26,7 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
 from deebot_client.commands.json.clean_logs import GetCleanLogs
+from deebot_client.commands.json.clear_map import ClearMap
 from deebot_client.commands.json.continuous_cleaning import (
     GetContinuousCleaning,
     SetContinuousCleaning,
@@ -124,6 +125,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         map=CapabilityMap(
             chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
+            clear=CapabilityExecute(ClearMap),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState

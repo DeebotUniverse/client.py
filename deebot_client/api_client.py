@@ -1,11 +1,16 @@
 """Api client module."""
 from __future__ import annotations
 
+import asyncio
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.hardware.deebot import get_static_device_info
 
-from .const import PATH_API_APPSVR_APP, PATH_API_PIM_PRODUCT_IOT_MAP
+from .const import (
+    PATH_API_APPSVR_APP,
+    PATH_API_PIM_PRODUCT_IOT_MAP,
+    PATH_API_USERS_USER,
+)
 from .exceptions import ApiError
 from .logging_filter import get_logger
 from .models import ApiDeviceInfo, DeviceInfo
@@ -22,33 +27,55 @@ class ApiClient:
     def __init__(self, authenticator: Authenticator) -> None:
         self._authenticator = authenticator
 
-    async def get_devices(self) -> list[DeviceInfo | ApiDeviceInfo]:
-        """Get compatible devices."""
+    async def _get_devices(self, path: str, command: str) -> dict[str, ApiDeviceInfo]:
         credentials = await self._authenticator.authenticate()
         json = {
             "userid": credentials.user_id,
-            "todo": "GetGlobalDeviceList",
+            "todo": command,
         }
-        resp = await self._authenticator.post_authenticated(PATH_API_APPSVR_APP, json)
+        resp = await self._authenticator.post_authenticated(path, json)
 
-        if resp.get("code", None) == 0:
-            devices: list[DeviceInfo | ApiDeviceInfo] = []
+        result = {}
+        if "devices" in resp:
             device: ApiDeviceInfo
             for device in resp["devices"]:
-                match device.get("company"):
-                    case "eco-ng":
-                        static_device_info = get_static_device_info(device["class"])
-                        devices.append(DeviceInfo(device, static_device_info))
-                    case "eco-legacy":
-                        devices.append(device)
-                    case _:
-                        _LOGGER.debug(
-                            "Skipping device as it is not supported: %s", device
-                        )
-            return devices
-        _LOGGER.error("Failed to get devices: %s", resp)
-        msg = f"failure {resp.get('error', '')} ({resp.get('errno', '')}) on getting devices"
-        raise ApiError(msg)
+                result[device["did"]] = device
+        else:
+            _LOGGER.info("Failed to get devices: %s", resp)
+
+        return result
+
+    async def get_devices(self) -> list[DeviceInfo | ApiDeviceInfo]:
+        """Get compatible devices."""
+        try:
+            async with asyncio.TaskGroup() as tg:
+                task_device_list = tg.create_task(
+                    self._get_devices(PATH_API_USERS_USER, "GetDeviceList")
+                )
+                task_global_device_list = tg.create_task(
+                    self._get_devices(PATH_API_APPSVR_APP, "GetGlobalDeviceList")
+                )
+        except (ExceptionGroup, BaseExceptionGroup) as ex:
+            raise ApiError("Error on getting devices") from ex
+
+        api_devices = task_device_list.result()
+        api_devices.update(task_global_device_list.result())
+
+        devices: list[DeviceInfo | ApiDeviceInfo] = []
+        for device in api_devices.values():
+            match device.get("company"):
+                case "eco-ng":
+                    static_device_info = get_static_device_info(device["class"])
+                    devices.append(DeviceInfo(device, static_device_info))
+                case "eco-legacy":
+                    devices.append(device)
+                case _:
+                    _LOGGER.debug("Skipping device as it is not supported: %s", device)
+
+        if not devices:
+            _LOGGER.warning("No devices returned by the api. Please check the logs.")
+
+        return devices
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""

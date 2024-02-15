@@ -15,6 +15,36 @@ MESSAGES = {
     DataType.JSON: JSON_MESSAGES,
 }
 
+_LEGACY_USE_GET_COMMAND = [
+    "getAdvancedMode",
+    "getBreakPoint",
+    "getCachedMapInfo",
+    "getCarpertPressure",
+    "getChargeState",
+    "getCleanCount",
+    "getCleanInfo",
+    "getCleanPreference",
+    "getEfficiency",
+    "getError",
+    "getLifeSpan",
+    "getMajorMap",
+    "getMapSet",
+    "getMapSubSet",
+    "getMapTrace",
+    "getMinorMap",
+    "getMultiMapState",
+    "getNetInfo",
+    "getPos",
+    "getSpeed",
+    "getSweepMode",
+    "getTotalStats",
+    "getTrueDetect",
+    "getVoiceAssistantState",
+    "getVolume",
+    "getWaterInfo",
+    "getWorkMode",
+]
+
 
 def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     """Try to find the message for the given name.
@@ -44,13 +74,17 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
         converted_name,
     )
 
+    if converted_name not in _LEGACY_USE_GET_COMMAND:
+        _LOGGER.debug('Unknown message "%s"', message_name)
+        return None
+
     from deebot_client.commands import (  # pylint: disable=import-outside-toplevel
         COMMANDS,
     )
 
     if found_command := COMMANDS.get(data_type, {}).get(converted_name, None):
         if issubclass(found_command, Message):
-            _LOGGER.debug("Falling back to old handling way for %s", message_name)
+            _LOGGER.debug("Falling back to legacy way for %s", message_name)
             return found_command
 
         _LOGGER.debug('Command "%s" doesn\'t support message handling', converted_name)
