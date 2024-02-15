@@ -185,6 +185,17 @@ class AvailabilityEvent(Event):
 
 
 @dataclass(frozen=True)
+class OtaEvent(Event):
+    """Ota event."""
+
+    support_auto: bool
+    auto_enabled: bool | None = None
+    version: str | None = None
+    status: str | None = None
+    progress: int | None = None
+
+
+@dataclass(frozen=True)
 class StateEvent(Event):
     """State event representation."""
 
@@ -229,16 +240,6 @@ class CleanPreferenceEvent(EnableEvent):
 @dataclass(frozen=True)
 class MultimapStateEvent(EnableEvent):
     """Multimap state event."""
-
-
-@dataclass(frozen=True)
-class OtaEvent(EnableEvent):
-    """Ota event."""
-
-    support_auto: bool | None
-    version: str | None
-    status: str | None
-    progress: int | None
 
 
 @dataclass(frozen=True)

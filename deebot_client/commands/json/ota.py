@@ -27,15 +27,22 @@ class GetOta(JsonGetCommand):
 
         :return: A message response
         """
-        support_auto = data.get("supportAuto")
         ota_event = OtaEvent(
-            enable=bool(data.get("autoSwitch", False)),
-            support_auto=None if support_auto is None else bool(support_auto),
-            version=data.get("ver"),
-            status=data.get("status"),
-            progress=data.get("progress"),
+            support_auto=bool(data.get("supportAuto", False)),
+            auto_enabled=bool(data.get("autoSwitch", False)),
+            version=data["ver"],
+            status=data["status"],
+            progress=data["progress"],
         )
         event_bus.notify(ota_event)
+        return HandlingResult.success()
+
+    @classmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+        event_bus.notify(OtaEvent(support_auto=True, auto_enabled=args["autoSwitch"]))
         return HandlingResult.success()
 
 
