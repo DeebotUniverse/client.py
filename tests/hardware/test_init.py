@@ -21,6 +21,7 @@ from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
+from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
@@ -41,6 +42,7 @@ from deebot_client.events import (
     LifeSpan,
     LifeSpanEvent,
     MultimapStateEvent,
+    OtaEvent,
     ReportStatsEvent,
     RoomsEvent,
     StateEvent,
@@ -145,6 +147,7 @@ def test_get_static_device_info(
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
+                OtaEvent: [GetOta()],
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
@@ -185,6 +188,7 @@ def test_get_static_device_info(
                 MapTraceEvent: [GetMapTrace()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
+                OtaEvent: [GetOta()],
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],

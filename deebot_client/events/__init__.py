@@ -185,6 +185,17 @@ class AvailabilityEvent(Event):
 
 
 @dataclass(frozen=True)
+class OtaEvent(Event):
+    """Ota event."""
+
+    support_auto: bool
+    auto_enabled: bool | None = None
+    version: str | None = None
+    status: str | None = None
+    progress: int | None = None
+
+
+@dataclass(frozen=True)
 class StateEvent(Event):
     """State event representation."""
 
