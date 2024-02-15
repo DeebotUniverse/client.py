@@ -13,10 +13,11 @@ from . import assert_command, assert_set_command
     ("auto_enabled", "support_auto"),
     [
         (False, True),
-        (True, False),
+        (True, True),
+        (False, False),
     ],
 )
-async def test_GetOta(auto_enabled: bool, support_auto: bool) -> None:  # noqa: FBT001
+async def test_GetOta(*, auto_enabled: bool, support_auto: bool) -> None:
     json = get_request_json(
         get_success_body(
             {
@@ -42,7 +43,7 @@ async def test_GetOta(auto_enabled: bool, support_auto: bool) -> None:  # noqa: 
 
 
 @pytest.mark.parametrize("auto_enabled", [False, True])
-async def test_SetOta(auto_enabled: bool) -> None:  # noqa: FBT001
+async def test_SetOta(*, auto_enabled: bool) -> None:
     args = {"autoSwitch": auto_enabled}
     await assert_set_command(
         SetOta(auto_enabled),
