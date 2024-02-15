@@ -76,6 +76,7 @@ class Command(ABC):
         -------
             bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
+
         """
         try:
             result = await self._execute(authenticator, device_info, event_bus)
@@ -220,7 +221,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
             result = self.handle(event_bus, data)
             return CommandResult(result.state, result.args)
 
-        if errno := response.get("errno", None):
+        if errno := response.get("errno"):
             match errno:
                 case 4200:
                     # bot offline

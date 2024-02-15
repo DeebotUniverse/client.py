@@ -27,9 +27,7 @@ class GetVolume(JsonGetCommand):
 
         :return: A message response
         """
-        event_bus.notify(
-            VolumeEvent(volume=data["volume"], maximum=data.get("total", None))
-        )
+        event_bus.notify(VolumeEvent(volume=data["volume"], maximum=data.get("total")))
         return HandlingResult.success()
 
 

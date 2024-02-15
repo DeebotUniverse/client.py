@@ -27,7 +27,7 @@ class GetWaterInfo(JsonGetCommand):
 
         :return: A message response
         """
-        mop_attached = data.get("enable", None)
+        mop_attached = data.get("enable")
         if mop_attached is not None:
             mop_attached = bool(mop_attached)
 

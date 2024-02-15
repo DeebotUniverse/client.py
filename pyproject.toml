@@ -44,7 +44,7 @@ safe = true
 
 
 
-[tool.ruff]
+[tool.ruff.lint]
 select = [
     "ALL",
 ]
@@ -78,11 +78,11 @@ ignore = [
 
 ]
 
-[tool.ruff.flake8-pytest-style]
+[tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
 
-[tool.ruff.isort]
+[tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
 known-first-party = [
@@ -91,7 +91,7 @@ known-first-party = [
 required-imports = ["from __future__ import annotations"]
 
 
-[tool.ruff.per-file-ignores]
+[tool.ruff.lint.per-file-ignores]
 "tests/**" = [
     "D100",  # Missing docstring in public module
     "D103",  # Missing docstring in public function
@@ -111,10 +111,10 @@ required-imports = ["from __future__ import annotations"]
 "svg.Path".msg = "Use map.Path instead"
 
 
-[tool.ruff.mccabe]
+[tool.ruff.lint.mccabe]
 max-complexity = 12
 
-[tool.ruff.pylint]
+[tool.ruff.lint.pylint]
 max-args = 7
 
 
