@@ -31,8 +31,8 @@ class ContainerConfiguration:
     image: str
     version: str = "latest"
     port: None | int = None
-    env: dict[str, Any] = field(default_factory=lambda: {})
-    options: dict[str, Any] = field(default_factory=lambda: {})
+    env: dict[str, Any] = field(default_factory=dict)
+    options: dict[str, Any] = field(default_factory=dict)
     max_wait_started: int = 30
 
 

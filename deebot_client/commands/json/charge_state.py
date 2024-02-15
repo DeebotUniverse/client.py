@@ -38,7 +38,7 @@ class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return super()._handle_body(event_bus, body)
 
         status: State | None = None
-        if body.get("msg", None) == "fail":
+        if body.get("msg") == "fail":
             if body["code"] == "30007":  # Already charging
                 status = State.DOCKED
             elif body["code"] in ("3", "5"):
