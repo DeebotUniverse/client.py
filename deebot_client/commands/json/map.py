@@ -24,6 +24,11 @@ from .common import JsonCommandWithMessageHandling
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
+_ARGS_ID = "id"
+_ARGS_SET_ID = "set_id"
+_ARGS_TYPE = "type"
+_ARGS_SUBSETS = "subsets"
+
 
 class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
@@ -126,11 +131,6 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map set command."""
 
-    _ARGS_ID = "id"
-    _ARGS_SET_ID = "set_id"
-    _ARGS_TYPE = "type"
-    _ARGS_SUBSETS = "subsets"
-
     name = "getMapSet"
 
     def __init__(
@@ -153,16 +153,7 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        subsets = [int(subset["mssid"]) for subset in data["subsets"]]
-        args = {
-            cls._ARGS_ID: data["mid"],
-            cls._ARGS_SET_ID: data.get("msid"),
-            cls._ARGS_TYPE: data["type"],
-            cls._ARGS_SUBSETS: subsets,
-        }
-
-        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subsets))
-        return HandlingResult(HandlingState.SUCCESS, args)
+        return get_map_set_handler(event_bus, data, 1)
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -175,12 +166,12 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if result.state == HandlingState.SUCCESS and result.args:
             commands: list[Command] = [
                 GetMapSubSet(
-                    mid=result.args[self._ARGS_ID],
-                    msid=result.args[self._ARGS_SET_ID],
-                    type=result.args[self._ARGS_TYPE],
+                    mid=result.args[_ARGS_ID],
+                    msid=result.args[_ARGS_SET_ID],
+                    type=result.args[_ARGS_TYPE],
                     mssid=subset,
                 )
-                for subset in result.args[self._ARGS_SUBSETS]
+                for subset in result.args[_ARGS_SUBSETS]
             ]
             return CommandResult(result.state, result.args, commands)
 
@@ -255,11 +246,19 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             elif subtype:
                 name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
 
+            # This command is used by new and old bots
+            if data.get("compress", 0) == 1:
+                # Newer bot's return coordinates as base64 decoded string
+                coordinates = decompress_7z_base64_data(data["value"]).decode()
+            else:
+                # Older bot's return coordinates direct as comma/semicolon separated list
+                coordinates = data["value"]
+
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
                     type=MapSetType(data["type"]),
-                    coordinates=data["value"],
+                    coordinates=coordinates,
                     name=name,
                 )
             )
@@ -294,66 +293,29 @@ class GetMapSetV2(JsonCommandWithMessageHandling, OnMapSetV2):
 
         :return: A message response
         """
-        # check if type is know and subset us given
-        if not MapSetType.has_value(data["type"]) or not data.get("subsets"):
-            return HandlingResult.analyse()
+        return get_map_set_handler(event_bus, data, 2)
 
-        # subset is based64 7z compressed
-        subsets: list[list[str]] = json.loads(
-            decompress_7z_base64_data(data["subsets"]).decode()
-        )
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
 
-        # handle rooms
-        if data["type"] in (MapSetType.ROOMS):
-            room_subsets: list[dict[str, Any]] = [
-                {
-                    "id": int(subset[0]),  # room id
-                    "name": subset[1]
-                    if subset[1] and subset[1] != " "
-                    else "Default",  # room name
-                    # subset[2] not sure what the value is for
-                    # subset[3] not sure what the value is for
-                    # subset[4] room clean order
-                    "coordinates": f"{subset[5]},{subset[6]}",  # room center coordinates
-                    # subset[7] room clean configs as '<count>-<speed>-<water>'
-                    # subset[8] named all as 'settingName1'
-                }
-                for subset in subsets
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if result.state == HandlingState.SUCCESS and result.args:
+            commands: list[Command] = [
+                GetMapSubSet(
+                    mid=result.args[_ARGS_ID],
+                    msid=result.args[_ARGS_SET_ID],
+                    type=result.args[_ARGS_TYPE],
+                    mssid=subset,
+                )
+                for subset in result.args[_ARGS_SUBSETS]
             ]
+            return CommandResult(result.state, result.args, commands)
 
-            # notify first MapSetType to set room count
-            event_bus.notify(
-                MapSetEvent(
-                    MapSetType(data["type"]), [subset["id"] for subset in room_subsets]
-                )
-            )
-
-            # afterwards notify MapSubsetEvent to set room details
-            for room in room_subsets:
-                event_bus.notify(
-                    MapSubsetEvent(
-                        id=room["id"],
-                        type=MapSetType(data["type"]),
-                        coordinates=room["coordinates"],
-                        name=room["name"],
-                    )
-                )
-
-        # virtual walls and no map zones are same handled
-        if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
-            for subset in subsets:
-                mssid = subset[0]  # first entry in list is mssid
-                coordinates = str(subset[1:])  # all other in list are coordinates
-
-                event_bus.notify(
-                    MapSubsetEvent(
-                        id=int(mssid),
-                        type=MapSetType(data["type"]),
-                        coordinates=coordinates,
-                    )
-                )
-
-        return HandlingResult.success()
+        return result
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
@@ -426,3 +388,68 @@ class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+def get_map_set_handler(
+    event_bus: EventBus, data: dict[str, Any], version: int = 1
+) -> HandlingResult:
+    """Get map set v1 and v2 command handler."""
+    # check if type is know and subset us given
+    if not MapSetType.has_value(data["type"]) or not data.get("subsets"):
+        return HandlingResult.analyse()
+
+    map_set_subs: list[int] | None = None
+
+    if version == 1:
+        map_set_subs = [int(subset["mssid"]) for subset in data["subsets"]]
+        event_bus.notify(MapSetEvent(MapSetType(data["type"]), map_set_subs))
+
+    elif version == 2:
+        # subset is based64 7z compressed
+        subsets = json.loads(decompress_7z_base64_data(data["subsets"]).decode())
+
+        # handle rooms
+        if data["type"] in (MapSetType.ROOMS):
+            room_subsets: list[dict[str, Any]] = [
+                {
+                    "id": int(subset[0]),  # room id
+                    "name": subset[1]
+                    if subset[1] and subset[1] != " "
+                    else "Default",  # room name
+                    # subset[2] not sure what the value is for
+                    # subset[3] not sure what the value is for
+                    # subset[4] room clean order
+                    "coordinates": f"{subset[5]},{subset[6]}",  # room center coordinates
+                    # subset[7] room clean configs as '<count>-<speed>-<water>'
+                    # subset[8] named all as 'settingName1'
+                }
+                for subset in subsets
+            ]
+
+            map_set_subs = [subset["id"] for subset in room_subsets]
+            # notify first MapSetType to set room count
+            event_bus.notify(MapSetEvent(MapSetType(data["type"]), map_set_subs))
+
+        # virtual walls and no map zones are same handled
+        if data["type"] in (MapSetType.VIRTUAL_WALLS, MapSetType.NO_MOP_ZONES):
+            for subset in subsets:
+                mssid = subset[0]  # first entry in list is mssid
+                coordinates = str(subset[1:])  # all other in list are coordinates
+
+                event_bus.notify(
+                    MapSubsetEvent(
+                        id=int(mssid),
+                        type=MapSetType(data["type"]),
+                        coordinates=coordinates,
+                    )
+                )
+
+    if map_set_subs:
+        args = {
+            _ARGS_ID: data["mid"],
+            _ARGS_SET_ID: data.get("msid"),
+            _ARGS_TYPE: data["type"],
+            _ARGS_SUBSETS: map_set_subs,
+        }
+        return HandlingResult(HandlingState.SUCCESS, args)
+    return HandlingResult(HandlingState.SUCCESS)

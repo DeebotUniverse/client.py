@@ -25,10 +25,28 @@ from tests.helpers import get_request_json, get_success_body
 from . import assert_command
 
 
-async def test_getMapSubSet_customName() -> None:
+@pytest.mark.parametrize(
+    ("compress", "value", "expected"),
+    [
+        (
+            1,
+            "XQAABACZAAAAABaOQmW9Bsibxz42rKUpGlV7Rr4D1S/9x9mDa60v4J1BKrEsnk34EAt6X5gKkxwYzfOu3T8GAPpmIy5o4A==",
+            "-9125,3225;-9025,3225;-8975,3175;-8975,2475;-8925,2425;-8925,2375;-8325,2375;-8275,2425;-8225,2375;-8225,2425;-8174,2475;-8024,2475;-8024,4375;-9125,4375",
+        ),
+        (
+            0,
+            "1400,1800;1400,3250;3000,3250;3000,2700;2900,2850;2750,2700;2800,1250;2700,1050;2700,850;1450,850;1400,1800",
+            "1400,1800;1400,3250;3000,3250;3000,2700;2900,2850;2750,2700;2800,1250;2700,1050;2700,850;1450,850;1400,1800",
+        ),
+    ],
+)
+async def test_getMapSubSet_customName(
+    compress: int, value: str, expected: str
+) -> None:
     type = MapSetType.ROOMS
-    value = "XQAABAB5AgAAABaOQok5MfkIKbGTBxaUTX13SjXBAI1/Q3A9Kkx2gYZ1QdgwfwOSlU3hbRjNJYgr2Pr3WgFez3Gcoj3R2JmzAuc436F885ZKt5NF2AE1UPAF4qq67tK6TSA64PPfmZQ0lqwInQmqKG5/KO59RyFBbV1NKnDIGNBGVCWpH62WLlMu8N4zotA8dYMQ/UBMwr/gddQO5HU01OQM2YvF"
     name = "Levin"
+    mid = "98100521"
+    mssid = "8"
     json = get_request_json(
         get_success_body(
             {
@@ -43,18 +61,18 @@ async def test_getMapSubSet_customName() -> None:
                 "index": 0,
                 "cleanset": "1,0,2",
                 "valueSize": 633,
-                "compress": 1,
+                "compress": compress,
                 "center": "-6775,-9225",
-                "mssid": "8",
+                "mssid": mssid,
                 "value": value,
-                "mid": "98100521",
+                "mid": mid,
             }
         )
     )
     await assert_command(
-        GetMapSubSet(mid="98100521", mssid="8", msid="1"),
+        GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
         json,
-        MapSubsetEvent(8, type, value, name),
+        MapSubsetEvent(8, type, expected, name),
     )
 
 
@@ -182,7 +200,7 @@ async def test_getMapSet() -> None:
         MapSetEvent(MapSetType.ROOMS, subsets),
         command_result=CommandResult(
             HandlingState.SUCCESS,
-            {"id": "199390082", "set_id": "8", "type": "ar", "subsets": subsets},
+            {"id": mid, "set_id": msid, "type": MapSetType.ROOMS, "subsets": subsets},
             [
                 GetMapSubSet(mid=mid, msid=msid, type=MapSetType.ROOMS, mssid=s)
                 for s in subsets
@@ -222,8 +240,9 @@ async def test_getMapSetV2_no_mop_zones() -> None:
 
 async def test_getMapSetV2_rooms() -> None:
     mid = "199390082"
+    msid = "8"
     type = MapSetType.ROOMS
-    subsets = (
+    subsets_comp = (
         "XQAABADnAQAAAC2WwEHwYhHYFuLu9964T0CAIjkOBSGKBW+PcTQDCjKFThR86eaw4bFiV2BKLAP+0lTYd1ADOkmjNPrfSqBeHZLY4JNCaEMc2H245BSG143miuQm6X6"
         "KeTCnXV7Er028XLcnN9q/immzxeoPpkdhnbhuL9f8jW5kgVLGPJnfv2V2a79W4PjkSR4b4Px632ID+UKVwGL1mYiwNnMO35XA41W+pPsgW12ZRnsMDvGMAlv4VLhDJFAy4AA="
     )
@@ -232,35 +251,25 @@ async def test_getMapSetV2_rooms() -> None:
             {
                 "type": type,
                 "mid": mid,
+                "msid": msid,
                 "batid": "gheijg",
                 "serial": 1,
                 "index": 1,
-                "subsets": subsets,
+                "subsets": subsets_comp,
                 "infoSize": 199,
             }
         )
     )
-    expected_rooms: list[dict[str, str | int]] = [
-        {"id": 0, "coordinates": "525,1725", "name": "Bedroom1"},
-        {"id": 1, "coordinates": "-2525,3925", "name": "Corridor1"},
-        {"id": 6, "coordinates": "-5275,4725", "name": "Bathroom1"},
-        {"id": 2, "coordinates": "-4875,1225", "name": "Bedroom2"},
-        {"id": 7, "coordinates": "-4725,-2825", "name": "Balcony1"},
-        {"id": 3, "coordinates": "-2075,775", "name": "Cloakroom1"},
-        {"id": 5, "coordinates": "-3625,6425", "name": "Corridor2"},
-    ]
+    subsets = [0, 1, 6, 2, 7, 3, 5]
 
     await assert_command(
         GetMapSetV2(mid, type),
         json,
-        (
-            MapSetEvent(MapSetType(type), [0, 1, 6, 2, 7, 3, 5]),
-            *[
-                MapSubsetEvent(
-                    int(subs["id"]), type, str(subs["coordinates"]), str(subs["name"])
-                )
-                for subs in expected_rooms
-            ],
+        MapSetEvent(MapSetType(type), subsets),
+        command_result=CommandResult(
+            HandlingState.SUCCESS,
+            {"id": mid, "set_id": msid, "type": MapSetType(type), "subsets": subsets},
+            [GetMapSubSet(mid=mid, msid=msid, type=type, mssid=s) for s in subsets],
         ),
     )
 
