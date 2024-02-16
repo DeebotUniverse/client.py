@@ -45,6 +45,32 @@ _LEGACY_USE_GET_COMMAND = [
     "getWorkMode",
 ]
 
+_NOT_SUPPORTED = [
+    "onEvt",
+    "onRelocationState",
+    "onSleep",
+    "onStationState",
+    "onFwBuryPoint-baseStation-connect",
+    "onFwBuryPoint-baseStation-disconnect",
+    "onFwBuryPoint-bd_basicinfo-evt",
+    "onFwBuryPoint-bd_basicinfo",
+    "onFwBuryPoint-bd_cc10",
+    "onFwBuryPoint-bd_dtofstart",
+    "onFwBuryPoint-bd_gyrostart",
+    "onFwBuryPoint-bd_returnchargeinfo",
+    "onFwBuryPoint-bd_setting",
+    "onFwBuryPoint-bd_task-charge-start",
+    "onFwBuryPoint-bd_task-charge-stop",
+    "onFwBuryPoint-bd_task-clean-auto-pause",
+    "onFwBuryPoint-bd_task-clean-auto-start",
+    "onFwBuryPoint-bd_task-clean-auto-stop",
+    "onFwBuryPoint-bd_task-return-normal-start",
+    "onFwBuryPoint-bd_task-return-normal-stop",
+    "onFwBuryPoint-cleanResultUpload-end",
+    "onFwBuryPoint-cleanResultUpload-start",
+    "onFwBuryPoint-bd_task-clean-auto-resume",
+]
+
 
 def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     """Try to find the message for the given name.
@@ -60,19 +86,16 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
         return message_type
 
     converted_name = message_name
-    # T8 series and newer
-    if converted_name.endswith("_V2"):
-        converted_name = converted_name[:-3]
-
-    if message_type := messages.get(converted_name, None):
-        return message_type
-
     # Handle message starting with "on","off","report" the same as "get" commands
     converted_name = re.sub(
         "^((on)|(off)|(report))",
         "get",
         converted_name,
     )
+
+    if message_name in _NOT_SUPPORTED:
+        _LOGGER.debug('Current not supported message "%s"', message_name)
+        return None
 
     if converted_name not in _LEGACY_USE_GET_COMMAND:
         _LOGGER.debug('Unknown message "%s"', message_name)

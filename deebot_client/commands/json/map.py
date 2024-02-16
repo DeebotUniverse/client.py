@@ -11,11 +11,10 @@ from deebot_client.events import (
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
-    MapTraceEvent,
-    MinorMapEvent,
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.messages.json import OnMapTrace, OnMinorMap
 from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
@@ -326,7 +325,7 @@ class GetMapSetV2(GetMapSet):
         return None
 
 
-class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetMapTrace(JsonCommandWithMessageHandling, OnMapTrace):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -337,26 +336,6 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         super().__init__(
             {"pointCount": self._TRACE_POINT_COUNT, "traceStart": trace_start},
         )
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        total = int(data["totalCount"])
-        start = int(data["traceStart"])
-
-        if "traceValue" not in data:
-            # TODO verify that this is legit pylint: disable=fixme
-            return HandlingResult.analyse()
-
-        event_bus.notify(
-            MapTraceEvent(start=start, total=total, data=data["traceValue"])
-        )
-        return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -374,25 +353,10 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetMinorMap(JsonCommandWithMessageHandling, OnMinorMap):
     """Get minor map command."""
 
     name = "getMinorMap"
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        if data.get("type", "ol") == "ol":
-            # onMinorMap sends no type, so fallback to "ol"
-            event_bus.notify(MinorMapEvent(data["pieceIndex"], data["pieceValue"]))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()

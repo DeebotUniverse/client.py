@@ -9,7 +9,7 @@ from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import GetCleanInfo
+from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -192,7 +192,7 @@ def test_get_static_device_info(
                 PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 RoomsEvent: [GetCachedMapInfo()],
-                StateEvent: [GetChargeState(), GetCleanInfo()],
+                StateEvent: [GetChargeState(), GetCleanInfoV2()],
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
                 TrueDetectEvent: [GetTrueDetect()],

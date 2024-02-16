@@ -4,7 +4,8 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult
+from deebot_client.messages.json import OnChargeState
 from deebot_client.models import State
 
 from .common import JsonCommandWithMessageHandling
@@ -14,22 +15,10 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetChargeState(JsonCommandWithMessageHandling, OnChargeState):
     """Get charge state command."""
 
     name = "getChargeState"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        if data.get("isCharging") == 1:
-            event_bus.notify(StateEvent(State.DOCKED))
-        return HandlingResult.success()
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:

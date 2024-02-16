@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.messages.json import OnCleanInfo, OnCleanInfoV2
 from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
@@ -31,6 +31,7 @@ class Clean(ExecuteCommand):
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
+
         if state and isinstance(self._args, dict):
             if (
                 self._args["act"] == CleanAction.RESUME.value
@@ -66,52 +67,13 @@ class CleanArea(Clean):
         self._args["count"] = cleanings
 
 
-class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetCleanInfo(JsonCommandWithMessageHandling, OnCleanInfo):
     """Get clean info command."""
 
     name = "getCleanInfo"
 
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
 
-        :return: A message response
-        """
-        status: State | None = None
-        state = data.get("state")
-        if data.get("trigger") == "alert":
-            status = State.ERROR
-        elif state == "clean":
-            clean_state = data.get("cleanState", {})
-            motion_state = clean_state.get("motionState")
-            if motion_state == "working":
-                status = State.CLEANING
-            elif motion_state == "pause":
-                status = State.PAUSED
-            elif motion_state == "goCharging":
-                status = State.RETURNING
+class GetCleanInfoV2(JsonCommandWithMessageHandling, OnCleanInfoV2):
+    """Get clean info command."""
 
-            clean_type = clean_state.get("type")
-            content = clean_state.get("content", {})
-            if "type" in content:
-                clean_type = content.get("type")
-
-            if clean_type == "customArea":
-                area_values = content
-                if "value" in content:
-                    area_values = content.get("value")
-
-                _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
-
-        elif state == "goCharging":
-            status = State.RETURNING
-        elif state == "idle":
-            status = State.IDLE
-
-        if status:
-            event_bus.notify(StateEvent(status))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+    name = "getCleanInfo_V2"

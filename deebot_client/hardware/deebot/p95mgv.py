@@ -24,7 +24,7 @@ from deebot_client.commands.json.carpet import (
 )
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
+from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_preference import (
     GetCleanPreference,
@@ -39,11 +39,7 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficie
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-from deebot_client.commands.json.map import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapTrace,
-)
+from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -204,7 +200,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
