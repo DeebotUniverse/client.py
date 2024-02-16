@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.commands.json.const import CLEAN_DEFAULT_CLEANINGS
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.messages.json import OnCleanInfo, OnCleanInfoV2
@@ -31,18 +32,12 @@ class Clean(ExecuteCommand):
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
-
         if state and isinstance(self._args, dict):
-            if (
-                self._args["act"] == CleanAction.RESUME.value
-                and state.state != State.PAUSED
-            ):
-                self._args = self.__get_args(CleanAction.START)
-            elif (
-                self._args["act"] == CleanAction.START.value
-                and state.state == State.PAUSED
-            ):
-                self._args = self.__get_args(CleanAction.RESUME)
+            match self._args["act"]:
+                case CleanAction.RESUME.value if state.state != State.PAUSED:
+                    self._args = self.__get_args(CleanAction.START)
+                case CleanAction.START.value if state.state == State.PAUSED:
+                    self._args = self.__get_args(CleanAction.RESUME)
 
         return await super()._execute(authenticator, device_info, event_bus)
 
@@ -57,14 +52,20 @@ class Clean(ExecuteCommand):
 class CleanArea(Clean):
     """Clean area command."""
 
-    def __init__(self, mode: CleanMode, area: str, cleanings: int = 1) -> None:
+    def __init__(
+        self, mode: CleanMode, area: str, cleanings: int = CLEAN_DEFAULT_CLEANINGS
+    ) -> None:
         super().__init__(CleanAction.START)
         if not isinstance(self._args, dict):
             raise TypeError("args must be a dict!")
 
-        self._args["type"] = mode.value
-        self._args["content"] = str(area)
-        self._args["count"] = cleanings
+        self._args.update(
+            {
+                "type": mode.value,
+                "content": str(area),
+                "count": cleanings,
+            }
+        )
 
 
 class GetCleanInfo(JsonCommandWithMessageHandling, OnCleanInfo):
@@ -74,6 +75,6 @@ class GetCleanInfo(JsonCommandWithMessageHandling, OnCleanInfo):
 
 
 class GetCleanInfoV2(JsonCommandWithMessageHandling, OnCleanInfoV2):
-    """Get clean info command."""
+    """Get clean info v2 command."""
 
     name = "getCleanInfo_V2"

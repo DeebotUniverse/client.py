@@ -9,7 +9,7 @@ from deebot_client.messages.json import OnChargeState
 from deebot_client.models import State
 
 from .common import JsonCommandWithMessageHandling
-from .const import CODE
+from .const import CHARGE_STATE_FAIL_CHARGING, CHARGE_STATE_FAIL_ERROR
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -22,21 +22,20 @@ class GetChargeState(JsonCommandWithMessageHandling, OnChargeState):
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
-        if body.get(CODE, 0) == 0:
+        if (code := body.get("code", 0)) == 0:
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
-        status: State | None = None
-        if body.get("msg") == "fail":
-            if body["code"] == "30007":  # Already charging
+        match body.get("msg", ""), code:
+            case ("fail", code) if code in CHARGE_STATE_FAIL_CHARGING:
+                # 30007 -> Already charging
                 status = State.DOCKED
-            elif body["code"] in ("3", "5"):
+            case ("fail", code) if code in CHARGE_STATE_FAIL_ERROR:
                 # 3 -> Bot in stuck state, example dust bin out
                 # 5 -> Busy with another command
                 status = State.ERROR
+            case _:
+                return HandlingResult.analyse()
 
-        if status:
-            event_bus.notify(StateEvent(State.DOCKED))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        event_bus.notify(StateEvent(status))
+        return HandlingResult.success()

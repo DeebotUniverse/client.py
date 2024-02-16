@@ -30,23 +30,17 @@ class OnPos(MessageBodyDataDict):
 
             if isinstance(data_positions, dict):
                 positions.append(
-                    Position(
-                        type=PositionType(type_str),
-                        x=data_positions["x"],
-                        y=data_positions["y"],
-                    )
+                    Position(type=PositionType(type_str), **data_positions)
                 )
             else:
                 positions.extend(
                     [
-                        Position(
-                            type=PositionType(type_str), x=entry["x"], y=entry["y"]
-                        )
+                        Position(type=PositionType(type_str), **entry)
                         for entry in data_positions
                     ]
                 )
 
-        if len(positions) > 0:
+        if positions:
             event_bus.notify(PositionsEvent(positions=positions))
             return HandlingResult.success()
 

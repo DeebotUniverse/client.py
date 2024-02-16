@@ -1,4 +1,4 @@
-"""(fan) speed commands."""
+"""Fan speed commands."""
 from __future__ import annotations
 
 from types import MappingProxyType

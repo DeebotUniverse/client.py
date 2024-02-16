@@ -7,7 +7,7 @@ from .common import GetEnableCommand, SetEnableCommand
 
 
 class GetSweepMode(GetEnableCommand):
-    """GetSweepMode command."""
+    """Get sweep mode command."""
 
     name = "getSweepMode"
     event_type = SweepModeEvent
@@ -15,7 +15,7 @@ class GetSweepMode(GetEnableCommand):
 
 
 class SetSweepMode(SetEnableCommand):
-    """SetSweepMode command."""
+    """Set sweep mode command."""
 
     name = "setSweepMode"
     get_command = GetSweepMode

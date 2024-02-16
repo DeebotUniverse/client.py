@@ -2,24 +2,26 @@
 from __future__ import annotations
 
 import json
-from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import Command, CommandResult
+from deebot_client.commands.json.const import MAP_TRACE_POINT_COUNT
 from deebot_client.events import (
+    CachedMapInfoEvent,
     MajorMapEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
-from deebot_client.messages.json import OnMapTrace, OnMinorMap
+from deebot_client.messages.json import OnMapSetV2, OnMapTrace, OnMinorMap
 from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from deebot_client.event_bus import EventBus
 
 
@@ -196,26 +198,23 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
-    _ROOM_NUM_TO_NAME = MappingProxyType(
-        {
-            "0": "Default",
-            "1": "Living Room",
-            "2": "Dining Room",
-            "3": "Bedroom",
-            "4": "Study",
-            "5": "Kitchen",
-            "6": "Bathroom",
-            "7": "Laundry",
-            "8": "Lounge",
-            "9": "Storeroom",
-            "10": "Kids room",
-            "11": "Sunroom",
-            "12": "Corridor",
-            "13": "Balcony",
-            "14": "Gym",
-            # 15 custom; get name from name attribute
-        }
-    )
+    _ROOM_NUM_TO_NAME: Mapping[str, str] = {
+        "0": "Default",
+        "1": "Living Room",
+        "2": "Dining Room",
+        "3": "Bedroom",
+        "4": "Study",
+        "5": "Kitchen",
+        "6": "Bathroom",
+        "7": "Laundry",
+        "8": "Lounge",
+        "9": "Storeroom",
+        "10": "Kids room",
+        "11": "Sunroom",
+        "12": "Corridor",
+        "13": "Balcony",
+        "14": "Gym",
+    }
 
     name = "getMapSubSet"
 
@@ -253,26 +252,25 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        if MapSetType.has_value(data["type"]):
-            subtype = data.get("subtype", data.get("subType"))
-            name = None
-            if subtype == "15":
-                name = data.get("name")
-            elif subtype:
-                name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
+        if (type_value := data["type"]) in MapSetType:
+            subtype = data.get("subtype") or data.get("subType")
+            name = (
+                cls._ROOM_NUM_TO_NAME.get(subtype)
+                if subtype and subtype != "15"
+                else data.get("name")
+            )
 
-            # This command is used by new and old bots
-            if data.get("compress", 0) == 1:
-                # Newer bot's return coordinates as base64 decoded string
-                coordinates = decompress_7z_base64_data(data["value"]).decode()
-            else:
-                # Older bot's return coordinates direct as comma/semicolon separated list
-                coordinates = data["value"]
+            # getMapSubSet used by getMapSet v1 and v2
+            coordinates = (
+                decompress_7z_base64_data(data["value"]).decode()  # New bots
+                if data.get("compress", 0) == 1
+                else data["value"]  # Old bots
+            )
 
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
-                    type=MapSetType(data["type"]),
+                    type=MapSetType(type_value),
                     coordinates=coordinates,
                     name=name,
                 )
@@ -283,7 +281,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-class GetMapSetV2(GetMapSet):
+class GetMapSetV2(GetMapSet, OnMapSetV2):
     """Get map set v2 command."""
 
     name = "getMapSet_V2"
@@ -293,12 +291,12 @@ class GetMapSetV2(GetMapSet):
         cls, event_bus: EventBus, data: dict[str, Any]
     ) -> list[int] | None:
         """Return subset ids."""
-        # subset is based64 7z compressed
+        # Subset is based64 7z compressed
         subsets = json.loads(decompress_7z_base64_data(data["subsets"]).decode())
 
         match data["type"]:
             case MapSetType.ROOMS:
-                # subset values
+                # Subset values
                 # 1 -> id
                 # 2 -> unknown
                 # 3 -> unknown
@@ -311,8 +309,8 @@ class GetMapSetV2(GetMapSet):
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
                 for subset in subsets:
-                    mssid = subset[0]  # first entry in list is mssid
-                    coordinates = str(subset[1:])  # all other in list are coordinates
+                    mssid = subset[0]  # First entry in list is mssid
+                    coordinates = str(subset[1:])  # All other in list are coordinates
 
                     event_bus.notify(
                         MapSubsetEvent(
@@ -328,13 +326,11 @@ class GetMapSetV2(GetMapSet):
 class GetMapTrace(JsonCommandWithMessageHandling, OnMapTrace):
     """Get map trace command."""
 
-    _TRACE_POINT_COUNT = 200
-
     name = "getMapTrace"
 
     def __init__(self, trace_start: int = 0) -> None:
         super().__init__(
-            {"pointCount": self._TRACE_POINT_COUNT, "traceStart": trace_start},
+            {"pointCount": MAP_TRACE_POINT_COUNT, "traceStart": trace_start},
         )
 
     def _handle_response(
@@ -345,10 +341,13 @@ class GetMapTrace(JsonCommandWithMessageHandling, OnMapTrace):
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            start = result.args["start"] + self._TRACE_POINT_COUNT
-            if start < result.args["total"]:
-                return CommandResult(result.state, result.args, [GetMapTrace(start)])
+        if (
+            result.state == HandlingState.SUCCESS
+            and result.args
+            and (start := result.args["start"] + MAP_TRACE_POINT_COUNT)
+            < result.args["total"]
+        ):
+            return CommandResult(result.state, result.args, [GetMapTrace(start)])
 
         return result
 

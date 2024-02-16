@@ -94,6 +94,15 @@ class MapSubsetEvent(Event):
 
 
 @dataclass(frozen=True)
+class MapInfoEvent(Event):
+    """Map info event."""
+
+    id: int
+    type: MapSetType
+    coordinates: list[str]
+
+
+@dataclass(frozen=True)
 class CachedMapInfoEvent(Event):
     """Cached map info event."""
 

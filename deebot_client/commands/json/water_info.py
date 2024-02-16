@@ -27,9 +27,7 @@ class GetWaterInfo(JsonGetCommand):
 
         :return: A message response
         """
-        mop_attached = data.get("enable")
-        if mop_attached is not None:
-            mop_attached = bool(mop_attached)
+        mop_attached = None if data.get("enable") is None else bool(data.get("enable"))
 
         event_bus.notify(
             WaterInfoEvent(WaterAmount(int(data["amount"])), mop_attached=mop_attached)

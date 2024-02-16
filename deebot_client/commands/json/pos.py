@@ -7,7 +7,7 @@ from .common import JsonCommandWithMessageHandling
 
 
 class GetPos(JsonCommandWithMessageHandling, OnPos):
-    """Get volume command."""
+    """Get position command."""
 
     name = "getPos"
 

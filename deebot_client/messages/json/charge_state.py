@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.commands.json.const import CHARGE_STATE_IS_CHARGING
 from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
@@ -24,6 +25,6 @@ class OnChargeState(MessageBodyDataDict):
 
         :return: A message response
         """
-        if data.get("isCharging") == 1:
+        if data.get("isCharging") == CHARGE_STATE_IS_CHARGING:
             event_bus.notify(StateEvent(State.DOCKED))
         return HandlingResult.success()

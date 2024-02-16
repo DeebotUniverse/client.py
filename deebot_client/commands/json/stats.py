@@ -32,6 +32,5 @@ class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
-        event_bus.notify(stats_event)
+        event_bus.notify(TotalStatsEvent(data["area"], data["time"], data["count"]))
         return HandlingResult.success()

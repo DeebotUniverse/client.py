@@ -1,4 +1,4 @@
-"""Clean info messages."""
+"""Clean messages."""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
@@ -14,47 +14,6 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-def _handler_on_clean_info_message_helper(
-    event_bus: EventBus, data: dict[str, Any]
-) -> HandlingResult:
-    status: State | None = None
-    state = data.get("state")
-    if data.get("trigger") == "alert":
-        status = State.ERROR
-    elif state == "clean":
-        clean_state = data.get("cleanState", {})
-        motion_state = clean_state.get("motionState")
-        if motion_state == "working":
-            status = State.CLEANING
-        elif motion_state == "pause":
-            status = State.PAUSED
-        elif motion_state == "goCharging":
-            status = State.RETURNING
-
-        clean_type = clean_state.get("type")
-        content = clean_state.get("content", {})
-        if "type" in content:
-            clean_type = content.get("type")
-
-        if clean_type == "customArea":
-            area_values = content
-            if "value" in content:
-                area_values = content.get("value")
-
-            _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
-
-    elif state == "goCharging":
-        status = State.RETURNING
-    elif state == "idle":
-        status = State.IDLE
-
-    if status is not None:
-        event_bus.notify(StateEvent(status))
-        return HandlingResult.success()
-
-    return HandlingResult.analyse()
-
-
 class OnCleanInfo(MessageBodyDataDict):
     """Clean info message."""
 
@@ -68,20 +27,40 @@ class OnCleanInfo(MessageBodyDataDict):
 
         :return: A message response
         """
-        return _handler_on_clean_info_message_helper(event_bus, data)
+        status: State | None = None
+        state = data.get("state")
+        trigger = data.get("trigger")
+        clean_state = data.get("cleanState", {})
+        motion_state = clean_state.get("motionState")
+        content = clean_state.get("content", {})
+        clean_type = clean_state.get("type")
+
+        match trigger, state, motion_state:
+            case "alert", _, _:
+                status = State.ERROR
+            case _, "clean", "working":
+                status = State.CLEANING
+            case _, "clean", "pause":
+                status = State.PAUSED
+            case _, "clean", "goCharging":
+                status = State.RETURNING
+            case _, "goCharging", _:
+                status = State.RETURNING
+            case _, "idle", _:
+                status = State.IDLE
+
+        if clean_type == "customArea":
+            area_values = content if "value" in content else content.get("value")
+            _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
+
+        if status is not None:
+            event_bus.notify(StateEvent(status))
+            return HandlingResult.success()
+
+        return HandlingResult.analyse()
 
 
-class OnCleanInfoV2(MessageBodyDataDict):
+class OnCleanInfoV2(OnCleanInfo):
     """Clean info v2 message."""
 
     name = "onCleanInfo_V2"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        return _handler_on_clean_info_message_helper(event_bus, data)

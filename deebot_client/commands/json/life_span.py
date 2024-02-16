@@ -21,8 +21,7 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
     name = "getLifeSpan"
 
     def __init__(self, life_spans: LST[LifeSpan]) -> None:
-        args = [life_span.value for life_span in life_spans]
-        super().__init__(args)
+        super().__init__([life_span.value for life_span in life_spans])
 
     @classmethod
     def _handle_body_data_list(
@@ -33,15 +32,12 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
         :return: A message response
         """
         for component in data:
-            component_type = LifeSpan(component["type"])
-            left = int(component["left"])
-            total = int(component["total"])
-
-            if total <= 0:
+            if (total := int(component["total"])) <= 0:
                 raise ValueError("total not positive!")
 
+            left = int(component["left"])
             percent = round((left / total) * 100, 2)
-            event_bus.notify(LifeSpanEvent(component_type, percent, left))
+            event_bus.notify(LifeSpanEvent(LifeSpan(component["type"]), percent, left))
 
         return HandlingResult.success()
 

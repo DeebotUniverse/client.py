@@ -17,25 +17,34 @@ MESSAGES = {
 
 _LEGACY_USE_GET_COMMAND = [
     "getAdvancedMode",
+    "getBattery",
     "getBreakPoint",
     "getCachedMapInfo",
     "getCarpertPressure",
     "getChargeState",
     "getCleanCount",
+    "getCleanInfo_V2",
     "getCleanInfo",
+    "getCleanInfo",
+    "GetCleanLogs",
     "getCleanPreference",
     "getEfficiency",
     "getError",
     "getLifeSpan",
     "getMajorMap",
+    "getMapInfo_V2",
+    "getMapSet_V2",
     "getMapSet",
     "getMapSubSet",
     "getMapTrace",
     "getMinorMap",
     "getMultiMapState",
     "getNetInfo",
+    "getNetInfo",
+    "getOta",
     "getPos",
     "getSpeed",
+    "getStats",
     "getSweepMode",
     "getTotalStats",
     "getTrueDetect",
@@ -88,7 +97,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     converted_name = message_name
     # Handle message starting with "on","off","report" the same as "get" commands
     converted_name = re.sub(
-        "^((on)|(off)|(report))",
+        "^((off)|(report))",
         "get",
         converted_name,
     )

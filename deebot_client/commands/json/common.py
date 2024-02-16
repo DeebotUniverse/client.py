@@ -22,8 +22,6 @@ from deebot_client.message import (
     MessageBodyDataDict,
 )
 
-from .const import CODE
-
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.events import EnableEvent
@@ -68,7 +66,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
         :return: A message response
         """
         # Success event looks like { "code": 0, "msg": "ok" }
-        if body.get(CODE, -1) == 0:
+        if body.get("code", -1) == 0:
             return HandlingResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
