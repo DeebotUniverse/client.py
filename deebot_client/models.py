@@ -16,6 +16,7 @@ ApiDeviceInfo = TypedDict(
     {
         "class": Required[str],
         "company": Required[str],
+        "deviceName": str,
         "did": Required[str],
         "name": Required[str],
         "nick": str,
