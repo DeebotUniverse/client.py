@@ -185,19 +185,27 @@ class BackgroundImage:
     image: bytes
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class CalibrationPoint:
     """Calibration point."""
 
     vacuum: Point
-    map: Point
+    map: Point = dataclasses.field(init=False)
+    manipulation: dataclasses.InitVar[MapManipulation]
+
+    def __post_init__(self, manipulation: MapManipulation) -> None:
+        object.__setattr__(
+            self,
+            "map",
+            _calc_unbounded_point(self.vacuum.x, self.vacuum.y, manipulation),
+        )
 
 
-@dataclasses.dataclass
+@dataclasses.dataclass(frozen=True)
 class CalibratedMap:
     """Map image with calibration points."""
 
-    calibration_points: tuple[CalibrationPoint, CalibrationPoint, CalibrationPoint]
+    calibration_points: tuple[CalibrationPoint, ...]
     image: str
 
 
@@ -672,23 +680,9 @@ class Map:
             _get_svg_positions(self._map_data.positions, manipulation)
         )
 
-        p0 = Point(0, 0)
-        p1 = Point(0, 100000)
-        p2 = Point(100000, 0)
-
-        points = (
-            CalibrationPoint(
-                vacuum=p0,
-                map=_calc_unbounded_point(p0.x, p0.y, manipulation),
-            ),
-            CalibrationPoint(
-                vacuum=p1,
-                map=_calc_unbounded_point(p1.x, p1.y, manipulation),
-            ),
-            CalibrationPoint(
-                vacuum=p2,
-                map=_calc_unbounded_point(p2.x, p2.y, manipulation),
-            ),
+        points = tuple(
+            CalibrationPoint(point, manipulation)
+            for point in (Point(0, 0), Point(0, 100000), Point(100000, 0))
         )
 
         self._last_image = CalibratedMap(calibration_points=points, image=str(svg_map))
