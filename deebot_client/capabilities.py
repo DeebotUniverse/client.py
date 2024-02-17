@@ -9,12 +9,15 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BorderSwitchEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
+    ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
+    CrossMapBorderWarningEvent,
     CustomCommandEvent,
     ErrorEvent,
     Event,
@@ -25,12 +28,14 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
+    MoveupWarningEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     OtaEvent,
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
+    SafeProtectEvent,
     StateEvent,
     StatsEvent,
     SweepModeEvent,
@@ -118,7 +123,7 @@ class CapabilityCleanAction:
     """Capabilities for clean action."""
 
     command: Callable[[CleanAction], Command]
-    area: Callable[[CleanMode, str, int], Command]
+    area: Callable[[CleanMode, str, int], Command] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -126,7 +131,7 @@ class CapabilityClean:
     """Capabilities for clean."""
 
     action: CapabilityCleanAction
-    continuous: CapabilitySetEnable[ContinuousCleaningEvent]
+    continuous: CapabilitySetEnable[ContinuousCleaningEvent] | None = None
     count: CapabilitySet[CleanCountEvent, int] | None = None
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
@@ -158,7 +163,7 @@ class CapabilityMap:
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute
-    rooms: CapabilityEvent[RoomsEvent]
+    rooms: CapabilityEvent[RoomsEvent] | None = None
     trace: CapabilityEvent[MapTraceEvent]
 
 
@@ -176,10 +181,17 @@ class CapabilitySettings:
     """Capabilities for settings."""
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
-    carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent]
+    carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
     ) = None
+    border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
+    child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
+    moveup_warning: CapabilitySetEnable[MoveupWarningEvent] | None = None
+    cross_map_border_warning: CapabilitySetEnable[
+        CrossMapBorderWarningEvent
+    ] | None = None
+    safe_protect: CapabilitySetEnable[SafeProtectEvent] | None = None
     ota: CapabilitySetEnable[OtaEvent] | CapabilityEvent[OtaEvent] | None = None
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
@@ -197,7 +209,7 @@ class Capabilities:
     clean: CapabilityClean
     custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
-    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
+    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel] | None = None
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
@@ -205,7 +217,7 @@ class Capabilities:
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
-    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount]
+    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 
