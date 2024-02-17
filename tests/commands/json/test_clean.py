@@ -25,29 +25,39 @@ if TYPE_CHECKING:
         ({"trigger": "none"}, None, HandlingState.ANALYSE_LOGGED),
         ({"trigger": "alert"}, StateEvent(State.ERROR), HandlingState.SUCCESS),
         (
-            {"trigger": "none", "state": "idle"},
+            {"trigger": "app", "state": "idle"},
             StateEvent(State.IDLE),
             HandlingState.SUCCESS,
         ),
         (
-            {"trigger": "none", "state": "goCharging"},
+            {"trigger": "app", "state": "goCharging"},
             StateEvent(State.RETURNING),
             HandlingState.SUCCESS,
         ),
         (
             {
-                "trigger": "none",
+                "trigger": "app",
                 "state": "clean",
-                "cleanState": {"motionState": "working"},
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "auto",
+                    "motionState": "working",
+                },
             },
             StateEvent(State.CLEANING),
             HandlingState.SUCCESS,
         ),
         (
             {
-                "trigger": "none",
+                "trigger": "app",
                 "state": "clean",
-                "cleanState": {"motionState": "pause"},
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "auto",
+                    "motionState": "pause",
+                },
             },
             StateEvent(State.PAUSED),
             HandlingState.SUCCESS,

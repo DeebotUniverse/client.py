@@ -18,29 +18,39 @@ from tests.messages import assert_message
         ({"trigger": "none"}, None, HandlingState.ANALYSE_LOGGED),
         ({"trigger": "alert"}, StateEvent(State.ERROR), HandlingState.SUCCESS),
         (
-            {"trigger": "none", "state": "idle"},
+            {"trigger": "app", "state": "idle"},
             StateEvent(State.IDLE),
             HandlingState.SUCCESS,
         ),
         (
-            {"trigger": "none", "state": "goCharging"},
+            {"trigger": "app", "state": "goCharging"},
             StateEvent(State.RETURNING),
             HandlingState.SUCCESS,
         ),
         (
             {
-                "trigger": "none",
+                "trigger": "app",
                 "state": "clean",
-                "cleanState": {"motionState": "working"},
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "auto",
+                    "motionState": "working",
+                },
             },
             StateEvent(State.CLEANING),
             HandlingState.SUCCESS,
         ),
         (
             {
-                "trigger": "none",
+                "trigger": "app",
                 "state": "clean",
-                "cleanState": {"motionState": "pause"},
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "auto",
+                    "motionState": "pause",
+                },
             },
             StateEvent(State.PAUSED),
             HandlingState.SUCCESS,
@@ -52,6 +62,40 @@ from tests.messages import assert_message
                 "cleanState": {"motionState": "goCharging"},
             },
             StateEvent(State.RETURNING),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "app",
+                "state": "clean",
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "customArea",
+                    "content": "639.000000,166.000000,1711.000000,-705.000000",
+                    "count": 1,
+                    "motionState": "working",
+                },
+            },
+            StateEvent(State.CLEANING),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "app",
+                "state": "clean",
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "customArea",
+                    "content": {
+                        "value": "639.000000,166.000000,1711.000000,-705.000000"
+                    },
+                    "count": 1,
+                    "motionState": "working",
+                },
+            },
+            StateEvent(State.CLEANING),
             HandlingState.SUCCESS,
         ),
     ],
