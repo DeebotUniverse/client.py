@@ -61,6 +61,40 @@ if TYPE_CHECKING:
             StateEvent(State.RETURNING),
             HandlingState.SUCCESS,
         ),
+        (
+            {
+                "trigger": "app",
+                "state": "clean",
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "customArea",
+                    "content": "639.000000,166.000000,1711.000000,-705.000000",
+                    "count": 1,
+                    "motionState": "working",
+                },
+            },
+            StateEvent(State.CLEANING),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "app",
+                "state": "clean",
+                "cleanState": {
+                    "id": "122",
+                    "router": "plan",
+                    "type": "customArea",
+                    "content": {
+                        "value": "639.000000,166.000000,1711.000000,-705.000000"
+                    },
+                    "count": 1,
+                    "motionState": "working",
+                },
+            },
+            StateEvent(State.CLEANING),
+            HandlingState.SUCCESS,
+        ),
     ],
 )
 async def test_GetCleanInfo(
