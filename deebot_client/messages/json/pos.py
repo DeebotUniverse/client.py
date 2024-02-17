@@ -28,17 +28,16 @@ class OnPos(MessageBodyDataDict):
         for type_str in ["deebotPos", "chargePos"]:
             data_positions = data.get(type_str, [])
 
-            if isinstance(data_positions, dict):
-                positions.append(
-                    Position(type=PositionType(type_str), **data_positions)
-                )
-            else:
-                positions.extend(
-                    [
-                        Position(type=PositionType(type_str), **entry)
-                        for entry in data_positions
-                    ]
-                )
+            match data_positions:
+                case {"x": x, "y": y}:
+                    positions.append(Position(type=PositionType(type_str), x=x, y=y))
+                case list(entries) if entries:
+                    positions.extend(
+                        Position(
+                            type=PositionType(type_str), x=entry["x"], y=entry["y"]
+                        )
+                        for entry in entries
+                    )
 
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))

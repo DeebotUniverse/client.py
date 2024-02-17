@@ -26,7 +26,7 @@ class OnMapSetV2(MessageBodyDataDict):
 
         :return: A message response
         """
-        # check if type is know and mid us given
+        # check if type is known and mid is given
         if not MapSetType.has_value(data["type"]) or not data.get("mid"):
             return HandlingResult.analyse()
 
@@ -51,12 +51,12 @@ class OnMapTrace(MessageBodyDataDict):
 
         :return: A message response
         """
-        total = int(data["totalCount"])
-        start = int(data["traceStart"])
-
         if not data.get("traceValue"):
             # TODO verify that this is legit pylint: disable=fixme
             return HandlingResult.analyse()
+
+        total = int(data["totalCount"])
+        start = int(data["traceStart"])
 
         event_bus.notify(
             MapTraceEvent(start=start, total=total, data=data["traceValue"])
@@ -65,7 +65,7 @@ class OnMapTrace(MessageBodyDataDict):
 
 
 class OnMinorMap(MessageBodyDataDict):
-    """On map minor message."""
+    """On minor map message."""
 
     name = "onMinorMap"
 
@@ -77,8 +77,8 @@ class OnMinorMap(MessageBodyDataDict):
 
         :return: A message response
         """
+        # onMinorMap sends no type, so fallback to "ol"
         if data.get("type", "ol") == "ol":
-            # onMinorMap sends no type, so fallback to "ol"
             event_bus.notify(MinorMapEvent(data["pieceIndex"], data["pieceValue"]))
             return HandlingResult.success()
 

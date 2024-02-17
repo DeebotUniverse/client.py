@@ -5,10 +5,11 @@ from unittest.mock import Mock
 
 import pytest
 
-from deebot_client.commands.json import GetCleanInfo
-from deebot_client.commands.json.clean import Clean
+from deebot_client.command import CommandResult
+from deebot_client.commands.json import Clean, GetCleanInfo, GetCleanInfoV2
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
+from deebot_client.message import HandlingState
 from deebot_client.models import CleanAction, DeviceInfo, State
 from tests.helpers import get_request_json, get_success_body
 
@@ -19,16 +20,67 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("json", "expected"),
+    ("data", "expected_event", "expected_state"),
     [
+        ({"trigger": "none"}, None, HandlingState.ANALYSE_LOGGED),
+        ({"trigger": "alert"}, StateEvent(State.ERROR), HandlingState.SUCCESS),
         (
-            get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
+            {"trigger": "none", "state": "idle"},
             StateEvent(State.IDLE),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {"trigger": "none", "state": "goCharging"},
+            StateEvent(State.RETURNING),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "none",
+                "state": "clean",
+                "cleanState": {"motionState": "working"},
+            },
+            StateEvent(State.CLEANING),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "none",
+                "state": "clean",
+                "cleanState": {"motionState": "pause"},
+            },
+            StateEvent(State.PAUSED),
+            HandlingState.SUCCESS,
+        ),
+        (
+            {
+                "trigger": "none",
+                "state": "clean",
+                "cleanState": {"motionState": "goCharging"},
+            },
+            StateEvent(State.RETURNING),
+            HandlingState.SUCCESS,
         ),
     ],
 )
-async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
-    await assert_command(GetCleanInfo(), json, expected)
+async def test_GetCleanInfo(
+    data: dict[str, Any],
+    expected_event: StateEvent,
+    expected_state: HandlingState,
+) -> None:
+    json = get_request_json(get_success_body(data))
+    await assert_command(
+        GetCleanInfo(),
+        json,
+        expected_event,
+        command_result=CommandResult(expected_state),
+    )
+    await assert_command(
+        GetCleanInfoV2(),
+        json,
+        expected_event,
+        command_result=CommandResult(expected_state),
+    )
 
 
 @pytest.mark.parametrize(

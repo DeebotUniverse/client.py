@@ -96,8 +96,6 @@ from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
-# getSleep
-# from deebot_client.commands.json.
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(

@@ -26,9 +26,8 @@ class OnError(MessageBodyDataDict):
         :return: A message response
         """
         # the last error code
-        if data := data.get("code", []):
-            error = data[-1]
-            if error != 0:
+        if code := data.get("code", []):
+            if (error := code[-1]) != 0:
                 event_bus.notify(StateEvent(State.ERROR))
             event_bus.notify(ErrorEvent(error, ERROR_CODES.get(error)))
             return HandlingResult.success()

@@ -18,7 +18,7 @@ from deebot_client.messages.json import OnMapSetV2
         ("199390082", MapSetType.VIRTUAL_WALLS),
     ],
 )
-def test_onMapSetV2(mid: str, type: MapSetType) -> None:
+def test_OnMapSetV2(mid: str, type: MapSetType) -> None:
     data = {
         "header": {
             "pri": 1,

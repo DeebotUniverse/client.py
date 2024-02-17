@@ -7,18 +7,20 @@ from deebot_client.commands.json import (
     GetCachedMapInfo,
     GetMajorMap,
     GetMapSet,
+    GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
+    GetMinorMap,
 )
-from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import (
+    CachedMapInfoEvent,
     MajorMapEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
+    MinorMapEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingState
 from tests.helpers import get_request_json, get_success_body
 
@@ -40,7 +42,7 @@ from . import assert_command
         ),
     ],
 )
-async def test_getMapSubSet_customName(
+async def test_GetMapSubSet_customName(
     compress: int, value: str, expected: str
 ) -> None:
     type = MapSetType.ROOMS
@@ -76,7 +78,7 @@ async def test_getMapSubSet_customName(
     )
 
 
-async def test_getMapSubSet_living_room() -> None:
+async def test_GetMapSubSet_living_room() -> None:
     type = MapSetType.ROOMS
     value = "-1400,-1600;-1400,-1350;-950,-1100;-900,-150;-550,100;200,950;500,950;650,800;800,950;1850,950;1950,800;1950,-200;2050,-300;2300,-300;2550,-650;2700,-650;2700,-1600;2400,-1750;2700,-1900;2700,-2950;2450,-2950;2300,-3100;2400,-3200;2650,-3200;2700,-3500;2300,-3500;2200,-3250;2050,-3550;1200,-3550;1200,-3300;1050,-3200;950,-3300;950,-3550;600,-3550;550,-2850;850,-2800;950,-2700;850,-2600;950,-2400;900,-2350;800,-2300;550,-2500;550,-2350;400,-2250;200,-2650;-800,-2650;-950,-2550;-950,-2150;-650,-2000;-450,-2000;-400,-1950;-450,-1850;-750,-1800;-950,-1900;-1350,-1900;-1400,-1600"
     json = get_request_json(
@@ -106,11 +108,11 @@ async def test_getMapSubSet_living_room() -> None:
         (GetCachedMapInfo(version=2), GetMapSetV2),
     ],
 )
-async def test_getCachedMapInfo(
+async def test_GetCachedMapInfo(
     command: GetCachedMapInfo, map_set_type: type[GetMapSet | GetMapSetV2]
 ) -> None:
     expected_mid = "199390082"
-    expected_name = "Erdgeschoss"
+    expected_name = "First floor"
     json = get_request_json(
         get_success_body(
             {
@@ -148,7 +150,7 @@ async def test_getCachedMapInfo(
     )
 
 
-async def test_getMajorMap() -> None:
+async def test_GetMajorMap() -> None:
     expected_mid = "199390082"
     value = "1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,3378526980,2963288214,2739565817,729228561,2452519304,1295764014,1295764014,1295764014,2753376360,329080101,952462272,3648890579,412193448,1540631558,1295764014,1295764014,1561391782,1081327924,1096350476,2860639280,37066625,86907282,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014"
     json = get_request_json(
@@ -171,7 +173,7 @@ async def test_getMajorMap() -> None:
     )
 
 
-async def test_getMapSet() -> None:
+async def test_GetMapSet() -> None:
     mid = "199390082"
     msid = "8"
     json = get_request_json(
@@ -209,7 +211,7 @@ async def test_getMapSet() -> None:
     )
 
 
-async def test_getMapSetV2_no_mop_zones() -> None:
+async def test_GetMapSetV2_no_mop_zones() -> None:
     mid = "199390082"
     type = MapSetType.NO_MOP_ZONES
     json = get_request_json(
@@ -238,7 +240,7 @@ async def test_getMapSetV2_no_mop_zones() -> None:
     )
 
 
-async def test_getMapSetV2_rooms() -> None:
+async def test_GetMapSetV2_rooms() -> None:
     mid = "199390082"
     msid = "8"
     type = MapSetType.ROOMS
@@ -274,7 +276,7 @@ async def test_getMapSetV2_rooms() -> None:
     )
 
 
-async def test_getMapSetV2_virtual_walls() -> None:
+async def test_GetMapSetV2_virtual_walls() -> None:
     mid = "199390082"
     type = MapSetType.VIRTUAL_WALLS
     json = get_request_json(
@@ -318,7 +320,7 @@ async def test_getMapSetV2_virtual_walls() -> None:
     )
 
 
-async def test_getMapTrace() -> None:
+async def test_GetMapTrace() -> None:
     start = 0
     total = 160
     trace_value = "REMOVED"
@@ -340,4 +342,25 @@ async def test_getMapTrace() -> None:
         command_result=CommandResult(
             HandlingState.SUCCESS, {"start": start, "total": total}, []
         ),
+    )
+
+
+async def test_GetMinorMap() -> None:
+    mid = "666"
+    piece_index = 666
+    piece_value = "SGkgOikK"
+    json = get_request_json(
+        get_success_body(
+            {
+                "mid": mid,
+                "pieceIndex": piece_index,
+                "pieceValue": piece_value,
+            }
+        )
+    )
+    await assert_command(
+        GetMinorMap(map_id=mid, piece_index=piece_index),
+        json,
+        MinorMapEvent(piece_index, piece_value),
+        command_result=CommandResult(HandlingState.SUCCESS),
     )
