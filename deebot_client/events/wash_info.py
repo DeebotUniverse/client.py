@@ -1,4 +1,6 @@
 """Wash info event module."""
+from __future__ import annotations
+
 from dataclasses import dataclass
 
 from deebot_client.util import DisplayNameIntEnum
@@ -17,6 +19,6 @@ class WashMode(DisplayNameIntEnum):
 class WashInfoEvent(Event):
     """Wash info event representation."""
 
-    mode: WashMode
+    mode: WashMode | None
     interval: int | None
     hot_wash_amount: int | None

@@ -1,10 +1,14 @@
 """WashInfo messages."""
-from typing import Any
+from __future__ import annotations
 
-from deebot_client.event_bus import EventBus
+from typing import TYPE_CHECKING, Any
+
 from deebot_client.events import WashInfoEvent
 from deebot_client.events.wash_info import WashMode
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+
+if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
 
 
 class OnWashInfo(MessageBodyDataDict):
@@ -20,11 +24,15 @@ class OnWashInfo(MessageBodyDataDict):
 
         :return: A message response
         """
+        mode = data.get("mode")
+        if isinstance(mode, int):
+            mode = WashMode(mode)
+
         event_bus.notify(
             WashInfoEvent(
-                mode=WashMode(int(data["mode"])),
-                hot_wash_amount=data["hot_wash_amount"],
-                interval=data["interval"],
+                mode=mode,
+                hot_wash_amount=data.get("hot_wash_amount"),
+                interval=data.get("interval"),
             )
         )
         return HandlingResult.success()
