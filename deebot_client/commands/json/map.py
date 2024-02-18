@@ -8,13 +8,12 @@ from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json.const import MAP_TRACE_POINT_COUNT
 from deebot_client.events import (
     CachedMapInfoEvent,
-    MajorMapEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
 )
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
-from deebot_client.messages.json import OnMapSetV2, OnMapTrace, OnMinorMap
+from deebot_client.messages.json import OnMajorMap, OnMapSetV2, OnMapTrace, OnMinorMap
 from deebot_client.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
@@ -87,26 +86,10 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
-class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetMajorMap(JsonCommandWithMessageHandling, OnMajorMap):
     """Get major map command."""
 
     name = "getMajorMap"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, _: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        values = data["value"].split(",")
-        map_id = data["mid"]
-
-        return HandlingResult(
-            HandlingState.SUCCESS,
-            {"map_id": map_id, "values": values},
-        )
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
@@ -117,7 +100,6 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(requested=True, **result.args))
             return CommandResult.success()
 
         return result

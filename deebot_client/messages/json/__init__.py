@@ -7,7 +7,7 @@ from .battery import OnBattery
 from .charge_state import OnChargeState
 from .clean import OnCleanInfo, OnCleanInfoV2
 from .error import OnError
-from .map import OnMapSetV2, OnMapTrace, OnMinorMap
+from .map import OnMajorMap, OnMapSetV2, OnMapTrace, OnMinorMap
 from .pos import OnPos
 from .stats import OnStats, ReportStats
 
@@ -16,15 +16,16 @@ if TYPE_CHECKING:
 
 __all__ = [
     "OnBattery",
+    "OnChargeState",
     "OnCleanInfo",
     "OnCleanInfoV2",
     "OnError",
+    "OnMajorMap",
     "OnMapSetV2",
     "OnMapTrace",
     "OnMinorMap",
     "OnPos",
     "OnStats",
-    "OnChargeState",
     "ReportStats",
 ]
 
@@ -32,15 +33,16 @@ __all__ = [
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
     OnBattery,
+    OnChargeState,
     OnCleanInfo,
     OnCleanInfoV2,
     OnError,
+    OnMajorMap,
     OnMapSetV2,
     OnMapTrace,
     OnMinorMap,
     OnPos,
     OnStats,
-    OnChargeState,
 
     ReportStats
 ]

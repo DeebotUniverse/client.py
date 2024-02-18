@@ -3,7 +3,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import MapSetType, MapTraceEvent, MinorMapEvent
+from deebot_client.events import MajorMapEvent, MapSetType, MapTraceEvent, MinorMapEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
@@ -11,6 +11,28 @@ _LOGGER = get_logger(__name__)
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
+
+
+class OnMajorMap(MessageBodyDataDict):
+    """On major map message."""
+
+    name = "onMajorMap"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        values = data["value"].split(",")
+        map_id = data["mid"]
+
+        event_bus.notify(MajorMapEvent(requested=True, map_id=map_id, values=values))
+        return HandlingResult(
+            HandlingState.SUCCESS, {"map_id": map_id, "values": values}
+        )
 
 
 class OnMapSetV2(MessageBodyDataDict):

@@ -32,8 +32,6 @@ class OnCleanInfo(MessageBodyDataDict):
         trigger = data.get("trigger")
         clean_state: dict[str, Any] = data.get("cleanState", {})
         motion_state = clean_state.get("motionState")
-        content: str | dict[str, Any] = clean_state.get("content", {})
-        clean_type = clean_state.get("type")
 
         match trigger, state, motion_state:
             case "alert", _, _:
@@ -49,7 +47,8 @@ class OnCleanInfo(MessageBodyDataDict):
             case _, "idle", _:
                 status = State.IDLE
 
-        if clean_type == "customArea":
+        if clean_state.get("type") == "customArea":
+            content: str | dict[str, Any] = clean_state.get("content", {})
             area_values = content.get("value") if isinstance(content, dict) else content
             _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
 

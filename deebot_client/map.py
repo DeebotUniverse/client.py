@@ -16,7 +16,7 @@ import zlib
 from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
 
-from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
+from deebot_client.events import CachedMapInfoEvent, MapChangedEvent
 
 from .commands.json import GetMinorMap
 from .events import (
@@ -51,9 +51,8 @@ def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN
     """Return attributes as compact svg string."""
     result = ""
     for p in dataclasses.astuple(self):
-        value = p
-        if isinstance(p, bool):
-            value = int(p)
+        if isinstance(value := p, bool):
+            value = int(value)
         if result == "" or (isinstance(value, Decimal | float | int) and value < 0):
             result += f"{value}"
         else:
@@ -131,7 +130,7 @@ _MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
     3: ImageColor.getrgb("#1a81ed"),  # carpet
     4: ImageColor.getrgb("#dee9fb"),  # not scanned space
     5: ImageColor.getrgb("#edf3fb"),  # possible obstacle
-    # fallsback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
+    # fallback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
 }
 
 
