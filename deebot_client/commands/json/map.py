@@ -234,7 +234,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        if (type_value := data["type"]) in MapSetType:
+        if MapSetType.has_value(type_value := data["type"]):
             subtype = data.get("subtype") or data.get("subType")
             name = (
                 cls._ROOM_NUM_TO_NAME.get(subtype)
