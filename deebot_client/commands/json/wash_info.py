@@ -11,7 +11,7 @@ from deebot_client.message import HandlingResult
 from .common import JsonGetCommand, JsonSetCommand
 
 
-class GetWashInfo(JsonGetCommand):
+class GetWashInfo(OnWaterInfo, JsonGetCommand):
     """Get wash info command."""
 
     name = "getWashInfo"
