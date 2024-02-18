@@ -18,6 +18,5 @@ class WashInfoEvent(Event):
     """Wash info event representation."""
 
     mode: WashMode
-    # None means no data available
-    interval: int
-    hot_wash_amount: int
+    interval: int | None
+    hot_wash_amount: int | None
