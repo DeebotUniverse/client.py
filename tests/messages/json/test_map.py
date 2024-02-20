@@ -31,7 +31,7 @@ def test_onMapSetV2(mid: str, type: MapSetType) -> None:
         "body": {"data": {"mid": mid, "type": type.value}},
     }
 
-    # NOTE: this needs to be update when OnMapSetV2 can call commands
+    # NOTE: this needs to be updated when OnMapSetV2 can call commands
     event_bus = Mock(spec_set=EventBus)
     result = OnMapSetV2.handle(event_bus, data)
     assert result.state == HandlingState.SUCCESS

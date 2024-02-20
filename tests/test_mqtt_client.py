@@ -381,8 +381,8 @@ def test_config(
     ("override_mqtt_url", "error_msg"),
     [
         ("http://test", "Invalid scheme. Expecting mqtt or mqtts"),
-        ("mqtt://:80", "Hostame is required"),
-        ("mqtt://", "Hostame is required"),
+        ("mqtt://:80", "Hostname is required"),
+        ("mqtt://", "Hostname is required"),
     ],
 )
 def test_config_override_mqtt_url_invalid(

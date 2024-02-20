@@ -112,7 +112,7 @@ async def test_available_check_and_teardown(
 async def test_mac_address(
     authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
-    """Test that the mac address is change on NetwerkInfoEvent."""
+    """Test that the mac address is change on NetworkInfoEvent."""
     device = Device(device_info, authenticator)
     # deactivate refresh event subscribe refresh calls
     device.events._get_refresh_commands = lambda _: []

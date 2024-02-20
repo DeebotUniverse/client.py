@@ -266,7 +266,7 @@ class _AuthClient:
     ) -> dict[str, Any]:
         """Perform a post request."""
         url = urljoin(self._config.portal_url, "api/" + path)
-        logger_requst_params = f"url={url}, params={query_params}, json={json}"
+        logger_request_params = f"url={url}, params={query_params}, json={json}"
 
         if credentials is not None:
             json.update(
@@ -286,7 +286,7 @@ class _AuthClient:
                 "Calling api(%d/%d): %s",
                 i + 1,
                 MAX_RETRIES,
-                logger_requst_params,
+                logger_request_params,
             )
 
             try:
@@ -301,13 +301,13 @@ class _AuthClient:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
                             "Success calling api %s, response=%s",
-                            logger_requst_params,
+                            logger_request_params,
                             response_data,
                         )
                         return response_data
 
                     _LOGGER.debug(
-                        "Error calling api %s, response=%s", logger_requst_params, res
+                        "Error calling api %s, response=%s", logger_request_params, res
                     )
                     raise ClientResponseError(
                         res.request_info,
@@ -320,7 +320,7 @@ class _AuthClient:
                 _LOGGER.debug("Timeout (%d) reached on path: %s", _TIMEOUT, path)
                 raise ApiTimeoutError(path=path, timeout=_TIMEOUT) from ex
             except ClientResponseError as ex:
-                _LOGGER.debug("Error: %s", logger_requst_params, exc_info=True)
+                _LOGGER.debug("Error: %s", logger_request_params, exc_info=True)
                 if ex.status == HTTPStatus.BAD_GATEWAY:
                     seconds_to_sleep = 10
                     _LOGGER.info(

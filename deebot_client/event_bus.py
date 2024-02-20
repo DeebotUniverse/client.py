@@ -34,7 +34,7 @@ class _OnSubscriptionCallback:
         if not self._unsub:
             self._unsub = await self._callback()
 
-    def unsubcribe(self) -> None:
+    def unsubscribe(self) -> None:
         """Execute unsubscribe."""
         if self._unsub:
             self._unsub()
@@ -92,7 +92,7 @@ class EventBus:
             event_processing_data.subscriber_callbacks.remove(callback)
             if not event_processing_data.subscriber_callbacks:
                 for _callback in event_processing_data.on_subscription_callbacks:
-                    _callback.unsubcribe()
+                    _callback.unsubscribe()
 
         event_processing_data.subscriber_callbacks.append(callback)
 
@@ -226,13 +226,13 @@ class EventBus:
         event_type: type[T],
         callback: Callable[[], Coroutine[Any, Any, Callable[[], None]]],
     ) -> Callable[[], None]:
-        """Add callback, which is called on the first subscription of the given event and the returned callable is called after the last subscriber has unsubscriven."""
+        """Add callback, which is called on the first subscription of the given event and the returned callable is called after the last subscriber has unsubscribed."""
         event_processing_data = self._get_or_create_event_processing_data(event_type)
 
         data = _OnSubscriptionCallback(callback)
 
         def unsubscribe() -> None:
-            data.unsubcribe()
+            data.unsubscribe()
             event_processing_data.on_subscription_callbacks.remove(data)
 
         event_processing_data.on_subscription_callbacks.append(data)

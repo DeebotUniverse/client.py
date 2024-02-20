@@ -57,12 +57,12 @@ async def test_subscription(
         await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
     ]
 
-    # this time no refresh should be happen
+    # this time no refresh should be happening
     unsubscribers.append(
         await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=False)
     )
 
-    # unscubscrbe from all
+    # unsubscribe from all
     for unsubscribe in unsubscribers:
         unsubscribe()
 

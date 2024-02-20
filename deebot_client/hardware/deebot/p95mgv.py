@@ -160,7 +160,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            chached_info=CapabilityEvent(
+            cached_info=CapabilityEvent(
                 CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
             ),
             changed=CapabilityEvent(MapChangedEvent, []),
@@ -190,7 +190,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 set=SetEfficiencyMode,
                 types=(
                     EfficiencyMode.ENERGY_EFFICIENT_MODE,
-                    EfficiencyMode.STANDART_MODE,
+                    EfficiencyMode.STANDARD_MODE,
                 ),
             ),
             ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),

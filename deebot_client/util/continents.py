@@ -12,7 +12,7 @@ def get_continent(alpha_2_country: str | None) -> str:
 
 
 def get_continent_url_postfix(alpha_2_country: str) -> str:
-    """Return the url contintent postfix for the given country."""
+    """Return the url continent postfix for the given country."""
     if alpha_2_country == COUNTRY_CHINA:
         return ""
 

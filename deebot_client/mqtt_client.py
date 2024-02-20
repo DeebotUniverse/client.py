@@ -79,7 +79,7 @@ def create_mqtt_config(
                 raise MqttError("Invalid scheme. Expecting mqtt or mqtts")
 
         if not url.hostname:
-            raise MqttError("Hostame is required")
+            raise MqttError("Hostname is required")
 
         hostname = url.hostname
         port = url.port or default_port
@@ -121,8 +121,8 @@ class MqttClient:
         self._config = config
         self._authenticator = authenticator
 
-        self._subscribtions: MutableMapping[str, SubscriberInfo] = {}
-        self._subscribtion_changes: asyncio.Queue[
+        self._subscriptions: MutableMapping[str, SubscriberInfo] = {}
+        self._subscription_changes: asyncio.Queue[
             tuple[SubscriberInfo, bool]
         ] = asyncio.Queue()
         self._mqtt_task: asyncio.Task[Any] | None = None
@@ -154,10 +154,10 @@ class MqttClient:
     async def subscribe(self, info: SubscriberInfo) -> Callable[[], None]:
         """Subscribe for messages from given device."""
         await self.connect()
-        self._subscribtion_changes.put_nowait((info, True))
+        self._subscription_changes.put_nowait((info, True))
 
         def unsubscribe() -> None:
-            self._subscribtion_changes.put_nowait((info, False))
+            self._subscription_changes.put_nowait((info, False))
 
         return unsubscribe
 
@@ -198,7 +198,7 @@ class MqttClient:
                 try:
                     async with await self._get_client() as client:
                         _LOGGER.debug("Subscribe to all previous subscriptions")
-                        for info in self._subscribtions.values():
+                        for info in self._subscriptions.values():
                             for topic in _get_topics(info.device_info):
                                 await client.subscribe(topic)
 
@@ -248,7 +248,7 @@ class MqttClient:
 
         if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
-                "Unexpected message: tpoic=%s, payload=%s",
+                "Unexpected message: topic=%s, payload=%s",
                 message.topic,
                 message.payload,
             )
@@ -264,7 +264,7 @@ class MqttClient:
 
     async def _pending_subscriptions_worker(self, client: Client) -> None:
         while True:
-            (info, add) = await self._subscribtion_changes.get()
+            (info, add) = await self._subscription_changes.get()
 
             device_info = info.device_info
             for topic in _get_topics(device_info):
@@ -274,17 +274,17 @@ class MqttClient:
                     await client.unsubscribe(topic)
 
             if add:
-                self._subscribtions[device_info.did] = info
+                self._subscriptions[device_info.did] = info
             else:
-                self._subscribtions.pop(device_info.did, None)
+                self._subscriptions.pop(device_info.did, None)
 
-            self._subscribtion_changes.task_done()
+            self._subscription_changes.task_done()
 
     def _handle_atr(
         self, topic_split: list[str], payload: str | bytes | bytearray
     ) -> None:
         try:
-            if sub_info := self._subscribtions.get(topic_split[3]):
+            if sub_info := self._subscriptions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("An exception occurred during handling atr message")
@@ -326,7 +326,7 @@ class MqttClient:
                     data
                 )
             elif command := self._received_p2p_commands.pop(request_id, None):
-                if sub_info := self._subscribtions.get(topic_split[3]):
+                if sub_info := self._subscriptions.get(topic_split[3]):
                     data = json.loads(payload)
                     command.handle_mqtt_p2p(sub_info.events, data)
             else:
