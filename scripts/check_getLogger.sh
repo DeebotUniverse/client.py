@@ -1,18 +1,18 @@
-#!/bin/bash
+#!/usr/bin/env bash
+set -eu
+
 # Dummy script to check if getLogger is somewhere called except in logging_filter.py
 
-# LIST='list\|of\|words\|split\|by\|slash\|and\|pipe'
-LIST="getLogger\|logging"
+# List of keywords to search for
+KEYWORDS="getLogger\|logging"
 
-for FILE in `find deebot_client/ -name "*.py"` ; do
-    # Check if the file contains one of the words in LIST
-    if [[ $FILE = "deebot_client/logging_filter.py" ]]; then
-      continue;
-    fi
-
-    if grep -i -w $LIST $FILE; then
-      echo $FILE " uses not the logger provided from deebot_client.logging_filter.get_logger. You need to use them"
-      exit 1
-    fi
-      done
+# Find all Python files under deebot_client/ except logging_filter.py
+# For each file, search for the keywords using grep
+# If any match is found, print a message indicating that getLogger is used incorrectly
+# Exit with an error code if any match is found
+find deebot_client/ -name "*.py" \
+  ! -name "logging_filter.py" \
+  -exec grep -qi -w "$KEYWORDS" {} \; \
+  -exec echo "{} uses the logger incorrectly. Use 'deebot_client.logging_filter.get_logger' instead." \; \
+  -exec false {} +
 exit

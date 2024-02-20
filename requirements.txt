@@ -1,7 +1,7 @@
 aiohttp~=3.9
 aiomqtt>=2.0.0,<3.0
 cachetools>=5.0.0,<6.0
-defusedxml
+defusedxml>=0.7.1
 numpy>=1.23.2,<2.0
 Pillow>=10.0.1,<11.0
 svg.py>=1.4.2

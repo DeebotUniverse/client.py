@@ -1,24 +1,30 @@
 [build-system]
-requires = ["setuptools>=60",
-    "setuptools-scm>=8.0"]
+requires = ["setuptools>=60", "setuptools-scm>=8.0"]
 build-backend = "setuptools.build_meta"
 
 [project]
 name        = "deebot-client"
-license     = {text = "GPL-3.0"}
+license     = { text = "GPL-3.0" }
 description = "Deebot client library in python 3"
 readme      = "README.md"
-authors     = [
-    {name = "Robert Resch", email = "robert@resch.dev"}
+authors     = [{ name = "Robert Resch", email = "robert@resch.dev" }]
+
+keywords = [
+  "home",
+  "automation",
+  "homeassistant",
+  "vacuum",
+  "robot",
+  "deebot",
+  "ecovacs",
 ]
-keywords    = ["home", "automation", "homeassistant", "vacuum", "robot", "deebot", "ecovacs"]
 classifiers = [
-    "Development Status :: 4 - Beta",
-    "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
-    "Programming Language :: Python :: 3.11",
-    "Topic :: Home Automation",
-    "Topic :: Software Development :: Libraries :: Python Modules",
+  "Development Status :: 4 - Beta",
+  "Intended Audience :: Developers",
+  "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+  "Programming Language :: Python :: 3.11",
+  "Topic :: Home Automation",
+  "Topic :: Software Development :: Libraries :: Python Modules",
 ]
 requires-python = ">=3.11.0"
 dynamic = ["dependencies", "version"]
@@ -32,49 +38,56 @@ dynamic = ["dependencies", "version"]
 include-package-data = true
 
 [tool.setuptools.dynamic]
-dependencies = {file = ["requirements.txt"]}
+dependencies = { file = ["requirements.txt"] }
 
 [tool.setuptools.packages.find]
 include = ["deebot_client*"]
 
 [tool.setuptools_scm]
+
 [tool.black]
-target-version = ['py311']
-safe = true
+target-version = ['py311', 'py312']
+include = '\.pyi?$'
 
+# ----------------------------------- PYTEST -----------------------------------
+[tool.pytest.ini_options]
+testpaths = ["tests"]
 
+asyncio_mode = "auto"
+timeout = 10
+# log_cli = true
+# log_level = "INFO"
 
+# ------------------------------------ RUFF ------------------------------------
 [tool.ruff.lint]
-select = [
-    "ALL",
-]
+select = ["ALL"]
 
 ignore = [
-    "ANN101", # Self... explanatory
-    "ANN102", # Cls... explanatory
-    "ANN401", # Opinioated warning on disallowing dynamically typed expressions
-    "D203", # Conflicts with other rules
-    "D213", # Conflicts with other rules
-    "EM101", # raw-string-in-exception
+  "ANN101", # Self... explanatory
+  "ANN102", # Cls... explanatory
+  "ANN401", # Opinioated warning on disallowing dynamically typed expressions
+  "D203",   # Conflicts with other rules
+  "D213",   # Conflicts with other rules
+  "EM101",  # raw-string-in-exception
 
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in `__init__`
-    "E501",  # line too long
+  "D105", # Missing docstring in magic method
+  "D107", # Missing docstring in `__init__`
+  "E501", # line too long
 
-    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+  "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
 
 
-    # Conflicts with the Ruff formatter
-    "COM812",
-    "ISC001",
+  # Conflicts with the Ruff formatter
+  "COM812",
+  "ISC001",
 
-    # Remove later
-    "TD", # Todos
-    "A", # bultins
-    "DTZ", # use tz need to test it first
-    "TRY", # tryceratops
-    "FIX002", # Line contains TODO, consider resolving the issue
-    "BLE001", # Do not catch blind exception: `Exception`
+  # Remove later
+  "TD",     # Todos
+  "A",      # bultins
+  "DTZ",    # use tz need to test it first
+  "TRY",    # tryceratops
+  "FIX002", # Line contains TODO, consider resolving the issue
+  "BLE001", # Do not catch blind exception: `Exception`
 
 ]
 
@@ -85,26 +98,24 @@ fixture-parentheses = false
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
-known-first-party = [
-    "deebot_client",
-]
+known-first-party = ["deebot_client"]
 required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
-    "D100",  # Missing docstring in public module
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "N802",  # Function name {name} should be lowercase
-    "N816",  # Variable {name} in global scope should not be mixedCase
-    "PLR0913", # Too many arguments in function definition
-    "S101",  # Use of assert detected
-    "SLF001", # Private member accessed: {access}
-    "T201",  # print found
+  "D100",    # Missing docstring in public module
+  "D103",    # Missing docstring in public function
+  "D104",    # Missing docstring in public package
+  "N802",    # Function name {name} should be lowercase
+  "N816",    # Variable {name} in global scope should not be mixedCase
+  "PLR0913", # Too many arguments in function definition
+  "S101",    # Use of assert detected
+  "SLF001",  # Private member accessed: {access}
+  "T201",    # print found
 ]
 "deebot_client/hardware/deebot/*" = [
-    "N999",  # Invalid module name
+  "N999", # Invalid module name
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
@@ -117,18 +128,14 @@ max-complexity = 12
 [tool.ruff.lint.pylint]
 max-args = 7
 
-
+# ----------------------------------- PYLINT -----------------------------------
 [tool.pylint.MAIN]
 py-version = "3.11"
-ignore = [
-    "tests",
-]
-fail-on = [
-    "I",
-]
+ignore = ["tests"]
+fail-on = ["I"]
 
 [tool.pylint.BASIC]
-good-names= ["i","j","k","ex","_","T","x","y","id","tg"]
+good-names = ["i", "j", "k", "ex", "_", "T", "x", "y", "id", "tg"]
 
 [tool.pylint."MESSAGES CONTROL"]
 # Reasons disabled:
@@ -147,20 +154,17 @@ good-names= ["i","j","k","ex","_","T","x","y","id","tg"]
 # consider-using-namedtuple-or-dataclass - too opinionated
 # consider-using-assignment-expr - decision to use := better left to devs
 disable = [
-    "format",
-    "cyclic-import",
-    "duplicate-code",
-    "too-many-arguments",
-    "too-many-instance-attributes",
-    "too-many-locals",
-    "too-many-ancestors",
-    "too-few-public-methods",
-    "invalid-name",
+  "format",
+  "cyclic-import",
+  "duplicate-code",
+  "too-many-arguments",
+  "too-many-instance-attributes",
+  "too-many-locals",
+  "too-many-ancestors",
+  "too-few-public-methods",
+  "invalid-name",
 ]
-enable = [
-    "useless-suppression",
-    "use-symbolic-message-instead",
-]
+enable = ["useless-suppression", "use-symbolic-message-instead"]
 
 [tool.pylint.REPORTS]
 score = false
@@ -170,7 +174,29 @@ score = false
 expected-line-ending-format = "LF"
 
 [tool.pylint.EXCEPTIONS]
-overgeneral-exceptions = [
-    "builtins.BaseException",
-    "builtins.Exception",
-]
+overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]
+
+# ------------------------------------ MYPY ------------------------------------
+[tool.mypy]
+follow_imports = "silent"
+python_version = "3.11"
+show_error_codes = true
+strict_equality = true
+warn_incomplete_stub = true
+warn_redundant_casts = true
+warn_unused_configs = true
+warn_unused_ignores = true
+check_untyped_defs = true
+disallow_incomplete_defs = true
+disallow_subclassing_any = true
+disallow_untyped_calls = true
+disallow_untyped_decorators = true
+disallow_untyped_defs = true
+no_implicit_optional = true
+warn_return_any = true
+warn_unreachable = true
+strict = true
+
+[[tool.mypy.overrides]]
+module = ["docker.*", "setuptools.*", "testfixtures.*"]
+ignore_missing_imports = true

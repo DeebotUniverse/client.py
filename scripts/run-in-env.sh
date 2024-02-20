@@ -5,8 +5,8 @@ set -eu
 
 # pyenv, pyenv-virtualenv
 if [ -s .python-version ]; then
-    PYENV_VERSION=$(head -n 1 .python-version)
-    export PYENV_VERSION
+  PYENV_VERSION=$(head -n 1 .python-version)
+  export PYENV_VERSION
 fi
 
 # other common virtualenvs
