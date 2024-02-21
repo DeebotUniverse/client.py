@@ -4,10 +4,20 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.commands.json.error import GetError
 from deebot_client.const import DataType
 from deebot_client.messages import get_message
-from deebot_client.messages.json.battery import OnBattery
+from deebot_client.messages.json import (
+    OnBattery,
+    OnChargeState,
+    OnCleanInfo,
+    OnCleanInfoV2,
+    OnError,
+    OnMapSetV2,
+    OnMapTrace,
+    OnMinorMap,
+    OnPos,
+    OnStats,
+)
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -17,8 +27,15 @@ if TYPE_CHECKING:
     ("name", "data_type", "expected"),
     [
         ("onBattery", DataType.JSON, OnBattery),
-        ("onBattery_V2", DataType.JSON, OnBattery),
-        ("onError", DataType.JSON, GetError),
+        ("onChargeState", DataType.JSON, OnChargeState),
+        ("onCleanInfo", DataType.JSON, OnCleanInfo),
+        ("onCleanInfo_V2", DataType.JSON, OnCleanInfoV2),
+        ("onError", DataType.JSON, OnError),
+        ("onMapSet_V2", DataType.JSON, OnMapSetV2),
+        ("onMapTrace", DataType.JSON, OnMapTrace),
+        ("onMinorMap", DataType.JSON, OnMinorMap),
+        ("onPos", DataType.JSON, OnPos),
+        ("onStats", DataType.JSON, OnStats),
         ("GetCleanLogs", DataType.JSON, None),
         ("unknown", DataType.JSON, None),
         ("unknown", DataType.XML, None),

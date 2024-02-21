@@ -4,9 +4,32 @@ from typing import Any
 
 import pytest
 
-from deebot_client.events import CleanJobStatus, ReportStatsEvent
-from deebot_client.messages.json import ReportStats
+from deebot_client.events import CleanJobStatus, ReportStatsEvent, StatsEvent
+from deebot_client.messages.json import OnStats, ReportStats
+from tests.helpers import get_message_json, get_success_body
 from tests.messages import assert_message
+
+
+@pytest.mark.parametrize(
+    ("data", "expected"),
+    [
+        (
+            {"area": 35, "time": 2004, "cid": "111", "type": "auto"},
+            StatsEvent(area=35, time=2004, type="auto"),
+        ),
+        (
+            {"time": 2004, "cid": "111", "type": "auto"},
+            StatsEvent(area=None, time=2004, type="auto"),
+        ),
+        (
+            {"cid": "111"},
+            StatsEvent(area=None, time=None, type=None),
+        ),
+    ],
+)
+def test_OnStats(data: dict[str, Any], expected: StatsEvent) -> None:
+    json = get_message_json(get_success_body(data))
+    assert_message(OnStats, json, expected)
 
 
 @pytest.mark.parametrize(
@@ -48,16 +71,5 @@ from tests.messages import assert_message
     ],
 )
 def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
-    data = {
-        "header": {
-            "pri": 1,
-            "tzm": 480,
-            "ts": "1662017348913",
-            "ver": "0.0.1",
-            "fwVer": "1.8.2",
-            "hwVer": "0.1.1",
-        },
-        "body": {"data": data},
-    }
-
-    assert_message(ReportStats, data, expected)
+    json = get_message_json(get_success_body(data))
+    assert_message(ReportStats, json, expected)

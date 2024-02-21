@@ -9,7 +9,6 @@ from deebot_client.message import HandlingResult
 from deebot_client.models import State
 
 from .common import ExecuteCommand
-from .const import CODE
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -31,7 +30,7 @@ class Charge(ExecuteCommand):
 
         :return: A message response
         """
-        code = int(body.get(CODE, -1))
+        code = int(body.get("code", -1))
         if code == 0:
             event_bus.notify(StateEvent(State.RETURNING))
             return HandlingResult.success()

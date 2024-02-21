@@ -1,28 +1,21 @@
-"""Stats commands."""
+"""Charge state messages."""
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import TotalStatsEvent
+from deebot_client.commands.json.const import CHARGE_STATE_IS_CHARGING
+from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.messages.json import OnStats
-
-from .common import JsonCommandWithMessageHandling
+from deebot_client.models import State
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetStats(JsonCommandWithMessageHandling, OnStats):
-    """Get stats command."""
+class OnChargeState(MessageBodyDataDict):
+    """On charge state message."""
 
-    name = "getStats"
-
-
-class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get stats command."""
-
-    name = "getTotalStats"
+    name = "onChargeState"
 
     @classmethod
     def _handle_body_data_dict(
@@ -32,5 +25,6 @@ class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        event_bus.notify(TotalStatsEvent(data["area"], data["time"], data["count"]))
+        if data.get("isCharging") == CHARGE_STATE_IS_CHARGING:
+            event_bus.notify(StateEvent(State.DOCKED))
         return HandlingResult.success()

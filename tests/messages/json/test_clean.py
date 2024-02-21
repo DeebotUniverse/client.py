@@ -1,22 +1,15 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from typing import Any
 
 import pytest
 
-from deebot_client.command import CommandResult
-from deebot_client.commands.json import Clean, GetCleanInfo, GetCleanInfoV2
-from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.message import HandlingState
-from deebot_client.models import CleanAction, DeviceInfo, State
-from tests.helpers import get_request_json, get_success_body
-
-from . import assert_command
-
-if TYPE_CHECKING:
-    from deebot_client.authentication import Authenticator
+from deebot_client.messages.json import OnCleanInfo, OnCleanInfoV2
+from deebot_client.models import State
+from tests.helpers import get_message_json, get_success_body
+from tests.messages import assert_message
 
 
 @pytest.mark.parametrize(
@@ -107,51 +100,9 @@ if TYPE_CHECKING:
         ),
     ],
 )
-async def test_GetCleanInfo(
-    data: dict[str, Any],
-    expected_event: StateEvent,
-    expected_state: HandlingState,
+async def test_OnCleanInfo(
+    data: dict[str, Any], expected_event: StateEvent, expected_state: HandlingState
 ) -> None:
-    json = get_request_json(get_success_body(data))
-    await assert_command(
-        GetCleanInfo(),
-        json,
-        expected_event,
-        command_result=CommandResult(expected_state),
-    )
-    await assert_command(
-        GetCleanInfoV2(),
-        json,
-        expected_event,
-        command_result=CommandResult(expected_state),
-    )
-
-
-@pytest.mark.parametrize(
-    ("action", "state", "expected"),
-    [
-        (CleanAction.START, None, CleanAction.START),
-        (CleanAction.START, State.PAUSED, CleanAction.RESUME),
-        (CleanAction.START, State.DOCKED, CleanAction.START),
-        (CleanAction.RESUME, None, CleanAction.RESUME),
-        (CleanAction.RESUME, State.PAUSED, CleanAction.RESUME),
-        (CleanAction.RESUME, State.DOCKED, CleanAction.START),
-    ],
-)
-async def test_Clean_act(
-    authenticator: Authenticator,
-    device_info: DeviceInfo,
-    action: CleanAction,
-    state: State | None,
-    expected: CleanAction,
-) -> None:
-    event_bus = Mock(spec_set=EventBus)
-    event_bus.get_last_event.return_value = (
-        StateEvent(state) if state is not None else None
-    )
-    command = Clean(action)
-
-    await command.execute(authenticator, device_info, event_bus)
-
-    assert isinstance(command._args, dict)
-    assert command._args["act"] == expected.value
+    json = get_message_json(get_success_body(data))
+    assert_message(OnCleanInfo, json, expected_event, expected_state=expected_state)
+    assert_message(OnCleanInfoV2, json, expected_event, expected_state=expected_state)
