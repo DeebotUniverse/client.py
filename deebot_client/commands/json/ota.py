@@ -52,7 +52,9 @@ class SetOta(JsonSetCommand):
     name = "setOta"
     get_command = GetOta
 
-    _mqtt_params = MappingProxyType({"autoSwitch": InitParam(bool, "auto_enabled")})
+    _mqtt_params = MappingProxyType(
+        {"autoSwitch": InitParam(bool, name="auto_enabled")}
+    )
 
     def __init__(self, auto_enabled: bool) -> None:  # noqa: FBT001
         super().__init__({"autoSwitch": 1 if auto_enabled else 0})

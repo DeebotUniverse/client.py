@@ -9,7 +9,13 @@ from typing import TYPE_CHECKING, Any, final
 from deebot_client.events import AvailabilityEvent
 from deebot_client.exceptions import ApiTimeoutError, DeebotError
 
-from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
+from .const import (
+    PATH_API_IOT_DEVMANAGER,
+    REQUEST_HEADERS,
+    UNDEFINED,
+    DataType,
+    UndefinedType,
+)
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
@@ -252,7 +258,8 @@ class InitParam:
     """Init param."""
 
     type_: type
-    name: str | None = None
+    name: str | None = field(kw_only=True, default=None)
+    default: UndefinedType | Any = field(kw_only=True, default=UNDEFINED)
 
 
 class CommandMqttP2P(Command, ABC):
@@ -276,7 +283,7 @@ class CommandMqttP2P(Command, ABC):
                 # Remove field
                 data.pop(name, None)
             else:
-                values[param.name or name] = _pop_or_raise(name, param.type_, data)
+                values[param.name or name] = _pop_or_raise(name, param, data)
 
         if data:
             _LOGGER.debug("Following data will be ignored: %s", data)
@@ -284,16 +291,17 @@ class CommandMqttP2P(Command, ABC):
         return cls(**values)
 
 
-def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
-    try:
-        value = data.pop(name)
-    except KeyError as err:
+def _pop_or_raise(name: str, param: InitParam, data: dict[str, Any]) -> Any:
+    if name not in data:
+        if param.default is not UNDEFINED:
+            return param.default
         msg = f'"{name}" is missing in {data}'
-        raise DeebotError(msg) from err
+        raise DeebotError(msg)
+    value = data[name]
     try:
-        return type_(value)
+        return param.type_(value)
     except ValueError as err:
-        msg = f'Could not convert "{value}" of {name} into {type_}'
+        msg = f'Could not convert "{value}" of {name} into {param.type_}'
         raise DeebotError(msg) from err
 
 

@@ -24,8 +24,8 @@ class SetWashInfo(JsonSetCommand):
     get_command = GetWashInfo
     _mqtt_params = MappingProxyType(
         {
-            "mode": InitParam(int),
-            "hot_wash_amount": InitParam(int),
+            "mode": InitParam(int, default=None),
+            "hot_wash_amount": InitParam(int, default=None),
         }
     )
 
