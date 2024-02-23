@@ -50,7 +50,7 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     """Reset life span command."""
 
     name = "resetLifeSpan"
-    _mqtt_params = MappingProxyType({"type": InitParam(LifeSpan, "life_span")})
+    _mqtt_params = MappingProxyType({"type": InitParam(LifeSpan, name="life_span")})
 
     def __init__(self, life_span: LifeSpan) -> None:
         super().__init__({"type": life_span.value})

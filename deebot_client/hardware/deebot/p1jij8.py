@@ -15,6 +15,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
+    CapabilityWashInfo,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
@@ -51,6 +52,10 @@ from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
+from deebot_client.commands.json.wash_info import (
+    GetWashInfo,
+    SetWashInfo,
+)
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
@@ -88,6 +93,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.wash_info import WashInfoEvent, WashMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
@@ -122,6 +128,15 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     WorkMode.MOP_AFTER_VACUUM,
                     WorkMode.VACUUM,
                     WorkMode.VACUUM_AND_MOP,
+                ),
+            ),
+            wash_info=CapabilityWashInfo(
+                event=WashInfoEvent,
+                get=[GetWashInfo()],
+                set=SetWashInfo,
+                wash_modes=(
+                    WashMode.STANDARD,
+                    WashMode.HOT,
                 ),
             ),
         ),

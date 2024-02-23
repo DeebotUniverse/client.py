@@ -43,6 +43,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
+from deebot_client.events.wash_info import WashInfoEvent
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -50,7 +51,9 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     from deebot_client.command import Command, SetCommand
+    from deebot_client.commands.json.wash_info import SetWashInfo
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
+    from deebot_client.events.wash_info import WashMode
     from deebot_client.models import CleanAction, CleanMode
 
 
@@ -122,6 +125,14 @@ class CapabilityCleanAction:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityWashInfo(CapabilityEvent[WashInfoEvent]):
+    """Capabilities for wash handling."""
+
+    set: Callable[[WashMode | None, int | None], SetWashInfo]
+    wash_modes: tuple[WashMode, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityClean:
     """Capabilities for clean."""
 
@@ -131,6 +142,7 @@ class CapabilityClean:
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
+    wash_info: CapabilityWashInfo | None = None
 
 
 @dataclass(frozen=True)
