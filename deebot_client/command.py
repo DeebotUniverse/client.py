@@ -297,7 +297,7 @@ def _pop_or_raise(name: str, param: InitParam, data: dict[str, Any]) -> Any:
             return param.default
         msg = f'"{name}" is missing in {data}'
         raise DeebotError(msg)
-    value = data[name]
+    value = data.pop(name)
     try:
         return param.type_(value)
     except ValueError as err:
