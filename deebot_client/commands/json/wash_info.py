@@ -30,12 +30,16 @@ class SetWashInfo(JsonSetCommand):
     )
 
     def __init__(
-        self, mode: WashMode | str | None = None, hot_wash_amount: int | None = None
+        self,
+        mode: WashMode | str | int | None = None,
+        hot_wash_amount: int | None = None,
     ) -> None:
         args: dict[str, Any] = {}
 
         if isinstance(mode, str):
             mode = WashMode.get(mode)
+        if isinstance(mode, WashMode):
+            mode = mode.value
 
         if mode is not None:
             args["mode"] = mode

@@ -43,7 +43,7 @@ async def test_GetWashInfo(json: dict[str, Any], expected: WashInfoEvent) -> Non
 @pytest.mark.parametrize(("value"), [WashMode.HOT, "hot"])
 async def test_SetWashInfo_mode(value: WashMode | str) -> None:
     command = SetWashInfo(mode=value)
-    args = {"mode": WashMode.HOT}
+    args = {"mode": 1}
     await assert_set_command(command, args, WashInfoEvent(WashMode.HOT, None, None))
 
 
