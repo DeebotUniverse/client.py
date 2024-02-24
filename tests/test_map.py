@@ -16,6 +16,7 @@ from svg import (
     PathData,
     Polygon,
     SmoothCubicBezierRel,
+    Use,
     VerticalLineToRel,
     ViewBoxSpec,
 )
@@ -40,6 +41,7 @@ from deebot_client.map import (
     TracePoint,
     _calc_point,
     _calc_point_in_viewbox,
+    _get_svg_positions,
     _get_svg_subset,
     _points_to_svg_path,
 )
@@ -245,3 +247,51 @@ def test_points_to_svg_path(
 )
 def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> None:
     assert _get_svg_subset(subset) == expected
+
+
+_test_get_svg_positions_data = [
+    (
+        [Position(PositionType.CHARGER, 5000, -55000)],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#c", x=100, y=500)],
+    ),
+    (
+        [Position(PositionType.DEEBOT, 15000, 15000)],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=300, y=-300)],
+    ),
+    (
+        [
+            Position(PositionType.CHARGER, 25000, 55000),
+            Position(PositionType.DEEBOT, -5000, -50000),
+        ],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
+    ),
+    (
+        [
+            Position(PositionType.DEEBOT, -10000, 10000),
+            Position(PositionType.CHARGER, 50000, 5000),
+        ],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("positions", "viewbox", "expected"), _test_get_svg_positions_data
+)
+def test_get_svg_positions(
+    positions: list[Position],
+    viewbox: ViewBoxSpec,
+    expected: list[Use],
+) -> None:
+    result = _get_svg_positions(positions, viewbox)
+    assert len(result) == len(expected)
+    for result_item, expected_item in zip(result, expected, strict=True):
+        assert type(result_item) == Use
+        assert result_item.href == expected_item.href
+        assert result_item.x == expected_item.x
+        assert result_item.y == expected_item.y
+        assert result_item == expected_item
