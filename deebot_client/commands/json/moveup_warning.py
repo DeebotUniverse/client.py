@@ -1,20 +1,20 @@
-"""Moveup lock commands."""
+"""Move up lock commands."""
 from __future__ import annotations
 
-from deebot_client.events import MoveupWarningEvent
+from deebot_client.events import MoveUpWarningEvent
 
 from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetMoveupWarning(GetEnableCommand):
-    """Get moveup lock command."""
+class GetMoveUpWarning(GetEnableCommand):
+    """Get move up lock command."""
 
     name = "getMoveupWarning"
-    event_type = MoveupWarningEvent
+    event_type = MoveUpWarningEvent
 
 
-class SetMoveupWarning(SetEnableCommand):
-    """Set moveup lock command."""
+class SetMoveUpWarning(SetEnableCommand):
+    """Set move up lock command."""
 
     name = "setMoveupWarning"
-    get_command = GetMoveupWarning
+    get_command = GetMoveUpWarning

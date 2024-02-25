@@ -11,6 +11,7 @@ class GetChildLock(GetEnableCommand):
 
     name = "getChildLock"
     event_type = ChildLockEvent
+    _field_name = "on"
 
 
 class SetChildLock(SetEnableCommand):
@@ -18,3 +19,4 @@ class SetChildLock(SetEnableCommand):
 
     name = "setChildLock"
     get_command = GetChildLock
+    _field_name = "on"

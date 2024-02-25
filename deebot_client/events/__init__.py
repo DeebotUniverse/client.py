@@ -132,6 +132,8 @@ class LifeSpan(str, Enum):
     UV_SANITIZER = "uv"
     HUMIDIFY = "humidify"
     HUMIDIFY_MAINTENANCE = "wbCare"
+    BLADE = "blade"
+    LENS_BRUSH = "lensBrush"
 
 
 @dataclass(frozen=True)
@@ -273,8 +275,8 @@ class CrossMapBorderWarningEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
-class MoveupWarningEvent(EnableEvent):
-    """Moveup warning event."""
+class MoveUpWarningEvent(EnableEvent):
+    """Move up warning event."""
 
 
 @dataclass(frozen=True)

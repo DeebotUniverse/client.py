@@ -28,7 +28,7 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
-    MoveupWarningEvent,
+    MoveUpWarningEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     OtaEvent,
@@ -187,7 +187,7 @@ class CapabilitySettings:
     ) = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
-    moveup_warning: CapabilitySetEnable[MoveupWarningEvent] | None = None
+    moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[
         CrossMapBorderWarningEvent
     ] | None = None

@@ -32,7 +32,7 @@ from .map import (
     GetMapTrace,
     GetMinorMap,
 )
-from .moveup_warning import GetMoveupWarning, SetMoveupWarning
+from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo
 from .ota import GetOta, SetOta
@@ -92,8 +92,8 @@ __all__ = [
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
-    "GetMoveupWarning",
-    "SetMoveupWarning",
+    "GetMoveUpWarning",
+    "SetMoveUpWarning",
     "GetMultimapState",
     "SetMultimapState",
     "GetNetInfo",
@@ -183,8 +183,8 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMapTrace,
     GetMinorMap,
 
-    GetMoveupWarning,
-    SetMoveupWarning,
+    GetMoveUpWarning,
+    SetMoveUpWarning,
 
     GetMultimapState,
     SetMultimapState,

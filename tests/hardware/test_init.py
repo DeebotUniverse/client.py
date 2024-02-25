@@ -24,7 +24,7 @@ from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
-from deebot_client.commands.json.moveup_warning import GetMoveupWarning
+from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
@@ -51,7 +51,7 @@ from deebot_client.events import (
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
-    MoveupWarningEvent,
+    MoveUpWarningEvent,
     MultimapStateEvent,
     OtaEvent,
     ReportStatsEvent,
@@ -145,21 +145,13 @@ def test_get_static_device_info(
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],
                 BorderSwitchEvent: [GetBorderSwitch()],
-                CachedMapInfoEvent: [GetCachedMapInfo()],
                 ChildLockEvent: [GetChildLock()],
-                CleanCountEvent: [GetCleanCount()],
-                CleanLogEvent: [GetCleanLogs()],
                 CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
                 CustomCommandEvent: [],
                 ErrorEvent: [GetError()],
-                LifeSpanEvent: [GetLifeSpan([LifeSpan.UNIT_CARE])],
-                MapChangedEvent: [],
-                MajorMapEvent: [GetMajorMap()],
-                MapTraceEvent: [GetMapTrace()],
-                MoveupWarningEvent: [GetMoveupWarning()],
-                MultimapStateEvent: [GetMultimapState()],
+                LifeSpanEvent: [GetLifeSpan([LifeSpan.BLADE, LifeSpan.LENS_BRUSH])],
+                MoveUpWarningEvent: [GetMoveUpWarning()],
                 NetworkInfoEvent: [GetNetInfo()],
-                PositionsEvent: [GetPos()],
                 ReportStatsEvent: [],
                 SafeProtectEvent: [GetSafeProtect()],
                 StateEvent: [GetChargeState(), GetCleanInfoV2()],
