@@ -41,7 +41,7 @@ async def test_authenticator_authenticate(rest_config: RestConfiguration) -> Non
 
         login_mock.reset_mock()
 
-        # reauthenticate but this time we can used the cached credentials
+        # re-authenticate but this time we can use the cached credentials
         assert (await authenticator.authenticate()) == login_mock.return_value
         login_mock.assert_not_called()
         assert not on_changed_called.is_set()
@@ -49,7 +49,7 @@ async def test_authenticator_authenticate(rest_config: RestConfiguration) -> Non
         # Unsubscribe from authenticator
         unsub()
 
-        # reauthenticate with force=True should call again the api
+        # re-authenticate with force=True should call again the api
         assert (await authenticator.authenticate(force=True)) == login_mock.return_value
         login_mock.assert_awaited_once()
         assert not on_changed_called.is_set()

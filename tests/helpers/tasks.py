@@ -1,4 +1,4 @@
-# The functions in this files are copied from Home Assistant
+# The functions in this file are copied from Home Assistant
 # See https://github.com/home-assistant/core/blob/8b1cfbc46cc79e676f75dfa4da097a2e47375b6f/homeassistant/core.py#L715
 
 

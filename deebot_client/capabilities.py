@@ -156,7 +156,7 @@ class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent], CapabilityTypes[LifeSpa
 class CapabilityMap:
     """Capabilities for map."""
 
-    chached_info: CapabilityEvent[CachedMapInfoEvent]
+    cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute | None = None
     major: CapabilityEvent[MajorMapEvent]

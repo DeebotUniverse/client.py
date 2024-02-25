@@ -131,7 +131,7 @@ _MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
     3: ImageColor.getrgb("#1a81ed"),  # carpet
     4: ImageColor.getrgb("#dee9fb"),  # not scanned space
     5: ImageColor.getrgb("#edf3fb"),  # possible obstacle
-    # fallsback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
+    # fallback to _DEFAULT_MAP_BACKGROUND_COLOR for any other value
 }
 
 

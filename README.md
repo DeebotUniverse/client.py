@@ -89,7 +89,7 @@ My heartfelt thanks to:
 - [deebotozmo](https://github.com/And3rsL/Deebotozmo), After all, this is a debotozmo fork :)
 - [sucks](https://github.com/wpietri/sucks), deebotozmo was forked from it :)
 - [xmpppeek](https://www.beneaththewaves.net/Software/XMPPPeek.html), a great library for examining XMPP traffic flows (
-  yes, your vacuum speaks Jabbber!),
+  yes, your vacuum speaks Jabber!),
 - [mitmproxy](https://mitmproxy.org/), a fantastic tool for analyzing HTTPS,
 - [click](http://click.pocoo.org/), a wonderfully complete and thoughtful library for making Python command-line
   interfaces,

@@ -25,11 +25,19 @@ ApiDeviceInfo = TypedDict(
 )
 
 
+class DeviceType(StrEnum):
+    """Device type."""
+
+    VACUUM = "vacuum"
+    MOWER = "mower"
+
+
 @dataclass(frozen=True)
 class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
+    device_type: DeviceType
     capabilities: Capabilities
 
 
@@ -44,7 +52,7 @@ class DeviceInfo:
 
     @property
     def api_device_info(self) -> ApiDeviceInfo:
-        """Return all data goten from the api."""
+        """Return all data gotten from the api."""
         return self._api_device_info
 
     @property

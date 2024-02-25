@@ -30,12 +30,12 @@ def _assert_false_and_not_called(event_bus: Mock) -> None:
     event_bus.assert_not_called()
 
 
-def _assert_false_and_avalable_event_false(event_bus: Mock) -> None:
+def _assert_false_and_available_event_false(event_bus: Mock) -> None:
     event_bus.notify.assert_called_with(AvailabilityEvent(available=False))
 
 
 @pytest.mark.parametrize(
-    ("repsonse_json", "expected_log", "assert_func"),
+    ("response_json", "expected_log", "assert_func"),
     [
         (
             _ERROR_500,
@@ -59,7 +59,7 @@ def _assert_false_and_avalable_event_false(event_bus: Mock) -> None:
                 logging.INFO,
                 'Device is offline. Could not execute command "{}"',
             ),
-            _assert_false_and_avalable_event_false,
+            _assert_false_and_available_event_false,
         ),
     ],
 )
@@ -70,17 +70,17 @@ async def test_common_functionality(
     authenticator: Mock,
     device_info: DeviceInfo,
     command: CommandWithMessageHandling,
-    repsonse_json: dict[str, Any],
+    response_json: dict[str, Any],
     expected_log: tuple[int, str],
     assert_func: Callable[[Mock], None],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    authenticator.post_authenticated.return_value = repsonse_json
+    authenticator.post_authenticated.return_value = response_json
     event_bus = Mock(spec_set=EventBus)
 
     available = await command.execute(authenticator, device_info, event_bus)
 
-    if repsonse_json.get("errno") == 500 and command._is_available_check:
+    if response_json.get("errno") == 500 and command._is_available_check:
         assert (
             "deebot_client.command",
             logging.INFO,

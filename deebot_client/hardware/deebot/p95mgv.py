@@ -97,15 +97,14 @@ from deebot_client.events import (
     WaterInfoEvent,
 )
 from deebot_client.events.efficiency_mode import EfficiencyMode
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import DeviceType, StaticDeviceInfo
 from deebot_client.util import short_name
 
-# getSleep
-# from deebot_client.commands.json.
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
+    DeviceType.VACUUM,
     Capabilities(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
@@ -160,7 +159,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            chached_info=CapabilityEvent(
+            cached_info=CapabilityEvent(
                 CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
             ),
             changed=CapabilityEvent(MapChangedEvent, []),
@@ -190,7 +189,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 set=SetEfficiencyMode,
                 types=(
                     EfficiencyMode.ENERGY_EFFICIENT_MODE,
-                    EfficiencyMode.STANDART_MODE,
+                    EfficiencyMode.STANDARD_MODE,
                 ),
             ),
             ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),

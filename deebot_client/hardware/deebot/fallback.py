@@ -85,13 +85,14 @@ from deebot_client.events import (
     WaterAmount,
     WaterInfoEvent,
 )
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import DeviceType, StaticDeviceInfo
 from deebot_client.util import short_name
 
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
+    DeviceType.VACUUM,
     Capabilities(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
@@ -133,7 +134,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
