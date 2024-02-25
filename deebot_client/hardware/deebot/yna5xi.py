@@ -124,7 +124,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            chached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             clear=CapabilityExecute(ClearMap),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),

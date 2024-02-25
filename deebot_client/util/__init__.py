@@ -25,7 +25,7 @@ def md5(text: str) -> str:
 
 
 def decompress_7z_base64_data(data: str) -> bytes:
-    """Decomporess base64 decoded 7z compressed string."""
+    """Decompress base64 decoded 7z compressed string."""
     final_array = bytearray()
 
     # Decode Base64
@@ -113,7 +113,7 @@ class DisplayNameIntEnum(IntEnum):
 class OnChangedList(list[_T]):
     """List, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = (
+    _MODIFYING_FUNCTIONS = (
         "append",
         "clear",
         "extend",
@@ -132,7 +132,7 @@ class OnChangedList(list[_T]):
         self._on_change = on_change
 
     def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedList._MODIFING_FUNCTIONS:
+        if __name in OnChangedList._MODIFYING_FUNCTIONS:
             self._on_change()
         return super().__getattribute__(__name)
 
@@ -144,7 +144,7 @@ _VT = TypeVar("_VT")
 class OnChangedDict(dict[_KT, _VT]):
     """Dict, which will call passed on_change if a change happens."""
 
-    _MODIFING_FUNCTIONS = (
+    _MODIFYING_FUNCTIONS = (
         "clear",
         "pop",
         "popitem",
@@ -160,7 +160,7 @@ class OnChangedDict(dict[_KT, _VT]):
         self._on_change = on_change
 
     def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedDict._MODIFING_FUNCTIONS:
+        if __name in OnChangedDict._MODIFYING_FUNCTIONS:
             self._on_change()
         return super().__getattribute__(__name)
 

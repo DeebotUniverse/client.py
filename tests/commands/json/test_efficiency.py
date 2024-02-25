@@ -22,7 +22,7 @@ def test_WorkMode_unique() -> None:
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        ({"efficiency": 0}, EfficiencyModeEvent(EfficiencyMode.STANDART_MODE)),
+        ({"efficiency": 0}, EfficiencyModeEvent(EfficiencyMode.STANDARD_MODE)),
         ({"efficiency": 1}, EfficiencyModeEvent(EfficiencyMode.ENERGY_EFFICIENT_MODE)),
     ],
 )
@@ -33,10 +33,10 @@ async def test_GetEfficiencyMode(
     await assert_command(GetEfficiencyMode(), json, expected)
 
 
-@pytest.mark.parametrize(("value"), [EfficiencyMode.STANDART_MODE, "standart_mode"])
+@pytest.mark.parametrize(("value"), [EfficiencyMode.STANDARD_MODE, "standard_mode"])
 async def test_SetEfficiencyMode(value: EfficiencyMode | str) -> None:
     command = SetEfficiencyMode(value)
     args = {"efficiency": 0}
     await assert_set_command(
-        command, args, EfficiencyModeEvent(EfficiencyMode.STANDART_MODE)
+        command, args, EfficiencyModeEvent(EfficiencyMode.STANDARD_MODE)
     )

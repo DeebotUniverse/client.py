@@ -11,7 +11,7 @@ from .base import Event
 class EfficiencyMode(DisplayNameIntEnum):
     """Enum class for all possible efficiency modes."""
 
-    STANDART_MODE = 0
+    STANDARD_MODE = 0
     ENERGY_EFFICIENT_MODE = 1
 
 

@@ -53,7 +53,7 @@ class DeviceInfo:
 
     @property
     def api_device_info(self) -> ApiDeviceInfo:
-        """Return all data goten from the api."""
+        """Return all data gotten from the api."""
         return self._api_device_info
 
     @property
