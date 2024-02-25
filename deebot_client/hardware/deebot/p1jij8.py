@@ -88,13 +88,14 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
 )
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import DeviceType, StaticDeviceInfo
 from deebot_client.util import short_name
 
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
+    DeviceType.VACUUM,
     Capabilities(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
