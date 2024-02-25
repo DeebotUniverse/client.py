@@ -44,6 +44,10 @@ async def test_GetCleanInfo(
         (CleanAction.RESUME, None, CleanAction.RESUME),
         (CleanAction.RESUME, State.PAUSED, CleanAction.RESUME),
         (CleanAction.RESUME, State.DOCKED, CleanAction.START),
+        (CleanAction.STOP, None, CleanAction.STOP),
+        (CleanAction.STOP, State.CLEANING, CleanAction.STOP),
+        (CleanAction.STOP, State.PAUSED, CleanAction.STOP),
+        (CleanAction.STOP, State.DOCKED, CleanAction.STOP),
     ],
 )
 async def test_Clean_act(
@@ -64,3 +68,6 @@ async def test_Clean_act(
 
     assert isinstance(command._args, dict)
     assert command._args["act"] == expected.value
+
+    if command_type is CleanV2:
+        assert isinstance(command._args["content"], dict)
