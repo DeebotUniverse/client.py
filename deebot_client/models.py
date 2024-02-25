@@ -26,11 +26,19 @@ ApiDeviceInfo = TypedDict(
 )
 
 
+class DeviceType(StrEnum):
+    """Device type."""
+
+    VACUUM = "vacuum"
+    MOWER = "mower"
+
+
 @dataclass(frozen=True)
 class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
+    device_type: DeviceType
     capabilities: Capabilities
 
 
