@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
     from deebot_client.const import DataType
 
-
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
@@ -121,29 +120,12 @@ class CleanAction(StrEnum):
 
 
 @unique
-class MowAction(StrEnum):
-    """Enum class for all possible clean actions."""
-
-    START = "start"
-    PAUSE = "pause"
-    RESUME = "resume"
-    STOP = "stop"
-
-
-@unique
 class CleanMode(StrEnum):
     """Enum class for all possible clean modes."""
 
     AUTO = "auto"
     SPOT_AREA = "spotArea"
     CUSTOM_AREA = "customArea"
-
-
-@unique
-class MowMode(StrEnum):
-    """Enum class for all possible clean modes."""
-
-    AUTO = "auto"
 
 
 @dataclass(frozen=True)

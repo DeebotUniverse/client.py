@@ -18,6 +18,7 @@ if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
 
 
+@pytest.mark.parametrize("command", [GetCleanInfo(), GetCleanInfoV2()])
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
@@ -27,8 +28,10 @@ if TYPE_CHECKING:
         ),
     ],
 )
-async def test_GetCleanInfo(json: dict[str, Any], expected: StateEvent) -> None:
-    await assert_command(GetCleanInfo(), json, expected)
+async def test_GetCleanInfo(
+    command: GetCleanInfo, json: dict[str, Any], expected: StateEvent
+) -> None:
+    await assert_command(command, json, expected)
 
 
 @pytest.mark.parametrize("command_type", [Clean, CleanV2])
@@ -61,16 +64,3 @@ async def test_Clean_act(
 
     assert isinstance(command._args, dict)
     assert command._args["act"] == expected.value
-
-
-@pytest.mark.parametrize(
-    ("json", "expected"),
-    [
-        (
-            get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
-            StateEvent(State.IDLE),
-        ),
-    ],
-)
-async def test_GetCleanInfoV2(json: dict[str, Any], expected: StateEvent) -> None:
-    await assert_command(GetCleanInfoV2(), json, expected)

@@ -1,5 +1,3 @@
-"""Tests regarding the event bus."""
-
 from __future__ import annotations
 
 import asyncio
@@ -54,13 +52,12 @@ async def _subscribeAndVerify(
 async def test_subscription(
     execute_mock: AsyncMock, event_bus: EventBus, event: type[Event]
 ) -> None:
-    """Testing subscription."""
     # on first should subscription the refresh should be triggered
     unsubscribers = [
         await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
     ]
 
-    # this time no refresh should happen
+    # this time no refresh should be happen
     unsubscribers.append(
         await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=False)
     )
@@ -77,7 +74,6 @@ async def test_subscription(
 async def test_refresh_when_coming_back_online(
     execute_mock: AsyncMock, event_bus: EventBus
 ) -> None:
-    """Testing refresh when coming back online."""
     available_mock = AsyncMock()
 
     async def notify(*, available: bool) -> None:
@@ -109,8 +105,6 @@ async def test_refresh_when_coming_back_online(
 
 
 async def test_get_last_event(event_bus: EventBus) -> None:
-    """Testing get last event."""
-
     def notify(percent: int) -> BatteryEvent:
         event = BatteryEvent(percent)
         event_bus.notify(event)
@@ -128,7 +122,6 @@ async def test_get_last_event(event_bus: EventBus) -> None:
 
 
 async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> None:
-    """Testing request refresh."""
     event = BatteryEvent
     event_bus.request_refresh(event)
     _verify_event_command_called(execute_mock, event, event_bus, expected_call=False)
@@ -156,8 +149,6 @@ async def test_StateEvent(
     actual: State,
     expected: State | None,
 ) -> None:
-    """Testing StateEvent."""
-
     async def notify(state: State) -> None:
         event_bus.notify(StateEvent(state))
         await asyncio.sleep(0.1)
@@ -182,8 +173,6 @@ async def test_StateEvent(
     [-1, 0, 1],
 )
 async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
-    """Testing debounce time."""
-
     async def notify(event: MapChangedEvent, debounce_time: float) -> None:
         event_bus.notify(event, debounce_time=debounce_time)
         await asyncio.sleep(0.1)
@@ -225,8 +214,6 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
 
 
 async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
-    """Testing teardown."""
-
     # setup
     async def wait() -> None:
         await asyncio.sleep(1000)
