@@ -4,10 +4,11 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Required, TypedDict
+from typing import TYPE_CHECKING, Generic, Required, TypedDict, TypeVar
+
+from deebot_client.capabilities import Capabilities
 
 if TYPE_CHECKING:
-    from deebot_client.capabilities import _Capabilities
     from deebot_client.const import DataType
 
 ApiDeviceInfo = TypedDict(
@@ -24,68 +25,23 @@ ApiDeviceInfo = TypedDict(
     total=False,
 )
 
+DeviceCapabilities = TypeVar("DeviceCapabilities", bound=Capabilities)
+
 
 @dataclass(frozen=True)
-class StaticDeviceInfo:
+class StaticDeviceInfo(Generic[DeviceCapabilities]):
     """Static device info."""
 
     data_type: DataType
-    capabilities: _Capabilities
+    capabilities: DeviceCapabilities
 
 
-class DeviceInfo:
+@dataclass(frozen=True)
+class DeviceInfo(Generic[DeviceCapabilities]):
     """Device info."""
 
-    def __init__(
-        self, api_device_info: ApiDeviceInfo, static_device_info: StaticDeviceInfo
-    ) -> None:
-        self._api_device_info = api_device_info
-        self._static_device_info = static_device_info
-
-    @property
-    def api_device_info(self) -> ApiDeviceInfo:
-        """Return all data gotten from the api."""
-        return self._api_device_info
-
-    @property
-    def company(self) -> str:
-        """Return company."""
-        return self._api_device_info["company"]
-
-    @property
-    def did(self) -> str:
-        """Return did."""
-        return str(self._api_device_info["did"])
-
-    @property
-    def name(self) -> str:
-        """Return name."""
-        return str(self._api_device_info["name"])
-
-    @property
-    def nick(self) -> str | None:
-        """Return nick name."""
-        return self._api_device_info.get("nick", None)
-
-    @property
-    def resource(self) -> str:
-        """Return resource."""
-        return str(self._api_device_info["resource"])
-
-    @property
-    def get_class(self) -> str:
-        """Return device class."""
-        return str(self._api_device_info["class"])
-
-    @property
-    def data_type(self) -> DataType:
-        """Return data type."""
-        return self._static_device_info.data_type
-
-    @property
-    def capabilities(self) -> _Capabilities:
-        """Return capabilities."""
-        return self._static_device_info.capabilities
+    api: ApiDeviceInfo
+    static: StaticDeviceInfo[DeviceCapabilities]
 
 
 @dataclass(frozen=True)

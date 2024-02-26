@@ -16,6 +16,8 @@ from .logging_filter import get_logger
 from .models import ApiDeviceInfo, DeviceInfo
 
 if TYPE_CHECKING:
+    from deebot_client.capabilities import Capabilities
+
     from .authentication import Authenticator
 
 _LOGGER = get_logger(__name__)
@@ -45,7 +47,7 @@ class ApiClient:
 
         return result
 
-    async def get_devices(self) -> list[DeviceInfo | ApiDeviceInfo]:
+    async def get_devices(self) -> list[DeviceInfo[Capabilities] | ApiDeviceInfo]:
         """Get compatible devices."""
         try:
             async with asyncio.TaskGroup() as tg:
@@ -61,7 +63,7 @@ class ApiClient:
         api_devices = task_device_list.result()
         api_devices.update(task_global_device_list.result())
 
-        devices: list[DeviceInfo | ApiDeviceInfo] = []
+        devices: list[DeviceInfo[Capabilities] | ApiDeviceInfo] = []
         for device in api_devices.values():
             match device.get("company"):
                 case "eco-ng":

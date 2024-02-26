@@ -15,15 +15,19 @@ if TYPE_CHECKING:
 
     from aiomqtt import Client
 
-    from deebot_client.models import DeviceInfo
+    from deebot_client.models import ApiDeviceInfo
 
 
 async def verify_subscribe(
-    test_client: Client, device_info: DeviceInfo, mock: Mock, *, expected_called: bool
+    test_client: Client,
+    device_info: ApiDeviceInfo,
+    mock: Mock,
+    *,
+    expected_called: bool,
 ) -> None:
     command = "test"
     data = json.dumps({"test": str(datetime.datetime.now())}).encode("utf-8")
-    topic = f"iot/atr/{command}/{device_info.did}/{device_info.get_class}/{device_info.resource}/j"
+    topic = f"iot/atr/{command}/{device_info['did']}/{device_info['class']}/{device_info['resource']}/j"
     await test_client.publish(topic, data)
 
     await asyncio.sleep(0.1)
@@ -36,7 +40,7 @@ async def verify_subscribe(
 
 
 async def subscribe(
-    mqtt_client: MqttClient, device_info: DeviceInfo
+    mqtt_client: MqttClient, device_info: ApiDeviceInfo
 ) -> tuple[Mock, Mock, Callable[[], None]]:
     events = Mock(spec=EventBus)
     callback = MagicMock()

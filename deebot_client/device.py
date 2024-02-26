@@ -5,7 +5,7 @@ import asyncio
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Any, Final, Generic
 
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
@@ -26,7 +26,7 @@ from .events import (
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
-from .models import DeviceInfo, State
+from .models import DeviceCapabilities, DeviceInfo, State
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -38,16 +38,17 @@ _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
 
-class Device:
+class Device(Generic[DeviceCapabilities]):
     """Device representation."""
 
     def __init__(
         self,
-        device_info: DeviceInfo,
+        device_info: DeviceInfo[DeviceCapabilities],
         authenticator: Authenticator,
     ) -> None:
-        self.device_info: Final[DeviceInfo] = device_info
-        self.capabilities: Final = device_info.capabilities
+        self.device_info: Final = device_info.api
+        self._static_device_info = device_info.static
+        self.capabilities: Final = self._static_device_info.capabilities
         self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
@@ -186,7 +187,7 @@ class Device:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            if message := get_message(message_name, self.device_info.data_type):
+            if message := get_message(message_name, self._static_device_info.data_type):
                 if isinstance(message_data, dict):
                     data = message_data
                 else:

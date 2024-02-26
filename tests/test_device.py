@@ -10,18 +10,21 @@ from deebot_client.commands.json.battery import GetBattery
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
+from deebot_client.models import DeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.models import DeviceInfo
+    from deebot_client.capabilities import Capabilities
+    from deebot_client.models import ApiDeviceInfo
 
 
 @patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
 async def test_available_check_and_teardown(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
 ) -> None:
     """Test the available check including if the status Event is fired correctly."""
     received_statuses: asyncio.Queue[AvailabilityEvent] = asyncio.Queue()
@@ -35,8 +38,9 @@ async def test_available_check_and_teardown(
 
     # prepare mocks
     battery_mock = Mock(spec_set=GetBattery)
-    device_info._static_device_info = mock_static_device_info(
-        {AvailabilityEvent: [battery_mock]}
+
+    device_info = DeviceInfo(
+        api_device_info, mock_static_device_info({AvailabilityEvent: [battery_mock]})
     )
     execute_mock = battery_mock.execute
 
@@ -110,7 +114,7 @@ async def test_available_check_and_teardown(
 
 
 async def test_mac_address(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: Authenticator, device_info: DeviceInfo[Capabilities]
 ) -> None:
     """Test that the mac address is change on NetworkInfoEvent."""
     device = Device(device_info, authenticator)

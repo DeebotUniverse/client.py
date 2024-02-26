@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 
     from .authentication import Authenticator
     from .event_bus import EventBus
-    from .models import DeviceInfo
+    from .models import ApiDeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -68,7 +68,10 @@ class Command(ABC):
 
     @final
     async def execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
     ) -> bool:
         """Execute command.
 
@@ -100,7 +103,10 @@ class Command(ABC):
         return False
 
     async def _execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
     ) -> CommandResult:
         """Execute command."""
         try:
@@ -127,16 +133,16 @@ class Command(ABC):
         return result
 
     async def _execute_api_request(
-        self, authenticator: Authenticator, device_info: DeviceInfo
+        self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         payload = {
             "cmdName": self.name,
             "payload": self._get_payload(),
             "payloadType": self.data_type.value,
             "td": "q",
-            "toId": device_info.did,
-            "toRes": device_info.resource,
-            "toType": device_info.get_class,
+            "toId": device_info["did"],
+            "toRes": device_info["resource"],
+            "toType": device_info["class"],
         }
 
         credentials = await authenticator.authenticate()

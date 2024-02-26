@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.models import CleanAction, CleanMode, DeviceInfo, State
+from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
@@ -27,7 +27,10 @@ class Clean(ExecuteCommand):
         super().__init__(self._get_args(action))
 
     async def _execute(
-        self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
     ) -> CommandResult:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)

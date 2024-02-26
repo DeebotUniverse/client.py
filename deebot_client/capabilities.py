@@ -201,7 +201,7 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
-class _Capabilities(ABC):
+class Capabilities(ABC):
     """Capabilities."""
 
     availability: CapabilityEvent[AvailabilityEvent]
@@ -229,7 +229,7 @@ class _Capabilities(ABC):
 
 
 @dataclass(frozen=True, kw_only=True)
-class VacuumCapabilities(_Capabilities):
+class VacuumCapabilities(Capabilities):
     """Vacuum capabilities."""
 
     fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
@@ -238,5 +238,5 @@ class VacuumCapabilities(_Capabilities):
 
 
 @dataclass(frozen=True, kw_only=True)
-class MowerCapabilities(_Capabilities):
+class MowerCapabilities(Capabilities):
     """Mower capabilities."""

@@ -7,7 +7,10 @@ from unittest.mock import AsyncMock, Mock, call
 from deebot_client.authentication import Authenticator
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
-from deebot_client.models import Credentials, DeviceInfo, StaticDeviceInfo
+from deebot_client.models import (
+    ApiDeviceInfo,
+    Credentials,
+)
 
 if TYPE_CHECKING:
     from deebot_client.events import Event
@@ -20,7 +23,7 @@ def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], 
     async def _execute(
         _: Command,
         authenticator: Authenticator,
-        device_info: DeviceInfo,
+        device_info: ApiDeviceInfo,
         event_bus: EventBus,
     ) -> CommandResult:
         nonlocal result
@@ -39,7 +42,6 @@ async def assert_command(
     json_api_response: dict[str, Any],
     expected_events: Event | None | Sequence[Event],
     *,
-    static_device_info: StaticDeviceInfo,
     command_result: CommandResult | None = None,
 ) -> None:
     command_result = command_result or CommandResult.success()
@@ -49,7 +51,7 @@ async def assert_command(
         return_value=Credentials("token", "user_id", 9999)
     )
     authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
-    device_info = DeviceInfo(
+    device_info = ApiDeviceInfo(
         {
             "company": "company",
             "did": "did",
@@ -57,8 +59,7 @@ async def assert_command(
             "nick": "nick",
             "resource": "resource",
             "class": "get_class",
-        },
-        static_device_info,
+        }
     )
 
     command, verify_result = _wrap_command(command)

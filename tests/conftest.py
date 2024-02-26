@@ -17,6 +17,7 @@ from deebot_client.authentication import (
 from deebot_client.event_bus import EventBus
 from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
 from deebot_client.models import (
+    ApiDeviceInfo,
     Credentials,
     DeviceInfo,
     StaticDeviceInfo,
@@ -31,6 +32,8 @@ from .fixtures.mqtt_server import MqttServer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+
+    from deebot_client.capabilities import Capabilities
 
 
 @pytest.fixture
@@ -125,13 +128,13 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-def static_device_info() -> StaticDeviceInfo:
+def static_device_info() -> StaticDeviceInfo[Capabilities]:
     return get_static_device_info(FALLBACK)
 
 
 @pytest.fixture
-def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
-    return DeviceInfo(
+def api_device_info() -> ApiDeviceInfo:
+    return ApiDeviceInfo(
         {
             "company": "company",
             "did": "did",
@@ -139,7 +142,17 @@ def device_info(static_device_info: StaticDeviceInfo) -> DeviceInfo:
             "nick": "nick",
             "resource": "resource",
             "class": "get_class",
-        },
+        }
+    )
+
+
+@pytest.fixture
+def device_info(
+    api_device_info: ApiDeviceInfo,
+    static_device_info: StaticDeviceInfo[Capabilities],
+) -> DeviceInfo[Capabilities]:
+    return DeviceInfo(
+        api_device_info,
         static_device_info,
     )
 
@@ -150,8 +163,10 @@ def execute_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
-    return EventBus(execute_mock, device_info.capabilities.get_refresh_commands)
+def event_bus(
+    execute_mock: AsyncMock, device_info: DeviceInfo[Capabilities]
+) -> EventBus:
+    return EventBus(execute_mock, device_info.static.capabilities.get_refresh_commands)
 
 
 @pytest.fixture

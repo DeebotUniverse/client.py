@@ -15,7 +15,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
 
     from deebot_client.command import CommandWithMessageHandling
-    from deebot_client.models import DeviceInfo
+    from deebot_client.models import ApiDeviceInfo
 
 _ERROR_500 = {"ret": "fail", "errno": 500, "debug": "wait for response timed out"}
 _ERROR_4200 = {
@@ -68,7 +68,7 @@ def _assert_false_and_available_event_false(event_bus: Mock) -> None:
 )
 async def test_common_functionality(
     authenticator: Mock,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     command: CommandWithMessageHandling,
     response_json: dict[str, Any],
     expected_log: tuple[int, str],
@@ -78,7 +78,7 @@ async def test_common_functionality(
     authenticator.post_authenticated.return_value = response_json
     event_bus = Mock(spec_set=EventBus)
 
-    available = await command.execute(authenticator, device_info, event_bus)
+    available = await command.execute(authenticator, api_device_info, event_bus)
 
     if response_json.get("errno") == 500 and command._is_available_check:
         assert (

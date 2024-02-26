@@ -26,7 +26,7 @@ if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import CommandMqttP2P
     from .event_bus import EventBus
-    from .models import Credentials, DeviceInfo
+    from .models import ApiDeviceInfo, Credentials
 
 RECONNECT_INTERVAL = 5  # seconds
 
@@ -34,15 +34,18 @@ _LOGGER = get_logger(__name__)
 _CLIENT_LOGGER = get_logger(f"{__name__}.client")
 
 
-def _get_topics(device_info: DeviceInfo) -> list[str]:
+def _get_topics(device_info: ApiDeviceInfo) -> list[str]:
+    device_path = (
+        f"{device_info['did']}/{device_info['class']}/{device_info['resource']}"
+    )
     return [
         # iot/atr/[command]]/[did]]/[class]]/[resource]/j
-        f"iot/atr/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/j",
+        f"iot/atr/+/{device_path}/j",
         # iot/p2p/[command]]/[sender did]/[sender class]]/[sender resource]
         # /[receiver did]/[receiver class]]/[receiver resource]/[q|p]/[request id]/j
         # [q|p] q-> request p-> response
-        f"iot/p2p/+/+/+/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/+/j",
-        f"iot/p2p/+/{device_info.did}/{device_info.get_class}/{device_info.resource}/+/+/+/p/+/j",
+        f"iot/p2p/+/+/+/+/{device_path}/q/+/j",
+        f"iot/p2p/+/{device_path}/+/+/+/p/+/j",
     ]
 
 
@@ -105,7 +108,7 @@ def create_mqtt_config(
 class SubscriberInfo:
     """Subscriber information."""
 
-    device_info: DeviceInfo
+    device_info: ApiDeviceInfo
     events: EventBus
     callback: Callable[[str, str | bytes | bytearray], None]
 
@@ -274,9 +277,9 @@ class MqttClient:
                     await client.unsubscribe(topic)
 
             if add:
-                self._subscriptions[device_info.did] = info
+                self._subscriptions[device_info["did"]] = info
             else:
-                self._subscriptions.pop(device_info.did, None)
+                self._subscriptions.pop(device_info["did"], None)
 
             self._subscription_changes.task_done()
 

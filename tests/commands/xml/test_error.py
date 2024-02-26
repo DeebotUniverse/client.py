@@ -7,8 +7,9 @@ import pytest
 from deebot_client.commands.xml import GetError
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.models import State
+from tests.commands import assert_command
 
-from . import assert_command, get_request_xml
+from . import get_request_xml
 
 if TYPE_CHECKING:
     from collections.abc import Sequence

@@ -13,7 +13,7 @@ from .common import JsonCommand
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
-    from deebot_client.models import DeviceInfo
+    from deebot_client.models import ApiDeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -28,12 +28,12 @@ class GetCleanLogs(JsonCommand):
         super().__init__({"count": count})
 
     async def _execute_api_request(
-        self, authenticator: Authenticator, device_info: DeviceInfo
+        self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         json = {
             "td": self.name,
-            "did": device_info.did,
-            "resource": device_info.resource,
+            "did": device_info["did"],
+            "resource": device_info["resource"],
         }
 
         credentials = await authenticator.authenticate()
