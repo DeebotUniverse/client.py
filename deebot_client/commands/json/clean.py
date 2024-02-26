@@ -24,7 +24,7 @@ class Clean(ExecuteCommand):
     name = "clean"
 
     def __init__(self, action: CleanAction) -> None:
-        super().__init__(self.__get_args(action))
+        super().__init__(self._get_args(action))
 
     async def _execute(
         self, authenticator: Authenticator, device_info: DeviceInfo, event_bus: EventBus
@@ -36,17 +36,17 @@ class Clean(ExecuteCommand):
                 self._args["act"] == CleanAction.RESUME.value
                 and state.state != State.PAUSED
             ):
-                self._args = self.__get_args(CleanAction.START)
+                self._args = self._get_args(CleanAction.START)
             elif (
                 self._args["act"] == CleanAction.START.value
                 and state.state == State.PAUSED
             ):
-                self._args = self.__get_args(CleanAction.RESUME)
+                self._args = self._get_args(CleanAction.RESUME)
 
         return await super()._execute(authenticator, device_info, event_bus)
 
     @staticmethod
-    def __get_args(action: CleanAction) -> dict[str, Any]:
+    def _get_args(action: CleanAction) -> dict[str, Any]:
         args = {"act": action.value}
         if action == CleanAction.START:
             args["type"] = CleanMode.AUTO.value
@@ -64,6 +64,23 @@ class CleanArea(Clean):
         self._args["type"] = mode.value
         self._args["content"] = str(area)
         self._args["count"] = cleanings
+
+
+class CleanV2(Clean):
+    """Clean V2 command."""
+
+    name = "clean_V2"
+
+    @staticmethod
+    def _get_args(action: CleanAction) -> dict[str, Any]:
+        content: dict[str, str] = {}
+        args = {"act": action.value, "content": content}
+        match action:
+            case CleanAction.START:
+                content["type"] = CleanMode.AUTO.value
+            case CleanAction.STOP:
+                content["type"] = ""
+        return args
 
 
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
@@ -115,3 +132,9 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class GetCleanInfoV2(GetCleanInfo):
+    """Get clean info v2 command."""
+
+    name = "getCleanInfo_V2"

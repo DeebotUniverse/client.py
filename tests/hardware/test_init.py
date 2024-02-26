@@ -7,22 +7,29 @@ import pytest
 
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import GetCleanInfo
+from deebot_client.commands.json.child_lock import GetChildLock
+from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
 from deebot_client.commands.json.continuous_cleaning import GetContinuousCleaning
+from deebot_client.commands.json.cross_map_border_warning import (
+    GetCrossMapBorderWarning,
+)
 from deebot_client.commands.json.efficiency import GetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
+from deebot_client.commands.json.safe_protect import GetSafeProtect
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
@@ -32,19 +39,24 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BorderSwitchEvent,
     CarpetAutoFanBoostEvent,
+    ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
+    CrossMapBorderWarningEvent,
     CustomCommandEvent,
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
+    MoveUpWarningEvent,
     MultimapStateEvent,
     OtaEvent,
     ReportStatsEvent,
     RoomsEvent,
+    SafeProtectEvent,
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
@@ -129,6 +141,29 @@ def test_get_static_device_info(
             },
         ),
         (
+            "5xu9h3",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AvailabilityEvent: [GetBattery(is_available_check=True)],
+                BatteryEvent: [GetBattery()],
+                BorderSwitchEvent: [GetBorderSwitch()],
+                ChildLockEvent: [GetChildLock()],
+                CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetError()],
+                LifeSpanEvent: [GetLifeSpan([LifeSpan.BLADE, LifeSpan.LENS_BRUSH])],
+                MoveUpWarningEvent: [GetMoveUpWarning()],
+                NetworkInfoEvent: [GetNetInfo()],
+                ReportStatsEvent: [],
+                SafeProtectEvent: [GetSafeProtect()],
+                StateEvent: [GetChargeState(), GetCleanInfoV2()],
+                StatsEvent: [GetStats()],
+                TotalStatsEvent: [GetTotalStats()],
+                TrueDetectEvent: [GetTrueDetect()],
+                VolumeEvent: [GetVolume()],
+            },
+        ),
+        (
             "yna5xi",
             {
                 AdvancedModeEvent: [GetAdvancedMode()],
@@ -204,6 +239,7 @@ def test_get_static_device_info(
             },
         ),
     ],
+    ids=[FALLBACK, "5xu9h3", "yna5xi", "p95mgv"],
 )
 def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
@@ -211,7 +247,9 @@ def test_capabilities_event_extraction(
     capabilities = get_static_device_info(class_).capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
-        assert capabilities.get_refresh_commands(event) == expected_commands
+        assert (
+            capabilities.get_refresh_commands(event) == expected_commands
+        ), f"Refresh commands doesn't match for {event}"
 
 
 def test_all_models_loaded() -> None:
@@ -220,6 +258,7 @@ def test_all_models_loaded() -> None:
     assert list(DEVICES) == [
         "2o4lnm",
         "55aiho",
+        "5xu9h3",
         "626v6g",
         "85nbtp",
         "9ku8nu",

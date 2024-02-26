@@ -10,7 +10,6 @@ if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
     from deebot_client.const import DataType
 
-
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {

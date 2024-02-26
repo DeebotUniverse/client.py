@@ -132,6 +132,8 @@ class LifeSpan(str, Enum):
     UV_SANITIZER = "uv"
     HUMIDIFY = "humidify"
     HUMIDIFY_MAINTENANCE = "wbCare"
+    BLADE = "blade"
+    LENS_BRUSH = "lensBrush"
 
 
 @dataclass(frozen=True)
@@ -255,3 +257,28 @@ class VoiceAssistantStateEvent(EnableEvent):
 @dataclass(frozen=True)
 class SweepModeEvent(EnableEvent):
     """SweepMode event ("Mop-Only" option)."""
+
+
+@dataclass(frozen=True)
+class ChildLockEvent(EnableEvent):
+    """Child lock event."""
+
+
+@dataclass(frozen=True)
+class BorderSwitchEvent(EnableEvent):
+    """Border switch event."""
+
+
+@dataclass(frozen=True)
+class CrossMapBorderWarningEvent(EnableEvent):
+    """Cross map border warning event."""
+
+
+@dataclass(frozen=True)
+class MoveUpWarningEvent(EnableEvent):
+    """Move up warning event."""
+
+
+@dataclass(frozen=True)
+class SafeProtectEvent(EnableEvent):
+    """Safe protect event."""
