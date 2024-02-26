@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING
 from deebot_client.logging_filter import get_logger
 
 if TYPE_CHECKING:
+    from deebot_client.capabilities import Capabilities
     from deebot_client.models import StaticDeviceInfo
 
 __all__ = ["get_static_device_info"]
@@ -17,7 +18,7 @@ _LOGGER = get_logger(__name__)
 
 FALLBACK = "fallback"
 
-DEVICES: dict[str, StaticDeviceInfo] = {}
+DEVICES: dict[str, StaticDeviceInfo[Capabilities]] = {}
 
 
 def _load() -> None:
@@ -26,7 +27,7 @@ def _load() -> None:
         importlib.import_module(full_package_name)
 
 
-def get_static_device_info(class_: str) -> StaticDeviceInfo:
+def get_static_device_info(class_: str) -> StaticDeviceInfo[Capabilities]:
     """Get static device info for given class."""
     if not DEVICES:
         _load()

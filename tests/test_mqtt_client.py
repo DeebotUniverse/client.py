@@ -22,7 +22,7 @@ from .mqtt_util import subscribe, verify_subscribe
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.models import DeviceInfo
+    from deebot_client.models import ApiDeviceInfo
 
 
 async def test_last_message_received_at(
@@ -46,47 +46,47 @@ async def test_last_message_received_at(
 
 
 async def test_client_bot_subscription(
-    mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
+    mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback, unsubscribe) = await subscribe(mqtt_client, device_info)
+    (_, callback, unsubscribe) = await subscribe(mqtt_client, api_device_info)
 
     await verify_subscribe(
-        test_mqtt_client, device_info, callback, expected_called=True
+        test_mqtt_client, api_device_info, callback, expected_called=True
     )
 
     unsubscribe()
     await asyncio.sleep(0.1)
 
     await verify_subscribe(
-        test_mqtt_client, device_info, callback, expected_called=False
+        test_mqtt_client, api_device_info, callback, expected_called=False
     )
 
 
 async def test_client_reconnect_manual(
-    mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
+    mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback, _) = await subscribe(mqtt_client, device_info)
+    (_, callback, _) = await subscribe(mqtt_client, api_device_info)
 
     await verify_subscribe(
-        test_mqtt_client, device_info, callback, expected_called=True
+        test_mqtt_client, api_device_info, callback, expected_called=True
     )
 
     await mqtt_client.disconnect()
     await verify_subscribe(
-        test_mqtt_client, device_info, callback, expected_called=False
+        test_mqtt_client, api_device_info, callback, expected_called=False
     )
 
     await mqtt_client.connect()
     await asyncio.sleep(0.1)
 
     await verify_subscribe(
-        test_mqtt_client, device_info, callback, expected_called=True
+        test_mqtt_client, api_device_info, callback, expected_called=True
     )
 
 
 async def _publish_p2p(
     command_name: str,
-    device_info: DeviceInfo,
+    device_info: ApiDeviceInfo,
     data: dict[str, Any],
     request_id: str,
     test_mqtt_client: Client,
@@ -96,9 +96,9 @@ async def _publish_p2p(
 ) -> None:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
-        topic = f"iot/p2p/{command_name}/test/test/test/{device_info.did}/{device_info.get_class}/{device_info.resource}/q/{request_id}/{data_type}"
+        topic = f"iot/p2p/{command_name}/test/test/test/{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}/q/{request_id}/{data_type}"
     else:
-        topic = f"iot/p2p/{command_name}/{device_info.did}/{device_info.get_class}/{device_info.resource}/test/test/test/p/{request_id}/{data_type}"
+        topic = f"iot/p2p/{command_name}/{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}/test/test/test/p/{request_id}/{data_type}"
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)
@@ -106,11 +106,11 @@ async def _publish_p2p(
 
 async def test_p2p_success(
     mqtt_client: MqttClient,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     test_mqtt_client: Client,
 ) -> None:
     """Test p2p workflow on SetVolume."""
-    (events, _, _) = await subscribe(mqtt_client, device_info)
+    (events, _, _) = await subscribe(mqtt_client, api_device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
@@ -126,7 +126,7 @@ async def test_p2p_success(
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
         await _publish_p2p(
             command_name,
-            device_info,
+            api_device_info,
             data,
             request_id,
             test_mqtt_client,
@@ -140,7 +140,7 @@ async def test_p2p_success(
         data = {"body": {"data": {"ret": "ok"}}}
         await _publish_p2p(
             command_name,
-            device_info,
+            api_device_info,
             data,
             request_id,
             test_mqtt_client,
@@ -154,16 +154,16 @@ async def test_p2p_success(
 
 async def test_p2p_not_supported(
     mqtt_client: MqttClient,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test that unsupported command will be logged."""
-    await subscribe(mqtt_client, device_info)
+    await subscribe(mqtt_client, api_device_info)
     command_name: str = GetBattery.name
 
     await _publish_p2p(
-        command_name, device_info, {}, "req", test_mqtt_client, is_request=True
+        command_name, api_device_info, {}, "req", test_mqtt_client, is_request=True
     )
 
     assert (
@@ -203,14 +203,14 @@ async def test_p2p_data_type_not_supported(
 
 async def test_p2p_to_late(
     mqtt_client: MqttClient,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test p2p when response comes in to late."""
     # reduce ttl to 1 seconds
     mqtt_client._received_p2p_commands = TTLCache(maxsize=60 * 60, ttl=1)
-    await subscribe(mqtt_client, device_info)
+    await subscribe(mqtt_client, api_device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
@@ -226,7 +226,7 @@ async def test_p2p_to_late(
         data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
         await _publish_p2p(
             command_name,
-            device_info,
+            api_device_info,
             data,
             request_id,
             test_mqtt_client,
@@ -241,7 +241,12 @@ async def test_p2p_to_late(
 
     data = {"body": {"data": {"ret": "ok"}}}
     await _publish_p2p(
-        command_name, device_info, data, request_id, test_mqtt_client, is_request=False
+        command_name,
+        api_device_info,
+        data,
+        request_id,
+        test_mqtt_client,
+        is_request=False,
     )
 
     command_object.handle_mqtt_p2p.assert_not_called()
@@ -254,12 +259,12 @@ async def test_p2p_to_late(
 
 async def test_p2p_parse_error(
     mqtt_client: MqttClient,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test p2p parse error."""
-    await subscribe(mqtt_client, device_info)
+    await subscribe(mqtt_client, api_device_info)
 
     command_object = Mock(spec=SetVolume)
     command_name = SetVolume.name
@@ -272,7 +277,12 @@ async def test_p2p_parse_error(
         data: dict[str, Any] = {"volume": 1}
 
     await _publish_p2p(
-        command_name, device_info, data, request_id, test_mqtt_client, is_request=True
+        command_name,
+        api_device_info,
+        data,
+        request_id,
+        test_mqtt_client,
+        is_request=True,
     )
 
     assert (

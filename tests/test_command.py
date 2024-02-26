@@ -14,7 +14,7 @@ if TYPE_CHECKING:
     from unittest.mock import Mock
 
     from deebot_client.event_bus import EventBus
-    from deebot_client.models import DeviceInfo
+    from deebot_client.models import ApiDeviceInfo
 
 
 class _TestCommand(CommandMqttP2P):
@@ -75,13 +75,13 @@ def test_CommandMqttP2P_create_from_mqtt_additional_fields(
 async def test_execute_api_timeout_error(
     caplog: pytest.LogCaptureFixture,
     authenticator: Mock,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     event_bus_mock: Mock,
 ) -> None:
     """Test that on api timeout the stack trace is not logged."""
     command = _TestCommand(1)
     authenticator.post_authenticated.side_effect = ApiTimeoutError("test", 60)
-    assert not await command.execute(authenticator, device_info, event_bus_mock)
+    assert not await command.execute(authenticator, api_device_info, event_bus_mock)
     assert (
         "deebot_client.command",
         logging.WARNING,

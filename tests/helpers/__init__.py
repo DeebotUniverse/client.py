@@ -3,7 +3,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
-from deebot_client.capabilities import _Capabilities
+from deebot_client.capabilities import Capabilities
 from deebot_client.const import DataType
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import DisplayNameIntEnum
@@ -64,12 +64,12 @@ def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
 
 def mock_static_device_info(
     events: Mapping[type[Event], list[Command]] | None = None,
-) -> StaticDeviceInfo:
+) -> StaticDeviceInfo[Capabilities]:
     """Mock static device info."""
     if events is None:
         events = {}
 
-    mock = Mock(spec_set=_Capabilities)
+    mock = Mock(spec_set=Capabilities)
 
     def get_refresh_commands(event: type[Event]) -> list[Command]:
         return events.get(event, [])

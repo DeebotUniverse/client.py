@@ -9,7 +9,7 @@ from deebot_client.commands.json import GetCleanInfo
 from deebot_client.commands.json.clean import Clean, CleanV2, GetCleanInfoV2
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.models import CleanAction, DeviceInfo, State
+from deebot_client.models import ApiDeviceInfo, CleanAction, State
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -52,7 +52,7 @@ async def test_GetCleanInfo(
 )
 async def test_Clean_act(
     authenticator: Authenticator,
-    device_info: DeviceInfo,
+    api_device_info: ApiDeviceInfo,
     command_type: type[Clean],
     action: CleanAction,
     state: State | None,
@@ -64,7 +64,7 @@ async def test_Clean_act(
     )
     command = command_type(action)
 
-    await command.execute(authenticator, device_info, event_bus)
+    await command.execute(authenticator, api_device_info, event_bus)
 
     assert isinstance(command._args, dict)
     assert command._args["act"] == expected.value
