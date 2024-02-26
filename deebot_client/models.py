@@ -7,7 +7,7 @@ from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
 if TYPE_CHECKING:
-    from deebot_client.capabilities import Capabilities
+    from deebot_client.capabilities import _Capabilities
     from deebot_client.const import DataType
 
 ApiDeviceInfo = TypedDict(
@@ -25,20 +25,12 @@ ApiDeviceInfo = TypedDict(
 )
 
 
-class DeviceType(StrEnum):
-    """Device type."""
-
-    VACUUM = "vacuum"
-    MOWER = "mower"
-
-
 @dataclass(frozen=True)
 class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
-    device_type: DeviceType
-    capabilities: Capabilities
+    capabilities: _Capabilities
 
 
 class DeviceInfo:
@@ -91,7 +83,7 @@ class DeviceInfo:
         return self._static_device_info.data_type
 
     @property
-    def capabilities(self) -> Capabilities:
+    def capabilities(self) -> _Capabilities:
         """Return capabilities."""
         return self._static_device_info.capabilities
 

@@ -77,7 +77,6 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.hardware import get_static_device_info
 from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
-from deebot_client.models import DeviceType
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -88,18 +87,17 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("class_", "devive_type", "expected"),
+    ("class_", "expected"),
     [
-        ("not_specified", DeviceType.VACUUM, lambda: DEVICES[FALLBACK]),
-        ("yna5xi", DeviceType.VACUUM, lambda: DEVICES["yna5xi"]),
+        ("not_specified", lambda: DEVICES[FALLBACK]),
+        ("yna5xi", lambda: DEVICES["yna5xi"]),
     ],
 )
 def test_get_static_device_info(
-    class_: str, devive_type: DeviceType, expected: Callable[[], StaticDeviceInfo]
+    class_: str, expected: Callable[[], StaticDeviceInfo]
 ) -> None:
     """Test get_static_device_info."""
     static_device_info = get_static_device_info(class_)
-    assert devive_type == static_device_info.device_type
     assert static_device_info == expected()
 
 
