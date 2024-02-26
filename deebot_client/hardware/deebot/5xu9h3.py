@@ -2,7 +2,6 @@
 from __future__ import annotations
 
 from deebot_client.capabilities import (
-    Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -13,6 +12,7 @@ from deebot_client.capabilities import (
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilityStats,
+    MowerCapabilities,
 )
 from deebot_client.commands.json import (
     GetBorderSwitch,
@@ -61,15 +61,14 @@ from deebot_client.events import (
     TrueDetectEvent,
     VolumeEvent,
 )
-from deebot_client.models import DeviceType, StaticDeviceInfo
+from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
 from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
-    DeviceType.MOWER,
-    Capabilities(
+    MowerCapabilities(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
         ),

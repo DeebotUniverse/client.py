@@ -1,6 +1,7 @@
 """Device capabilities module."""
 from __future__ import annotations
 
+from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
@@ -163,7 +164,7 @@ class CapabilityMap:
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute
-    rooms: CapabilityEvent[RoomsEvent] | None = None
+    rooms: CapabilityEvent[RoomsEvent]
     trace: CapabilityEvent[MapTraceEvent]
 
 
@@ -200,7 +201,7 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
-class Capabilities:
+class _Capabilities(ABC):
     """Capabilities."""
 
     availability: CapabilityEvent[AvailabilityEvent]
@@ -209,15 +210,12 @@ class Capabilities:
     clean: CapabilityClean
     custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
-    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel] | None = None
     life_span: CapabilityLifeSpan
-    map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
-    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 
@@ -228,3 +226,17 @@ class Capabilities:
     def get_refresh_commands(self, event: type[Event]) -> list[Command]:
         """Return refresh command for given event."""
         return self._events.get(event, [])
+
+
+@dataclass(frozen=True, kw_only=True)
+class VacuumCapabilities(_Capabilities):
+    """Vacuum capabilities."""
+
+    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
+    map: CapabilityMap
+    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
+class MowerCapabilities(_Capabilities):
+    """Mower capabilities."""
