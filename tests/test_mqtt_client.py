@@ -96,9 +96,9 @@ async def _publish_p2p(
 ) -> None:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
-        topic = f"iot/p2p/{command_name}/test/test/test/{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}/q/{request_id}/{data_type}"
+        topic = f"iot/p2p/{command_name}/test/test/test/{device_info['did']}/{device_info['class']}/{device_info['resource']}/q/{request_id}/{data_type}"
     else:
-        topic = f"iot/p2p/{command_name}/{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}/test/test/test/p/{request_id}/{data_type}"
+        topic = f"iot/p2p/{command_name}/{device_info['did']}/{device_info['class']}/{device_info['resource']}/test/test/test/p/{request_id}/{data_type}"
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)

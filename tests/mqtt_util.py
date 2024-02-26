@@ -27,7 +27,7 @@ async def verify_subscribe(
 ) -> None:
     command = "test"
     data = json.dumps({"test": str(datetime.datetime.now())}).encode("utf-8")
-    topic = f"iot/atr/{command}/{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}/j"
+    topic = f"iot/atr/{command}/{device_info['did']}/{device_info['class']}/{device_info['resource']}/j"
     await test_client.publish(topic, data)
 
     await asyncio.sleep(0.1)

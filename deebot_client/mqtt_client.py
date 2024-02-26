@@ -36,7 +36,7 @@ _CLIENT_LOGGER = get_logger(f"{__name__}.client")
 
 def _get_topics(device_info: ApiDeviceInfo) -> list[str]:
     device_path = (
-        f"{device_info["did"]}/{device_info["class"]}/{device_info["resource"]}"
+        f"{device_info['did']}/{device_info['class']}/{device_info['resource']}"
     )
     return [
         # iot/atr/[command]]/[did]]/[class]]/[resource]/j
