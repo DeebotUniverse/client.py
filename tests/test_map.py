@@ -5,20 +5,7 @@ from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
-from svg import (
-    ArcRel,
-    ClosePath,
-    CubicBezier,
-    HorizontalLineToRel,
-    LineToRel,
-    MoveTo,
-    MoveToRel,
-    PathData,
-    SmoothCubicBezierRel,
-    Use,
-    VerticalLineToRel,
-    ViewBoxSpec,
-)
+import svg
 
 from deebot_client.events.map import (
     MajorMapEvent,
@@ -69,10 +56,10 @@ def test_calc_point(
 
 
 _test_calc_point_in_viewbox_data = [
-    (100, 100, ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
-    (-64000, -64000, ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
-    (64000, 64000, ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
-    (None, 1000, ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
+    (100, 100, svg.ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
+    (-64000, -64000, svg.ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
+    (64000, 64000, svg.ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
+    (None, 1000, svg.ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
 ]
 
 
@@ -82,7 +69,7 @@ _test_calc_point_in_viewbox_data = [
 def test_calc_point_in_viewbox(
     x: int,
     y: int,
-    viewbox: ViewBoxSpec,
+    viewbox: svg.ViewBoxSpec,
     expected: Point,
 ) -> None:
     result = _calc_point_in_viewbox(x, y, viewbox)
@@ -157,13 +144,13 @@ def test_compact_path() -> None:
     path = Path(
         fill="#ffe605",
         d=[
-            MoveTo(4, -6.4),
-            CubicBezier(4, -4.2, 0, 0, 0, 0),
-            SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
-            LineToRel(0, -3.2),
-            LineToRel(4, 0),
-            ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
-            ClosePath(),
+            svg.MoveTo(4, -6.4),
+            svg.CubicBezier(4, -4.2, 0, 0, 0, 0),
+            svg.SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
+            svg.LineToRel(0, -3.2),
+            svg.LineToRel(4, 0),
+            svg.ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
+            svg.ClosePath(),
         ],
     )
 
@@ -178,7 +165,7 @@ def test_compact_path() -> None:
     [
         (
             [Point(x=45.58, y=176.12), Point(x=18.78, y=175.94)],
-            [MoveTo(45.58, 176.12), LineToRel(-26.8, -0.18)],
+            [svg.MoveTo(45.58, 176.12), svg.LineToRel(-26.8, -0.18)],
         ),
         (
             [
@@ -193,19 +180,19 @@ def test_compact_path() -> None:
                 TracePoint(x=-260, y=-80, connected=True),
             ],
             [
-                MoveTo(x=-215, y=-70),
-                LineToRel(dx=3, dy=-3),
-                HorizontalLineToRel(dx=-1),
-                LineToRel(dx=-14, dy=1),
-                VerticalLineToRel(dy=2),
-                MoveToRel(dx=-29, dy=1),
-                LineToRel(dx=-4, dy=-11),
+                svg.MoveTo(x=-215, y=-70),
+                svg.LineToRel(dx=3, dy=-3),
+                svg.HorizontalLineToRel(dx=-1),
+                svg.LineToRel(dx=-14, dy=1),
+                svg.VerticalLineToRel(dy=2),
+                svg.MoveToRel(dx=-29, dy=1),
+                svg.LineToRel(dx=-4, dy=-11),
             ],
         ),
     ],
 )
 def test_points_to_svg_path(
-    points: Sequence[Point | TracePoint], expected: list[PathData]
+    points: Sequence[Point | TracePoint], expected: list[svg.PathData]
 ) -> None:
     assert _points_to_svg_path(points) == expected
 
@@ -213,29 +200,29 @@ def test_points_to_svg_path(
 _test_get_svg_positions_data = [
     (
         [Position(PositionType.CHARGER, 5000, -55000)],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#c", x=100, y=500)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#c", x=100, y=500)],
     ),
     (
         [Position(PositionType.DEEBOT, 15000, 15000)],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=300, y=-300)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=300, y=-300)],
     ),
     (
         [
             Position(PositionType.CHARGER, 25000, 55000),
             Position(PositionType.DEEBOT, -5000, -50000),
         ],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=-100, y=500), svg.Use(href="#c", x=500, y=-500)],
     ),
     (
         [
             Position(PositionType.DEEBOT, -10000, 10000),
             Position(PositionType.CHARGER, 50000, 5000),
         ],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=-200, y=-200), svg.Use(href="#c", x=500, y=-100)],
     ),
 ]
 
@@ -245,13 +232,13 @@ _test_get_svg_positions_data = [
 )
 def test_get_svg_positions(
     positions: list[Position],
-    viewbox: ViewBoxSpec,
-    expected: list[Use],
+    viewbox: svg.ViewBoxSpec,
+    expected: list[svg.Use],
 ) -> None:
     result = _get_svg_positions(positions, viewbox)
     assert len(result) == len(expected)
     for result_item, expected_item in zip(result, expected, strict=True):
-        assert type(result_item) == Use
+        assert type(result_item) == svg.Use
         assert result_item.href == expected_item.href
         assert result_item.x == expected_item.x
         assert result_item.y == expected_item.y
