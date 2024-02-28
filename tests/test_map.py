@@ -11,6 +11,7 @@ from deebot_client.events.map import (
     MajorMapEvent,
     MapChangedEvent,
     MapSetEvent,
+    MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
@@ -27,6 +28,7 @@ from deebot_client.map import (
     _calc_point,
     _calc_point_in_viewbox,
     _get_svg_positions,
+    _get_svg_subset,
     _points_to_svg_path,
 )
 from deebot_client.models import Room
@@ -243,3 +245,41 @@ def test_get_svg_positions(
         assert result_item.x == expected_item.x
         assert result_item.y == expected_item.y
         assert result_item == expected_item
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        (
+            MapSubsetEvent(
+                1, MapSetType.VIRTUAL_WALLS, "[100.0, 200.0, 400.0, -800.0]"
+            ),
+            Path(
+                stroke="#f00000",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                d=[svg.MoveTo(x=2, y=-4), svg.LineToRel(dx=6, dy=20)],
+            ),
+        ),
+        (
+            MapSubsetEvent(
+                1,
+                MapSetType.NO_MOP_ZONES,
+                "[500.0, 500.0, 0.0, 1000.0, 250.0, 0.0, -500.0, 400.0, -500.0, 800.0]",
+            ),
+            svg.Polygon(
+                stroke="#ffa500",
+                fill="#ffa50030",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                points=[10, -10, 0, -20, 5, 0, -10, -8, -10, -16],
+            ),
+        ),
+    ],
+)
+def test_get_svg_subset(input: MapSubsetEvent, expected: Path | svg.Polygon) -> None:
+    result = _get_svg_subset(input)
+
+    assert result == expected
