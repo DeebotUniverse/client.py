@@ -1,4 +1,5 @@
 """Maps commands."""
+
 from __future__ import annotations
 
 import json
@@ -135,9 +136,8 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     def __init__(
         self,
         mid: str,
-        type: (  # pylint: disable=redefined-builtin
-            MapSetType | str
-        ) = MapSetType.ROOMS,
+        # pylint: disable=redefined-builtin
+        type: (MapSetType | str) = MapSetType.ROOMS,
     ) -> None:
         if isinstance(type, MapSetType):
             type = type.value
@@ -226,9 +226,8 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         mid: str | int,
         mssid: str | int,
         msid: str | int | None = None,
-        type: (  # pylint: disable=redefined-builtin
-            MapSetType | str
-        ) = MapSetType.ROOMS,
+        # pylint: disable=redefined-builtin
+        type: (MapSetType | str) = MapSetType.ROOMS,
     ) -> None:
         if isinstance(type, MapSetType):
             type = type.value

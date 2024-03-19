@@ -1,4 +1,5 @@
 """Continents module."""
+
 from __future__ import annotations
 
 from deebot_client.const import COUNTRY_CHINA

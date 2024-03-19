@@ -1,4 +1,5 @@
 """MQTT module."""
+
 from __future__ import annotations
 
 import asyncio
@@ -125,9 +126,9 @@ class MqttClient:
         self._authenticator = authenticator
 
         self._subscriptions: MutableMapping[str, SubscriberInfo] = {}
-        self._subscription_changes: asyncio.Queue[
-            tuple[SubscriberInfo, bool]
-        ] = asyncio.Queue()
+        self._subscription_changes: asyncio.Queue[tuple[SubscriberInfo, bool]] = (
+            asyncio.Queue()
+        )
         self._mqtt_task: asyncio.Task[Any] | None = None
 
         self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(

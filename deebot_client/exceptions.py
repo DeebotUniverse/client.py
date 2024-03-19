@@ -1,4 +1,5 @@
 """Deebot client exception module."""
+
 from __future__ import annotations
 
 

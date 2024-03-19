@@ -1,4 +1,5 @@
 """ClearMap commands."""
+
 from __future__ import annotations
 
 from .common import ExecuteCommand

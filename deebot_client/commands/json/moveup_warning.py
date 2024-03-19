@@ -1,4 +1,5 @@
 """Move up lock commands."""
+
 from __future__ import annotations
 
 from deebot_client.events import MoveUpWarningEvent
