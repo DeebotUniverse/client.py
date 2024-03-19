@@ -27,7 +27,7 @@
         "files.trimTrailingWhitespace": true,
         "python.analysis.autoImportCompletions": true,
         "python.analysis.autoSearchPaths": false,
-        "python.analysis.extraPaths": ["/home/vscode/.local/lib/python3.11/"],
+        "python.analysis.extraPaths": ["/home/vscode/.local/lib/python3.12/"],
         "python.analysis.typeCheckingMode": "basic",
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.formatting.autopep8Path": "/usr/local/py-utils/bin/autopep8",
