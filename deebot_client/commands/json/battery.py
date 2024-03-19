@@ -1,4 +1,5 @@
 """Battery commands."""
+
 from __future__ import annotations
 
 from deebot_client.messages.json import OnBattery

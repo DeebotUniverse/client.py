@@ -1,4 +1,5 @@
 """Device capabilities module."""
+
 from __future__ import annotations
 
 from abc import ABC
@@ -183,15 +184,15 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
-    efficiency_mode: (
-        CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None
-    ) = None
+    efficiency_mode: CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None = (
+        None
+    )
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
-    cross_map_border_warning: CapabilitySetEnable[
-        CrossMapBorderWarningEvent
-    ] | None = None
+    cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
+        None
+    )
     safe_protect: CapabilitySetEnable[SafeProtectEvent] | None = None
     ota: CapabilitySetEnable[OtaEvent] | CapabilityEvent[OtaEvent] | None = None
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None

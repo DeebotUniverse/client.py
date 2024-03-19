@@ -1,4 +1,5 @@
 """DEEBOT OZMO T8 AIVI Capabilities."""
+
 from __future__ import annotations
 
 from deebot_client.capabilities import (
