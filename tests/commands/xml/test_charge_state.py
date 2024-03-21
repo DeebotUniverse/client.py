@@ -23,6 +23,7 @@ if TYPE_CHECKING:
         ("Going", StateEvent(State.RETURNING)),
         ("unknown state returned", StateEvent(State.ERROR)),
     ],
+    ids=["slot_charging", "idle", "going", "unknown"],
 )
 async def test_get_charge_state(state: str, expected_event: Event) -> None:
     json = get_request_xml(f"<ctl ret='ok'><charge type='{state}' g='0'/></ctl>")

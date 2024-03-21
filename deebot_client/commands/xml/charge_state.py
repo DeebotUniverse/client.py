@@ -29,11 +29,10 @@ class GetChargeState(XmlCommandWithMessageHandling):
         """
         status: State | None = None
 
-        ret = ret if (ret := xml.attrib["ret"]) else ""
-        if ret != "ok":
+        if xml.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        if charge := xml.find("charge"):
+        if (charge := xml.find("charge")) is not None:
             type_ = charge.attrib["type"].lower()
             match type_:
                 case "slotcharging" | "slot_charging" | "wirecharging":
