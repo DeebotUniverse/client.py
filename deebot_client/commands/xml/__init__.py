@@ -6,12 +6,14 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
+from .charge_state import GetChargeState
 from .error import GetError
 
 if TYPE_CHECKING:
     from .common import XmlCommand
 
 __all__ = [
+    "GetChargeState",
     "GetError",
 ]
 
