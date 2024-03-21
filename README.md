@@ -25,8 +25,7 @@ import time
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
-from deebot_client.commands import *
-from deebot_client.commands.clean import CleanAction
+from deebot_client.commands.json.clean import CleanAction
 from deebot_client.events import BatteryEvent
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5
@@ -35,13 +34,13 @@ from deebot_client.device import Device
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
 password_hash = md5("yourPassword")
-country = "de"
+country = "DE"
 
 
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    rest_config = create_rest_config(session, device_id=device_id, country=country)
+    rest_config = create_rest_config(session, device_id=device_id, alpha_2_country=country)
 
     authenticator = Authenticator(rest_config, account_id, password_hash)
     api_client = ApiClient(authenticator)
