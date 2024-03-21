@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import PositionsEvent, Position, PositionType
+from deebot_client.events import Position, PositionsEvent, PositionType
 from deebot_client.message import HandlingResult
 
 from .common import XmlCommandWithMessageHandling
@@ -26,7 +26,6 @@ class GetPos(XmlCommandWithMessageHandling):
 
         :return: A message response
         """
-
         if xml.attrib.get("ret") != "ok" or xml.attrib.get("t") != "p":
             return HandlingResult.analyse()
 
