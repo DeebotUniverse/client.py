@@ -8,6 +8,7 @@ from deebot_client.command import Command, CommandMqttP2P
 
 from .charge_state import GetChargeState
 from .error import GetError
+from .pos import GetPos
 
 if TYPE_CHECKING:
     from .common import XmlCommand
@@ -15,6 +16,7 @@ if TYPE_CHECKING:
 __all__ = [
     "GetChargeState",
     "GetError",
+    "GetPos",
 ]
 
 # fmt: off
