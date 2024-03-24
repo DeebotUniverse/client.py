@@ -17,6 +17,8 @@ class FanSpeedLevel(DisplayNameIntEnum):
     NORMAL = 0
     MAX = 1
     MAX_PLUS = 2
+    STANDARD = 3
+    STRONG = 4
 
 
 @dataclass(frozen=True)
