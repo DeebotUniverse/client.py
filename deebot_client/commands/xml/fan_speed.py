@@ -6,8 +6,8 @@ from typing import TYPE_CHECKING
 
 from deebot_client.message import HandlingResult
 
+from ...events import FanSpeedEvent, FanSpeedLevel
 from .common import XmlCommandWithMessageHandling
-from ...events import FanSpeedLevel, FanSpeedEvent
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element

@@ -15,6 +15,7 @@ from . import get_request_xml
 if TYPE_CHECKING:
     from deebot_client.events.base import Event
 
+
 @pytest.mark.parametrize(
     ("speed", "expected_event"),
     [
