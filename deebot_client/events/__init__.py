@@ -25,6 +25,7 @@ from .map import (
     PositionType,
 )
 from .network import NetworkInfoEvent
+from .wash_interval import WashIntervalEvent
 from .water_info import WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
@@ -52,6 +53,7 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
+    "WashIntervalEvent",
     "SweepModeEvent",
     "WaterAmount",
     "WaterInfoEvent",

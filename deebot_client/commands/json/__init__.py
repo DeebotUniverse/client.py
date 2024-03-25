@@ -46,6 +46,7 @@ from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
 from .volume import GetVolume, SetVolume
+from .wash_interval import GetWashInterval, SetWashInterval
 from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
 
@@ -115,6 +116,8 @@ __all__ = [
     "SetVoiceAssistantState",
     "GetVolume",
     "SetVolume",
+    "GetWashInterval",
+    "SetWashInterval",
     "GetWaterInfo",
     "SetWaterInfo",
     "GetWorkMode",
@@ -218,6 +221,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetVolume,
     SetVolume,
+
+    GetWashInterval,
+    SetWashInterval,
 
     GetWaterInfo,
     SetWaterInfo,
