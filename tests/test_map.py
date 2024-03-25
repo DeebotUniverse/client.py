@@ -5,23 +5,13 @@ from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
-from svg import (
-    ArcRel,
-    ClosePath,
-    CubicBezier,
-    HorizontalLineToRel,
-    LineToRel,
-    MoveTo,
-    MoveToRel,
-    PathData,
-    SmoothCubicBezierRel,
-    VerticalLineToRel,
-)
+import svg
 
 from deebot_client.events.map import (
     MajorMapEvent,
     MapChangedEvent,
     MapSetEvent,
+    MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
@@ -30,14 +20,15 @@ from deebot_client.events.map import (
     PositionType,
 )
 from deebot_client.map import (
-    AxisManipulation,
     Map,
     MapData,
-    MapManipulation,
     Path,
     Point,
     TracePoint,
     _calc_point,
+    _calc_point_in_viewbox,
+    _get_svg_positions,
+    _get_svg_subset,
     _points_to_svg_path,
 )
 from deebot_client.models import Room
@@ -50,54 +41,41 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 _test_calc_point_data = [
-    (10, 100, (100, 0, 200, 50), Point(100.0, 0.0)),
-    (10, 100, (0, 0, 1000, 1000), Point(400.2, 598.0)),
-    (None, 100, (0, 0, 1000, 1000), Point(0, 598.0)),
+    (5000, 0, Point(100.0, 0.0)),
+    (20010, -29900, Point(400.2, 598.0)),
+    (None, 29900, Point(0, -598.0)),
 ]
 
 
-@pytest.mark.parametrize(("x", "y", "image_box", "expected"), _test_calc_point_data)
+@pytest.mark.parametrize(("x", "y", "expected"), _test_calc_point_data)
 def test_calc_point(
     x: int,
     y: int,
-    image_box: tuple[int, int, int, int],
     expected: Point,
 ) -> None:
-    manipulation = MapManipulation(
-        AxisManipulation(
-            map_shift=image_box[0],
-            svg_max=image_box[2] - image_box[0],
-        ),
-        AxisManipulation(
-            map_shift=image_box[1],
-            svg_max=image_box[3] - image_box[1],
-            _transform=lambda c, v: 2 * c - v,
-        ),
-    )
-    result = _calc_point(x, y, manipulation)
+    result = _calc_point(x, y)
     assert result == expected
 
 
-@pytest.mark.parametrize(("error"), [ValueError(), ZeroDivisionError()])
-def test_calc_point_exceptions(
-    error: Exception,
-) -> None:
-    def transform(_: float, __: float) -> float:
-        raise error
+_test_calc_point_in_viewbox_data = [
+    (100, 100, svg.ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
+    (-64000, -64000, svg.ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
+    (64000, 64000, svg.ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
+    (None, 1000, svg.ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
+]
 
-    manipulation = MapManipulation(
-        AxisManipulation(
-            map_shift=50,
-            svg_max=100,
-            _transform=transform,
-        ),
-        AxisManipulation(
-            map_shift=50,
-            svg_max=100,
-        ),
-    )
-    result = _calc_point(100, 100, manipulation)
-    assert result == Point(0, 100)
+
+@pytest.mark.parametrize(
+    ("x", "y", "viewbox", "expected"), _test_calc_point_in_viewbox_data
+)
+def test_calc_point_in_viewbox(
+    x: int,
+    y: int,
+    viewbox: svg.ViewBoxSpec,
+    expected: Point,
+) -> None:
+    result = _calc_point_in_viewbox(x, y, viewbox)
+    assert result == expected
 
 
 async def test_MapData(event_bus: EventBus) -> None:
@@ -168,13 +146,13 @@ def test_compact_path() -> None:
     path = Path(
         fill="#ffe605",
         d=[
-            MoveTo(4, -6.4),
-            CubicBezier(4, -4.2, 0, 0, 0, 0),
-            SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
-            LineToRel(0, -3.2),
-            LineToRel(4, 0),
-            ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
-            ClosePath(),
+            svg.MoveTo(4, -6.4),
+            svg.CubicBezier(4, -4.2, 0, 0, 0, 0),
+            svg.SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
+            svg.LineToRel(0, -3.2),
+            svg.LineToRel(4, 0),
+            svg.ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
+            svg.ClosePath(),
         ],
     )
 
@@ -189,7 +167,7 @@ def test_compact_path() -> None:
     [
         (
             [Point(x=45.58, y=176.12), Point(x=18.78, y=175.94)],
-            [MoveTo(45.58, 176.12), LineToRel(-26.8, -0.18)],
+            [svg.MoveTo(45.58, 176.12), svg.LineToRel(-26.8, -0.18)],
         ),
         (
             [
@@ -204,18 +182,104 @@ def test_compact_path() -> None:
                 TracePoint(x=-260, y=-80, connected=True),
             ],
             [
-                MoveTo(x=-215, y=-70),
-                LineToRel(dx=3, dy=-3),
-                HorizontalLineToRel(dx=-1),
-                LineToRel(dx=-14, dy=1),
-                VerticalLineToRel(dy=2),
-                MoveToRel(dx=-29, dy=1),
-                LineToRel(dx=-4, dy=-11),
+                svg.MoveTo(x=-215, y=-70),
+                svg.LineToRel(dx=3, dy=-3),
+                svg.HorizontalLineToRel(dx=-1),
+                svg.LineToRel(dx=-14, dy=1),
+                svg.VerticalLineToRel(dy=2),
+                svg.MoveToRel(dx=-29, dy=1),
+                svg.LineToRel(dx=-4, dy=-11),
             ],
         ),
     ],
 )
 def test_points_to_svg_path(
-    points: Sequence[Point | TracePoint], expected: list[PathData]
+    points: Sequence[Point | TracePoint], expected: list[svg.PathData]
 ) -> None:
     assert _points_to_svg_path(points) == expected
+
+
+_test_get_svg_positions_data = [
+    (
+        [Position(PositionType.CHARGER, 5000, -55000)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#c", x=100, y=500)],
+    ),
+    (
+        [Position(PositionType.DEEBOT, 15000, 15000)],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=300, y=-300)],
+    ),
+    (
+        [
+            Position(PositionType.CHARGER, 25000, 55000),
+            Position(PositionType.DEEBOT, -5000, -50000),
+        ],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=-100, y=500), svg.Use(href="#c", x=500, y=-500)],
+    ),
+    (
+        [
+            Position(PositionType.DEEBOT, -10000, 10000),
+            Position(PositionType.CHARGER, 50000, 5000),
+        ],
+        svg.ViewBoxSpec(-500, -500, 1000, 1000),
+        [svg.Use(href="#d", x=-200, y=-200), svg.Use(href="#c", x=500, y=-100)],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("positions", "viewbox", "expected"), _test_get_svg_positions_data
+)
+def test_get_svg_positions(
+    positions: list[Position],
+    viewbox: svg.ViewBoxSpec,
+    expected: list[svg.Use],
+) -> None:
+    result = _get_svg_positions(positions, viewbox)
+    assert len(result) == len(expected)
+    for result_item, expected_item in zip(result, expected, strict=True):
+        assert type(result_item) == svg.Use
+        assert result_item.href == expected_item.href
+        assert result_item.x == expected_item.x
+        assert result_item.y == expected_item.y
+        assert result_item == expected_item
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        (
+            MapSubsetEvent(
+                1, MapSetType.VIRTUAL_WALLS, "[100.0, 200.0, 400.0, -800.0]"
+            ),
+            Path(
+                stroke="#f00000",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                d=[svg.MoveTo(x=2, y=-4), svg.LineToRel(dx=6, dy=20)],
+            ),
+        ),
+        (
+            MapSubsetEvent(
+                1,
+                MapSetType.NO_MOP_ZONES,
+                "[500.0, 500.0, 0.0, 1000.0, 250.0, 0.0, -500.0, 400.0, -500.0, 800.0]",
+            ),
+            svg.Polygon(
+                stroke="#ffa500",
+                fill="#ffa50030",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                points=[10, -10, 0, -20, 5, 0, -10, -8, -10, -16],
+            ),
+        ),
+    ],
+)
+def test_get_svg_subset(input: MapSubsetEvent, expected: Path | svg.Polygon) -> None:
+    result = _get_svg_subset(input)
+
+    assert result == expected
