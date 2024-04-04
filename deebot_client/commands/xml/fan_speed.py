@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.message import HandlingResult
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
+from deebot_client.message import HandlingResult
 
 from .common import XmlCommandWithMessageHandling
 
