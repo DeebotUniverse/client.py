@@ -3,11 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum, unique
+from enum import Enum, IntEnum, unique
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events.base import Event
-from deebot_client.util import DisplayNameIntEnum
 
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
@@ -67,15 +66,15 @@ class BatteryEvent(Event):
     value: int
 
 
-class CleanJobStatus(DisplayNameIntEnum):
+class CleanJobStatus(IntEnum):
     """Enum of the different clean job status."""
 
     NO_STATUS = -2
     CLEANING = -1
     # below the identified stop_reason values
     FINISHED = 1
-    MANUAL_STOPPED = 2, "manual stopped"
-    FINISHED_WITH_WARNINGS = 3, "finished with warnings"
+    MANUAL_STOPPED = 2
+    FINISHED_WITH_WARNINGS = 3
 
 
 @dataclass(frozen=True)
