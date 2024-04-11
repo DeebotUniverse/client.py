@@ -164,6 +164,29 @@ def test_get_static_device_info(
             },
         ),
         (
+            "itk04l",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AvailabilityEvent: [GetBattery(is_available_check=True)],
+                BatteryEvent: [GetBattery()],
+                BorderSwitchEvent: [GetBorderSwitch()],
+                ChildLockEvent: [GetChildLock()],
+                CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetError()],
+                LifeSpanEvent: [GetLifeSpan([LifeSpan.BLADE, LifeSpan.LENS_BRUSH])],
+                MoveUpWarningEvent: [GetMoveUpWarning()],
+                NetworkInfoEvent: [GetNetInfo()],
+                ReportStatsEvent: [],
+                SafeProtectEvent: [GetSafeProtect()],
+                StateEvent: [GetChargeState(), GetCleanInfoV2()],
+                StatsEvent: [GetStats()],
+                TotalStatsEvent: [GetTotalStats()],
+                TrueDetectEvent: [GetTrueDetect()],
+                VolumeEvent: [GetVolume()],
+            },
+        ),
+        (
             "yna5xi",
             {
                 AdvancedModeEvent: [GetAdvancedMode()],
@@ -239,7 +262,7 @@ def test_get_static_device_info(
             },
         ),
     ],
-    ids=[FALLBACK, "5xu9h3", "yna5xi", "p95mgv"],
+    ids=[FALLBACK, "5xu9h3", "itk04l", "yna5xi", "p95mgv"],
 )
 def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
@@ -264,6 +287,7 @@ def test_all_models_loaded() -> None:
         "9ku8nu",
         "clojes",
         "fallback",
+        "itk04l",
         "lx3j7m",
         "p1jij8",
         "p95mgv",
