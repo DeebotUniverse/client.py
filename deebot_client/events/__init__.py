@@ -66,6 +66,7 @@ class BatteryEvent(Event):
     value: int
 
 
+@unique
 class CleanJobStatus(IntEnum):
     """Enum of the different clean job status."""
 

@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from deebot_client.util import DisplayNameIntEnum
+from enum import IntEnum, unique
 
 from .base import Event
 
 
-class EfficiencyMode(DisplayNameIntEnum):
+@unique
+class EfficiencyMode(IntEnum):
     """Enum class for all possible efficiency modes."""
 
     STANDARD_MODE = 0

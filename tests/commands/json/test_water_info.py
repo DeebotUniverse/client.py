@@ -9,14 +9,9 @@ from deebot_client.events import WaterAmount, WaterInfoEvent
 from tests.helpers import (
     get_request_json,
     get_success_body,
-    verify_DisplayNameEnum_unique,
 )
 
 from . import assert_command, assert_set_command
-
-
-def test_WaterAmount_unique() -> None:
-    verify_DisplayNameEnum_unique(WaterAmount)
 
 
 @pytest.mark.parametrize(

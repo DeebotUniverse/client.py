@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from deebot_client.util import DisplayNameIntEnum
+from enum import IntEnum, unique
 
 from .base import Event
 
 
-class FanSpeedLevel(DisplayNameIntEnum):
+@unique
+class FanSpeedLevel(IntEnum):
     """Enum class for all possible fan speed levels."""
 
     # Values should be sort from low to high on their meanings

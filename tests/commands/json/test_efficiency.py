@@ -9,14 +9,9 @@ from deebot_client.events import EfficiencyMode, EfficiencyModeEvent
 from tests.helpers import (
     get_request_json,
     get_success_body,
-    verify_DisplayNameEnum_unique,
 )
 
 from . import assert_command, assert_set_command
-
-
-def test_WorkMode_unique() -> None:
-    verify_DisplayNameEnum_unique(EfficiencyMode)
 
 
 @pytest.mark.parametrize(

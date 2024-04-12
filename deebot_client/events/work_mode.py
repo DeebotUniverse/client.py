@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-
-from deebot_client.util import DisplayNameIntEnum
+from enum import IntEnum, unique
 
 from .base import Event
 
 
-class WorkMode(DisplayNameIntEnum):
+@unique
+class WorkMode(IntEnum):
     """Enum class for all possible work modes."""
 
     VACUUM_AND_MOP = 0
