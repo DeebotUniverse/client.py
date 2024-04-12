@@ -8,14 +8,9 @@ from deebot_client.events.fan_speed import FanSpeedLevel
 from tests.helpers import (
     get_request_json,
     get_success_body,
-    verify_DisplayNameEnum_unique,
 )
 
 from . import assert_command, assert_set_command
-
-
-def test_FanSpeedLevel_unique() -> None:
-    verify_DisplayNameEnum_unique(FanSpeedLevel)
 
 
 async def test_GetFanSpeed() -> None:

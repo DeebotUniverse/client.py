@@ -6,31 +6,12 @@ from unittest.mock import Mock
 from deebot_client.capabilities import Capabilities
 from deebot_client.const import DataType
 from deebot_client.models import StaticDeviceInfo
-from deebot_client.util import DisplayNameIntEnum
 
 if TYPE_CHECKING:
     from collections.abc import Mapping
 
     from deebot_client.command import Command
     from deebot_client.events.base import Event
-
-
-def verify_DisplayNameEnum_unique(enum: type[DisplayNameIntEnum]) -> None:
-    assert issubclass(enum, DisplayNameIntEnum)
-    names: set[str] = set()
-    values: set[int] = set()
-    for member in enum:
-        assert member.value not in values
-        values.add(member.value)
-
-        name = member.name.lower()
-        assert name not in names
-        names.add(name)
-
-        display_name = member.display_name.lower()
-        if display_name != name:
-            assert display_name not in names
-            names.add(display_name)
 
 
 def get_request_json(body: dict[str, Any]) -> dict[str, Any]:

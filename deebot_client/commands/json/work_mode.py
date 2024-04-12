@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.command import InitParam
 from deebot_client.events import WorkMode, WorkModeEvent
 from deebot_client.message import HandlingResult
+from deebot_client.util import get_enum
 
 from .common import JsonGetCommand, JsonSetCommand
 
@@ -41,5 +42,5 @@ class SetWorkMode(JsonSetCommand):
 
     def __init__(self, mode: WorkMode | str) -> None:
         if isinstance(mode, str):
-            mode = WorkMode.get(mode)
+            mode = get_enum(WorkMode, mode)
         super().__init__({"mode": mode.value})

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.command import InitParam
 from deebot_client.events import EfficiencyMode, EfficiencyModeEvent
 from deebot_client.message import HandlingResult
+from deebot_client.util import get_enum
 
 from .common import JsonGetCommand, JsonSetCommand
 
@@ -41,5 +42,5 @@ class SetEfficiencyMode(JsonSetCommand):
 
     def __init__(self, efficiency: EfficiencyMode | str) -> None:
         if isinstance(efficiency, str):
-            efficiency = EfficiencyMode.get(efficiency)
+            efficiency = get_enum(EfficiencyMode, efficiency)
         super().__init__({"efficiency": efficiency.value})

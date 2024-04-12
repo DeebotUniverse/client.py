@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-
-from deebot_client.util import DisplayNameIntEnum
+from enum import IntEnum, unique
 
 from .base import Event
 
 
-class WaterAmount(DisplayNameIntEnum):
+@unique
+class WaterAmount(IntEnum):
     """Enum class for all possible water amounts."""
 
     LOW = 1

@@ -8,6 +8,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.command import InitParam
 from deebot_client.events import WaterAmount, WaterInfoEvent
 from deebot_client.message import HandlingResult
+from deebot_client.util import get_enum
 
 from .common import JsonGetCommand, JsonSetCommand
 
@@ -52,5 +53,5 @@ class SetWaterInfo(JsonSetCommand):
 
     def __init__(self, amount: WaterAmount | str) -> None:
         if isinstance(amount, str):
-            amount = WaterAmount.get(amount)
+            amount = get_enum(WaterAmount, amount)
         super().__init__({"amount": amount.value})
