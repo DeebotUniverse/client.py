@@ -95,7 +95,7 @@ async def test_GetCleanLogs(caplog: pytest.LogCaptureFixture) -> None:
                 image_url="https://portal-eu.ecouser.net/api/lg/image/acb2e78e-8f25-454a-a0ac-***@***@iCmB",
                 type="spotArea",
                 area=0,
-                stop_reason=CleanJobStatus.MANUAL_STOPPED,
+                stop_reason=CleanJobStatus.MANUALLY_STOPPED,
                 duration=61,
             ),
             CleanLogEntry(
