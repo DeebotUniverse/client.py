@@ -73,7 +73,7 @@ class CleanJobStatus(IntEnum):
     CLEANING = -1
     # below the identified stop_reason values
     FINISHED = 1
-    MANUAL_STOPPED = 2
+    MANUALLY_STOPPED = 2
     FINISHED_WITH_WARNINGS = 3
 
 
