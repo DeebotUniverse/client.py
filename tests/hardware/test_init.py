@@ -288,6 +288,7 @@ def test_all_models_loaded() -> None:
         "clojes",
         "fallback",
         "itk04l",
+        "lf3bn4",
         "lx3j7m",
         "p1jij8",
         "p95mgv",
