@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import importlib
 import pkgutil
 from typing import TYPE_CHECKING
@@ -28,10 +29,10 @@ def _load() -> None:
         importlib.import_module(full_package_name)
 
 
-def get_static_device_info(class_: str) -> StaticDeviceInfo[Capabilities]:
+async def get_static_device_info(class_: str) -> StaticDeviceInfo[Capabilities]:
     """Get static device info for given class."""
     if not DEVICES:
-        _load()
+        await asyncio.get_event_loop().run_in_executor(None, _load)
 
     if device := DEVICES.get(class_):
         _LOGGER.debug("Capabilities found for %s", class_)

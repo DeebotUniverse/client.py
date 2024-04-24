@@ -68,7 +68,7 @@ class ApiClient:
         for device in api_devices.values():
             match device.get("company"):
                 case "eco-ng":
-                    static_device_info = get_static_device_info(device["class"])
+                    static_device_info = await get_static_device_info(device["class"])
                     devices.append(DeviceInfo(device, static_device_info))
                 case "eco-legacy":
                     devices.append(device)
