@@ -128,8 +128,8 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-def static_device_info() -> StaticDeviceInfo[Capabilities]:
-    return get_static_device_info(FALLBACK)
+async def static_device_info() -> StaticDeviceInfo[Capabilities]:
+    return await get_static_device_info(FALLBACK)
 
 
 @pytest.fixture

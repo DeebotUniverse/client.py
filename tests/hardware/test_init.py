@@ -95,11 +95,11 @@ if TYPE_CHECKING:
         ("yna5xi", lambda: DEVICES["yna5xi"]),
     ],
 )
-def test_get_static_device_info(
+async def test_get_static_device_info(
     class_: str, expected: Callable[[], StaticDeviceInfo[Capabilities]]
 ) -> None:
     """Test get_static_device_info."""
-    static_device_info = get_static_device_info(class_)
+    static_device_info = await get_static_device_info(class_)
     assert static_device_info == expected()
 
 
@@ -264,10 +264,10 @@ def test_get_static_device_info(
     ],
     ids=[FALLBACK, "5xu9h3", "itk04l", "yna5xi", "p95mgv"],
 )
-def test_capabilities_event_extraction(
+async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    capabilities = get_static_device_info(class_).capabilities
+    capabilities = (await get_static_device_info(class_)).capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert (
