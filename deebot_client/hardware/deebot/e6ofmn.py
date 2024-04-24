@@ -149,7 +149,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
         ),
         life_span=CapabilityLifeSpan(
-			types=(
+		types=(
                 LifeSpan.BRUSH,
                 LifeSpan.FILTER,
                 LifeSpan.SIDE_BRUSH,
