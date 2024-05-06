@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import ANY, AsyncMock, Mock, call
+from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
 from svg import (
@@ -15,6 +15,7 @@ from svg import (
     MoveToRel,
     PathData,
     Polygon,
+    Scale,
     SmoothCubicBezierRel,
     Use,
     VerticalLineToRel,
@@ -153,6 +154,34 @@ async def test_Map_subscriptions(
 
     await map.teardown()
     assert not map._unsubscribers
+
+
+@patch(
+    "deebot_client.util.decompress_7z_base64_data",
+    Mock(return_value=b"\x10\x00\x00\x01\x00"),
+)
+async def test_Map_svg_traces_path(
+    execute_mock: AsyncMock, event_bus_mock: Mock
+) -> None:
+    map = Map(execute_mock, event_bus_mock)
+
+    path = map._get_svg_traces_path()
+    assert path is None
+
+    map._update_trace_points("")
+    path = map._get_svg_traces_path()
+
+    assert path == Path(
+        fill="none",
+        stroke="#fff",
+        stroke_width=1.5,
+        stroke_linejoin="round",
+        vector_effect="non-scaling-stroke",
+        transform=[
+            Scale(0.2, -0.2),
+        ],
+        d=[MoveTo(x=16, y=256)],
+    )
 
 
 def test_compact_path() -> None:
