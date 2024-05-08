@@ -283,6 +283,7 @@ def test_all_models_loaded() -> None:
         "55aiho",
         "5xu9h3",
         "626v6g",
+        "77atlz",
         "85nbtp",
         "9ku8nu",
         "clojes",
