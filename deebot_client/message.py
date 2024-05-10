@@ -152,9 +152,9 @@ class MessageBody(Message):
     @_handle_error_or_analyse
     @final
     def __handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
-        if code := body.get("code"):
-            _LOGGER.warning('Command "%s" was not successfully: %s', self.name, body)
-            return CommandResult(HandlingState.ANALYSE)
+        if body.get("code"):
+            _LOGGER.warning('Command "%s" was not successfully: %s', cls.name, body)
+            return HandlingResult(HandlingState.ANALYSE)
         return cls._handle_body(event_bus, body)
 
     @classmethod
