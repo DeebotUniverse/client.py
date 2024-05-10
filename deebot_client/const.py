@@ -62,7 +62,7 @@ ERROR_CODES = {
     109: "RollAbnormal: Main Brush is tangled",
     110: "NoDustBox: Dust Bin Not installed",
     111: "BumpAbnormal: Bump sensor stuck",
-    112: "LDS: LDS \"Laser Distance Sensor\" malfunction",
+    112: 'LDS: LDS "Laser Distance Sensor" malfunction',
     113: "MainBrushExhausted: Main brush has expired",
     114: "DustCaseFilled: Dust bin full",
     115: "BatteryError:",
