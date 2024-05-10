@@ -16,6 +16,7 @@ from deebot_client.events import (
     MinorMapEvent,
 )
 from deebot_client.events.map import CachedMapInfoEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.util import decompress_7z_base64_data
 
@@ -23,6 +24,9 @@ from .common import JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
+
+
+_LOGGER = get_logger(__name__)
 
 
 class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
@@ -199,21 +203,21 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     _ROOM_NUM_TO_NAME = MappingProxyType(
         {
-            "0": "Default",
-            "1": "Living Room",
-            "2": "Dining Room",
-            "3": "Bedroom",
-            "4": "Study",
-            "5": "Kitchen",
-            "6": "Bathroom",
-            "7": "Laundry",
-            "8": "Lounge",
-            "9": "Storeroom",
-            "10": "Kids room",
-            "11": "Sunroom",
-            "12": "Corridor",
-            "13": "Balcony",
-            "14": "Gym",
+            0: "Default",
+            1: "Living Room",
+            2: "Dining Room",
+            3: "Bedroom",
+            4: "Study",
+            5: "Kitchen",
+            6: "Bathroom",
+            7: "Laundry",
+            8: "Lounge",
+            9: "Storeroom",
+            10: "Kids room",
+            11: "Sunroom",
+            12: "Corridor",
+            13: "Balcony",
+            14: "Gym",
             # 15 custom; get name from name attribute
         }
     )
@@ -254,12 +258,19 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         if MapSetType.has_value(data["type"]):
-            subtype = data.get("subtype", data.get("subType"))
-            name = None
-            if subtype == "15":
-                name = data.get("name")
-            elif subtype:
-                name = cls._ROOM_NUM_TO_NAME.get(subtype, None)
+            name = data.get("name", "").strip()
+
+            if not name and (subtype := data.get("subtype", data.get("subType"))):
+                try:
+                    name = cls._ROOM_NUM_TO_NAME.get(int(subtype), None)
+                except ValueError:
+                    _LOGGER.warning("Got invalid subtype", exc_info=True)
+                    return HandlingResult.analyse()
+
+            _type = MapSetType(data["type"])
+            if _type == MapSetType.ROOMS and not name:
+                _LOGGER.warning("Got room without a name: %s", data)
+                return HandlingResult.analyse()
 
             # This command is used by new and old bots
             if data.get("compress", 0) == 1:
@@ -272,7 +283,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             event_bus.notify(
                 MapSubsetEvent(
                     id=int(data["mssid"]),
-                    type=MapSetType(data["type"]),
+                    type=_type,
                     coordinates=coordinates,
                     name=name,
                 )
