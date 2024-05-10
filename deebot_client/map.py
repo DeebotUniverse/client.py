@@ -317,8 +317,8 @@ def _get_svg_subset(
     if ";" in subset.coordinates:
         points = [
             _calc_point(
-                int(point[0].trim()),
-                int(point[1].trim()),
+                int(point[0].strip()),
+                int(point[1].strip()),
                 map_manipulation,
             )
             for str_point in subset.coordinates.split(";")
