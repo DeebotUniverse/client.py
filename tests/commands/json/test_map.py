@@ -104,9 +104,10 @@ async def test_getMapSubSet_customName(
     ("additional_data", "expected_log_message"),
     [
         ({"subtype": "15"}, "Got room without a name"),
+        ({}, "Got room without a name"),
         ({"subType": "bla"}, "Subtype is not a number"),
     ],
-    ids=["No name", "Subtype not int"],
+    ids=["No custom name", "No subtype", "Subtype not int"],
 )
 async def test_getMapSubSet_invalid(
     additional_data: dict[str, Any], expected_log_message: str
