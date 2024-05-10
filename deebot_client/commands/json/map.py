@@ -264,12 +264,12 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 try:
                     name = cls._ROOM_NUM_TO_NAME.get(int(subtype), None)
                 except ValueError:
-                    _LOGGER.warning("Got invalid subtype", exc_info=True)
+                    _LOGGER.warning("Subtype is not a number", exc_info=True)
                     return HandlingResult.analyse()
 
             _type = MapSetType(data["type"])
             if _type == MapSetType.ROOMS and not name:
-                _LOGGER.warning("Got room without a name: %s", data)
+                _LOGGER.warning("Got room without a name")
                 return HandlingResult.analyse()
 
             # This command is used by new and old bots

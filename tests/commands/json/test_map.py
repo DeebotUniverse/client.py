@@ -3,6 +3,7 @@ from __future__ import annotations
 from typing import Any
 
 import pytest
+from testfixtures import LogCapture
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
@@ -68,13 +69,13 @@ async def test_getMapSubSet_customName(
     additional_data: dict[str, Any],
     expected_name: str,
 ) -> None:
-    type = MapSetType.ROOMS
+    _type = MapSetType.ROOMS
     mid = "98100521"
     mssid = "8"
     json = get_request_json(
         get_success_body(
             {
-                "type": type.value,
+                "type": _type.value,
                 "connections": "7,",
                 "seqIndex": 0,
                 "seq": 0,
@@ -95,8 +96,54 @@ async def test_getMapSubSet_customName(
     await assert_command(
         GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
         json,
-        MapSubsetEvent(8, type, expected_coordinates, expected_name),
+        MapSubsetEvent(8, _type, expected_coordinates, expected_name),
     )
+
+
+@pytest.mark.parametrize(
+    ("additional_data", "expected_log_message"),
+    [
+        ({"subtype": "15"}, "Got room without a name"),
+        ({"subType": "bla"}, "Subtype is not a number"),
+    ],
+    ids=["No name", "Subtype not int"],
+)
+async def test_getMapSubSet_invalid(
+    additional_data: dict[str, Any], expected_log_message: str
+) -> None:
+    mid = "199390082"
+    mssid = "1"
+    data = {
+        "type": MapSetType.ROOMS,
+        "mssid": mssid,
+        "value": "-442,2910;-442,982;1214,982;1214,2910",
+        "connections": "12",
+        "mid": mid,
+        **additional_data,
+    }
+    json = get_request_json(get_success_body(data))
+    with LogCapture() as log:
+        await assert_command(
+            GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
+            json,
+            None,
+            command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        )
+
+        log.check_present(
+            (
+                "deebot_client.commands.json.map",
+                "WARNING",
+                expected_log_message,
+            )
+        )
+        log.check_present(
+            (
+                "deebot_client.message",
+                "DEBUG",
+                f"Could not handle getMapSubSet message: {data}",
+            )
+        )
 
 
 def _getMapSubSet_room_valid_response(value: str, id: int) -> dict[str, Any]:
