@@ -28,7 +28,7 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    ("compress", "value", "expected"),
+    ("compress", "value", "expected_coordinates"),
     [
         (
             1,
@@ -41,21 +41,41 @@ from . import assert_command
             "1400,1800;1400,3250;3000,3250;3000,2700;2900,2850;2750,2700;2800,1250;2700,1050;2700,850;1450,850;1400,1800",
         ),
     ],
+    ids=["Compressed", "Plain"],
+)
+@pytest.mark.parametrize(
+    ("additional_data", "expected_name"),
+    [
+        (
+            {"subtype": "15", "name": "Levin"},
+            "Levin",
+        ),
+        (
+            {"subtype": "1", "name": "Custom"},
+            "Custom",
+        ),
+        (
+            {"subtype": "1", "name": ""},
+            "Living Room",
+        ),
+    ],
+    ids=["Custom subtype", "Override default name", "Default name"],
 )
 async def test_getMapSubSet_customName(
-    compress: int, value: str, expected: str
+    compress: int,
+    value: str,
+    expected_coordinates: str,
+    additional_data: dict[str, Any],
+    expected_name: str,
 ) -> None:
     type = MapSetType.ROOMS
-    name = "Levin"
     mid = "98100521"
     mssid = "8"
     json = get_request_json(
         get_success_body(
             {
                 "type": type.value,
-                "subtype": "15",
                 "connections": "7,",
-                "name": name,
                 "seqIndex": 0,
                 "seq": 0,
                 "count": 0,
@@ -68,13 +88,14 @@ async def test_getMapSubSet_customName(
                 "mssid": mssid,
                 "value": value,
                 "mid": mid,
+                **additional_data,
             }
         )
     )
     await assert_command(
         GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
         json,
-        MapSubsetEvent(8, type, expected, name),
+        MapSubsetEvent(8, type, expected_coordinates, expected_name),
     )
 
 
