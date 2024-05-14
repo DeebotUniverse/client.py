@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-import pytest
-
 from deebot_client.commands.json import GetPos
 from deebot_client.events import Position, PositionsEvent, PositionType
 from tests.helpers import get_request_json, get_success_body
