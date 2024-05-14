@@ -31,7 +31,8 @@ class GetPos(XmlCommandWithMessageHandling):
 
         if p := xml.attrib.get("p"):
             p_x, p_y = p.split(",", 2)
-            position = Position(type=PositionType.DEEBOT, x=int(p_x), y=int(p_y))
+            p_a = xml.attrib.get("a", 0)
+            position = Position(type=PositionType.DEEBOT, x=int(p_x), y=int(p_y), a=int(p_a))
             event_bus.notify(PositionsEvent(positions=[position]))
             return HandlingResult.success()
 

@@ -40,13 +40,14 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
                         type=PositionType(type_str),
                         x=data_positions["x"],
                         y=data_positions["y"],
+                        a=data_positions.get("a", 0)
                     )
                 )
             else:
                 positions.extend(
                     [
                         Position(
-                            type=PositionType(type_str), x=entry["x"], y=entry["y"]
+                            type=PositionType(type_str), x=entry["x"], y=entry["y"], a=entry.get("a", 0)
                         )
                         for entry in data_positions
                     ]
