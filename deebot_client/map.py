@@ -312,8 +312,9 @@ def _get_svg_subset(
     subset: MapSubsetEvent,
     map_manipulation: MapManipulation,
 ) -> Path | svg.Polygon:
-    subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
+    _LOGGER.debug("Creating svg subset for %s", subset)
 
+    subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
     points = [
         _calc_point(
             subset_coordinates[i],
