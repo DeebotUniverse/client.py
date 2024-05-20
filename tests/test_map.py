@@ -14,6 +14,7 @@ from svg import (
     MoveTo,
     MoveToRel,
     PathData,
+    Polygon,
     SmoothCubicBezierRel,
     VerticalLineToRel,
 )
@@ -22,6 +23,7 @@ from deebot_client.events.map import (
     MajorMapEvent,
     MapChangedEvent,
     MapSetEvent,
+    MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
@@ -38,6 +40,7 @@ from deebot_client.map import (
     Point,
     TracePoint,
     _calc_point,
+    _get_svg_subset,
     _points_to_svg_path,
 )
 from deebot_client.models import Room
@@ -108,7 +111,7 @@ async def test_MapData(event_bus: EventBus) -> None:
 
     async def test_cycle() -> None:
         for x in range(10000):
-            map_data.positions.append(Position(PositionType.DEEBOT, x, x))
+            map_data.positions.append(Position(PositionType.DEEBOT, x, x, 0))
             map_data.rooms[x] = Room("test", x, "1,2")
 
         assert map_data.changed is True
@@ -219,3 +222,49 @@ def test_points_to_svg_path(
     points: Sequence[Point | TracePoint], expected: list[PathData]
 ) -> None:
     assert _points_to_svg_path(points) == expected
+
+
+@pytest.mark.parametrize(
+    ("subset", "expected"),
+    [
+        (
+            MapSubsetEvent(
+                id=0, type=MapSetType.VIRTUAL_WALLS, coordinates="[-3900,668,-2133,668]"
+            ),
+            Path(
+                stroke="#f00000",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                d=[MoveTo(x=322.0, y=413.36), HorizontalLineToRel(dx=35.34)],
+            ),
+        ),
+        (
+            MapSubsetEvent(
+                id=1,
+                type=MapSetType.NO_MOP_ZONES,
+                coordinates="[-442,2910,-442,982,1214,982,1214,2910]",
+            ),
+            Polygon(
+                fill="#ffa50030",
+                stroke="#ffa500",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                points=[391.16, 458.2, 391.16, 419.64, 424.28, 419.64, 424.28, 458.2],
+            ),
+        ),
+    ],
+)
+def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> None:
+    manipulation = MapManipulation(
+        AxisManipulation(
+            map_shift=0,
+            svg_max=1000,
+        ),
+        AxisManipulation(
+            map_shift=0,
+            svg_max=1000,
+        ),
+    )
+    assert _get_svg_subset(subset, manipulation) == expected

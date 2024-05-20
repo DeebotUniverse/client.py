@@ -1,6 +1,9 @@
 from __future__ import annotations
 
+from typing import Any
+
 import pytest
+from testfixtures import LogCapture
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
@@ -26,7 +29,7 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    ("compress", "value", "expected"),
+    ("compress", "value", "expected_coordinates"),
     [
         (
             1,
@@ -39,21 +42,41 @@ from . import assert_command
             "1400,1800;1400,3250;3000,3250;3000,2700;2900,2850;2750,2700;2800,1250;2700,1050;2700,850;1450,850;1400,1800",
         ),
     ],
+    ids=["Compressed", "Plain"],
+)
+@pytest.mark.parametrize(
+    ("additional_data", "expected_name"),
+    [
+        (
+            {"subtype": "15", "name": "Levin"},
+            "Levin",
+        ),
+        (
+            {"subtype": "1", "name": "Custom"},
+            "Custom",
+        ),
+        (
+            {"subtype": "1", "name": ""},
+            "Living Room",
+        ),
+    ],
+    ids=["Custom subtype", "Override default name", "Default name"],
 )
 async def test_getMapSubSet_customName(
-    compress: int, value: str, expected: str
+    compress: int,
+    value: str,
+    expected_coordinates: str,
+    additional_data: dict[str, Any],
+    expected_name: str,
 ) -> None:
-    type = MapSetType.ROOMS
-    name = "Levin"
+    _type = MapSetType.ROOMS
     mid = "98100521"
     mssid = "8"
     json = get_request_json(
         get_success_body(
             {
-                "type": type.value,
-                "subtype": "15",
+                "type": _type.value,
                 "connections": "7,",
-                "name": name,
                 "seqIndex": 0,
                 "seq": 0,
                 "count": 0,
@@ -66,24 +89,70 @@ async def test_getMapSubSet_customName(
                 "mssid": mssid,
                 "value": value,
                 "mid": mid,
+                **additional_data,
             }
         )
     )
     await assert_command(
         GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
         json,
-        MapSubsetEvent(8, type, expected, name),
+        MapSubsetEvent(8, _type, expected_coordinates, expected_name),
     )
 
 
-async def test_getMapSubSet_living_room() -> None:
-    type = MapSetType.ROOMS
-    value = "-1400,-1600;-1400,-1350;-950,-1100;-900,-150;-550,100;200,950;500,950;650,800;800,950;1850,950;1950,800;1950,-200;2050,-300;2300,-300;2550,-650;2700,-650;2700,-1600;2400,-1750;2700,-1900;2700,-2950;2450,-2950;2300,-3100;2400,-3200;2650,-3200;2700,-3500;2300,-3500;2200,-3250;2050,-3550;1200,-3550;1200,-3300;1050,-3200;950,-3300;950,-3550;600,-3550;550,-2850;850,-2800;950,-2700;850,-2600;950,-2400;900,-2350;800,-2300;550,-2500;550,-2350;400,-2250;200,-2650;-800,-2650;-950,-2550;-950,-2150;-650,-2000;-450,-2000;-400,-1950;-450,-1850;-750,-1800;-950,-1900;-1350,-1900;-1400,-1600"
-    json = get_request_json(
+@pytest.mark.parametrize(
+    ("additional_data", "expected_log_message"),
+    [
+        ({"subtype": "15"}, "Got room without a name"),
+        ({}, "Got room without a name"),
+        ({"subType": "bla"}, "Subtype is not a number"),
+    ],
+    ids=["No custom name", "No subtype", "Subtype not int"],
+)
+async def test_getMapSubSet_invalid(
+    additional_data: dict[str, Any], expected_log_message: str
+) -> None:
+    mid = "199390082"
+    mssid = "1"
+    data = {
+        "type": MapSetType.ROOMS,
+        "mssid": mssid,
+        "value": "-442,2910;-442,982;1214,982;1214,2910",
+        "connections": "12",
+        "mid": mid,
+        **additional_data,
+    }
+    json = get_request_json(get_success_body(data))
+    with LogCapture() as log:
+        await assert_command(
+            GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
+            json,
+            None,
+            command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        )
+
+        log.check_present(
+            (
+                "deebot_client.commands.json.map",
+                "WARNING",
+                expected_log_message,
+            )
+        )
+        log.check_present(
+            (
+                "deebot_client.message",
+                "DEBUG",
+                f"Could not handle getMapSubSet message: {data}",
+            )
+        )
+
+
+def _getMapSubSet_room_valid_response(value: str, id: int) -> dict[str, Any]:
+    return get_request_json(
         get_success_body(
             {
-                "type": type.value,
-                "mssid": "7",
+                "type": MapSetType.ROOMS.value,
+                "mssid": str(id),
                 "value": value,
                 "subtype": "1",
                 "connections": "12",
@@ -91,10 +160,15 @@ async def test_getMapSubSet_living_room() -> None:
             }
         )
     )
+
+
+async def test_getMapSubSet_living_room() -> None:
+    value = "-1400,-1600;-1400,-1350;-950,-1100;-900,-150;-550,100;200,950;500,950;650,800;800,950;1850,950;1950,800;1950,-200;2050,-300;2300,-300;2550,-650;2700,-650;2700,-1600;2400,-1750;2700,-1900;2700,-2950;2450,-2950;2300,-3100;2400,-3200;2650,-3200;2700,-3500;2300,-3500;2200,-3250;2050,-3550;1200,-3550;1200,-3300;1050,-3200;950,-3300;950,-3550;600,-3550;550,-2850;850,-2800;950,-2700;850,-2600;950,-2400;900,-2350;800,-2300;550,-2500;550,-2350;400,-2250;200,-2650;-800,-2650;-950,-2550;-950,-2150;-650,-2000;-450,-2000;-400,-1950;-450,-1850;-750,-1800;-950,-1900;-1350,-1900;-1400,-1600"
+    json = _getMapSubSet_room_valid_response(value, 7)
     await assert_command(
         GetMapSubSet(mid="199390082", mssid="7", msid="1"),
         json,
-        MapSubsetEvent(7, type, value, "Living Room"),
+        MapSubsetEvent(7, MapSetType.ROOMS, value, "Living Room"),
     )
 
 
@@ -174,30 +248,42 @@ async def test_getMajorMap() -> None:
 async def test_getMapSet() -> None:
     mid = "199390082"
     msid = "8"
-    json = get_request_json(
-        get_success_body(
-            {
-                "type": "ar",
-                "count": 7,
-                "mid": mid,
-                "msid": msid,
-                "subsets": [
-                    {"mssid": "7"},
-                    {"mssid": "12"},
-                    {"mssid": "17"},
-                    {"mssid": "14"},
-                    {"mssid": "10"},
-                    {"mssid": "11"},
-                    {"mssid": "13"},
-                ],
-            }
-        )
-    )
+    room_value = "-442,2910;-442,982;1214,982;1214,2910"
     subsets = [7, 12, 17, 14, 10, 11, 13]
+    json = (
+        # getMapSet response
+        get_request_json(
+            get_success_body(
+                {
+                    "type": "ar",
+                    "count": 7,
+                    "mid": mid,
+                    "msid": msid,
+                    "subsets": [
+                        {"mssid": "7"},
+                        {"mssid": "12"},
+                        {"mssid": "17"},
+                        {"mssid": "14"},
+                        {"mssid": "10"},
+                        {"mssid": "11"},
+                        {"mssid": "13"},
+                    ],
+                }
+            )
+        ),
+        # getMapSubSet response
+        *(_getMapSubSet_room_valid_response(room_value, subset) for subset in subsets),
+    )
     await assert_command(
         GetMapSet(mid),
         json,
-        MapSetEvent(MapSetType.ROOMS, subsets),
+        (
+            MapSetEvent(MapSetType.ROOMS, subsets),
+            *(
+                MapSubsetEvent(subset, MapSetType.ROOMS, room_value, "Living Room")
+                for subset in subsets
+            ),
+        ),
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"id": mid, "set_id": msid, "type": MapSetType.ROOMS, "subsets": subsets},
@@ -246,26 +332,38 @@ async def test_getMapSetV2_rooms() -> None:
         "XQAABADnAQAAAC2WwEHwYhHYFuLu9964T0CAIjkOBSGKBW+PcTQDCjKFThR86eaw4bFiV2BKLAP+0lTYd1ADOkmjNPrfSqBeHZLY4JNCaEMc2H245BSG143miuQm6X6"
         "KeTCnXV7Er028XLcnN9q/immzxeoPpkdhnbhuL9f8jW5kgVLGPJnfv2V2a79W4PjkSR4b4Px632ID+UKVwGL1mYiwNnMO35XA41W+pPsgW12ZRnsMDvGMAlv4VLhDJFAy4AA="
     )
-    json = get_request_json(
-        get_success_body(
-            {
-                "type": type,
-                "mid": mid,
-                "msid": msid,
-                "batid": "gheijg",
-                "serial": 1,
-                "index": 1,
-                "subsets": subsets_comp,
-                "infoSize": 199,
-            }
-        )
-    )
     subsets = [0, 1, 6, 2, 7, 3, 5]
+    room_value = "-442,2910;-442,982;1214,982;1214,2910"
+    json = (
+        # GetMapSetV2 response
+        get_request_json(
+            get_success_body(
+                {
+                    "type": type,
+                    "mid": mid,
+                    "msid": msid,
+                    "batid": "gheijg",
+                    "serial": 1,
+                    "index": 1,
+                    "subsets": subsets_comp,
+                    "infoSize": 199,
+                }
+            )
+        ),
+        # getMapSubSet response
+        *(_getMapSubSet_room_valid_response(room_value, subset) for subset in subsets),
+    )
 
     await assert_command(
         GetMapSetV2(mid, type),
         json,
-        MapSetEvent(MapSetType(type), subsets),
+        (
+            MapSetEvent(MapSetType(type), subsets),
+            *(
+                MapSubsetEvent(subset, MapSetType.ROOMS, room_value, "Living Room")
+                for subset in subsets
+            ),
+        ),
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"id": mid, "set_id": msid, "type": MapSetType(type), "subsets": subsets},

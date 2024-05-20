@@ -14,7 +14,7 @@ from . import get_request_xml
 async def test_get_pos() -> None:
     json = get_request_xml("<ctl ret='ok' t='p' p='77,-5' a='-3' valid='1'/>")
     expected_event = PositionsEvent(
-        positions=[Position(type=PositionType.DEEBOT, x=77, y=-5)]
+        positions=[Position(type=PositionType.DEEBOT, x=77, y=-5, a=-3)]
     )
     await assert_command(GetPos(), json, expected_event)
 
