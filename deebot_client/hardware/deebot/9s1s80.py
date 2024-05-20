@@ -1,4 +1,4 @@
-"""DEEBOT T10 TURBO"""
+"""DEEBOT T10 TURBO."""
 
 from __future__ import annotations
 
