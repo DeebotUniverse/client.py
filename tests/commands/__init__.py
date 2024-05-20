@@ -39,7 +39,7 @@ def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], 
 
 async def assert_command(
     command: Command,
-    json_api_response: dict[str, Any],
+    json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
     expected_events: Event | None | Sequence[Event],
     *,
     command_result: CommandResult | None = None,
@@ -50,7 +50,10 @@ async def assert_command(
     authenticator.authenticate = AsyncMock(
         return_value=Credentials("token", "user_id", 9999)
     )
-    authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
+    if isinstance(json_api_response, tuple):
+        authenticator.post_authenticated = AsyncMock(side_effect=json_api_response)
+    else:
+        authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
     device_info = ApiDeviceInfo(
         {
             "company": "company",

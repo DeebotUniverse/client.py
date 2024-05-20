@@ -220,7 +220,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 WaterAmount.LOW,
                 WaterAmount.MEDIUM,
                 WaterAmount.HIGH,
-                WaterAmount.ULTRAHIGH,
             ),
         ),
     ),
