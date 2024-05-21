@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
@@ -18,12 +18,18 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("code", "expected_events"),
+    ("body", "expected_events"),
     [
-        (0, ErrorEvent(0, "NoError: Robot is operational")),
-        (105, [StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")]),
+        ({"code": [0]}, ErrorEvent(0, "NoError: Robot is operational")),
+        ({"code": []}, ErrorEvent(0, "NoError: Robot is operational")),
+        (
+            {"code": [105]},
+            [StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")],
+        ),
     ],
 )
-async def test_getErrors(code: int, expected_events: Event | Sequence[Event]) -> None:
-    json = get_request_json(get_success_body({"code": [code]}))
+async def test_getErrors(
+    body: dict[str, Any], expected_events: Event | Sequence[Event]
+) -> None:
+    json = get_request_json(get_success_body(body))
     await assert_command(GetError(), json, expected_events)
