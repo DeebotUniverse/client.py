@@ -45,7 +45,11 @@ from . import assert_command, assert_execute_command
                         {"type": "uv", "left": 898586, "total": 900000},
                         {"type": "humidify", "left": 191547, "total": 194400},
                         {"type": "wbCare", "left": 22260, "total": 43200},
-                        {"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400},
+                        {
+                            "type": "autoWater_cleaningFluid",
+                            "left": 86400,
+                            "total": 86400,
+                        },
                         {"type": "dustBag", "left": 2031, "total": 3000},
                         {"type": "handFilter", "left": 30000, "total": 30000},
                         {"type": "strainer", "left": 1800, "total": 1800},
@@ -136,7 +140,9 @@ from . import assert_command, assert_execute_command
         (
             GetLifeSpan({LifeSpan.CLEANING_FLUID}),
             get_request_json(
-                get_success_body([{"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400}])
+                get_success_body(
+                    [{"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400}]
+                )
             ),
             [LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400)],
         ),
@@ -150,7 +156,9 @@ from . import assert_command, assert_execute_command
         (
             GetLifeSpan({LifeSpan.HAND_FILTER}),
             get_request_json(
-                get_success_body([{"type": "handFilter", "left": 30000, "total": 30000}])
+                get_success_body(
+                    [{"type": "handFilter", "left": 30000, "total": 30000}]
+                )
             ),
             [LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000)],
         ),
