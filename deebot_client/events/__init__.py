@@ -135,6 +135,10 @@ class LifeSpan(str, Enum):
     HUMIDIFY_MAINTENANCE = "wbCare"
     BLADE = "blade"
     LENS_BRUSH = "lensBrush"
+    DUST_BAG = "dustBag"
+    CLEANING_FLUID = "autoWater_cleaningFluid"
+    STRAINER = "strainer"
+    HAND_FILTER = "handFilter"
 
 
 @dataclass(frozen=True)
