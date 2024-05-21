@@ -28,16 +28,21 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        codes = data.get("code", [])
+        codes = data.get("code")
+        if not isinstance(codes, list):
+            return HandlingResult.analyse()
+
+        error: int | None = 0
+
         if codes:
             # the last error code
             error = codes[-1]
 
-            if error is not None:
-                description = ERROR_CODES.get(error)
-                if error != 0:
-                    event_bus.notify(StateEvent(State.ERROR))
-                event_bus.notify(ErrorEvent(error, description))
-                return HandlingResult.success()
+        if error is not None:
+            description = ERROR_CODES.get(error)
+            if error != 0:
+                event_bus.notify(StateEvent(State.ERROR))
+            event_bus.notify(ErrorEvent(error, description))
+            return HandlingResult.success()
 
         return HandlingResult.analyse()

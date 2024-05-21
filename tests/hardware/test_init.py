@@ -286,6 +286,7 @@ def test_all_models_loaded() -> None:
         "77atlz",
         "85nbtp",
         "9ku8nu",
+        "9s1s80",
         "clojes",
         "e6ofmn",
         "fallback",
