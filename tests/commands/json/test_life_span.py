@@ -27,6 +27,10 @@ from . import assert_command, assert_execute_command
                     LifeSpan.UV_SANITIZER,
                     LifeSpan.HUMIDIFY,
                     LifeSpan.HUMIDIFY_MAINTENANCE,
+                    LifeSpan.DUST_BAG,
+                    LifeSpan.CLEANING_FLUID,
+                    LifeSpan.STRAINER,
+                    LifeSpan.HAND_FILTER,
                 }
             ),
             get_request_json(
@@ -41,6 +45,10 @@ from . import assert_command, assert_execute_command
                         {"type": "uv", "left": 898586, "total": 900000},
                         {"type": "humidify", "left": 191547, "total": 194400},
                         {"type": "wbCare", "left": 22260, "total": 43200},
+                        {"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400},
+                        {"type": "dustBag", "left": 2031, "total": 3000},
+                        {"type": "handFilter", "left": 30000, "total": 30000},
+                        {"type": "strainer", "left": 1800, "total": 1800},
                     ]
                 )
             ),
@@ -54,6 +62,10 @@ from . import assert_command, assert_execute_command
                 LifeSpanEvent(LifeSpan.UV_SANITIZER, 99.84, 898586),
                 LifeSpanEvent(LifeSpan.HUMIDIFY, 98.53, 191547),
                 LifeSpanEvent(LifeSpan.HUMIDIFY_MAINTENANCE, 51.53, 22260),
+                LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400),
+                LifeSpanEvent(LifeSpan.DUST_BAG, 67.7, 2031),
+                LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000),
+                LifeSpanEvent(LifeSpan.STRAINER, 100.0, 1800),
             ],
         ),
         (
@@ -120,6 +132,34 @@ from . import assert_command, assert_execute_command
                 get_success_body([{"type": "wbCare", "left": 22260, "total": 43200}])
             ),
             [LifeSpanEvent(LifeSpan.HUMIDIFY_MAINTENANCE, 51.53, 22260)],
+        ),
+        (
+            GetLifeSpan({LifeSpan.CLEANING_FLUID}),
+            get_request_json(
+                get_success_body([{"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400}])
+            ),
+            [LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400)],
+        ),
+        (
+            GetLifeSpan({LifeSpan.DUST_BAG}),
+            get_request_json(
+                get_success_body([{"type": "dustBag", "left": 2031, "total": 3000}])
+            ),
+            [LifeSpanEvent(LifeSpan.DUST_BAG, 67.7, 2031)],
+        ),
+        (
+            GetLifeSpan({LifeSpan.HAND_FILTER}),
+            get_request_json(
+                get_success_body([{"type": "handFilter", "left": 30000, "total": 30000}])
+            ),
+            [LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000)],
+        ),
+        (
+            GetLifeSpan({LifeSpan.STRAINER}),
+            get_request_json(
+                get_success_body([{"type": "strainer", "left": 1800, "total": 1800}])
+            ),
+            [LifeSpanEvent(LifeSpan.STRAINER, 100.0, 1800)],
         ),
     ],
 )
