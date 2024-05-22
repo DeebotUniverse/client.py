@@ -11,3 +11,4 @@ testfixtures==8.2.0
 types-cachetools
 types-mock
 types-Pillow
+requests>=2.32.0 # not directly required, pinned by Snyk to avoid a vulnerability
