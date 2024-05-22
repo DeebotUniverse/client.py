@@ -26,6 +26,13 @@ from . import assert_command, assert_set_command
             {"amount": 4, "enable": 0},
             WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
         ),
+                (
+            {"amount": 4, "sweep_type": 1},
+            WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.Standard),
+        ),        (
+            {"sweep_type": 2, "enable": 0},
+            WaterInfoEvent(SweepType.Deep, mop_attached=False),
+        ),
     ],
 )
 async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> None:
@@ -38,6 +45,12 @@ async def test_SetWaterInfo(value: WaterAmount | str) -> None:
     command = SetWaterInfo(value)
     args = {"amount": 2}
     await assert_set_command(command, args, WaterInfoEvent(WaterAmount.MEDIUM))
+
+@pytest.mark.parametrize(("value"), [SweepType.Standard, "standard"])
+async def test_SetWaterInfo(value: SweepType | str) -> None:
+    command = SetWaterInfo(value)
+    args = {"sweep_type": 1}
+    await assert_set_command(command, args, WaterInfoEvent(SweepType.Standard))
 
 
 def test_SetWaterInfo_inexisting_value() -> None:
