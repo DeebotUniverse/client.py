@@ -34,7 +34,7 @@ class GetWaterInfo(JsonGetCommand):
             mop_attached = bool(mop_attached)
 
         event_bus.notify(
-            WaterInfoEvent(WaterAmount(int(data["amount"])), mop_attached=mop_attached)
+            WaterInfoEvent(WaterAmount(int(data["amount"])), mop_attached=mop_attached, SweepType(int(data["sweepType"])))
         )
         return HandlingResult.success()
 
@@ -48,6 +48,7 @@ class SetWaterInfo(JsonSetCommand):
         {
             "amount": InitParam(WaterAmount),
             "enable": None,  # Remove it as we don't can set it (App includes it)
+            "sweepType": InitParam(SweepType),
         }
     )
 
@@ -55,3 +56,8 @@ class SetWaterInfo(JsonSetCommand):
         if isinstance(amount, str):
             amount = get_enum(WaterAmount, amount)
         super().__init__({"amount": amount.value})
+
+    def __init__(self, sweepType: SweepType | str) -> None:
+        if isinstance(sweepType, str):
+            sweepType = get_enum(SweepType, sweepType)
+        super().__init__({"sweepType": sweepType.value})
