@@ -62,7 +62,8 @@ class SetWaterInfo(JsonSetCommand):
         if isinstance(amount, str):
             amount = get_enum(WaterAmount, amount)
         params["amount"] = amount.value
-        if isinstance(sweepType, str):
-            sweepType = get_enum(SweepType, sweepType)
-        params["sweepType"] = sweepType.value
+        if sweep_type:
+            if isinstance(sweep_type, str):
+                sweepType = get_enum(SweepType, sweep_type)
+            params["sweepType"] = sweep_type.value
         super().__init__(params)
