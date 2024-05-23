@@ -24,7 +24,34 @@ from .map import (
     PositionType,
 )
 from .network import NetworkInfoEvent
-from .water_info import WaterAmount, WaterInfoEvent, SweepType
+__all__ = [
+    "BatteryEvent",
+    "CachedMapInfoEvent",
+    "CleanJobStatus",
+    "CleanLogEntry",
+    "EfficiencyMode",
+    "EfficiencyModeEvent",
+    "Event",
+    "FanSpeedEvent",
+    "FanSpeedLevel",
+    "MajorMapEvent",
+    "MapChangedEvent",
+    "MapSetEvent",
+    "MapSetType",
+    "MapSubsetEvent",
+    "MapTraceEvent",
+    "MinorMapEvent",
+    "NetworkInfoEvent",
+    "Position",
+    "PositionType",
+    "PositionsEvent",
+    "SweepType",
+    "SweepModeEvent",
+    "WaterAmount",
+    "WaterInfoEvent",
+    "WorkMode",
+    "WorkModeEvent",
+]
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
