@@ -34,7 +34,8 @@ class GetWaterInfo(JsonGetCommand):
             mop_attached = bool(mop_attached)
 
         event_bus.notify(
-            WaterInfoEvent(WaterAmount(int(data["amount"])), SweepType(int(data["sweepType"])), mop_attached=mop_attached)
+            sweep_type = SweepType(int(data["sweepType"])) if "sweepType" in data else None
+            WaterInfoEvent(WaterAmount(int(data["amount"])), sweep_type, mop_attached=mop_attached)
         )
         return HandlingResult.success()
 
