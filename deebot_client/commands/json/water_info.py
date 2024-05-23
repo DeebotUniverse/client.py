@@ -48,7 +48,7 @@ class SetWaterInfo(JsonSetCommand):
         {
             "amount": InitParam(WaterAmount),
             "enable": None,  # Remove it as we don't can set it (App includes it)
-            "sweepType": InitParam(SweepType),
+            "sweepType": InitParam(SweepType, "sweep_type"),
         }
     )
 
