@@ -32,4 +32,4 @@ class WaterInfoEvent(Event):
     amount: WaterAmount
     # None means no data available
     mop_attached: bool | None = field(kw_only=True, default=None)
-    sweep_type: SweepType
+    sweep_type: SweepType | None = None
