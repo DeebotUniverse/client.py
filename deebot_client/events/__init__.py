@@ -52,6 +52,7 @@ __all__ = [
     "WorkMode",
     "WorkModeEvent",
 ]
+from .water_info import WaterAmount, WaterInfoEvent, SweepType
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
