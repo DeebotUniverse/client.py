@@ -57,7 +57,7 @@ class SetWaterInfo(JsonSetCommand):
             amount = get_enum(WaterAmount, amount)
         super().__init__({"amount": amount.value})
 
-    def __init__(self, amount: WaterAmount | str, sweepType: SweepType | str) -> None:
+    def __init__(self, amount: WaterAmount | str, sweep_type: SweepType | str| None = None) -> None:
         params = {}
         if isinstance(amount, str):
             amount = get_enum(WaterAmount, amount)
