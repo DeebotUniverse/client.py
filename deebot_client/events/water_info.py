@@ -21,8 +21,8 @@ class WaterAmount(IntEnum):
 class SweepType(IntEnum):
     """Enum class for all possible sweeping types."""
 
-    Standard = 1
-    Deep = 2
+    STANDARD = 1
+    DEEP = 2
 
 
 @dataclass(frozen=True)
