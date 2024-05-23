@@ -41,13 +41,13 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> N
 
 
 @pytest.mark.parametrize(("value"), [WaterAmount.MEDIUM, "medium"])
-async def test_SetWaterInfo(value: WaterAmount | str) -> None:
+async def test_SetWaterInfo_Wateramount(value: WaterAmount | str) -> None:
     command = SetWaterInfo(value)
     args = {"amount": 2}
     await assert_set_command(command, args, WaterInfoEvent(WaterAmount.MEDIUM))
 
 @pytest.mark.parametrize(("value"), [SweepType.STANDARD, "standard"])
-async def test_SetWaterInfo_sweepType(value: SweepType | str) -> None:
+async def test_SetWaterInfo_SweepType(value: SweepType | str) -> None:
     command = SetWaterInfo(value)
     args = {"sweep_type": 1}
     await assert_set_command(command, args, WaterInfoEvent(SweepType.STANDARD))
