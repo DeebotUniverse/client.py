@@ -78,6 +78,7 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
+    "SweepType",
     "SweepModeEvent",
     "WaterAmount",
     "WaterInfoEvent",
