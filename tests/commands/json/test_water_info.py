@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from deebot_client.commands.json import GetWaterInfo, SetWaterInfo
-from deebot_client.events import WaterAmount, WaterInfoEvent
+from deebot_client.events import WaterAmount, WaterInfoEvent, SweepType
 from tests.helpers import (
     get_request_json,
     get_success_body,
@@ -47,7 +47,7 @@ async def test_SetWaterInfo(value: WaterAmount | str) -> None:
     await assert_set_command(command, args, WaterInfoEvent(WaterAmount.MEDIUM))
 
 @pytest.mark.parametrize(("value"), [SweepType.STANDARD, "standard"])
-async def test_SetWaterInfo(value: SweepType | str) -> None:
+async def test_SetWaterInfo_sweepType(value: SweepType | str) -> None:
     command = SetWaterInfo(value)
     args = {"sweep_type": 1}
     await assert_set_command(command, args, WaterInfoEvent(SweepType.STANDARD))
