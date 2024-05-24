@@ -35,7 +35,7 @@ class GetWaterInfo(JsonGetCommand):
 
         sweep_type = data.get("sweepType")
         if sweep_type is not None:
-            sweep_type = SweepType(int(data["sweepType"]))
+            sweep_type = SweepType(int(sweep_type))
 
         event_bus.notify(
             WaterInfoEvent(
