@@ -32,7 +32,7 @@ from . import assert_command, assert_set_command
         ),
         (
             {"enable": 0, "sweepType": 2},
-            WaterInfoEvent(mop_attached=False, SweepType.DEEP),
+            WaterInfoEvent(SweepType.DEEP, mop_attached=False),
         ),
     ],
 )
