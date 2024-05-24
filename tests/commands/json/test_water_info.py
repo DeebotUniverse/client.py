@@ -27,8 +27,8 @@ from . import assert_command, assert_set_command
             WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
         ),
         (
-            {"amount": 4, "sweep_type": 1},
-            WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.STANDARD),
+            {"amount": 4, "sweep_type": 1, "enable": 0},
+            WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.STANDARD, mop_attached=False),
         ),
         (
             {"amount": 4, "sweep_type": 2, "enable": 0},
@@ -51,7 +51,7 @@ async def test_SetWaterInfo_Wateramount(valuea: WaterAmount | str) -> None:
 @pytest.mark.parametrize(("valueb"), [SweepType.STANDARD, "standard"])
 async def test_SetWaterInfo_SweepType(valueb: SweepType | str) -> None:
     command = SetWaterInfo(valueb)
-    args = {"sweepType": 1}
+    args = {"sweep_type": 1}
     await assert_set_command(command, args, WaterInfoEvent(SweepType.STANDARD))
 
 
