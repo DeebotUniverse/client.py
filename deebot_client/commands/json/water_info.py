@@ -55,7 +55,7 @@ class SetWaterInfo(JsonSetCommand):
     _mqtt_params = MappingProxyType(
         {
             "amount": InitParam(WaterAmount),
-            "sweepType": InitParam(SweepType, "sweep_type"),
+            "sweepType": InitParam(SweepType),
             "enable": None,  # Remove it as we don't can set it (App includes it)
         }
     )
