@@ -40,7 +40,7 @@ class GetWaterInfo(JsonGetCommand):
         event_bus.notify(
             WaterInfoEvent(
                 WaterAmount(int(data["amount"])),
-                SweepType(int(data["sweepType"])),
+                sweep_type,
                 mop_attached=mop_attached,
             )
         )
