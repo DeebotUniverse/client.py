@@ -51,7 +51,7 @@ async def test_SetWaterInfo_Wateramount(valuea: WaterAmount | str) -> None:
 @pytest.mark.parametrize(("valueb"), [SweepType.STANDARD, "standard"])
 async def test_SetWaterInfo_SweepType(valueb: SweepType | str) -> None:
     command = SetWaterInfo(valueb)
-    args = {"sweepType": 1}
+    args = {"sweep_type": 1}
     await assert_set_command(command, args, WaterInfoEvent(SweepType.STANDARD))
 
 
