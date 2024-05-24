@@ -31,7 +31,7 @@ class GetWaterInfo(JsonGetCommand):
         """
         mop_attached = data.get("enable")
         if mop_attached is not None:
-            mop_attached = bool(mop_attached)
+            mop_attached_bool = bool(mop_attached)
 
         sweep_type = data.get("sweepType")
         if sweep_type is not None:
@@ -41,7 +41,7 @@ class GetWaterInfo(JsonGetCommand):
             WaterInfoEvent(
                 WaterAmount(int(data["amount"])),
                 sweep_type,
-                mop_attached=mop_attached,
+                mop_attached=mop_attached_bool,
             )
         )
         return HandlingResult.success()
