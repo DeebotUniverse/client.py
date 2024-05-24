@@ -27,11 +27,11 @@ from . import assert_command, assert_set_command
             WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
         ),
         (
-            {"amount": 4, "sweepType": 1},
+            {"amount": 4, "sweep_type": 1},
             WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.STANDARD),
         ),
         (
-            {"enable": 0, "sweepType": 2},
+            {"sweep_type": 2, "enable": 0},
             WaterInfoEvent(SweepType.DEEP, mop_attached=False),
         ),
     ],
