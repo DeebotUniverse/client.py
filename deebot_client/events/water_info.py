@@ -17,6 +17,7 @@ class WaterAmount(IntEnum):
     HIGH = 3
     ULTRAHIGH = 4
 
+
 @unique
 class SweepType(IntEnum):
     """Enum class for all possible sweeping types."""
