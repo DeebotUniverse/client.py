@@ -35,4 +35,4 @@ class MqttError(DeebotError):
 
 
 class CommandResponseTypeError(DeebotError):
-    """Command response type error."""
+    """Raised when an invalid command response type is specified."""
