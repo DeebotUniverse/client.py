@@ -22,7 +22,7 @@ async def test_GetPos() -> None:
     await assert_command(GetPos(), json, expected_event)
 
 
-async def test_GetPost_response() -> None:
+async def test_GetPos_response() -> None:
     json = get_request_json(
         get_success_body(
             {"chargePos": {"x": 5, "y": 9}, "deebotPos": {"x": 1, "y": 5, "a": 85}}
