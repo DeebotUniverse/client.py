@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from collections.abc import Callable, Sequence
-from typing import TYPE_CHECKING, Any
+from collections.abc import Sequence
+from typing import TYPE_CHECKING, Any, Protocol
 from unittest.mock import AsyncMock, Mock, call
 
 from deebot_client.authentication import Authenticator
@@ -16,7 +16,19 @@ if TYPE_CHECKING:
     from deebot_client.events import Event
 
 
-def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], None]]:
+class VerifyResultCallback(Protocol):
+    """Verify result callback."""
+
+    def __call__(
+        self, expected_result: CommandResult, *, check_response_data: bool = False
+    ) -> None:
+        """Define callback prototype."""
+        ...
+
+
+def _wrap_command(
+    command: Command,
+) -> tuple[Command, VerifyResultCallback]:
     result: CommandResult | None = None
     execute_fn = command._execute
 
@@ -30,8 +42,14 @@ def _wrap_command(command: Command) -> tuple[Command, Callable[[CommandResult], 
         result = await execute_fn(authenticator, device_info, event_bus)
         return result
 
-    def verify_result(expected_result: CommandResult) -> None:
+    def verify_result(
+        expected_result: CommandResult, *, check_response_data: bool = False
+    ) -> None:
         assert result == expected_result
+        if check_response_data and result:
+            print(str(result.response_data))
+            print(str(expected_result.response_data))
+            assert result.response_data == expected_result.response_data
 
     command._execute = _execute.__get__(command)  # type: ignore[method-assign]
     return (command, verify_result)
@@ -80,3 +98,40 @@ async def assert_command(
             event_bus.notify.assert_called_once_with(expected_events)
     else:
         event_bus.notify.assert_not_called()
+
+
+async def assert_command_response(
+    command: Command,
+    json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
+    expected_response: Any | None,
+    *,
+    command_result: CommandResult | None = None,
+) -> None:
+    command_result = command_result or CommandResult.success(
+        response_data=expected_response
+    )
+    event_bus = Mock(spec_set=EventBus)
+    authenticator = Mock(spec_set=Authenticator)
+    authenticator.authenticate = AsyncMock(
+        return_value=Credentials("token", "user_id", 9999)
+    )
+    if isinstance(json_api_response, tuple):
+        authenticator.post_authenticated = AsyncMock(side_effect=json_api_response)
+    else:
+        authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
+    device_info = ApiDeviceInfo(
+        {
+            "company": "company",
+            "did": "did",
+            "name": "name",
+            "nick": "nick",
+            "resource": "resource",
+            "class": "get_class",
+        }
+    )
+
+    command, verify_result = _wrap_command(command)
+    await command.execute(authenticator, device_info, event_bus)
+
+    # verify
+    verify_result(command_result, check_response_data=True)

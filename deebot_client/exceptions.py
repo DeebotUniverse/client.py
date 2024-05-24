@@ -32,3 +32,7 @@ class MapError(DeebotError):
 
 class MqttError(DeebotError):
     """Mqtt error."""
+
+
+class CommandResponseTypeError(DeebotError):
+    """Command response type error."""

@@ -5,10 +5,15 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass, field
+from enum import IntEnum, auto
 from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
-from deebot_client.exceptions import ApiTimeoutError, DeebotError
+from deebot_client.exceptions import (
+    ApiTimeoutError,
+    CommandResponseTypeError,
+    DeebotError,
+)
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
@@ -24,21 +29,39 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
+class CommandResponseType(IntEnum):
+    """Command response type enum."""
+
+    STATUS_ONLY = auto()
+    RESPONSE_DATA = auto()
+
+
 @dataclass(frozen=True)
 class CommandResult(HandlingResult):
     """Command result object."""
 
     requested_commands: list[Command] = field(default_factory=list)
+    response_data: Any = None
 
     @classmethod
-    def success(cls) -> CommandResult:
+    def success(cls, *, response_data: Any = None) -> CommandResult:
         """Create result with handling success."""
-        return CommandResult(HandlingState.SUCCESS)
+        return CommandResult(HandlingState.SUCCESS, response_data=response_data)
 
     @classmethod
-    def analyse(cls) -> CommandResult:
+    def analyse(cls, *, response_data: Any = None) -> CommandResult:
         """Create result with handling analyse."""
-        return CommandResult(HandlingState.ANALYSE)
+        return CommandResult(HandlingState.ANALYSE, response_data=response_data)
+
+    def __eq__(self, obj: object) -> bool:
+        if isinstance(obj, CommandResult):
+            return (
+                self.state == obj.state
+                and self.args == obj.args
+                and self.requested_commands == obj.requested_commands
+            )
+
+        return False
 
 
 class Command(ABC):
@@ -73,16 +96,26 @@ class Command(ABC):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> bool:
+        response_type: CommandResponseType = CommandResponseType.STATUS_ONLY,
+    ) -> bool | Any:
         """Execute command.
 
         Returns
         -------
             bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                 This value is not indicating if the command was executed successfully.
+            response_data (Any): The command response data; this value replaces bot_reached if the command is executed
+                                 with response_type = RESPONSE_DATA and the command supports response data itself.
 
         """
         try:
+            if response_type == CommandResponseType.RESPONSE_DATA and not isinstance(
+                self, CommandWithResponseData
+            ):
+                msg = f"Invalid response type {response_type.name} for command {self.name}"
+                _LOGGER.warning(msg, exc_info=True)
+                raise CommandResponseTypeError(msg)
+
             result = await self._execute(authenticator, device_info, event_bus)
             if result.state == HandlingState.SUCCESS:
                 # Execute command which are requested by the handler
@@ -93,6 +126,9 @@ class Command(ABC):
                                 authenticator, device_info, event_bus
                             )
                         )
+
+                if response_type == CommandResponseType.RESPONSE_DATA:
+                    return result.response_data
 
                 return self._targets_bot
         except Exception:  # pylint: disable=broad-except
@@ -252,6 +288,26 @@ class CommandWithMessageHandling(Command, Message, ABC):
 
         _LOGGER.warning('Command "%s" was not successfully.', self.name)
         return CommandResult(HandlingState.ANALYSE)
+
+
+class CommandWithResponseData(CommandWithMessageHandling):
+    """Command, which support response data."""
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        response_data = super().get_response_data(response.get("resp", response))
+        return CommandResult(
+            result.state,
+            result.args,
+            result.requested_commands,
+            response_data=response_data,
+        )
 
 
 @dataclass

@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import CommandWithResponseData
 from deebot_client.events import Position, PositionsEvent, PositionType
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
@@ -13,7 +14,9 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetPos(
+    JsonCommandWithMessageHandling, CommandWithResponseData, MessageBodyDataDict
+):
     """Get volume command."""
 
     name = "getPos"
@@ -28,6 +31,18 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
+        """
+        if positions := cls._get_response_data_body_data_dict(data):
+            event_bus.notify(PositionsEvent(positions=positions))
+            return HandlingResult.success()
+
+        return HandlingResult.analyse()
+
+    @classmethod
+    def _get_response_data_body_data_dict(cls, data: dict[str, Any]) -> list[Position]:
+        """Retrieve message content.
+
+        :return: Message content
         """
         positions = []
 
@@ -56,8 +71,4 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
                     ]
                 )
 
-        if positions:
-            event_bus.notify(PositionsEvent(positions=positions))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        return positions

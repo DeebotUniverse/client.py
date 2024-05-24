@@ -8,7 +8,7 @@ from testfixtures import LogCapture
 from deebot_client.command import CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
+from tests.commands import assert_command, assert_command_response
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
 if TYPE_CHECKING:
@@ -21,6 +21,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "assert_command",
+    "assert_command_response",
     "assert_execute_command",
     "assert_set_command",
     "assert_set_enable_command",

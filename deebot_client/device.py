@@ -8,6 +8,7 @@ from datetime import datetime
 import json
 from typing import TYPE_CHECKING, Any, Final, Generic
 
+from deebot_client.command import CommandResponseType
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
@@ -107,9 +108,13 @@ class Device(Generic[DeviceCapabilities]):
 
         self.events.subscribe(NetworkInfoEvent, on_network)
 
-    async def execute_command(self, command: Command) -> None:
+    async def execute_command(
+        self,
+        command: Command,
+        response_type: CommandResponseType = CommandResponseType.STATUS_ONLY,
+    ) -> None:
         """Execute given command."""
-        await self._execute_command(command)
+        await self._execute_command(command, response_type)
 
     async def initialize(self, client: MqttClient) -> None:
         """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
@@ -156,11 +161,15 @@ class Device(Generic[DeviceCapabilities]):
                     await cancel(tasks)
             await asyncio.sleep(_AVAILABLE_CHECK_INTERVAL)
 
-    async def _execute_command(self, command: Command) -> bool:
+    async def _execute_command(
+        self,
+        command: Command,
+        response_type: CommandResponseType = CommandResponseType.STATUS_ONLY,
+    ) -> bool:
         """Execute given command."""
         async with self._semaphore:
             if await command.execute(
-                self._authenticator, self.device_info, self.events
+                self._authenticator, self.device_info, self.events, response_type
             ):
                 self._set_available(available=True)
                 return True
