@@ -25,6 +25,7 @@ import time
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.command import CommandResponseType
 from deebot_client.commands.json.clean import CleanAction
 from deebot_client.events import BatteryEvent
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
@@ -63,9 +64,9 @@ async def main():
     bot.events.subscribe(BatteryEvent, on_battery)
 
     # Execute commands
-    await bot.execute_command(Clean(CleanAction.START))
+    await bot.execute_command(Clean(CleanAction.START), CommandResponseType.STATUS_ONLY)
     await asyncio.sleep(900)  # Wait for...
-    await bot.execute_command(Charge())
+    await bot.execute_command(Charge(), CommandResponseType.STATUS_ONLY)
 
 
 if __name__ == '__main__':

@@ -149,7 +149,14 @@ class Device(Generic[DeviceCapabilities]):
                     for command in self.capabilities.get_refresh_commands(
                         AvailabilityEvent
                     ):
-                        tasks.add(asyncio.create_task(self._execute_command(command)))
+                        tasks.add(
+                            asyncio.create_task(
+                                self._execute_command(
+                                    command,
+                                    response_type=CommandResponseType.STATUS_ONLY,
+                                )
+                            )
+                        )
 
                     result = await asyncio.gather(*tasks)
                     self._set_available(available=all(result))
