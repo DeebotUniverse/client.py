@@ -18,7 +18,6 @@ from . import assert_command, assert_set_command
     ("json", "expected"),
     [
         ({"amount": 2}, WaterInfoEvent(WaterAmount.MEDIUM)),
-        ({"sweepType": 2}, WaterInfoEvent(SweepType.DEEP)),
         (
             {"amount": 1, "enable": 1},
             WaterInfoEvent(WaterAmount.LOW, mop_attached=True),
@@ -28,12 +27,12 @@ from . import assert_command, assert_set_command
             WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
         ),
         (
-            {"amount": 4, "sweepType": 1},
+            {"amount": 4, "sweep_type": 1},
             WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.STANDARD),
         ),
         (
-            {"sweepType": 2, "enable": 0},
-            WaterInfoEvent(SweepType.DEEP, mop_attached=False),
+            {"amount": 4, "sweep_type": 2, "enable": 0},
+            WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.DEEP, mop_attached=False),
         ),
     ],
 )
