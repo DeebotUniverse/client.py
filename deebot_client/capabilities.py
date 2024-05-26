@@ -21,6 +21,7 @@ from deebot_client.events import (
     ContinuousCleaningEvent,
     CrossMapBorderWarningEvent,
     CustomCommandEvent,
+    CutDirectionEvent,
     ErrorEvent,
     Event,
     FanSpeedEvent,
@@ -189,6 +190,7 @@ class CapabilitySettings:
     )
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
+    cut_direction: CapabilitySet[CutDirectionEvent, int] | None = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None

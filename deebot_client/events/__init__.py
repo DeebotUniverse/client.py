@@ -287,3 +287,10 @@ class MoveUpWarningEvent(EnableEvent):
 @dataclass(frozen=True)
 class SafeProtectEvent(EnableEvent):
     """Safe protect event."""
+
+
+@dataclass(frozen=True)
+class CutDirectionEvent(Event):
+    """Cut direction event representation."""
+
+    angle: int
