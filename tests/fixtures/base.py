@@ -71,7 +71,7 @@ class BaseContainer(ABC):
 
     def __init__(self) -> None:
         self.container: Container | None = None
-        self._start_time: datetime = datetime(1970, 1, 1)
+        self._start_time: datetime | None = None
 
     @property
     def image(self) -> str:
