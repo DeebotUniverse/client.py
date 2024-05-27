@@ -25,8 +25,6 @@ import time
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
-from deebot_client.command import CommandResponseType
-from deebot_client.commands.json.clean import CleanAction
 from deebot_client.events import BatteryEvent
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5
