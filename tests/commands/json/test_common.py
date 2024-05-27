@@ -94,5 +94,5 @@ async def test_common_functionality(
             expected_log[1].format(command.name),
         ) in caplog.record_tuples
 
-    assert available[0] is False
+    assert available.device_reached is False
     assert_func(event_bus)

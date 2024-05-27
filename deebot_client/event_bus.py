@@ -193,13 +193,11 @@ class EventBus:
                 return
 
             if len(commands) == 1:
-                await self._execute_command(commands[0], request_response=False)
+                await self._execute_command(commands[0])
             else:
                 async with asyncio.TaskGroup() as tg:
                     for command in commands:
-                        tg.create_task(
-                            self._execute_command(command, request_response=False)
-                        )
+                        tg.create_task(self._execute_command(command))
 
     def _get_or_create_event_processing_data(
         self, event_class: type[T]

@@ -27,9 +27,7 @@ def _verify_event_command_called(
     expected_call: bool,
 ) -> None:
     for command in event_bus._get_refresh_commands(event):
-        assert (
-            call(command, request_response=False) in execute_mock.call_args_list
-        ) == expected_call
+        assert (call(command) in execute_mock.call_args_list) == expected_call
 
 
 async def _subscribeAndVerify(

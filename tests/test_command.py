@@ -82,7 +82,7 @@ async def test_execute_api_timeout_error(
     command = _TestCommand(1)
     authenticator.post_authenticated.side_effect = ApiTimeoutError("test", 60)
     result = await command.execute(authenticator, api_device_info, event_bus_mock)
-    assert not result[0]
+    assert not result.device_reached
     assert (
         "deebot_client.command",
         logging.WARNING,

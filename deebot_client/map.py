@@ -486,7 +486,6 @@ class Map:
                         tg.create_task(
                             self._execute_command(
                                 GetMinorMap(map_id=event.map_id, piece_index=idx),
-                                request_response=False,
                             )
                         )
 

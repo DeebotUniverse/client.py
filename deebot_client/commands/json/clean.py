@@ -32,7 +32,7 @@ class Clean(ExecuteCommand):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> CommandResult:
+    ) -> tuple[CommandResult, dict[str, Any]]:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict):

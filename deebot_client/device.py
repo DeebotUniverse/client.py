@@ -3,15 +3,17 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Callable, Coroutine
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Any, Final, Generic, Protocol
+from typing import TYPE_CHECKING, Any, Final, Generic
 
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
+from .command import Command
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
@@ -30,21 +32,14 @@ from .messages import get_message
 from .models import DeviceCapabilities, DeviceInfo, State
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine
-
     from .authentication import Authenticator
-    from .command import Command
+    from .command import DeviceCommandResult
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
 
-class DeviceCommandExecute(Protocol):
-    """Command execute prototype."""
-
-    def __call__(  # noqa: D102
-        self, command: Command, *, request_response: bool = False
-    ) -> Coroutine[Any, Any, tuple[bool, dict[str, Any]]]: ...
+DeviceCommandExecute = Callable[[Command], Coroutine[Any, Any, dict[str, Any]]]
 
 
 class Device(Generic[DeviceCapabilities]):
@@ -115,14 +110,15 @@ class Device(Generic[DeviceCapabilities]):
 
         self.events.subscribe(NetworkInfoEvent, on_network)
 
-    async def execute_command(
-        self,
-        command: Command,
-        *,
-        request_response: bool = False,
-    ) -> tuple[bool, dict[str, Any]]:
-        """Execute given command."""
-        return await self._execute_command(command, request_response=request_response)
+    async def execute_command(self, command: Command) -> dict[str, Any]:
+        """Execute given command.
+
+        Returns
+        -------
+            command_response (dict[str, Any]) The command raw response.
+
+        """
+        return (await self._execute_command(command)).raw_response
 
     async def initialize(self, client: MqttClient) -> None:
         """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
@@ -157,14 +153,10 @@ class Device(Generic[DeviceCapabilities]):
                     for command in self.capabilities.get_refresh_commands(
                         AvailabilityEvent
                     ):
-                        tasks.add(
-                            asyncio.create_task(
-                                self._execute_command(command, request_response=False)
-                            )
-                        )
+                        tasks.add(asyncio.create_task(self._execute_command(command)))
 
                     result = await asyncio.gather(*tasks)
-                    self._set_available(available=all(r[0] for r in result))
+                    self._set_available(available=all(r.device_reached for r in result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
@@ -176,22 +168,16 @@ class Device(Generic[DeviceCapabilities]):
     async def _execute_command(
         self,
         command: Command,
-        *,
-        request_response: bool = False,
-    ) -> tuple[bool, dict[str, Any]]:
+    ) -> DeviceCommandResult:
         """Execute given command."""
         async with self._semaphore:
             result = await command.execute(
-                self._authenticator,
-                self.device_info,
-                self.events,
-                request_response=request_response,
+                self._authenticator, self.device_info, self.events
             )
-            if result[0]:
+            if result.device_reached:
                 self._set_available(available=True)
-                return result
 
-        return (False, {})
+            return result
 
     def _set_available(self, *, available: bool) -> None:
         """Set available."""

@@ -64,9 +64,9 @@ async def main():
     bot.events.subscribe(BatteryEvent, on_battery)
 
     # Execute commands
-    await bot.execute_command(Clean(CleanAction.START), CommandResponseType.STATUS_ONLY)
+    await bot.execute_command(Clean(CleanAction.START))
     await asyncio.sleep(900)  # Wait for...
-    await bot.execute_command(Charge(), CommandResponseType.STATUS_ONLY)
+    await bot.execute_command(Charge())
 
 
 if __name__ == '__main__':

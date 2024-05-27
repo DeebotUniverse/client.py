@@ -309,7 +309,7 @@ async def test_GetLifeSpan(
     ],
 )
 async def test_GetLifeSpan_response(command: GetLifeSpan, json: dict[str, Any]) -> None:
-    await assert_command_response(command, json, json.get("resp"))
+    await assert_command_response(command, json, json)
 
 
 @pytest.mark.parametrize(
