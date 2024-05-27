@@ -15,6 +15,6 @@ async def test_GetCutDirection() -> None:
 
 
 @pytest.mark.parametrize("angle", [1, 45, 90])
-async def test_SetCleanCount(angle: int) -> None:
+async def test_SetCutDirection(angle: int) -> None:
     args = {"angle": angle}
     await assert_set_command(SetCutDirection(angle), args, CutDirectionEvent(angle))
