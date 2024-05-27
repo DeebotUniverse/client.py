@@ -71,7 +71,7 @@ class BaseContainer(ABC):
 
     def __init__(self) -> None:
         self.container: Container | None = None
-        self._start_time: datetime = datetime(1, 1, 1)
+        self._start_time: datetime | None = None
 
     @property
     def image(self) -> str:
@@ -153,7 +153,7 @@ class BaseContainer(ABC):
         if self.container is None:
             raise ContainerNotStartedError
 
-        if since_last_start:
+        if since_last_start and self._start_time:
             logs: bytes = self.container.logs(since=self._start_time)
         else:
             logs = self.container.logs()
