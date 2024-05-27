@@ -75,7 +75,7 @@ async def test_available_check_and_teardown(
     await assert_received_status(expected=False)
 
     # Simulate bot reached by returning True
-    execute_mock.return_value = True
+    execute_mock.return_value = DeviceCommandResult(device_reached=True)
 
     await asyncio.sleep(2)
     execute_mock.await_count = 2
