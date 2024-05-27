@@ -17,7 +17,6 @@ import zlib
 from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
 
-from deebot_client.command import CommandResponseType
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .commands.json import GetMinorMap
@@ -43,9 +42,9 @@ from .util import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Sequence
+    from collections.abc import Callable, Sequence
 
-    from .command import Command
+    from .device import DeviceCommandExecute
     from .event_bus import EventBus
 
 
@@ -367,9 +366,7 @@ class Map:
 
     def __init__(
         self,
-        execute_command: Callable[
-            [Command, CommandResponseType], Coroutine[Any, Any, None]
-        ],
+        execute_command: DeviceCommandExecute,
         event_bus: EventBus,
     ) -> None:
         self._execute_command = execute_command
@@ -489,7 +486,7 @@ class Map:
                         tg.create_task(
                             self._execute_command(
                                 GetMinorMap(map_id=event.map_id, piece_index=idx),
-                                CommandResponseType.STATUS_ONLY,
+                                request_response=False,
                             )
                         )
 

@@ -28,8 +28,4 @@ async def test_GetPos_response() -> None:
             {"chargePos": {"x": 5, "y": 9}, "deebotPos": {"x": 1, "y": 5, "a": 85}}
         )
     )
-    expected_response = [
-        Position(type=PositionType.DEEBOT, x=1, y=5, a=85),
-        Position(type=PositionType.CHARGER, x=5, y=9, a=0),
-    ]
-    await assert_command_response(GetPos(), json, expected_response)
+    await assert_command_response(GetPos(), json, json.get("resp"))

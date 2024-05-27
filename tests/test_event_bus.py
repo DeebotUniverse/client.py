@@ -7,7 +7,6 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
-from deebot_client.command import CommandResponseType
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterInfoEvent
@@ -29,8 +28,7 @@ def _verify_event_command_called(
 ) -> None:
     for command in event_bus._get_refresh_commands(event):
         assert (
-            call(command, CommandResponseType.STATUS_ONLY)
-            in execute_mock.call_args_list
+            call(command, request_response=False) in execute_mock.call_args_list
         ) == expected_call
 
 

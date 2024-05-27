@@ -178,7 +178,7 @@ async def test_GetLifeSpan(
 
 
 @pytest.mark.parametrize(
-    ("command", "json", "expected"),
+    ("command", "json"),
     [
         (
             GetLifeSpan(
@@ -221,70 +221,48 @@ async def test_GetLifeSpan(
                     ]
                 )
             ),
-            [
-                LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),
-                LifeSpanEvent(LifeSpan.FILTER, 99.71, 7179),
-                LifeSpanEvent(LifeSpan.SIDE_BRUSH, 99.74, 8977),
-                LifeSpanEvent(LifeSpan.UNIT_CARE, 14.72, 265),
-                LifeSpanEvent(LifeSpan.ROUND_MOP, 75.78, 6820),
-                LifeSpanEvent(LifeSpan.AIR_FRESHENER, 97.43, 17537),
-                LifeSpanEvent(LifeSpan.UV_SANITIZER, 99.84, 898586),
-                LifeSpanEvent(LifeSpan.HUMIDIFY, 98.53, 191547),
-                LifeSpanEvent(LifeSpan.HUMIDIFY_MAINTENANCE, 51.53, 22260),
-                LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400),
-                LifeSpanEvent(LifeSpan.DUST_BAG, 67.7, 2031),
-                LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000),
-                LifeSpanEvent(LifeSpan.STRAINER, 100.0, 1800),
-            ],
         ),
         (
             GetLifeSpan({LifeSpan.BRUSH}),
             get_request_json(
                 get_success_body([{"type": "brush", "left": 17979, "total": 18000}])
             ),
-            [LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979)],
         ),
         (
             GetLifeSpan([LifeSpan.FILTER]),
             get_request_json(
                 get_success_body([{"type": "heap", "left": 7179, "total": 7200}])
             ),
-            [LifeSpanEvent(LifeSpan.FILTER, 99.71, 7179)],
         ),
         (
             GetLifeSpan([LifeSpan.SIDE_BRUSH]),
             get_request_json(
                 get_success_body([{"type": "sideBrush", "left": 8977, "total": 9000}])
             ),
-            [LifeSpanEvent(LifeSpan.SIDE_BRUSH, 99.74, 8977)],
         ),
         (
             GetLifeSpan({LifeSpan.UNIT_CARE}),
             get_request_json(
                 get_success_body([{"type": "unitCare", "left": 265, "total": 1800}])
             ),
-            [LifeSpanEvent(LifeSpan.UNIT_CARE, 14.72, 265)],
         ),
         (
             GetLifeSpan({LifeSpan.ROUND_MOP}),
             get_request_json(
                 get_success_body([{"type": "roundMop", "left": 6820, "total": 9000}])
             ),
-            [LifeSpanEvent(LifeSpan.ROUND_MOP, 75.78, 6820)],
         ),
         (
             GetLifeSpan({LifeSpan.AIR_FRESHENER}),
             get_request_json(
                 get_success_body([{"type": "dModule", "left": 17537, "total": 18000}])
             ),
-            [LifeSpanEvent(LifeSpan.AIR_FRESHENER, 97.43, 17537)],
         ),
         (
             GetLifeSpan({LifeSpan.UV_SANITIZER}),
             get_request_json(
                 get_success_body([{"type": "uv", "left": 898586, "total": 900000}])
             ),
-            [LifeSpanEvent(LifeSpan.UV_SANITIZER, 99.84, 898586)],
         ),
         (
             GetLifeSpan({LifeSpan.HUMIDIFY}),
@@ -293,14 +271,12 @@ async def test_GetLifeSpan(
                     [{"type": "humidify", "left": 191547, "total": 194400}]
                 )
             ),
-            [LifeSpanEvent(LifeSpan.HUMIDIFY, 98.53, 191547)],
         ),
         (
             GetLifeSpan({LifeSpan.HUMIDIFY_MAINTENANCE}),
             get_request_json(
                 get_success_body([{"type": "wbCare", "left": 22260, "total": 43200}])
             ),
-            [LifeSpanEvent(LifeSpan.HUMIDIFY_MAINTENANCE, 51.53, 22260)],
         ),
         (
             GetLifeSpan({LifeSpan.CLEANING_FLUID}),
@@ -309,14 +285,12 @@ async def test_GetLifeSpan(
                     [{"type": "autoWater_cleaningFluid", "left": 86400, "total": 86400}]
                 )
             ),
-            [LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400)],
         ),
         (
             GetLifeSpan({LifeSpan.DUST_BAG}),
             get_request_json(
                 get_success_body([{"type": "dustBag", "left": 2031, "total": 3000}])
             ),
-            [LifeSpanEvent(LifeSpan.DUST_BAG, 67.7, 2031)],
         ),
         (
             GetLifeSpan({LifeSpan.HAND_FILTER}),
@@ -325,21 +299,17 @@ async def test_GetLifeSpan(
                     [{"type": "handFilter", "left": 30000, "total": 30000}]
                 )
             ),
-            [LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000)],
         ),
         (
             GetLifeSpan({LifeSpan.STRAINER}),
             get_request_json(
                 get_success_body([{"type": "strainer", "left": 1800, "total": 1800}])
             ),
-            [LifeSpanEvent(LifeSpan.STRAINER, 100.0, 1800)],
         ),
     ],
 )
-async def test_GetLifeSpan_response(
-    command: GetLifeSpan, json: dict[str, Any], expected: list[LifeSpanEvent]
-) -> None:
-    await assert_command_response(command, json, expected)
+async def test_GetLifeSpan_response(command: GetLifeSpan, json: dict[str, Any]) -> None:
+    await assert_command_response(command, json, json.get("resp"))
 
 
 @pytest.mark.parametrize(

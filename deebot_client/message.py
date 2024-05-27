@@ -104,23 +104,6 @@ class Message(ABC):
         """
         return cls._handle(event_bus, message)
 
-    @classmethod
-    def _get_response_data(cls, message: dict[str, Any] | str) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return message
-
-    @classmethod
-    @final
-    def get_response_data(cls, message: dict[str, Any] | str) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return cls._get_response_data(message)
-
 
 class MessageStr(Message):
     """String message."""
@@ -153,30 +136,6 @@ class MessageStr(Message):
 
         return super()._handle(event_bus, message)
 
-    @classmethod
-    def _get_response_data_str(cls, message: str) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return message
-
-    @classmethod
-    @final
-    def __get_response_data_str(cls, message: str) -> Any:
-        return cls._get_response_data_str(message)
-
-    @classmethod
-    def _get_response_data(cls, message: dict[str, Any] | str) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        if isinstance(message, str):
-            return cls.__get_response_data_str(message)
-
-        return super()._get_response_data(message)
-
 
 class MessageBody(Message):
     """Dict message with body attribute."""
@@ -207,30 +166,6 @@ class MessageBody(Message):
             return cls.__handle_body(event_bus, message["body"])
 
         return super()._handle(event_bus, message)
-
-    @classmethod
-    def _get_response_data_body(cls, body: dict[str, Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return body
-
-    @classmethod
-    @final
-    def __get_response_data_body(cls, body: dict[str, Any]) -> Any:
-        return cls._get_response_data_body(body)
-
-    @classmethod
-    def _get_response_data(cls, message: dict[str, Any] | str) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        if isinstance(message, dict):
-            return cls.__get_response_data_body(message["body"])
-
-        return super()._get_response_data(message)
 
 
 class MessageBodyData(MessageBody):
@@ -272,30 +207,6 @@ class MessageBodyData(MessageBody):
 
         return super()._handle_body(event_bus, body)
 
-    @classmethod
-    def _get_response_data_body_data(cls, data: dict[str, Any] | list[Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return data
-
-    @classmethod
-    @final
-    def __get_response_data_body_data(cls, data: dict[str, Any] | list[Any]) -> Any:
-        return cls._get_response_data_body_data(data)
-
-    @classmethod
-    def _get_response_data_body(cls, body: dict[str, Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        if "data" in body:
-            return cls.__get_response_data_body_data(body["data"])
-
-        return super()._get_response_data_body(body)
-
 
 class MessageBodyDataDict(MessageBodyData):
     """Dict message with body->data attribute as dict."""
@@ -323,31 +234,6 @@ class MessageBodyDataDict(MessageBodyData):
 
         return super()._handle_body_data(event_bus, data)
 
-    @classmethod
-    def _get_response_data_body_data_dict(cls, data: dict[str, Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return data
-
-    @classmethod
-    @final
-    def __get_response_data_body_data_dict(cls, data: dict[str, Any]) -> Any:
-        return cls._get_response_data_body_data_dict(data)
-
-    @classmethod
-    @final
-    def _get_response_data_body_data(cls, data: dict[str, Any] | list[Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        if isinstance(data, dict):
-            return cls.__get_response_data_body_data_dict(data)
-
-        return super()._get_response_data_body_data(data)
-
 
 class MessageBodyDataList(MessageBodyData):
     """Dict message with body->data attribute as list."""
@@ -374,28 +260,3 @@ class MessageBodyDataList(MessageBodyData):
             return cls._handle_body_data_list(event_bus, data)
 
         return super()._handle_body_data(event_bus, data)
-
-    @classmethod
-    def _get_response_data_body_data_list(cls, data: list[Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        return data
-
-    @classmethod
-    @final
-    def __get_response_data_body_data_list(cls, data: list[Any]) -> Any:
-        return cls._get_response_data_body_data_list(data)
-
-    @classmethod
-    @final
-    def _get_response_data_body_data(cls, data: dict[str, Any] | list[Any]) -> Any:
-        """Get message response data.
-
-        :return: Response data
-        """
-        if isinstance(data, list):
-            return cls.__get_response_data_body_data_list(data)
-
-        return super()._get_response_data_body_data(data)

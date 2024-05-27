@@ -7,7 +7,6 @@ from datetime import UTC, datetime, timedelta
 import threading
 from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
 
-from .command import CommandResponseType
 from .events import AvailabilityEvent, Event, StateEvent
 from .logging_filter import get_logger
 from .models import State
@@ -17,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
     from .command import Command
+    from .device import DeviceCommandExecute
 
 _LOGGER = get_logger(__name__)
 
@@ -64,9 +64,7 @@ class EventBus:
 
     def __init__(
         self,
-        execute_command: Callable[
-            [Command, CommandResponseType], Coroutine[Any, Any, None]
-        ],
+        execute_command: DeviceCommandExecute,
         get_refresh_commands: Callable[[type[Event]], list[Command]],
     ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
@@ -195,16 +193,12 @@ class EventBus:
                 return
 
             if len(commands) == 1:
-                await self._execute_command(
-                    commands[0], CommandResponseType.STATUS_ONLY
-                )
+                await self._execute_command(commands[0], request_response=False)
             else:
                 async with asyncio.TaskGroup() as tg:
                     for command in commands:
                         tg.create_task(
-                            self._execute_command(
-                                command, CommandResponseType.STATUS_ONLY
-                            )
+                            self._execute_command(command, request_response=False)
                         )
 
     def _get_or_create_event_processing_data(

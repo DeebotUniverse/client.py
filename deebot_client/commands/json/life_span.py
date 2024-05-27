@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandMqttP2P, CommandWithResponseData, InitParam
+from deebot_client.command import CommandMqttP2P, InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 
@@ -16,9 +16,7 @@ if TYPE_CHECKING:
     from deebot_client.util import LST
 
 
-class GetLifeSpan(
-    JsonCommandWithMessageHandling, CommandWithResponseData, MessageBodyDataList
-):
+class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
     """Get life span command."""
 
     name = "getLifeSpan"
@@ -35,20 +33,6 @@ class GetLifeSpan(
 
         :return: A message response
         """
-        for life_span_event in cls._get_response_data_body_data_list(data):
-            event_bus.notify(life_span_event)
-
-        return HandlingResult.success()
-
-    @classmethod
-    def _get_response_data_body_data_list(
-        cls, data: list[dict[str, Any]]
-    ) -> list[LifeSpanEvent]:
-        """Retrieve message content.
-
-        :return: Message content
-        """
-        life_span_events = []
         for component in data:
             component_type = LifeSpan(component["type"])
             left = int(component["left"])
@@ -58,9 +42,9 @@ class GetLifeSpan(
                 raise ValueError("total not positive!")
 
             percent = round((left / total) * 100, 2)
-            life_span_events.append(LifeSpanEvent(component_type, percent, left))
+            event_bus.notify(LifeSpanEvent(component_type, percent, left))
 
-        return life_span_events
+        return HandlingResult.success()
 
 
 class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):

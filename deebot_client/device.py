@@ -6,9 +6,8 @@ import asyncio
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Any, Final, Generic
+from typing import TYPE_CHECKING, Any, Final, Generic, Protocol
 
-from deebot_client.command import CommandResponseType
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
@@ -31,13 +30,21 @@ from .messages import get_message
 from .models import DeviceCapabilities, DeviceInfo, State
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Coroutine
 
     from .authentication import Authenticator
     from .command import Command
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
+
+
+class DeviceCommandExecute(Protocol):
+    """Command execute prototype."""
+
+    def __call__(  # noqa: D102
+        self, command: Command, *, request_response: bool = False
+    ) -> Coroutine[Any, Any, tuple[bool, dict[str, Any]]]: ...
 
 
 class Device(Generic[DeviceCapabilities]):
@@ -111,10 +118,11 @@ class Device(Generic[DeviceCapabilities]):
     async def execute_command(
         self,
         command: Command,
-        response_type: CommandResponseType = CommandResponseType.STATUS_ONLY,
-    ) -> None:
+        *,
+        request_response: bool = False,
+    ) -> tuple[bool, dict[str, Any]]:
         """Execute given command."""
-        await self._execute_command(command, response_type)
+        return await self._execute_command(command, request_response=request_response)
 
     async def initialize(self, client: MqttClient) -> None:
         """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
@@ -151,15 +159,12 @@ class Device(Generic[DeviceCapabilities]):
                     ):
                         tasks.add(
                             asyncio.create_task(
-                                self._execute_command(
-                                    command,
-                                    response_type=CommandResponseType.STATUS_ONLY,
-                                )
+                                self._execute_command(command, request_response=False)
                             )
                         )
 
                     result = await asyncio.gather(*tasks)
-                    self._set_available(available=all(result))
+                    self._set_available(available=all(r[0] for r in result))
                 except Exception:  # pylint: disable=broad-exception-caught
                     _LOGGER.debug(
                         "An exception occurred during the available check",
@@ -171,17 +176,22 @@ class Device(Generic[DeviceCapabilities]):
     async def _execute_command(
         self,
         command: Command,
-        response_type: CommandResponseType = CommandResponseType.STATUS_ONLY,
-    ) -> bool:
+        *,
+        request_response: bool = False,
+    ) -> tuple[bool, dict[str, Any]]:
         """Execute given command."""
         async with self._semaphore:
-            if await command.execute(
-                self._authenticator, self.device_info, self.events, response_type
-            ):
+            result = await command.execute(
+                self._authenticator,
+                self.device_info,
+                self.events,
+                request_response=request_response,
+            )
+            if result[0]:
                 self._set_available(available=True)
-                return True
+                return result
 
-        return False
+        return (False, {})
 
     def _set_available(self, *, available: bool) -> None:
         """Set available."""
