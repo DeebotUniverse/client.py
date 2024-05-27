@@ -153,7 +153,7 @@ class BaseContainer(ABC):
         if self.container is None:
             raise ContainerNotStartedError
 
-        if since_last_start:
+        if since_last_start and self._start_time:
             logs: bytes = self.container.logs(since=self._start_time)
         else:
             logs = self.container.logs()
