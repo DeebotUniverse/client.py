@@ -52,7 +52,7 @@ class DeviceCommandResult:
     -------
         device_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
                                This value is not indicating if the command was executed successfully.
-        raw_response (dict[strm, Any]): The command response data.
+        raw_response (dict[str, Any]): The command response data.
 
     """
 
