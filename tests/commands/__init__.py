@@ -87,38 +87,3 @@ async def assert_command(
             event_bus.notify.assert_called_once_with(expected_events)
     else:
         event_bus.notify.assert_not_called()
-
-
-async def assert_command_response(
-    command: Command,
-    json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
-    expected_response: dict[str, Any] | None,
-    *,
-    command_result: CommandResult | None = None,
-) -> None:
-    command_result = command_result or CommandResult.success()
-    event_bus = Mock(spec_set=EventBus)
-    authenticator = Mock(spec_set=Authenticator)
-    authenticator.authenticate = AsyncMock(
-        return_value=Credentials("token", "user_id", 9999)
-    )
-    if isinstance(json_api_response, tuple):
-        authenticator.post_authenticated = AsyncMock(side_effect=json_api_response)
-    else:
-        authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
-    device_info = ApiDeviceInfo(
-        {
-            "company": "company",
-            "did": "did",
-            "name": "name",
-            "nick": "nick",
-            "resource": "resource",
-            "class": "get_class",
-        }
-    )
-
-    command, verify_result = _wrap_command(command)
-    await command.execute(authenticator, device_info, event_bus)
-
-    # verify
-    verify_result(command_result, expected_response)
