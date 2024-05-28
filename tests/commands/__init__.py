@@ -50,6 +50,7 @@ async def assert_command(
     expected_events: Event | None | Sequence[Event],
     *,
     command_result: CommandResult | None = None,
+    expected_raw_response: dict[str, Any] | None = None,
 ) -> None:
     command_result = command_result or CommandResult.success()
     event_bus = Mock(spec_set=EventBus)
@@ -61,6 +62,8 @@ async def assert_command(
         authenticator.post_authenticated = AsyncMock(side_effect=json_api_response)
     else:
         authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
+        if expected_raw_response is None:
+            expected_raw_response = json_api_response
     device_info = ApiDeviceInfo(
         {
             "company": "company",
@@ -77,7 +80,7 @@ async def assert_command(
     await command.execute(authenticator, device_info, event_bus)
 
     # verify
-    verify_result(command_result, None)
+    verify_result(command_result, expected_raw_response)
     authenticator.post_authenticated.assert_called()
     if expected_events:
         if isinstance(expected_events, Sequence):

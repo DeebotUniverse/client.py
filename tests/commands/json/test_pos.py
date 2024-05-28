@@ -4,7 +4,7 @@ from deebot_client.commands.json import GetPos
 from deebot_client.events import Position, PositionsEvent, PositionType
 from tests.helpers import get_request_json, get_success_body
 
-from . import assert_command, assert_command_response
+from . import assert_command
 
 
 async def test_GetPos() -> None:
@@ -20,12 +20,3 @@ async def test_GetPos() -> None:
         ]
     )
     await assert_command(GetPos(), json, expected_event)
-
-
-async def test_GetPos_response() -> None:
-    json = get_request_json(
-        get_success_body(
-            {"chargePos": {"x": 5, "y": 9}, "deebotPos": {"x": 1, "y": 5, "a": 85}}
-        )
-    )
-    await assert_command_response(GetPos(), json, json)
