@@ -81,7 +81,8 @@ async def test_execute_api_timeout_error(
     """Test that on api timeout the stack trace is not logged."""
     command = _TestCommand(1)
     authenticator.post_authenticated.side_effect = ApiTimeoutError("test", 60)
-    assert not await command.execute(authenticator, api_device_info, event_bus_mock)
+    result = await command.execute(authenticator, api_device_info, event_bus_mock)
+    assert not result.device_reached
     assert (
         "deebot_client.command",
         logging.WARNING,

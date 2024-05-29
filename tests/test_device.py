@@ -6,6 +6,7 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
+from deebot_client.command import DeviceCommandResult
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
@@ -65,7 +66,7 @@ async def test_available_check_and_teardown(
     execute_mock.assert_not_called()
 
     # Simulate bot not reached by returning False
-    execute_mock.return_value = False
+    execute_mock.return_value = DeviceCommandResult(device_reached=False)
 
     # Wait longer than the interval to be sure task will be executed
     await asyncio.sleep(2.1)
@@ -74,7 +75,7 @@ async def test_available_check_and_teardown(
     await assert_received_status(expected=False)
 
     # Simulate bot reached by returning True
-    execute_mock.return_value = True
+    execute_mock.return_value = DeviceCommandResult(device_reached=True)
 
     await asyncio.sleep(2)
     execute_mock.await_count = 2

@@ -16,6 +16,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
     from .command import Command
+    from .device import DeviceCommandExecute
 
 _LOGGER = get_logger(__name__)
 
@@ -63,7 +64,7 @@ class EventBus:
 
     def __init__(
         self,
-        execute_command: Callable[[Command], Coroutine[Any, Any, None]],
+        execute_command: DeviceCommandExecute,
         get_refresh_commands: Callable[[type[Event]], list[Command]],
     ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}

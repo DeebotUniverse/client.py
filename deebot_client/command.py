@@ -8,7 +8,10 @@ from dataclasses import dataclass, field
 from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import AvailabilityEvent
-from deebot_client.exceptions import ApiTimeoutError, DeebotError
+from deebot_client.exceptions import (
+    ApiTimeoutError,
+    DeebotError,
+)
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
@@ -39,6 +42,22 @@ class CommandResult(HandlingResult):
     def analyse(cls) -> CommandResult:
         """Create result with handling analyse."""
         return CommandResult(HandlingState.ANALYSE)
+
+
+@dataclass(frozen=True)
+class DeviceCommandResult:
+    """Device command result object.
+
+    Returns
+    -------
+        device_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
+                               This value is not indicating if the command was executed successfully.
+        raw_response (dict[str, Any]): The command response data.
+
+    """
+
+    device_reached: bool
+    raw_response: dict[str, Any] = field(default_factory=dict)
 
 
 class Command(ABC):
@@ -73,17 +92,12 @@ class Command(ABC):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> bool:
-        """Execute command.
-
-        Returns
-        -------
-            bot_reached (bool): True if the command was targeting the bot, and it responded in time. False otherwise.
-                                This value is not indicating if the command was executed successfully.
-
-        """
+    ) -> DeviceCommandResult:
+        """Execute command."""
         try:
-            result = await self._execute(authenticator, device_info, event_bus)
+            result, response = await self._execute(
+                authenticator, device_info, event_bus
+            )
             if result.state == HandlingState.SUCCESS:
                 # Execute command which are requested by the handler
                 async with asyncio.TaskGroup() as tg:
@@ -94,21 +108,24 @@ class Command(ABC):
                             )
                         )
 
-                return self._targets_bot
+                return DeviceCommandResult(
+                    device_reached=self._targets_bot, raw_response=response
+                )
+
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning(
                 "Could not execute command %s",
                 self.name,
                 exc_info=True,
             )
-        return False
+        return DeviceCommandResult(device_reached=False)
 
     async def _execute(
         self,
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> CommandResult:
+    ) -> tuple[CommandResult, dict[str, Any]]:
         """Execute command."""
         try:
             response = await self._execute_api_request(authenticator, device_info)
@@ -117,21 +134,24 @@ class Command(ABC):
                 "Could not execute command %s: Timeout reached",
                 self.name,
             )
-            return CommandResult(HandlingState.ERROR)
+            return CommandResult(HandlingState.ERROR), {}
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
             _LOGGER.debug(
                 "ANALYSE: Could not handle command: %s with %s", self.name, response
             )
-            return CommandResult(
-                HandlingState.ANALYSE_LOGGED,
-                result.args,
-                result.requested_commands,
+            return (
+                CommandResult(
+                    HandlingState.ANALYSE_LOGGED,
+                    result.args,
+                    result.requested_commands,
+                ),
+                response,
             )
         if result.state == HandlingState.ERROR:
             _LOGGER.warning("Could not parse %s: %s", self.name, response)
-        return result
+        return result, response
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo

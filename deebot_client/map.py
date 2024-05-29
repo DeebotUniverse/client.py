@@ -42,9 +42,9 @@ from .util import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Sequence
+    from collections.abc import Callable, Sequence
 
-    from .command import Command
+    from .device import DeviceCommandExecute
     from .event_bus import EventBus
 
 
@@ -366,7 +366,7 @@ class Map:
 
     def __init__(
         self,
-        execute_command: Callable[[Command], Coroutine[Any, Any, None]],
+        execute_command: DeviceCommandExecute,
         event_bus: EventBus,
     ) -> None:
         self._execute_command = execute_command
