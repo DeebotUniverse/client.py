@@ -27,6 +27,7 @@ class Position:
     type: PositionType
     x: int
     y: int
+    a: int
 
 
 @dataclass(frozen=True)

@@ -19,11 +19,13 @@ from deebot_client.commands.json import (
     GetBorderSwitch,
     GetChildLock,
     GetCrossMapBorderWarning,
+    GetCutDirection,
     GetMoveUpWarning,
     GetSafeProtect,
     SetBorderSwitch,
     SetChildLock,
     SetCrossMapBorderWarning,
+    SetCutDirection,
     SetMoveUpWarning,
     SetSafeProtect,
 )
@@ -49,6 +51,7 @@ from deebot_client.events import (
     ChildLockEvent,
     CrossMapBorderWarningEvent,
     CustomCommandEvent,
+    CutDirectionEvent,
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
@@ -103,6 +106,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             border_switch=CapabilitySetEnable(
                 BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
+            ),
+            cut_direction=CapabilitySet(
+                CutDirectionEvent, [GetCutDirection()], SetCutDirection
             ),
             child_lock=CapabilitySetEnable(
                 ChildLockEvent, [GetChildLock()], SetChildLock

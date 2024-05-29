@@ -20,6 +20,7 @@ from .clean_preference import GetCleanPreference, SetCleanPreference
 from .clear_map import ClearMap
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .cross_map_border_warning import GetCrossMapBorderWarning, SetCrossMapBorderWarning
+from .cut_direction import GetCutDirection, SetCutDirection
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
@@ -77,6 +78,8 @@ __all__ = [
     "GetCleanLogs",
     "GetContinuousCleaning",
     "SetContinuousCleaning",
+    "SetCutDirection",
+    "GetCutDirection",
     "GetCrossMapBorderWarning",
     "SetCrossMapBorderWarning",
     "GetEfficiencyMode",
