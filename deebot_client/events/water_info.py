@@ -18,10 +18,19 @@ class WaterAmount(IntEnum):
     ULTRAHIGH = 4
 
 
+@unique
+class SweepType(IntEnum):
+    """Enum class for all possible sweeping types."""
+
+    STANDARD = 1
+    DEEP = 2
+
+
 @dataclass(frozen=True)
 class WaterInfoEvent(Event):
     """Water info event representation."""
 
     amount: WaterAmount
     # None means no data available
+    sweep_type: SweepType | None = None
     mop_attached: bool | None = field(kw_only=True, default=None)

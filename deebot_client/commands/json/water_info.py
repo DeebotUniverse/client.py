@@ -6,7 +6,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
-from deebot_client.events import WaterAmount, WaterInfoEvent
+from deebot_client.events import SweepType, WaterAmount, WaterInfoEvent
 from deebot_client.message import HandlingResult
 from deebot_client.util import get_enum
 
@@ -33,8 +33,15 @@ class GetWaterInfo(JsonGetCommand):
         if mop_attached is not None:
             mop_attached = bool(mop_attached)
 
+        if sweep_type := data.get("sweepType"):
+            sweep_type = SweepType(int(sweep_type))
+
         event_bus.notify(
-            WaterInfoEvent(WaterAmount(int(data["amount"])), mop_attached=mop_attached)
+            WaterInfoEvent(
+                WaterAmount(int(data["amount"])),
+                sweep_type,
+                mop_attached=mop_attached,
+            )
         )
         return HandlingResult.success()
 
@@ -48,10 +55,19 @@ class SetWaterInfo(JsonSetCommand):
         {
             "amount": InitParam(WaterAmount),
             "enable": None,  # Remove it as we don't can set it (App includes it)
+            "sweepType": InitParam(SweepType, "sweep_type", optional=True),
         }
     )
 
-    def __init__(self, amount: WaterAmount | str) -> None:
+    def __init__(
+        self, amount: WaterAmount | str, sweep_type: SweepType | str | None = None
+    ) -> None:
+        params = {}
         if isinstance(amount, str):
             amount = get_enum(WaterAmount, amount)
-        super().__init__({"amount": amount.value})
+        params["amount"] = amount.value
+        if sweep_type:
+            if isinstance(sweep_type, str):
+                sweep_type = get_enum(SweepType, sweep_type)
+            params["sweepType"] = sweep_type.value
+        super().__init__(params)

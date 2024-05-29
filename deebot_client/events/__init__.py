@@ -24,7 +24,7 @@ from .map import (
     PositionType,
 )
 from .network import NetworkInfoEvent
-from .water_info import WaterAmount, WaterInfoEvent
+from .water_info import SweepType, WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
@@ -52,6 +52,7 @@ __all__ = [
     "PositionType",
     "PositionsEvent",
     "SweepModeEvent",
+    "SweepType",
     "WaterAmount",
     "WaterInfoEvent",
     "WorkMode",
