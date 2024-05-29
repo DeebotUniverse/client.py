@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.border_switch import GetBorderSwitch
@@ -49,6 +50,7 @@ from deebot_client.events import (
     ContinuousCleaningEvent,
     CrossMapBorderWarningEvent,
     CustomCommandEvent,
+    CutDirectionEvent,
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
@@ -147,6 +149,7 @@ async def test_get_static_device_info(
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],
                 BorderSwitchEvent: [GetBorderSwitch()],
+                CutDirectionEvent: [GetCutDirection()],
                 ChildLockEvent: [GetChildLock()],
                 CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
                 CustomCommandEvent: [],
@@ -170,6 +173,7 @@ async def test_get_static_device_info(
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],
                 BorderSwitchEvent: [GetBorderSwitch()],
+                CutDirectionEvent: [GetCutDirection()],
                 ChildLockEvent: [GetChildLock()],
                 CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
                 CustomCommandEvent: [],
