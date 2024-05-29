@@ -260,6 +260,7 @@ class InitParam:
 
     type_: type
     name: str | None = None
+    optional: bool = field(default=False, kw_only=True)
 
 
 class CommandMqttP2P(Command, ABC):
@@ -283,7 +284,12 @@ class CommandMqttP2P(Command, ABC):
                 # Remove field
                 data.pop(name, None)
             else:
-                values[param.name or name] = _pop_or_raise(name, param.type_, data)
+                try:
+                    values[param.name or name] = _pop_or_raise(name, param.type_, data)
+                except KeyError as err:
+                    if not param.optional:
+                        msg = f'"{name}" is missing in {data}'
+                        raise DeebotError(msg) from err
 
         if data:
             _LOGGER.debug("Following data will be ignored: %s", data)
@@ -292,11 +298,7 @@ class CommandMqttP2P(Command, ABC):
 
 
 def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
-    try:
-        value = data.pop(name)
-    except KeyError as err:
-        msg = f'"{name}" is missing in {data}'
-        raise DeebotError(msg) from err
+    value = data.pop(name)
     try:
         return type_(value)
     except ValueError as err:

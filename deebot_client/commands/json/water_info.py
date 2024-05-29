@@ -33,9 +33,8 @@ class GetWaterInfo(JsonGetCommand):
         if mop_attached is not None:
             mop_attached = bool(mop_attached)
 
-        sweep_type = data.get("sweepType")
-        if sweep_type is not None:
-            sweep_type = SweepType(int(data["sweepType"]))
+        if sweep_type := data.get("sweepType"):
+            sweep_type = SweepType(int(sweep_type))
 
         event_bus.notify(
             WaterInfoEvent(
@@ -55,8 +54,8 @@ class SetWaterInfo(JsonSetCommand):
     _mqtt_params = MappingProxyType(
         {
             "amount": InitParam(WaterAmount),
-            "sweepType": InitParam(SweepType),
             "enable": None,  # Remove it as we don't can set it (App includes it)
+            "sweepType": InitParam(SweepType, "sweep_type", optional=True),
         }
     )
 
