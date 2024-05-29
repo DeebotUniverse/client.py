@@ -46,6 +46,7 @@ from deebot_client.events import (
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
+    WashIntervalEvent,
     WaterAmount,
     WaterInfoEvent,
     WorkMode,
@@ -138,6 +139,7 @@ class CapabilityClean:
     count: CapabilitySet[CleanCountEvent, int] | None = None
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
+    wash_interval: CapabilitySet[WashIntervalEvent, int] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
 
