@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import ANY, AsyncMock, Mock, call
+from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
 from svg import (
@@ -15,8 +15,11 @@ from svg import (
     MoveToRel,
     PathData,
     Polygon,
+    Scale,
     SmoothCubicBezierRel,
+    Use,
     VerticalLineToRel,
+    ViewBoxSpec,
 )
 
 from deebot_client.events.map import (
@@ -32,14 +35,15 @@ from deebot_client.events.map import (
     PositionType,
 )
 from deebot_client.map import (
-    AxisManipulation,
     Map,
     MapData,
-    MapManipulation,
     Path,
     Point,
     TracePoint,
+    ViewBoxFloat,
     _calc_point,
+    _calc_point_in_viewbox,
+    _get_svg_positions,
     _get_svg_subset,
     _points_to_svg_path,
 )
@@ -53,54 +57,41 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 _test_calc_point_data = [
-    (10, 100, (100, 0, 200, 50), Point(100.0, 0.0)),
-    (10, 100, (0, 0, 1000, 1000), Point(400.2, 598.0)),
-    (None, 100, (0, 0, 1000, 1000), Point(0, 598.0)),
+    (5000, 0, Point(100.0, 0.0)),
+    (20010, -29900, Point(400.2, 598.0)),
+    (None, 29900, Point(0, -598.0)),
 ]
 
 
-@pytest.mark.parametrize(("x", "y", "image_box", "expected"), _test_calc_point_data)
+@pytest.mark.parametrize(("x", "y", "expected"), _test_calc_point_data)
 def test_calc_point(
     x: int,
     y: int,
-    image_box: tuple[int, int, int, int],
     expected: Point,
 ) -> None:
-    manipulation = MapManipulation(
-        AxisManipulation(
-            map_shift=image_box[0],
-            svg_max=image_box[2] - image_box[0],
-        ),
-        AxisManipulation(
-            map_shift=image_box[1],
-            svg_max=image_box[3] - image_box[1],
-            _transform=lambda c, v: 2 * c - v,
-        ),
-    )
-    result = _calc_point(x, y, manipulation)
+    result = _calc_point(x, y)
     assert result == expected
 
 
-@pytest.mark.parametrize(("error"), [ValueError(), ZeroDivisionError()])
-def test_calc_point_exceptions(
-    error: Exception,
-) -> None:
-    def transform(_: float, __: float) -> float:
-        raise error
+_test_calc_point_in_viewbox_data = [
+    (100, 100, ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
+    (-64000, -64000, ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
+    (64000, 64000, ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
+    (None, 1000, ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
+]
 
-    manipulation = MapManipulation(
-        AxisManipulation(
-            map_shift=50,
-            svg_max=100,
-            _transform=transform,
-        ),
-        AxisManipulation(
-            map_shift=50,
-            svg_max=100,
-        ),
-    )
-    result = _calc_point(100, 100, manipulation)
-    assert result == Point(0, 100)
+
+@pytest.mark.parametrize(
+    ("x", "y", "view_box", "expected"), _test_calc_point_in_viewbox_data
+)
+def test_calc_point_in_viewbox(
+    x: int,
+    y: int,
+    view_box: ViewBoxSpec,
+    expected: Point,
+) -> None:
+    result = _calc_point_in_viewbox(x, y, ViewBoxFloat(view_box))
+    assert result == expected
 
 
 async def test_MapData(event_bus: EventBus) -> None:
@@ -164,6 +155,34 @@ async def test_Map_subscriptions(
 
     await map.teardown()
     assert not map._unsubscribers
+
+
+@patch(
+    "deebot_client.map.decompress_7z_base64_data",
+    Mock(return_value=b"\x10\x00\x00\x01\x00"),
+)
+async def test_Map_svg_traces_path(
+    execute_mock: AsyncMock, event_bus_mock: Mock
+) -> None:
+    map = Map(execute_mock, event_bus_mock)
+
+    path = map._get_svg_traces_path()
+    assert path is None
+
+    map._update_trace_points("")
+    path = map._get_svg_traces_path()
+
+    assert path == Path(
+        fill="none",
+        stroke="#fff",
+        stroke_width=1.5,
+        stroke_linejoin="round",
+        vector_effect="non-scaling-stroke",
+        transform=[
+            Scale(0.2, -0.2),
+        ],
+        d=[MoveTo(x=16, y=256)],
+    )
 
 
 def test_compact_path() -> None:
@@ -236,7 +255,7 @@ def test_points_to_svg_path(
                 stroke_width=1.5,
                 stroke_dasharray=[4],
                 vector_effect="non-scaling-stroke",
-                d=[MoveTo(x=322.0, y=413.36), HorizontalLineToRel(dx=35.34)],
+                d=[MoveTo(x=-78.0, y=-13.36), HorizontalLineToRel(dx=35.34)],
             ),
         ),
         (
@@ -251,20 +270,52 @@ def test_points_to_svg_path(
                 stroke_width=1.5,
                 stroke_dasharray=[4],
                 vector_effect="non-scaling-stroke",
-                points=[391.16, 458.2, 391.16, 419.64, 424.28, 419.64, 424.28, 458.2],
+                points=[-8.84, -58.2, -8.84, -19.64, 24.28, -19.64, 24.28, -58.2],
             ),
         ),
     ],
 )
 def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> None:
-    manipulation = MapManipulation(
-        AxisManipulation(
-            map_shift=0,
-            svg_max=1000,
-        ),
-        AxisManipulation(
-            map_shift=0,
-            svg_max=1000,
-        ),
-    )
-    assert _get_svg_subset(subset, manipulation) == expected
+    assert _get_svg_subset(subset) == expected
+
+
+_test_get_svg_positions_data = [
+    (
+        [Position(PositionType.CHARGER, 5000, -55000, 0)],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#c", x=100, y=500)],
+    ),
+    (
+        [Position(PositionType.DEEBOT, 15000, 15000, 0)],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=300, y=-300)],
+    ),
+    (
+        [
+            Position(PositionType.CHARGER, 25000, 55000, 0),
+            Position(PositionType.DEEBOT, -5000, -50000, 0),
+        ],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
+    ),
+    (
+        [
+            Position(PositionType.DEEBOT, -10000, 10000, 0),
+            Position(PositionType.CHARGER, 50000, 5000, 0),
+        ],
+        ViewBoxSpec(-500, -500, 1000, 1000),
+        [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
+    ),
+]
+
+
+@pytest.mark.parametrize(
+    ("positions", "view_box", "expected"), _test_get_svg_positions_data
+)
+def test_get_svg_positions(
+    positions: list[Position],
+    view_box: ViewBoxSpec,
+    expected: list[Use],
+) -> None:
+    result = _get_svg_positions(positions, ViewBoxFloat(view_box))
+    assert result == expected
