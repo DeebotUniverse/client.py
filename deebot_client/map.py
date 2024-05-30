@@ -17,7 +17,6 @@ import zlib
 from PIL import Image, ImageColor, ImageOps, ImagePalette
 import svg
 
-from deebot_client import util
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .commands.json import GetMinorMap
@@ -39,6 +38,7 @@ from .models import Room
 from .util import (
     OnChangedDict,
     OnChangedList,
+    decompress_7z_base64_data,
 )
 
 if TYPE_CHECKING:
@@ -163,6 +163,18 @@ class BackgroundImage:
     image: bytes
 
 
+class ViewBoxFloat:
+    """ViewBox where all values are converted to float."""
+
+    def __init__(self, view_box: svg.ViewBoxSpec) -> None:
+        self.min_x = float(view_box.min_x)
+        self.min_y = float(view_box.min_y)
+        self.width = float(view_box.width)
+        self.height = float(view_box.height)
+        self.max_x = self.min_x + self.width
+        self.max_y = self.min_y + self.height
+
+
 # SVG definitions referred by map elements
 _SVG_DEFS = svg.Defs(
     elements=[
@@ -221,16 +233,16 @@ def _calc_point(
     )
 
 
-def _calc_point_in_viewbox(x: float, y: float, viewbox: svg.ViewBoxSpec) -> Point:
+def _calc_point_in_viewbox(x: float, y: float, view_box: ViewBoxFloat) -> Point:
     point = _calc_point(x, y)
     return Point(
         min(
-            max(point.x, float(viewbox.min_x)),
-            float(viewbox.min_x) + float(viewbox.width),
+            max(point.x, view_box.min_x),
+            view_box.max_x,
         ),
         min(
-            max(point.y, float(viewbox.min_y)),
-            float(viewbox.min_y) + float(viewbox.height),
+            max(point.y, view_box.min_y),
+            view_box.max_y,
         ),
     )
 
@@ -263,11 +275,11 @@ def _points_to_svg_path(
 
 
 def _get_svg_positions(
-    positions: list[Position], viewbox: svg.ViewBoxSpec
+    positions: list[Position], view_box: ViewBoxFloat
 ) -> list[svg.Element]:
     svg_positions: list[svg.Element] = []
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
-        pos = _calc_point_in_viewbox(position.x, position.y, viewbox)
+        pos = _calc_point_in_viewbox(position.x, position.y, view_box)
         svg_positions.append(
             svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
         )
@@ -559,7 +571,7 @@ class Map:
 
         # Bot and Charge stations
         svg_map.elements.extend(
-            _get_svg_positions(self._map_data.positions, svg_map.viewBox)
+            _get_svg_positions(self._map_data.positions, ViewBoxFloat(svg_map.viewBox))
         )
 
         self._last_image = str(svg_map)

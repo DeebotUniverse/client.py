@@ -40,6 +40,7 @@ from deebot_client.map import (
     Path,
     Point,
     TracePoint,
+    ViewBoxFloat,
     _calc_point,
     _calc_point_in_viewbox,
     _get_svg_positions,
@@ -81,15 +82,15 @@ _test_calc_point_in_viewbox_data = [
 
 
 @pytest.mark.parametrize(
-    ("x", "y", "viewbox", "expected"), _test_calc_point_in_viewbox_data
+    ("x", "y", "view_box", "expected"), _test_calc_point_in_viewbox_data
 )
 def test_calc_point_in_viewbox(
     x: int,
     y: int,
-    viewbox: ViewBoxSpec,
+    view_box: ViewBoxSpec,
     expected: Point,
 ) -> None:
-    result = _calc_point_in_viewbox(x, y, viewbox)
+    result = _calc_point_in_viewbox(x, y, ViewBoxFloat(view_box))
     assert result == expected
 
 
@@ -157,7 +158,7 @@ async def test_Map_subscriptions(
 
 
 @patch(
-    "deebot_client.util.decompress_7z_base64_data",
+    "deebot_client.map.decompress_7z_base64_data",
     Mock(return_value=b"\x10\x00\x00\x01\x00"),
 )
 async def test_Map_svg_traces_path(
@@ -309,12 +310,12 @@ _test_get_svg_positions_data = [
 
 
 @pytest.mark.parametrize(
-    ("positions", "viewbox", "expected"), _test_get_svg_positions_data
+    ("positions", "view_box", "expected"), _test_get_svg_positions_data
 )
 def test_get_svg_positions(
     positions: list[Position],
-    viewbox: ViewBoxSpec,
+    view_box: ViewBoxSpec,
     expected: list[Use],
 ) -> None:
-    result = _get_svg_positions(positions, viewbox)
+    result = _get_svg_positions(positions, ViewBoxFloat(view_box))
     assert result == expected
