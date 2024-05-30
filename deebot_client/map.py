@@ -269,11 +269,7 @@ def _get_svg_positions(
     for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
         pos = _calc_point_in_viewbox(position.x, position.y, viewbox)
         svg_positions.append(
-            svg.Use(
-                href=f"#{_POSITIONS_SVG[position.type].svg_id}",
-                x=pos.x,
-                y=pos.y,
-            )
+            svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
         )
 
     return svg_positions
@@ -385,7 +381,7 @@ class Map:
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = util.decompress_7z_base64_data(data)
+        trace_points = decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
             position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
@@ -612,7 +608,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = util.decompress_7z_base64_data(base64_data)
+        decoded = decompress_7z_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 

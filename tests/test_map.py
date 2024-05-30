@@ -280,27 +280,27 @@ def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> Non
 
 _test_get_svg_positions_data = [
     (
-        [Position(PositionType.CHARGER, 5000, -55000)],
+        [Position(PositionType.CHARGER, 5000, -55000, 0)],
         ViewBoxSpec(-500, -500, 1000, 1000),
         [Use(href="#c", x=100, y=500)],
     ),
     (
-        [Position(PositionType.DEEBOT, 15000, 15000)],
+        [Position(PositionType.DEEBOT, 15000, 15000, 0)],
         ViewBoxSpec(-500, -500, 1000, 1000),
         [Use(href="#d", x=300, y=-300)],
     ),
     (
         [
-            Position(PositionType.CHARGER, 25000, 55000),
-            Position(PositionType.DEEBOT, -5000, -50000),
+            Position(PositionType.CHARGER, 25000, 55000, 0),
+            Position(PositionType.DEEBOT, -5000, -50000, 0),
         ],
         ViewBoxSpec(-500, -500, 1000, 1000),
         [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
     ),
     (
         [
-            Position(PositionType.DEEBOT, -10000, 10000),
-            Position(PositionType.CHARGER, 50000, 5000),
+            Position(PositionType.DEEBOT, -10000, 10000, 0),
+            Position(PositionType.CHARGER, 50000, 5000, 0),
         ],
         ViewBoxSpec(-500, -500, 1000, 1000),
         [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
@@ -317,10 +317,4 @@ def test_get_svg_positions(
     expected: list[Use],
 ) -> None:
     result = _get_svg_positions(positions, viewbox)
-    assert len(result) == len(expected)
-    for result_item, expected_item in zip(result, expected, strict=True):
-        assert type(result_item) == Use
-        assert result_item.href == expected_item.href
-        assert result_item.x == expected_item.x
-        assert result_item.y == expected_item.y
-        assert result_item == expected_item
+    assert result == expected
