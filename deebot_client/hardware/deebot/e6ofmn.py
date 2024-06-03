@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from deebot_client.capabilities import (
+    Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -15,7 +16,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
-    VacuumCapabilities,
+    DeviceType,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
@@ -103,7 +104,8 @@ from . import DEVICES
 
 DEVICES[short_name(__name__)] = StaticDeviceInfo(
     DataType.JSON,
-    VacuumCapabilities(
+    Capabilities(
+        device_type=DeviceType.VACUUM,
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
         ),

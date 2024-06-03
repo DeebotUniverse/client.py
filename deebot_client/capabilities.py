@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
+from enum import StrEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Generic, TypeVar
 
@@ -207,18 +208,23 @@ class CapabilitySettings:
 class Capabilities(ABC):
     """Capabilities."""
 
+    device_type: DeviceType = field(kw_only=False)
+
     availability: CapabilityEvent[AvailabilityEvent]
     battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute
     clean: CapabilityClean
     custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
+    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel] | None = None
     life_span: CapabilityLifeSpan
+    map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
+    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 
@@ -231,15 +237,8 @@ class Capabilities(ABC):
         return self._events.get(event, [])
 
 
-@dataclass(frozen=True, kw_only=True)
-class VacuumCapabilities(Capabilities):
-    """Vacuum capabilities."""
+class DeviceType(StrEnum):
+    """Device type."""
 
-    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel]
-    map: CapabilityMap
-    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
-
-
-@dataclass(frozen=True, kw_only=True)
-class MowerCapabilities(Capabilities):
-    """Mower capabilities."""
+    VACUUM = "vacuum"
+    MOWER = "mower"
