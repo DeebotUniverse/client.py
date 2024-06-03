@@ -1,6 +1,6 @@
 mypy==1.10.0
 pre-commit==3.7.1
-pycountry==23.12.11
+pycountry==24.6.1
 pylint==3.2.2
 pytest==8.2.1
 pytest-asyncio==0.23.7
