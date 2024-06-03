@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING
 from deebot_client.logging_filter import get_logger
 
 if TYPE_CHECKING:
-    from deebot_client.capabilities import Capabilities
     from deebot_client.models import StaticDeviceInfo
 
 __all__ = ["get_static_device_info"]
@@ -20,7 +19,7 @@ _LOGGER = get_logger(__name__)
 
 FALLBACK = "fallback"
 
-DEVICES: dict[str, StaticDeviceInfo[Capabilities]] = {}
+DEVICES: dict[str, StaticDeviceInfo] = {}
 
 
 def _load() -> None:
@@ -29,7 +28,7 @@ def _load() -> None:
         importlib.import_module(full_package_name)
 
 
-async def get_static_device_info(class_: str) -> StaticDeviceInfo[Capabilities]:
+async def get_static_device_info(class_: str) -> StaticDeviceInfo:
     """Get static device info for given class."""
     if not DEVICES:
         await asyncio.get_event_loop().run_in_executor(None, _load)

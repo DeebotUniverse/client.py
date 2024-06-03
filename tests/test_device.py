@@ -18,7 +18,6 @@ from tests.helpers.tasks import block_till_done
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.capabilities import Capabilities
     from deebot_client.models import ApiDeviceInfo
 
 
@@ -115,7 +114,7 @@ async def test_available_check_and_teardown(
 
 
 async def test_mac_address(
-    authenticator: Authenticator, device_info: DeviceInfo[Capabilities]
+    authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
     """Test that the mac address is change on NetworkInfoEvent."""
     device = Device(device_info, authenticator)

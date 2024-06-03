@@ -5,11 +5,10 @@ from __future__ import annotations
 from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Generic, Required, TypedDict, TypeVar
-
-from deebot_client.capabilities import Capabilities
+from typing import TYPE_CHECKING, Required, TypedDict
 
 if TYPE_CHECKING:
+    from deebot_client.capabilities import Capabilities
     from deebot_client.const import DataType
 
 ApiDeviceInfo = TypedDict(
@@ -26,23 +25,21 @@ ApiDeviceInfo = TypedDict(
     total=False,
 )
 
-DeviceCapabilities = TypeVar("DeviceCapabilities", bound=Capabilities)
-
 
 @dataclass(frozen=True)
-class StaticDeviceInfo(Generic[DeviceCapabilities]):
+class StaticDeviceInfo:
     """Static device info."""
 
     data_type: DataType
-    capabilities: DeviceCapabilities
+    capabilities: Capabilities
 
 
 @dataclass(frozen=True)
-class DeviceInfo(Generic[DeviceCapabilities]):
+class DeviceInfo:
     """Device info."""
 
     api: ApiDeviceInfo
-    static: StaticDeviceInfo[DeviceCapabilities]
+    static: StaticDeviceInfo
 
 
 @dataclass(frozen=True)

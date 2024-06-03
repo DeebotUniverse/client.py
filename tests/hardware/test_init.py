@@ -84,7 +84,6 @@ from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from deebot_client.capabilities import Capabilities
     from deebot_client.command import Command
     from deebot_client.events.base import Event
     from deebot_client.models import StaticDeviceInfo
@@ -98,7 +97,7 @@ if TYPE_CHECKING:
     ],
 )
 async def test_get_static_device_info(
-    class_: str, expected: Callable[[], StaticDeviceInfo[Capabilities]]
+    class_: str, expected: Callable[[], StaticDeviceInfo]
 ) -> None:
     """Test get_static_device_info."""
     static_device_info = await get_static_device_info(class_)
