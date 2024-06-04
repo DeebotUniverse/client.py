@@ -33,8 +33,6 @@ from .fixtures.mqtt_server import MqttServer
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
 
-    from deebot_client.capabilities import Capabilities
-
 
 @pytest.fixture
 async def session() -> AsyncGenerator[ClientSession, None]:
@@ -128,7 +126,7 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-async def static_device_info() -> StaticDeviceInfo[Capabilities]:
+async def static_device_info() -> StaticDeviceInfo:
     return await get_static_device_info(FALLBACK)
 
 
@@ -149,8 +147,8 @@ def api_device_info() -> ApiDeviceInfo:
 @pytest.fixture
 def device_info(
     api_device_info: ApiDeviceInfo,
-    static_device_info: StaticDeviceInfo[Capabilities],
-) -> DeviceInfo[Capabilities]:
+    static_device_info: StaticDeviceInfo,
+) -> DeviceInfo:
     return DeviceInfo(
         api_device_info,
         static_device_info,
@@ -163,9 +161,7 @@ def execute_mock() -> AsyncMock:
 
 
 @pytest.fixture
-def event_bus(
-    execute_mock: AsyncMock, device_info: DeviceInfo[Capabilities]
-) -> EventBus:
+def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
     return EventBus(execute_mock, device_info.static.capabilities.get_refresh_commands)
 
 

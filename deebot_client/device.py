@@ -7,7 +7,7 @@ from collections.abc import Callable, Coroutine
 from contextlib import suppress
 from datetime import datetime
 import json
-from typing import TYPE_CHECKING, Any, Final, Generic
+from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
@@ -29,7 +29,7 @@ from .events import (
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
-from .models import DeviceCapabilities, DeviceInfo, State
+from .models import DeviceInfo, State
 
 if TYPE_CHECKING:
     from .authentication import Authenticator
@@ -42,12 +42,12 @@ _AVAILABLE_CHECK_INTERVAL = 60
 DeviceCommandExecute = Callable[[Command], Coroutine[Any, Any, dict[str, Any]]]
 
 
-class Device(Generic[DeviceCapabilities]):
+class Device:
     """Device representation."""
 
     def __init__(
         self,
-        device_info: DeviceInfo[DeviceCapabilities],
+        device_info: DeviceInfo,
         authenticator: Authenticator,
     ) -> None:
         self.device_info: Final = device_info.api
