@@ -12,3 +12,4 @@ testfixtures==8.3.0
 types-cachetools
 types-mock
 types-Pillow
+urllib3>=2.2.2 # not directly required, pinned by Snyk to avoid a vulnerability
