@@ -184,7 +184,7 @@ class CapabilityStats:
 class CapabilitySettings:
     """Capabilities for settings."""
 
-    advanced_mode: CapabilitySetEnable[AdvancedModeEvent]
+    advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
     efficiency_mode: CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None = (
         None
