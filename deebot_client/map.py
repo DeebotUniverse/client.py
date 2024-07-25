@@ -295,8 +295,8 @@ def _get_svg_subset(
     subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
     points = [
         _calc_point(
-            subset_coordinates[i],
-            subset_coordinates[i + 1],
+            float(subset_coordinates[i]),
+            float(subset_coordinates[i + 1]),
         )
         for i in range(0, len(subset_coordinates), 2)
     ]
