@@ -292,7 +292,7 @@ def _get_svg_subset(
 ) -> Path | svg.Polygon:
     _LOGGER.debug("Creating svg subset for %s", subset)
 
-    subset_coordinates: list[int] = ast.literal_eval(subset.coordinates)
+    subset_coordinates: list[int | str] = ast.literal_eval(subset.coordinates)
     points = [
         _calc_point(
             float(subset_coordinates[i]),
