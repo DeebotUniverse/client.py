@@ -296,6 +296,7 @@ def test_all_models_loaded() -> None:
         "fallback",
         "guzput",
         "itk04l",
+        "kr0277",
         "lf3bn4",
         "lx3j7m",
         "p1jij8",
