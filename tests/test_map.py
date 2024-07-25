@@ -273,6 +273,20 @@ def test_points_to_svg_path(
                 points=[-8.84, -58.2, -8.84, -19.64, 24.28, -19.64, 24.28, -58.2],
             ),
         ),
+        (
+            MapSubsetEvent(
+                id=0,
+                type=MapSetType.VIRTUAL_WALLS,
+                coordinates="['12023', '1979', '12135', '-6720']",
+            ),
+            Path(
+                stroke="#f00000",
+                stroke_width=1.5,
+                stroke_dasharray=[4],
+                vector_effect="non-scaling-stroke",
+                d=[MoveTo(x=240.46, y=-39.58), LineToRel(dx=2.24, dy=173.98)],
+            ),
+        ),
     ],
 )
 def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> None:
