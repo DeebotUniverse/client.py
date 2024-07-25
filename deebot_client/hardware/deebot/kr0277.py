@@ -18,7 +18,6 @@ from deebot_client.capabilities import (
     CapabilityStats,
     DeviceType,
 )
-from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
@@ -27,13 +26,9 @@ from deebot_client.commands.json.carpet import (
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
-from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
+from deebot_client.commands.json.clean import CleanArea, CleanV2, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
-from deebot_client.commands.json.clean_preference import (
-    GetCleanPreference,
-    SetCleanPreference,
-)
 from deebot_client.commands.json.continuous_cleaning import (
     GetContinuousCleaning,
     SetContinuousCleaning,
@@ -56,7 +51,6 @@ from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.const import DataType
 from deebot_client.events import (
-    AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
     CachedMapInfoEvent,
@@ -64,7 +58,6 @@ from deebot_client.events import (
     ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
-    CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
@@ -102,7 +95,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
-            action=CapabilityCleanAction(command=Clean, area=CleanArea),
+            action=CapabilityCleanAction(command=CleanV2, area=CleanArea),
             continuous=CapabilitySetEnable(
                 ContinuousCleaningEvent,
                 [GetContinuousCleaning()],
@@ -110,9 +103,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-            preference=CapabilitySetEnable(
-                CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
-            ),
         ),
         custom=CapabilityCustomCommand(
             event=CustomCommandEvent, get=[], set=CustomCommand
@@ -152,7 +142,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            cached_info=CapabilityEvent(
+                CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
+            ),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
@@ -160,15 +152,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
-            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo(version=2)]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
-            advanced_mode=CapabilitySetEnable(
-                AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
-            ),
             carpet_auto_fan_boost=CapabilitySetEnable(
                 CarpetAutoFanBoostEvent,
                 [GetCarpetAutoFanBoost()],
@@ -179,7 +168,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
@@ -193,7 +182,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 WaterAmount.LOW,
                 WaterAmount.MEDIUM,
                 WaterAmount.HIGH,
-                WaterAmount.ULTRAHIGH,
             ),
         ),
     ),
