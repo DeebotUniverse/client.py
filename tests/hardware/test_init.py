@@ -308,5 +308,6 @@ def test_all_models_loaded() -> None:
         "vi829v",
         "x5d34r",
         "yna5xi",
+        "z4lvk7",
         "zjavof",
     ]
