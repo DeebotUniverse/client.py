@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 
 
 @pytest.fixture
-async def session() -> AsyncGenerator[ClientSession]:
+async def session() -> AsyncGenerator[ClientSession, None]:
     async with ClientSession() as client_session:
         logging.basicConfig(level=logging.DEBUG)
         yield client_session
@@ -84,7 +84,7 @@ def api_client(authenticator: Authenticator) -> ApiClient:
 
 
 @pytest.fixture(scope="session")
-def mqtt_server() -> Generator[MqttServer]:
+def mqtt_server() -> Generator[MqttServer, None, None]:
     server = MqttServer()
     server.run()
     yield server
@@ -106,7 +106,7 @@ def mqtt_config(
 async def mqtt_client(
     authenticator: Authenticator,
     mqtt_config: MqttConfiguration,
-) -> AsyncGenerator[MqttClient]:
+) -> AsyncGenerator[MqttClient, None]:
     client = MqttClient(mqtt_config, authenticator)
     yield client
     await client.disconnect()
@@ -115,7 +115,7 @@ async def mqtt_client(
 @pytest.fixture
 async def test_mqtt_client(
     mqtt_config: MqttConfiguration,
-) -> AsyncGenerator[Client]:
+) -> AsyncGenerator[Client, None]:
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,

@@ -68,7 +68,7 @@ _EVENT = TypeVar("_EVENT", bound=Event)
 
 
 def _get_events(
-    capabilities: DataclassInstance | type[DataclassInstance],
+    capabilities: DataclassInstance,
 ) -> MappingProxyType[type[Event], list[Command]]:
     events = {}
     for field_ in fields(capabilities):

@@ -20,7 +20,7 @@ _WAITING_AFTER_RESTART = 30
 
 
 @pytest.fixture
-def mqtt_server() -> Generator[MqttServer]:
+def mqtt_server() -> Generator[MqttServer, None, None]:
     server = MqttServer()
     server.config.options["ports"] = {"1883/tcp": 54321}
     server.run()
