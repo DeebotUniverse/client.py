@@ -16,7 +16,7 @@ repos:
       - id: ruff
         args:
           - --fix
-          # - --unsafe-fixes
+          - --unsafe-fixes
       - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
     rev: v3.17.0
