@@ -4,6 +4,7 @@ import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from aiohttp import ClientTimeout
 import pytest
 
 from deebot_client.command import CommandMqttP2P, CommandResult, InitParam
@@ -80,7 +81,9 @@ async def test_execute_api_timeout_error(
 ) -> None:
     """Test that on api timeout the stack trace is not logged."""
     command = _TestCommand(1)
-    authenticator.post_authenticated.side_effect = ApiTimeoutError("test", 60)
+    authenticator.post_authenticated.side_effect = ApiTimeoutError(
+        "test", ClientTimeout(60)
+    )
     result = await command.execute(authenticator, api_device_info, event_bus_mock)
     assert not result.device_reached
     assert (
