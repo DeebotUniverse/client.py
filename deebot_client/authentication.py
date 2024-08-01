@@ -9,7 +9,7 @@ import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-from aiohttp import ClientResponseError, ClientSession, hdrs
+from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
 from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
 from .exceptions import (
@@ -87,7 +87,7 @@ def create_rest_config(
     )
 
 
-_TIMEOUT = 60
+_TIMEOUT = ClientTimeout(60)
 
 
 class _AuthClient:
