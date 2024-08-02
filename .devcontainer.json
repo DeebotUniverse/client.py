@@ -28,7 +28,9 @@
         "files.trimTrailingWhitespace": true,
         "python.analysis.autoImportCompletions": true,
         "python.analysis.autoSearchPaths": false,
-        "python.analysis.extraPaths": ["/home/vscode/.local/lib/python3.12/"],
+        "python.analysis.extraPaths": [
+          "/home/vscode/.local/lib/python3.12/"
+        ],
         "python.analysis.typeCheckingMode": "basic",
         "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.languageServer": "Pylance",
@@ -48,7 +50,7 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "image": "jfxs/devcontainer-rye",
   "name": "Deebot client",
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
@@ -56,5 +58,8 @@
   "postStartCommand": "pip install -r requirements-dev.txt && pre-commit install && pip install -e .",
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
-  "runArgs": ["-e", "GIT_EDITOR=code --wait"]
+  "runArgs": [
+    "-e",
+    "GIT_EDITOR=code --wait"
+  ]
 }

@@ -1,3 +1,4 @@
+---
 name: CI
 
 on:
@@ -6,56 +7,63 @@ on:
       - main
       - dev
   pull_request:
+  schedule:
+    - cron: "0 0 * * *"
 
 env:
-  DEFAULT_PYTHON: "3.12"
+  PYTHON_VERSIONS: ["3.12"]
 
 jobs:
   code-quality:
-    runs-on: "ubuntu-latest"
-    name: Check code quality
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: ${{ env.PYTHON_VERSIONS }}
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        id: python
-        uses: actions/setup-python@v5.1.1
+      - uses: actions/checkout@v4
+      - uses: eifinger/setup-rye@v4
+        id: setup-rye
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
-          cache: "pip"
-          cache-dependency-path: "requirements*"
+          enable-cache: true
+          cache-prefix: ${{ matrix.python-version }}
+      - name: Pin python-version ${{ matrix.python-version }}
+        run: rye pin ${{ matrix.python-version }}
       - name: Install dependencies
+        if: steps.setup-rye.outputs.cache-hit != 'true'
         run: |
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
-      # Following steps cannot run by pre-commit.ci as repo = local
-      - name: Run mypy
-        run: mypy deebot_client/
-      - name: Pylint review
-        run: pylint deebot_client/
-      - name: Verify no getLogger usages
-        run: scripts/check_getLogger.sh
+          rye sync --no-lock
+      - name: Cache pre-commit
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-|${{ matrix.python-version }}|${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Lint
+        run: |
+          rye run pre-commit run --all-files
+      - name: Lint GitHub Actions
+        uses: eifinger/actionlint-action@v1
 
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version: ${{ env.PYTHON_VERSIONS }}
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Set up Python ${{ matrix.python-version }}
-        id: python
-        uses: actions/setup-python@v5.1.1
+      - uses: actions/checkout@v4
+      - uses: eifinger/setup-rye@v4
+        id: setup-rye
         with:
-          python-version: ${{ matrix.python-version }}
-          cache: "pip"
-          cache-dependency-path: "requirements*"
+          enable-cache: true
+          cache-prefix: ${{ matrix.python-version }}
+      - name: Pin python-version ${{ matrix.python-version }}
+        run: rye pin ${{ matrix.python-version }}
       - name: Install dependencies
+        if: steps.setup-rye.outputs.cache-hit != 'true'
         run: |
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
-      - name: Run pytest
-        run: pytest --cov=./ --cov-report=xml
+          rye sync --no-lock
+      - name: Execute tests
+        run: rye test -- --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v4
         with:
