@@ -49,8 +49,7 @@ class Clean(ExecuteCommand):
 
         return await super()._execute(authenticator, device_info, event_bus)
 
-    @staticmethod
-    def _get_args(action: CleanAction) -> dict[str, Any]:
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
         args = {"act": action.value}
         if action == CleanAction.START:
             args["type"] = CleanMode.AUTO.value
@@ -61,13 +60,18 @@ class CleanArea(Clean):
     """Clean area command."""
 
     def __init__(self, mode: CleanMode, area: str, cleanings: int = 1) -> None:
+        self._additional_args = {
+            "type": mode.value,
+            "content": area,
+            "count": cleanings,
+        }
         super().__init__(CleanAction.START)
-        if not isinstance(self._args, dict):
-            raise TypeError("args must be a dict!")
 
-        self._args["type"] = mode.value
-        self._args["content"] = str(area)
-        self._args["count"] = cleanings
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args.update(self._additional_args)
+        return args
 
 
 class CleanV2(Clean):
@@ -75,8 +79,7 @@ class CleanV2(Clean):
 
     name = "clean_V2"
 
-    @staticmethod
-    def _get_args(action: CleanAction) -> dict[str, Any]:
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
         content: dict[str, str] = {}
         args = {"act": action.value, "content": content}
         match action:
@@ -84,6 +87,20 @@ class CleanV2(Clean):
                 content["type"] = CleanMode.AUTO.value
             case CleanAction.STOP:
                 content["type"] = ""
+        return args
+
+
+class CleanAreaV2(CleanV2):
+    """Clean area command."""
+
+    def __init__(self, mode: CleanMode, area: str, _: int = 1) -> None:
+        self._additional_content = {"type": mode.value, "value": area}
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
         return args
 
 
