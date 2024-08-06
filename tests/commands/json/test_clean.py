@@ -6,13 +6,19 @@ from unittest.mock import Mock
 import pytest
 
 from deebot_client.commands.json import GetCleanInfo
-from deebot_client.commands.json.clean import Clean, CleanV2, GetCleanInfoV2
+from deebot_client.commands.json.clean import (
+    Clean,
+    CleanArea,
+    CleanAreaV2,
+    CleanV2,
+    GetCleanInfoV2,
+)
 from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
-from deebot_client.models import ApiDeviceInfo, CleanAction, State
+from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from tests.helpers import get_request_json, get_success_body
 
-from . import assert_command
+from . import assert_command, assert_execute_command
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
@@ -71,3 +77,23 @@ async def test_Clean_act(
 
     if command_type is CleanV2:
         assert isinstance(command._args["content"], dict)
+
+
+@pytest.mark.parametrize(
+    ("command", "args"),
+    [
+        (
+            CleanArea(CleanMode.SPOT_AREA, "5,8"),
+            {"act": "start", "type": "spotArea", "content": "5,8", "count": 1},
+        ),
+        (
+            CleanAreaV2(CleanMode.SPOT_AREA, "5,8"),
+            {"act": "start", "content": {"type": "spotArea", "value": "5,8"}},
+        ),
+    ],
+    ids=["CleanArea", "CleanAreaV2"],
+)
+async def test_CleanArea(
+    command: CleanArea | CleanAreaV2, args: dict[str, str]
+) -> None:
+    await assert_execute_command(command, args)
