@@ -21,19 +21,11 @@ jobs:
     steps:
       - name: 📥 Checkout the repository
         uses: actions/checkout@v4
-
-      - name: Set up Python
-        uses: actions/setup-python@v5.1.1
+      - uses: eifinger/setup-rye@v4
         with:
-          python-version: "3.12"
-
-      - name: Install dependencies
+          enable-cache: true
+      - name: 📦 Build
         run: |
-          python -m pip install --upgrade pip
-          pip install -q build
-
-      - name: 📦 Build package
-        run: python -m build
-
+          rye build
       - name: 📤 Publish package
         uses: pypa/gh-action-pypi-publish@release/v1

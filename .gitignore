@@ -5,7 +5,7 @@ scratch*
 .idea
 build
 dist
-venv
+.venv
 
 # Nosetests files
 cover/
