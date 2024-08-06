@@ -85,7 +85,7 @@ class CleanV2(Clean):
         match action:
             case CleanAction.START:
                 content["type"] = CleanMode.AUTO.value
-            case CleanAction.STOP:
+            case CleanAction.STOP | CleanAction.PAUSE:
                 content["type"] = ""
         return args
 
