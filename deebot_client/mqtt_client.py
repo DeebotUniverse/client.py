@@ -69,16 +69,17 @@ def create_mqtt_config(
 ) -> MqttConfiguration:
     """Create configuration."""
     continent_postfix = get_continent_url_postfix(country.upper())
+    ssl_ctx = None if ssl_context is UNDEFINED else ssl_context
 
     if override_mqtt_url:
         url = urlparse(override_mqtt_url)
         match url.scheme:
             case "mqtt":
                 default_port = 1883
-                ssl_ctx = None
             case "mqtts":
                 default_port = 8883
-                ssl_ctx = ssl.create_default_context()
+                if ssl_context is UNDEFINED:
+                    ssl_ctx = ssl.create_default_context()
             case _:
                 raise MqttError("Invalid scheme. Expecting mqtt or mqtts")
 
@@ -90,12 +91,10 @@ def create_mqtt_config(
     else:
         hostname = f"mq{continent_postfix}.ecouser.net"
         port = 443
-        ssl_ctx = ssl.create_default_context()
-        ssl_ctx.check_hostname = False
-        ssl_ctx.verify_mode = ssl.CERT_NONE
-
-    if ssl_context is not UNDEFINED:
-        ssl_ctx = ssl_context
+        if ssl_context is UNDEFINED:
+            ssl_ctx = ssl.create_default_context()
+            ssl_ctx.check_hostname = False
+            ssl_ctx.verify_mode = ssl.CERT_NONE
 
     return MqttConfiguration(
         hostname=hostname,
