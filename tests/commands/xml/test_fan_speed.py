@@ -6,11 +6,13 @@ import pytest
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetFanSpeed
+from deebot_client.commands.xml.fan_speed import SetFanSpeed
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingState
 from tests.commands import assert_command
 
 from . import get_request_xml
+from ..json import assert_set_command
 
 if TYPE_CHECKING:
     from deebot_client.events.base import Event
@@ -42,3 +44,13 @@ async def test_get_fan_speed_error(xml: str) -> None:
         None,
         command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
     )
+
+async def test_set_fan_speed() -> None:
+    command = SetFanSpeed(FanSpeedLevel.MAX)
+    json = get_request_xml("<ctl ret='ok' />")
+    await assert_command(command, json, None, command_result=CommandResult(HandlingState.SUCCESS))
+
+async def test_set_fan_speed_error() -> None:
+    command = SetFanSpeed("invalid")
+    json = get_request_xml("<ctl ret='error' />")
+    await assert_command(command, json, None, command_result=CommandResult(HandlingState.FAILED))
