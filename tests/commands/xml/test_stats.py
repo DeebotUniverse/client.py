@@ -22,14 +22,16 @@ if TYPE_CHECKING:
         (1000, 20, 30, TotalStatsEvent(1000, 20, 30)),
     ],
 )
-async def test_get_clean_sum(area: int, lifetime: int, count: int, expected_event: Event) -> None:
+async def test_get_clean_sum(
+    area: int, lifetime: int, count: int, expected_event: Event
+) -> None:
     json = get_request_xml(f"<ctl ret='ok' a='{area}' l='{lifetime}' c='{count}' />")
     await assert_command(GetCleanSum(), json, expected_event)
 
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>","<ctl ret='ok' a='34' />"],
+    ["<ctl ret='error'/>", "<ctl ret='ok' a='34' />"],
     ids=["error", "error"],
 )
 async def test_get_clean_sum_error(xml: str) -> None:

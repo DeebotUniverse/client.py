@@ -29,7 +29,11 @@ class GetCleanSum(XmlCommandWithMessageHandling):
         if xml.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        if (area := xml.attrib.get("a")) and (lifetime := xml.attrib.get("l")) and (count := xml.attrib.get("c")):
+        if (
+            (area := xml.attrib.get("a"))
+            and (lifetime := xml.attrib.get("l"))
+            and (count := xml.attrib.get("c"))
+        ):
             event_bus.notify(TotalStatsEvent(int(area), int(lifetime), int(count)))
             return HandlingResult.success()
 

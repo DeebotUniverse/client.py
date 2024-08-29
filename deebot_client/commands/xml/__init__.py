@@ -7,10 +7,10 @@ from typing import TYPE_CHECKING
 from deebot_client.command import Command, CommandMqttP2P
 
 from .charge_state import GetChargeState
-from .stats import GetCleanSum
 from .error import GetError
 from .fan_speed import GetFanSpeed
 from .pos import GetPos
+from .stats import GetCleanSum
 
 if TYPE_CHECKING:
     from .common import XmlCommand
