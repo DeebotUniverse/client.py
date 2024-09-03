@@ -41,10 +41,12 @@ jobs:
             uv-${{ runner.os }}
 
       - name: Install the project
-        run: uv sync --locked
+        run: uv sync --dev --locked
 
       - name: 📦 Build package
-        run: python -m build
+        run: |
+          . .venv/bin/activate
+          python -m build
 
       - name: 📤 Publish package
         uses: pypa/gh-action-pypi-publish@release/v1
