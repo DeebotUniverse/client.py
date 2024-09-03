@@ -27,12 +27,8 @@
         "files.eol": "\n",
         "files.trimTrailingWhitespace": true,
         "python.analysis.autoImportCompletions": true,
-        "python.analysis.autoSearchPaths": false,
-        "python.analysis.extraPaths": ["/home/vscode/.local/lib/python3.12/"],
         "python.analysis.typeCheckingMode": "basic",
-        "python.defaultInterpreterPath": "/usr/local/bin/python",
         "python.languageServer": "Pylance",
-        "python.pythonPath": "/usr/local/python/bin/python",
         "python.testing.pytestEnabled": true,
         "python.testing.unittestEnabled": false,
         "terminal.integrated.defaultProfile.linux": "zsh",
@@ -48,12 +44,16 @@
   "features": {
     "ghcr.io/devcontainers/features/docker-in-docker:2": {}
   },
-  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "image": "mcr.microsoft.com/devcontainers/base:debian",
   "name": "Deebot client",
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
-  "postStartCommand": "pip install -r requirements-dev.txt && pre-commit install && pip install -e .",
+  "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && uv sync --frozen --all-extras --dev && pre-commit install",
+  "postStartCommand": "uv sync --frozen --all-extras --dev",
+  "remoteEnv": {
+    "PATH": "/home/vscode/.cargo/bin:/workspaces/client.py/.venv/bin:${containerEnv:PATH}"
+  },
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
   "runArgs": ["-e", "GIT_EDITOR=code --wait"]
