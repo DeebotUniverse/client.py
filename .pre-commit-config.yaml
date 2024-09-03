@@ -36,6 +36,7 @@ repos:
         exclude_types:
           - csv
           - json
+        exclude: ^uv.lock$
   - repo: https://github.com/pre-commit/pre-commit-hooks
     rev: v4.6.0
     hooks:
@@ -54,6 +55,7 @@ repos:
           - prettier-plugin-sort-json@3.1.0
         exclude_types:
           - python
+        exclude: ^uv.lock$
   - repo: https://github.com/adrienverge/yamllint.git
     rev: v1.35.1
     hooks:
