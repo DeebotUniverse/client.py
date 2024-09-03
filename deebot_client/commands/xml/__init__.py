@@ -10,12 +10,14 @@ from .charge_state import GetChargeState
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
 from .pos import GetPos
+from .stats import GetCleanSum
 
 if TYPE_CHECKING:
     from .common import XmlCommand
 
 __all__ = [
     "GetChargeState",
+    "GetCleanSum",
     "GetError",
     "GetFanSpeed",
     "SetFanSpeed",
