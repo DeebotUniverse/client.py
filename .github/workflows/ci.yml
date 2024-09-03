@@ -32,7 +32,7 @@ jobs:
             uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
             uv-${{ runner.os }}
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --locked --dev
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
         run: uv run mypy deebot_client/
@@ -67,7 +67,7 @@ jobs:
             uv-${{ runner.os }}-${{ hashFiles('uv.lock') }}
             uv-${{ runner.os }}
       - name: Install the project
-        run: uv sync --all-extras --dev
+        run: uv sync --locked --dev
       - name: Run pytest
         run: uv run pytest tests --cov=./ --cov-report=xml
       - name: Upload coverage to Codecov
