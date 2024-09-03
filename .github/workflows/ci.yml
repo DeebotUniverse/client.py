@@ -35,9 +35,9 @@ jobs:
         run: uv sync --all-extras --dev
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: mypy deebot_client/
+        run: uv run mypy deebot_client/
       - name: Pylint review
-        run: pylint deebot_client/
+        run: uv run pylint deebot_client/
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
       - name: Minimize uv cache
