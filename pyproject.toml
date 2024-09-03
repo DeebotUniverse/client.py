@@ -178,6 +178,7 @@ overgeneral-exceptions = [
 
 [tool.uv]
 dev-dependencies = [
+    "build>=1.2.1",
     "mypy==1.11.2",
     "pre-commit==3.8.0",
     "pycountry==24.6.1",
