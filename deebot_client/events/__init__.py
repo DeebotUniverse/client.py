@@ -140,6 +140,7 @@ class LifeSpan(str, Enum):
     CLEANING_FLUID = "autoWater_cleaningFluid"
     STRAINER = "strainer"
     HAND_FILTER = "handFilter"
+    DUST_CASE_HEAP = "dustCaseHeap"
 
 
 @dataclass(frozen=True)
