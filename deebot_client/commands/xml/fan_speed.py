@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from types import MappingProxyType
 from typing import TYPE_CHECKING
 
+from deebot_client.command import InitParam
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult
 
-from .common import XmlCommandWithMessageHandling
+from .common import XmlCommandWithMessageHandling, XmlSetCommand
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -15,8 +17,8 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetFanSpeed(XmlCommandWithMessageHandling):
-    """GetFanSpeed command."""
+class GetCleanSpeed(XmlCommandWithMessageHandling):
+    """GetCleanSpeed command."""
 
     name = "GetCleanSpeed"
 
@@ -33,12 +35,26 @@ class GetFanSpeed(XmlCommandWithMessageHandling):
 
         match speed.lower():
             case "standard":
-                event = FanSpeedEvent(FanSpeedLevel.NORMAL)
+                event = FanSpeedEvent(FanSpeedLevel.STANDARD)
             case "strong":
-                event = FanSpeedEvent(FanSpeedLevel.MAX)
+                event = FanSpeedEvent(FanSpeedLevel.STRONG)
 
         if event:
             event_bus.notify(event)
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class SetCleanSpeed(XmlSetCommand):
+    """Set clean speed command."""
+
+    name = "SetCleanSpeed"
+    get_command = GetCleanSpeed
+    _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
+
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
+        if isinstance(speed, FanSpeedLevel):
+            speed = speed.name.lower()
+        super().__init__({"speed": speed})
+
