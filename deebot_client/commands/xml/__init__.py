@@ -9,6 +9,7 @@ from deebot_client.command import Command, CommandMqttP2P
 from .charge_state import GetChargeState
 from .error import GetError
 from .fan_speed import GetFanSpeed
+from .play_sound import PlaySound
 from .pos import GetPos
 from .stats import GetCleanSum
 
@@ -21,12 +22,14 @@ __all__ = [
     "GetError",
     "GetFanSpeed",
     "GetPos",
+    "PlaySound",
 ]
 
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
     GetError,
+    PlaySound,
 ]
 # fmt: on
 
