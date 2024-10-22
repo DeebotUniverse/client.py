@@ -38,7 +38,7 @@ dynamic = ["version"]
 
 [tool.uv]
 dev-dependencies = [
-    "mypy==1.11.2",
+    "mypy==1.13.0",
     "pre-commit==3.8.0",
     "pycountry==24.6.1",
     "pylint==3.3.0",
