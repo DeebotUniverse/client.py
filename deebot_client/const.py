@@ -94,7 +94,7 @@ ERROR_CODES = {
     308: "Communication Malfunction",
     310: "Lid open",
     311: "Replace the Dust Bag",
-    312: "TODO: unknown",
+    312: "Dust Bag Full",
     313: "TODO: unknown",
     314: "Water Supply Module or Silver Ion Sterilization module is not installed",
     315: "Water Supply Module is not installed",
