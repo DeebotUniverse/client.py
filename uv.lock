@@ -234,7 +234,7 @@ requires-dist = [
     { name = "cachetools", specifier = ">=5.0.0,<6.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "numpy", specifier = ">=1.23.2,<3.0" },
-    { name = "pillow", specifier = ">=11,<11.1" },
+    { name = "pillow", specifier = ">=10,<12" },
     { name = "svg-py", specifier = ">=1.4.2" },
 ]
 

@@ -26,7 +26,7 @@ dependencies = [
     "cachetools>=5.0.0,<6.0",
     "defusedxml>=0.7.1",
     "numpy>=1.23.2,<3.0",
-    "pillow>=11,<11.1",
+    "pillow>=10,<12",
     "svg-py>=1.4.2",
 ]
 dynamic = ["version"]
