@@ -39,7 +39,7 @@ version = "0.0.0"
 [tool.uv]
 dev-dependencies = [
     "mypy==1.13.0",
-    "pre-commit==3.8.0",
+    "pre-commit==4.0.1",
     "pycountry==24.6.1",
     "pylint==3.3.1",
     "pytest-asyncio==0.24.0",
