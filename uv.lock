@@ -198,7 +198,7 @@ wheels = [
 
 [[package]]
 name = "deebot-client"
-version = "8.4.1.dev11+g2b37b96.d20241030"
+version = "0.0.0"
 source = { editable = "." }
 dependencies = [
     { name = "aiohttp" },
