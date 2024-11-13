@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name        = "deebot-client"
-license     = {text = "GPL-3.0"}
+license     = "GPL-3.0-or-later"
 description = "Deebot client library in python 3"
 readme      = "README.md"
 authors     = [
@@ -14,7 +14,6 @@ keywords    = ["home", "automation", "homeassistant", "vacuum", "robot", "deebot
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
     "Programming Language :: Python :: 3.12",
     "Topic :: Home Automation",
     "Topic :: Software Development :: Libraries :: Python Modules",
@@ -189,4 +188,3 @@ overgeneral-exceptions = [
     "builtins.BaseException",
     "builtins.Exception",
 ]
-
