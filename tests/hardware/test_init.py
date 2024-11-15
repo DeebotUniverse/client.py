@@ -284,6 +284,7 @@ def test_all_models_loaded() -> None:
     assert list(DEVICES) == [
         "2ap5uq",
         "2o4lnm",
+        "4vhygi"
         "55aiho",
         "5xu9h3",
         "626v6g",
