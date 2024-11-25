@@ -47,7 +47,7 @@ async def main():
 
     devices_ = await api_client.get_devices()
 
-    bot = Device(devices_[0], authenticator)
+    bot = Device(devices_.mqtt[0], authenticator)
 
     mqtt_config = create_mqtt_config(device_id=device_id, country=country)
     mqtt = MqttClient(mqtt_config, authenticator)

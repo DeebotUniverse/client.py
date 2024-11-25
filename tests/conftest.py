@@ -15,7 +15,7 @@ from deebot_client.authentication import (
     create_rest_config as create_config_rest,
 )
 from deebot_client.event_bus import EventBus
-from deebot_client.hardware.deebot import FALLBACK, get_static_device_info
+from deebot_client.hardware.deebot import get_static_device_info
 from deebot_client.models import (
     ApiDeviceInfo,
     Credentials,
@@ -127,7 +127,9 @@ async def test_mqtt_client(
 
 @pytest.fixture
 async def static_device_info() -> StaticDeviceInfo:
-    return await get_static_device_info(FALLBACK)
+    info = await get_static_device_info("yna5xi")
+    assert info is not None
+    return info
 
 
 @pytest.fixture

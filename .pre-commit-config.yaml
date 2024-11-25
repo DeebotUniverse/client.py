@@ -7,7 +7,7 @@ ci:
     - verifyNoGetLogger
 
 default_language_version:
-  python: python3.12
+  python: python3.13
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
