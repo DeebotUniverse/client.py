@@ -79,7 +79,7 @@ from deebot_client.events.map import (
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
 from deebot_client.hardware import get_static_device_info
-from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
+from deebot_client.hardware.deebot import DEVICES, _load
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -92,7 +92,7 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        ("not_specified", lambda: DEVICES[FALLBACK]),
+        ("not_specified", lambda: None),
         ("yna5xi", lambda: DEVICES["yna5xi"]),
     ],
 )
@@ -107,40 +107,6 @@ async def test_get_static_device_info(
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        (
-            FALLBACK,
-            {
-                AdvancedModeEvent: [GetAdvancedMode()],
-                AvailabilityEvent: [GetBattery(is_available_check=True)],
-                BatteryEvent: [GetBattery()],
-                CachedMapInfoEvent: [GetCachedMapInfo()],
-                CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
-                CleanCountEvent: [GetCleanCount()],
-                CleanLogEvent: [GetCleanLogs()],
-                CleanPreferenceEvent: [GetCleanPreference()],
-                ContinuousCleaningEvent: [GetContinuousCleaning()],
-                CustomCommandEvent: [],
-                ErrorEvent: [GetError()],
-                FanSpeedEvent: [GetFanSpeed()],
-                LifeSpanEvent: [
-                    GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])
-                ],
-                MapChangedEvent: [],
-                MajorMapEvent: [GetMajorMap()],
-                MapTraceEvent: [GetMapTrace()],
-                MultimapStateEvent: [GetMultimapState()],
-                NetworkInfoEvent: [GetNetInfo()],
-                PositionsEvent: [GetPos()],
-                ReportStatsEvent: [],
-                RoomsEvent: [GetCachedMapInfo()],
-                StateEvent: [GetChargeState(), GetCleanInfo()],
-                StatsEvent: [GetStats()],
-                TotalStatsEvent: [GetTotalStats()],
-                TrueDetectEvent: [GetTrueDetect()],
-                VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
-            },
-        ),
         (
             "5xu9h3",
             {
@@ -265,12 +231,14 @@ async def test_get_static_device_info(
             },
         ),
     ],
-    ids=[FALLBACK, "5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    capabilities = (await get_static_device_info(class_)).capabilities
+    info = await get_static_device_info(class_)
+    assert info is not None
+    capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert (
@@ -294,7 +262,6 @@ def test_all_models_loaded() -> None:
         "9s1s80",
         "clojes",
         "e6ofmn",
-        "fallback",
         "guzput",
         "itk04l",
         "kr0277",

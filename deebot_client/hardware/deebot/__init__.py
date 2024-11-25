@@ -17,8 +17,6 @@ __all__ = ["get_static_device_info"]
 _LOGGER = get_logger(__name__)
 
 
-FALLBACK = "fallback"
-
 DEVICES: dict[str, StaticDeviceInfo] = {}
 
 
@@ -28,7 +26,7 @@ def _load() -> None:
         importlib.import_module(full_package_name)
 
 
-async def get_static_device_info(class_: str) -> StaticDeviceInfo:
+async def get_static_device_info(class_: str) -> StaticDeviceInfo | None:
     """Get static device info for given class."""
     if not DEVICES:
         await asyncio.get_event_loop().run_in_executor(None, _load)
@@ -37,8 +35,4 @@ async def get_static_device_info(class_: str) -> StaticDeviceInfo:
         _LOGGER.debug("Capabilities found for %s", class_)
         return device
 
-    _LOGGER.info(
-        "No capabilities found for %s, therefore not all features are available. trying to use fallback...",
-        class_,
-    )
-    return DEVICES[FALLBACK]
+    return None
