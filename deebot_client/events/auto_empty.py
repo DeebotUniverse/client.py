@@ -14,9 +14,6 @@ __all__ = ["Event", "Frequency"]
 class Frequency(StrEnum):
     """Enum class for all possible frequencies."""
 
-    # Does not exist in the API
-    OFF = "off"
-
     MIN_10 = "10"
     MIN_15 = "15"
     MIN_25 = "25"
@@ -28,4 +25,5 @@ class Frequency(StrEnum):
 class Event(_Event):
     """Auto empty event representation."""
 
-    frequency: Frequency
+    enabled: bool
+    frequency: Frequency | None = None

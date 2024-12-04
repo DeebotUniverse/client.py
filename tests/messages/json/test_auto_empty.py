@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from deebot_client.events import BatteryEvent
-from deebot_client.messages.json import OnBattery
+from deebot_client.events import auto_empty
+from deebot_client.messages.json.auto_empty import OnAutoEmpty
 from tests.messages import assert_message
 
 
 @pytest.mark.parametrize("percentage", [0, 49, 100])
-def test_onBattery(percentage: int) -> None:
+def test_onAutoEmpty(percentage: int) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -21,4 +21,4 @@ def test_onBattery(percentage: int) -> None:
         "body": {"data": {"value": percentage, "isLow": 1 if percentage < 20 else 0}},
     }
 
-    assert_message(OnBattery, data, BatteryEvent(percentage))
+    assert_message(OnAutoEmpty, data, auto_empty.Event(percentage))

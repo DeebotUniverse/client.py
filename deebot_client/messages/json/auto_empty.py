@@ -24,9 +24,8 @@ class OnAutoEmpty(MessageBodyDataDict):
 
         :return: A message response
         """
-        if not bool(data["enable"]):
-            frequency = Frequency.OFF
-        else:
-            frequency = Frequency(data["frequency"])
-        event_bus.notify(Event(frequency))
+        frequency: Frequency | None = None
+        if frequency_str := data.get("frequency"):
+            frequency = Frequency(frequency_str)
+        event_bus.notify(Event(bool(data["enable"]), frequency))
         return HandlingResult.success()
