@@ -265,6 +265,7 @@ def test_all_models_loaded() -> None:
         "guzput",
         "ifbw08",
         "itk04l",
+        "jtmf04",
         "kr0277",
         "lf3bn4",
         "lx3j7m",
