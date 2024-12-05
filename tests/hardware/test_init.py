@@ -273,6 +273,7 @@ def test_all_models_loaded() -> None:
         "qhe2o2",
         "rss8xk",
         "s69g6z",
+        "ty84oi",
         "umwv6z",
         "vi829v",
         "x5d34r",
