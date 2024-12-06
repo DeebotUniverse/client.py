@@ -18,17 +18,12 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv
+      - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
-
-      - name: 🏗 Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: ".python-version"
 
       - name: 🏗 Install the project
         run: uv sync --locked --dev
@@ -55,15 +50,13 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv
+      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
         uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
-
-      - name: 🏗 Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: 🏗 Install the project
         run: uv sync --locked --dev
