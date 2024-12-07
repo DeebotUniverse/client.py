@@ -265,6 +265,7 @@ def test_all_models_loaded() -> None:
         "8kwdb4",
         "9ku8nu",
         "9s1s80",
+        "b2jqs4",
         "b742vd",
         "clojes",
         "e6ofmn",
