@@ -25,8 +25,7 @@ class XmlCommand(Command):
     data_type: DataType = DataType.XML
 
     @property  # type: ignore[misc]
-    @classmethod
-    def has_sub_element(cls) -> bool:
+    def has_sub_element(self) -> bool:
         """Return True if command has inner element."""
         return False
 
