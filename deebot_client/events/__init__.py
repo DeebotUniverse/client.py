@@ -51,6 +51,7 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
+    "BaseStationEvent",
     "SweepModeEvent",
     "SweepType",
     "WaterAmount",
@@ -140,6 +141,27 @@ class LifeSpan(str, Enum):
     CLEANING_FLUID = "autoWater_cleaningFluid"
     STRAINER = "strainer"
     HAND_FILTER = "handFilter"
+    BASE_STATION_FILTER = "spHeap"
+
+@unique
+class BaseStationAction(IntEnum):
+    """ Enum class for all possible base station actions. """
+
+    EMPTY_DUSTBIN = 1
+
+@unique
+class BaseStationStatus(IntEnum):
+    """ Enum class for all possible base station statuses. """
+
+    UNKNOWN = -1
+    IDLE = 0
+    EMPTYING = 1
+
+@dataclass(frozen=True)
+class BaseStationEvent(Event):
+    """Base Station Event representation."""
+
+    state: BaseStationStatus
 
 
 @dataclass(frozen=True)

@@ -11,6 +11,8 @@ from typing import TYPE_CHECKING, Any, Generic, TypeVar
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
+    BaseStationAction,
+    BaseStationEvent,
     BatteryEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
@@ -141,6 +143,18 @@ class CapabilityClean:
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
+@dataclass(frozen=True, kw_only=True)
+class CapabilityBaseStationAction:
+    """Capabilities for base station action."""
+
+    command: Callable[[BaseStationAction], Command]
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilityBaseStation:
+    """Capabilities for base station."""
+
+    action: CapabilityBaseStationAction
+    event: CapabilityEvent[BaseStationEvent] | None = None
 
 @dataclass(frozen=True)
 class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
@@ -211,6 +225,7 @@ class Capabilities(ABC):
     device_type: DeviceType = field(kw_only=False)
 
     availability: CapabilityEvent[AvailabilityEvent]
+    base_station: CapabilityBaseStation | None = None
     battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute
     clean: CapabilityClean
