@@ -37,12 +37,15 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
                 and "total" in xml.attrib):
 
             component_type = xml.attrib.get("type")
+            if component_type is None:
+                return HandlingResult.analyse()
             # type for JSON commands starts with small letter, while XML types start with upper letter. Workaround:
-            xml_type = component_type[0].lower() + component_type[1:] if len(component_type) > 2 else component_type
-            left = int(xml.attrib.get("left")) if xml.attrib.get("left") else 0
-            total = int(xml.attrib.get("total")) if xml.attrib.get("total") else 0
+            xml_type = component_type[0].lower() + component_type[1:]
 
-            percent = round((left / total) * 100, 2)
+            left = int(xml.attrib.get("left", 0))
+            total = int(xml.attrib.get("total", 0))
+            percent: float = round((left / total) * 100, 2) if total > 0 else 0.0
+
             event_bus.notify(LifeSpanEvent(LifeSpan(xml_type), percent, left))
             return HandlingResult.success()
 
