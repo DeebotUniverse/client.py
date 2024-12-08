@@ -143,11 +143,13 @@ class CapabilityClean:
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
 
+
 @dataclass(frozen=True, kw_only=True)
 class CapabilityBaseStationAction:
     """Capabilities for base station action."""
 
     command: Callable[[BaseStationAction], Command]
+
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityBaseStation:
@@ -155,6 +157,7 @@ class CapabilityBaseStation:
 
     action: CapabilityBaseStationAction
     event: CapabilityEvent[BaseStationEvent] | None = None
+
 
 @dataclass(frozen=True)
 class CapabilityCustomCommand(CapabilityEvent[_EVENT]):

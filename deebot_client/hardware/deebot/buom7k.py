@@ -134,7 +134,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
                 LifeSpan.ROUND_MOP,
-                LifeSpan.BASE_STATION_FILTER
+                LifeSpan.BASE_STATION_FILTER,
             ),
             event=LifeSpanEvent,
             get=[
@@ -145,7 +145,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
                         LifeSpan.ROUND_MOP,
-                        LifeSpan.BASE_STATION_FILTER
+                        LifeSpan.BASE_STATION_FILTER,
                     ]
                 )
             ],
