@@ -31,11 +31,12 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
 
         :return: A message response
         """
-        if (xml.attrib.get("ret") == "ok"
-                and "type" in xml.attrib
-                and "left" in xml.attrib
-                and "total" in xml.attrib):
-
+        if (
+            xml.attrib.get("ret") == "ok"
+            and "type" in xml.attrib
+            and "left" in xml.attrib
+            and "total" in xml.attrib
+        ):
             component_type = xml.attrib.get("type")
             if component_type is None:
                 return HandlingResult.analyse()
