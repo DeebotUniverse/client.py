@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
+    "BaseStationEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -51,7 +52,6 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
-    "BaseStationEvent",
     "SweepModeEvent",
     "SweepType",
     "WaterAmount",
@@ -143,19 +143,22 @@ class LifeSpan(str, Enum):
     HAND_FILTER = "handFilter"
     BASE_STATION_FILTER = "spHeap"
 
+
 @unique
 class BaseStationAction(IntEnum):
-    """ Enum class for all possible base station actions. """
+    """Enum class for all possible base station actions."""
 
     EMPTY_DUSTBIN = 1
 
+
 @unique
 class BaseStationStatus(IntEnum):
-    """ Enum class for all possible base station statuses. """
+    """Enum class for all possible base station statuses."""
 
     UNKNOWN = -1
     IDLE = 0
     EMPTYING = 1
+
 
 @dataclass(frozen=True)
 class BaseStationEvent(Event):

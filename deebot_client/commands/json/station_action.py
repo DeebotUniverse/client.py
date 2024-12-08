@@ -2,16 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
-from deebot_client.events import BaseStationAction
 from deebot_client.logging_filter import get_logger
 
 from .common import ExecuteCommand
-from .const import CODE
 
 if TYPE_CHECKING:
-    from deebot_client.event_bus import EventBus
+    from deebot_client.events import BaseStationAction
 
 _LOGGER = get_logger(__name__)
 

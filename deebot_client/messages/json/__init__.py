@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .base_station import OnStationState
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .stats import ReportStats
-from .base_station import OnStationState
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -15,8 +15,8 @@ if TYPE_CHECKING:
 __all__ = [
     "OnBattery",
     "OnMapSetV2",
-    "ReportStats",
     "OnStationState",
+    "ReportStats",
 ]
 
 # fmt: off
