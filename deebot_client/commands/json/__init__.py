@@ -42,6 +42,7 @@ from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
+from .station_action import StationAction
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
@@ -122,6 +123,7 @@ __all__ = [
     "SetVolume",
     "SetWaterInfo",
     "SetWorkMode",
+    "StationAction",
 ]
 
 # fmt: off
@@ -226,7 +228,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetWaterInfo,
 
     GetWorkMode,
-    SetWorkMode
+    SetWorkMode,
+
+    StationAction,
 ]
 # fmt: on
 

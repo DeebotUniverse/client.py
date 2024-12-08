@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .base_station import OnStationState
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .stats import ReportStats
@@ -14,6 +15,7 @@ if TYPE_CHECKING:
 __all__ = [
     "OnBattery",
     "OnMapSetV2",
+    "OnStationState",
     "ReportStats",
 ]
 
@@ -23,7 +25,8 @@ _MESSAGES: list[type[Message]] = [
     OnBattery,
     OnMapSetV2,
 
-    ReportStats
+    ReportStats,
+    OnStationState,
 ]
 # fmt: on
 
