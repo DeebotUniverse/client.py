@@ -1,6 +1,7 @@
 """Base station messages."""
 
 from __future__ import annotations
+
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import BaseStationEvent, BaseStationStatus
@@ -27,8 +28,15 @@ class OnStationState(MessageBodyDataDict):
         # "body":{"data":{"content":{"error":[],"type":1,"motionState":1},"state":1},"code":0,"msg":"ok"} - Emptying
         # Assume anything else is possible
 
-        reported_state = BaseStationStatus.IDLE if data["state"] == 0 else (
-            BaseStationStatus.EMPTYING if data["content"]["type"] == 1 and data["content"]["motionState"] == 1 else BaseStationStatus.UNKNOWN)
+        if data.get("state") == 0:
+            reported_state = BaseStationStatus.IDLE
+        elif (
+            data.get("content", {}).get("type") == 1
+            and data["content"].get("motionState") == 1
+        ):
+            reported_state = BaseStationStatus.EMPTYING
+        else:
+            reported_state = BaseStationStatus.UNKNOWN
 
         event_bus.notify(BaseStationEvent(reported_state))
         return HandlingResult.success()
