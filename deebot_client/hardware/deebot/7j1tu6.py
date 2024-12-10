@@ -11,7 +11,6 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityLifeSpan,
     CapabilitySet,
-    CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
@@ -22,10 +21,6 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
 from deebot_client.commands.json.clean_logs import GetCleanLogs
-from deebot_client.commands.json.continuous_cleaning import (
-    GetContinuousCleaning,
-    SetContinuousCleaning,
-)
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
@@ -33,10 +28,6 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
-from deebot_client.commands.json.voice_assistant_state import (
-    GetVoiceAssistantState,
-    SetVoiceAssistantState,
-)
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.const import DataType
@@ -44,7 +35,6 @@ from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
     CleanLogEvent,
-    ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
@@ -56,7 +46,6 @@ from deebot_client.events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
-    VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
@@ -77,11 +66,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
-            continuous=CapabilitySetEnable(
-                ContinuousCleaningEvent,
-                [GetContinuousCleaning()],
-                SetContinuousCleaning,
-            ),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
         ),
         custom=CapabilityCustomCommand(
@@ -96,13 +80,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 FanSpeedLevel.QUIET,
                 FanSpeedLevel.NORMAL,
                 FanSpeedLevel.MAX,
-                FanSpeedLevel.MAX_PLUS,
             ),
         ),
         life_span=CapabilityLifeSpan(
             types=(
                 LifeSpan.BRUSH,
-                LifeSpan.FILTER,
                 LifeSpan.SIDE_BRUSH,
             ),
             event=LifeSpanEvent,
@@ -120,11 +102,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
-            voice_assistant=CapabilitySetEnable(
-                VoiceAssistantStateEvent,
-                [GetVoiceAssistantState()],
-                SetVoiceAssistantState,
-            ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
