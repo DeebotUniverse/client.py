@@ -291,6 +291,7 @@ def test_all_models_loaded() -> None:
         "rss8xk",
         "s69g6z",
         "ty84oi",
+        "ucn2xe",
         "um2ywg",
         "umwv6z",
         "vi829v",
