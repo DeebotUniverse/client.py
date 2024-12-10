@@ -277,6 +277,7 @@ def test_all_models_loaded() -> None:
         "lf3bn4",
         "lr4qcs",
         "lx3j7m",
+        "n4gstt",
         "p1jij8",
         "p95mgv",
         "paeygf",
