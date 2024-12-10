@@ -278,6 +278,7 @@ def test_all_models_loaded() -> None:
         "p1jij8",
         "p95mgv",
         "paeygf",
+        "py3qif",
         "qhe2o2",
         "rss8xk",
         "s69g6z",
@@ -289,5 +290,4 @@ def test_all_models_loaded() -> None:
         "z4lvk7",
         "zjavof",
         "zwkcqc",
-        "py3qif",
     ]
