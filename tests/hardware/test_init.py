@@ -260,6 +260,7 @@ def test_all_models_loaded() -> None:
         "659yh8",
         "77atlz",
         "7bryc5",
+        "7j1tu6",
         "85as7h",
         "85nbtp",
         "8kwdb4",
