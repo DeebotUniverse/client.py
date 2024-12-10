@@ -269,6 +269,7 @@ def test_all_models_loaded() -> None:
         "clojes",
         "e6ofmn",
         "guzput",
+        "h18jkh",
         "ifbw08",
         "itk04l",
         "jtmf04",
