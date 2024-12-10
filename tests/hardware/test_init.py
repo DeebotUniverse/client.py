@@ -287,6 +287,7 @@ def test_all_models_loaded() -> None:
         "um2ywg",
         "umwv6z",
         "vi829v",
+        "w16crm",
         "x5d34r",
         "yna5xi",
         "z4lvk7",
