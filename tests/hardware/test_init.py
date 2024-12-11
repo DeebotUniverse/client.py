@@ -300,6 +300,7 @@ def test_all_models_loaded() -> None:
         "w16crm",
         "x5d34r",
         "yna5xi",
+        "z0gd1j",
         "z4lvk7",
         "zjavof",
         "zwkcqc",
