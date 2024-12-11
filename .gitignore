@@ -21,3 +21,4 @@ nosetests.xml
 .*_cache
 
 test.py
+.env
