@@ -15,10 +15,12 @@ from deebot_client.capabilities import (
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
+    CapabilityStation,
     CapabilityStats,
     DeviceType,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
@@ -97,6 +99,7 @@ from deebot_client.events import (
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    auto_empty,
 )
 from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
@@ -206,6 +209,19 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+        station=CapabilityStation(
+            auto_empty=CapabilitySetTypes(
+                event=auto_empty.Event,
+                get=[GetAutoEmpty()],
+                set=SetAutoEmpty,
+                types=(
+                    auto_empty.Frequency.MIN_10,
+                    auto_empty.Frequency.MIN_15,
+                    auto_empty.Frequency.MIN_25,
+                    auto_empty.Frequency.AUTO,
+                ),
+            ),
+        ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
