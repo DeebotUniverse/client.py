@@ -34,6 +34,7 @@ from .map import (
     GetMapTrace,
     GetMinorMap,
 )
+from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo
@@ -84,6 +85,7 @@ __all__ = [
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
+    "GetMopAutoWashFrequency",
     "GetMoveUpWarning",
     "GetMultimapState",
     "GetNetInfo",
@@ -111,6 +113,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
@@ -186,6 +189,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
 
     GetMoveUpWarning,
     SetMoveUpWarning,
