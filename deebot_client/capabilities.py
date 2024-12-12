@@ -32,6 +32,8 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
+    MopAutoWashFrequency,
+    MopAutoWashFrequencyEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
@@ -192,6 +194,9 @@ class CapabilitySettings:
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, int] | None = None
+    mop_auto_wash_frequency: CapabilitySetTypes[MopAutoWashFrequencyEvent, MopAutoWashFrequency] | None = (
+        None
+    )
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None
