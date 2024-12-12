@@ -39,7 +39,7 @@ class SetMopAutoWashFrequency(JsonSetCommand):
     get_command = GetMopAutoWashFrequency
     _mqtt_params = MappingProxyType({"interval": InitParam(MopAutoWashFrequency)})
 
-    def __init__(self, interval: MopAutoWashFrequency | int) -> None:
-        if isinstance(interval, int):
+    def __init__(self, interval: MopAutoWashFrequency | str) -> None:
+        if isinstance(interval, str):
             interval = get_enum(MopAutoWashFrequency, interval)
         super().__init__({"interval": interval.value})

@@ -29,8 +29,8 @@ async def test_GetMopAutoWashFrequency(
     await assert_command(GetMopAutoWashFrequency(), json, expected)
 
 
-@pytest.mark.parametrize(("value"), [MopAutoWashFrequency.TEN_MINUTES, 10])
-async def test_SetMopAutoWashFrequency(value: MopAutoWashFrequency | int) -> None:
+@pytest.mark.parametrize(("value"), [MopAutoWashFrequency.TEN_MINUTES, "10"])
+async def test_SetMopAutoWashFrequency(value: MopAutoWashFrequency | str) -> None:
     command = SetMopAutoWashFrequency(value)
     args = {"interval": 10}
     await assert_set_command(
