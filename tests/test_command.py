@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import ClientTimeout
 import pytest
 
-from deebot_client.command import CommandMqttP2P, CommandResult, InitParam
+from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
 from deebot_client.const import DataType
 from deebot_client.exceptions import ApiTimeoutError, DeebotError
 
@@ -47,6 +47,24 @@ def test_CommandMqttP2P_no_mqtt_params() -> None:
 
     with pytest.raises(DeebotError, match=r"_mqtt_params not set"):
         TestCommandNoParams.create_from_mqtt({})
+
+
+def test_Command_no_NAME() -> None:
+    with pytest.raises(
+        ValueError, match="Class TestCommand must have a NAME attribute"
+    ):
+
+        class TestCommand(Command):
+            pass
+
+
+def test_Command_no_DATA_TYPE() -> None:
+    with pytest.raises(
+        ValueError, match="Class TestCommand must have a DATA_TYPE attribute"
+    ):
+
+        class TestCommand(Command):
+            NAME = "TestCommand"
 
 
 @pytest.mark.parametrize(
