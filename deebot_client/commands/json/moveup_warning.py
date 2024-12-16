@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetMoveUpWarning(GetEnableCommand):
     """Get move up lock command."""
 
-    name = "getMoveupWarning"
+    NAME = "getMoveupWarning"
     event_type = MoveUpWarningEvent
 
 
 class SetMoveUpWarning(SetEnableCommand):
     """Set move up lock command."""
 
-    name = "setMoveupWarning"
+    NAME = "setMoveupWarning"
     get_command = GetMoveUpWarning

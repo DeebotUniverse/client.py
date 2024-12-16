@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetAdvancedMode(GetEnableCommand):
     """Get advanced mode command."""
 
-    name = "getAdvancedMode"
+    NAME = "getAdvancedMode"
     event_type = AdvancedModeEvent
 
 
 class SetAdvancedMode(SetEnableCommand):
     """Set advanced mode command."""
 
-    name = "setAdvancedMode"
+    NAME = "setAdvancedMode"
     get_command = GetAdvancedMode

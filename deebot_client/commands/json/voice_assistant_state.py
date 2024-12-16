@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetVoiceAssistantState(GetEnableCommand):
     """Get voice assistant state command."""
 
-    name = "getVoiceAssistantState"
+    NAME = "getVoiceAssistantState"
     event_type = VoiceAssistantStateEvent
 
 
 class SetVoiceAssistantState(SetEnableCommand):
     """Set voice assistant state command."""
 
-    name = "setVoiceAssistantState"
+    NAME = "setVoiceAssistantState"
     get_command = GetVoiceAssistantState

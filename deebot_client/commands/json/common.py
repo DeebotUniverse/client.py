@@ -32,10 +32,10 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-class JsonCommand(Command):
+class JsonCommand(Command, ABC):
     """Json base command."""
 
-    data_type: DataType = DataType.JSON
+    DATA_TYPE = DataType.JSON
 
     def _get_payload(self) -> dict[str, Any] | list[Any]:
         payload = {
@@ -72,7 +72,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
         if body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
-        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
+        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.NAME, body)
         return HandlingResult(HandlingState.FAILED)
 
 

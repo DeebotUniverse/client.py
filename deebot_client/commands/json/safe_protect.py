@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetSafeProtect(GetEnableCommand):
     """Get safe protect command."""
 
-    name = "getSafeProtect"
+    NAME = "getSafeProtect"
     event_type = SafeProtectEvent
 
 
 class SetSafeProtect(SetEnableCommand):
     """Set safe protect command."""
 
-    name = "setSafeProtect"
+    NAME = "setSafeProtect"
     get_command = GetSafeProtect

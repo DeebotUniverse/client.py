@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetMultimapState(GetEnableCommand):
     """Get multimap state command."""
 
-    name = "getMultiMapState"
+    NAME = "getMultiMapState"
     event_type = MultimapStateEvent
 
 
 class SetMultimapState(SetEnableCommand):
     """Set multimap state command."""
 
-    name = "setMultiMapState"
+    NAME = "setMultiMapState"
     get_command = GetMultimapState

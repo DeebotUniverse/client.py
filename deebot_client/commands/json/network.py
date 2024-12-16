@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get network info command."""
 
-    name = "getNetInfo"
+    NAME = "getNetInfo"
 
     @classmethod
     def _handle_body_data_dict(

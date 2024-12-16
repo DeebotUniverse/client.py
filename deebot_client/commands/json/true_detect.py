@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetTrueDetect(GetEnableCommand):
     """Get multimap state command."""
 
-    name = "getTrueDetect"
+    NAME = "getTrueDetect"
     event_type = TrueDetectEvent
 
 
 class SetTrueDetect(SetEnableCommand):
     """Set multimap state command."""
 
-    name = "setTrueDetect"
+    NAME = "setTrueDetect"
     get_command = GetTrueDetect

@@ -114,7 +114,7 @@ async def test_p2p_success(
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
@@ -160,7 +160,7 @@ async def test_p2p_not_supported(
 ) -> None:
     """Test that unsupported command will be logged."""
     await subscribe(mqtt_client, api_device_info)
-    command_name: str = GetBattery.name
+    command_name: str = GetBattery.NAME
 
     await _publish_p2p(
         command_name, api_device_info, {}, "req", test_mqtt_client, is_request=True
@@ -214,7 +214,7 @@ async def test_p2p_to_late(
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
@@ -267,7 +267,7 @@ async def test_p2p_parse_error(
     await subscribe(mqtt_client, api_device_info)
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",

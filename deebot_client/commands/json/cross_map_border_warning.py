@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetCrossMapBorderWarning(GetEnableCommand):
     """Get cross map border warning command."""
 
-    name = "getCrossMapBorderWarning"
+    NAME = "getCrossMapBorderWarning"
     event_type = CrossMapBorderWarningEvent
 
 
 class SetCrossMapBorderWarning(SetEnableCommand):
     """Set cross map border warning command."""
 
-    name = "setCrossMapBorderWarning"
+    NAME = "setCrossMapBorderWarning"
     get_command = GetCrossMapBorderWarning

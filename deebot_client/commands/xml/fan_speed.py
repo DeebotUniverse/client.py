@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetFanSpeed(XmlCommandWithMessageHandling):
     """GetFanSpeed command."""
 
-    name = "GetCleanSpeed"
+    NAME = "GetCleanSpeed"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:

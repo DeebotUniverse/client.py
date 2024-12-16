@@ -10,7 +10,7 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetChildLock(GetEnableCommand):
     """Get child lock command."""
 
-    name = "getChildLock"
+    NAME = "getChildLock"
     event_type = ChildLockEvent
     _field_name = "on"
 
@@ -18,6 +18,6 @@ class GetChildLock(GetEnableCommand):
 class SetChildLock(SetEnableCommand):
     """Set child lock command."""
 
-    name = "setChildLock"
+    NAME = "setChildLock"
     get_command = GetChildLock
     _field_name = "on"

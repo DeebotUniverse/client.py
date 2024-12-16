@@ -19,8 +19,8 @@ if TYPE_CHECKING:
 
 
 class _TestCommand(CommandMqttP2P):
-    name = "TestCommand"
-    data_type = DataType.JSON
+    NAME = "TestCommand"
+    DATA_TYPE = DataType.JSON
     _mqtt_params = MappingProxyType({"field": InitParam(int), "remove": None})
 
     def __init__(self, field: int) -> None:
@@ -42,7 +42,8 @@ class _TestCommand(CommandMqttP2P):
 
 def test_CommandMqttP2P_no_mqtt_params() -> None:
     class TestCommandNoParams(CommandMqttP2P):
-        pass
+        NAME = "TestCommand"
+        DATA_TYPE = DataType.JSON
 
     with pytest.raises(DeebotError, match=r"_mqtt_params not set"):
         TestCommandNoParams.create_from_mqtt({})
