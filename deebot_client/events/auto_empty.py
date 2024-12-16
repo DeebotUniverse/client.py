@@ -7,7 +7,7 @@ from enum import StrEnum, unique
 
 from .base import Event as _Event
 
-__all__ = ["Event", "Frequency"]
+__all__ = ["AutoEmptyEvent", "Frequency"]
 
 
 @unique
@@ -22,7 +22,7 @@ class Frequency(StrEnum):
 
 
 @dataclass(frozen=True)
-class Event(_Event):
+class AutoEmptyEvent(_Event):
     """Auto empty event representation."""
 
     enabled: bool

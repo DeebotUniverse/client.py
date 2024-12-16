@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.auto_empty import Event, Frequency
+from deebot_client.events.auto_empty import AutoEmptyEvent, Frequency
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -27,5 +27,5 @@ class OnAutoEmpty(MessageBodyDataDict):
         frequency: Frequency | None = None
         if frequency_str := data.get("frequency"):
             frequency = Frequency(frequency_str)
-        event_bus.notify(Event(bool(data["enable"]), frequency))
+        event_bus.notify(AutoEmptyEvent(bool(data["enable"]), frequency))
         return HandlingResult.success()

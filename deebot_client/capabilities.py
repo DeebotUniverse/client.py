@@ -6,7 +6,7 @@ from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -67,6 +67,7 @@ if TYPE_CHECKING:
 
 _T = TypeVar("_T")
 _EVENT = TypeVar("_EVENT", bound=Event)
+_P = ParamSpec("_P")
 
 
 def _get_events(
@@ -94,14 +95,14 @@ class CapabilityEvent(Generic[_EVENT]):
 
 
 @dataclass(frozen=True)
-class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _T]):
+class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _P]):
     """Capability setCommand with event."""
 
-    set: Callable[[_T], ExecuteCommand]
+    set: Callable[_P, ExecuteCommand]
 
 
 @dataclass(frozen=True)
-class CapabilitySetEnable(CapabilitySet[_EVENT, bool]):
+class CapabilitySetEnable(CapabilitySet[_EVENT, [bool]]):
     """Capability for SetEnableCommand with event."""
 
 
@@ -120,7 +121,7 @@ class CapabilityTypes(Generic[_T]):
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilitySetTypes(CapabilitySet[_EVENT, _T | str], CapabilityTypes[_T]):
+class CapabilitySetTypes(CapabilitySet[_EVENT, _P], CapabilityTypes[_T]):
     """Capability for set command and types."""
 
 
@@ -138,10 +139,12 @@ class CapabilityClean:
 
     action: CapabilityCleanAction
     continuous: CapabilitySetEnable[ContinuousCleaningEvent] | None = None
-    count: CapabilitySet[CleanCountEvent, int] | None = None
+    count: CapabilitySet[CleanCountEvent, [int]] | None = None
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
-    work_mode: CapabilitySetTypes[WorkModeEvent, WorkMode] | None = None
+    work_mode: CapabilitySetTypes[WorkModeEvent, [WorkMode | str], WorkMode] | None = (
+        None
+    )
 
 
 @dataclass(frozen=True)
@@ -188,12 +191,13 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
-    efficiency_mode: CapabilitySetTypes[EfficiencyModeEvent, EfficiencyMode] | None = (
-        None
-    )
+    efficiency_mode: (
+        CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
+        | None
+    ) = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
-    cut_direction: CapabilitySet[CutDirectionEvent, int] | None = None
+    cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None
@@ -203,14 +207,21 @@ class CapabilitySettings:
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, int]
+    volume: CapabilitySet[VolumeEvent, [int]]
 
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityStation:
     """Capabilities for station."""
 
-    auto_empty: CapabilitySetTypes[auto_empty.Event, auto_empty.Frequency] | None = None
+    auto_empty: (
+        CapabilitySetTypes[
+            auto_empty.AutoEmptyEvent,
+            [bool | None, auto_empty.Frequency | str | None],
+            auto_empty.Frequency,
+        ]
+        | None
+    ) = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -225,7 +236,9 @@ class Capabilities(ABC):
     clean: CapabilityClean
     custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
-    fan_speed: CapabilitySetTypes[FanSpeedEvent, FanSpeedLevel] | None = None
+    fan_speed: (
+        CapabilitySetTypes[FanSpeedEvent, [FanSpeedLevel | str], FanSpeedLevel] | None
+    ) = None
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
@@ -234,7 +247,9 @@ class Capabilities(ABC):
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation = field(default_factory=CapabilityStation)
     stats: CapabilityStats
-    water: CapabilitySetTypes[WaterInfoEvent, WaterAmount] | None = None
+    water: (
+        CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None
+    ) = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

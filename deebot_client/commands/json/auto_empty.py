@@ -10,11 +10,6 @@ from deebot_client.util import get_enum
 
 from .common import ExecuteCommand, JsonGetCommand
 
-__all__ = [
-    "GetAutoEmpty",
-    "SetAutoEmpty",
-]
-
 
 class GetAutoEmpty(OnAutoEmpty, JsonGetCommand):
     """Get auto empty command."""
@@ -28,7 +23,7 @@ class SetAutoEmpty(ExecuteCommand):
     name = "setAutoEmpty"
 
     def __init__(
-        self, *, enable: bool | None = None, frequency: Frequency | str | None = None
+        self, enable: bool | None = None, frequency: Frequency | str | None = None
     ) -> None:
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)

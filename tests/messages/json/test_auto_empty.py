@@ -21,4 +21,4 @@ def test_onAutoEmpty(percentage: int) -> None:
         "body": {"data": {"value": percentage, "isLow": 1 if percentage < 20 else 0}},
     }
 
-    assert_message(OnAutoEmpty, data, auto_empty.Event(percentage))
+    assert_message(OnAutoEmpty, data, auto_empty.AutoEmptyEvent(percentage))

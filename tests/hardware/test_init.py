@@ -42,6 +42,7 @@ from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -69,7 +70,6 @@ from deebot_client.events import (
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
-    auto_empty,
 )
 from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
@@ -193,7 +193,7 @@ async def test_get_static_device_info(
         (
             "p95mgv",
             {
-                auto_empty.Event: [GetAutoEmpty()],
+                AutoEmptyEvent: [GetAutoEmpty()],
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],

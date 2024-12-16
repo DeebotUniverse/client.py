@@ -132,5 +132,5 @@ class SetEnableCommand(JsonSetCommand, ABC):
         cls._mqtt_params = MappingProxyType({cls._field_name: InitParam(bool, _ENABLE)})
         super().__init_subclass__(**kwargs)
 
-    def __init__(self, enable: bool) -> None:  # noqa: FBT001
+    def __init__(self, enable: bool) -> None:
         super().__init__({self._field_name: 1 if enable else 0})

@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.events.base import Event
 
 from . import auto_empty
+from .auto_empty import AutoEmptyEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -32,7 +33,7 @@ if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
-    "auto_empty",
+    "AutoEmptyEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -59,6 +60,7 @@ __all__ = [
     "WaterInfoEvent",
     "WorkMode",
     "WorkModeEvent",
+    "auto_empty",
 ]
 
 
