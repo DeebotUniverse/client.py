@@ -11,7 +11,7 @@ class GetVoiceAssistantState(GetEnableCommand):
     """Get voice assistant state command."""
 
     NAME = "getVoiceAssistantState"
-    event_type = VoiceAssistantStateEvent
+    EVENT_TYPE = VoiceAssistantStateEvent
 
 
 class SetVoiceAssistantState(SetEnableCommand):

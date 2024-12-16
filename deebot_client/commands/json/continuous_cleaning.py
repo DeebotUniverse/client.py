@@ -11,7 +11,7 @@ class GetContinuousCleaning(GetEnableCommand):
     """Get continuous cleaning command."""
 
     NAME = "getBreakPoint"
-    event_type = ContinuousCleaningEvent
+    EVENT_TYPE = ContinuousCleaningEvent
 
 
 class SetContinuousCleaning(SetEnableCommand):

@@ -11,7 +11,7 @@ class GetSafeProtect(GetEnableCommand):
     """Get safe protect command."""
 
     NAME = "getSafeProtect"
-    event_type = SafeProtectEvent
+    EVENT_TYPE = SafeProtectEvent
 
 
 class SetSafeProtect(SetEnableCommand):

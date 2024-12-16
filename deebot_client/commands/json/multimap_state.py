@@ -11,7 +11,7 @@ class GetMultimapState(GetEnableCommand):
     """Get multimap state command."""
 
     NAME = "getMultiMapState"
-    event_type = MultimapStateEvent
+    EVENT_TYPE = MultimapStateEvent
 
 
 class SetMultimapState(SetEnableCommand):

@@ -11,7 +11,7 @@ class GetBorderSwitch(GetEnableCommand):
     """Get border switch command."""
 
     NAME = "getBorderSwitch"
-    event_type = BorderSwitchEvent
+    EVENT_TYPE = BorderSwitchEvent
 
 
 class SetBorderSwitch(SetEnableCommand):

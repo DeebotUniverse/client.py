@@ -11,7 +11,7 @@ class GetCleanPreference(GetEnableCommand):
     """Get clean preference command."""
 
     NAME = "getCleanPreference"
-    event_type = CleanPreferenceEvent
+    EVENT_TYPE = CleanPreferenceEvent
 
 
 class SetCleanPreference(SetEnableCommand):

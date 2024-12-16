@@ -11,7 +11,7 @@ class GetSweepMode(GetEnableCommand):
     """GetSweepMode command."""
 
     NAME = "getSweepMode"
-    event_type = SweepModeEvent
+    EVENT_TYPE = SweepModeEvent
     _field_name = "type"
 
 

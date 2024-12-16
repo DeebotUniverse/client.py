@@ -11,7 +11,7 @@ class GetMoveUpWarning(GetEnableCommand):
     """Get move up lock command."""
 
     NAME = "getMoveupWarning"
-    event_type = MoveUpWarningEvent
+    EVENT_TYPE = MoveUpWarningEvent
 
 
 class SetMoveUpWarning(SetEnableCommand):

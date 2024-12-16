@@ -11,7 +11,7 @@ class GetTrueDetect(GetEnableCommand):
     """Get multimap state command."""
 
     NAME = "getTrueDetect"
-    event_type = TrueDetectEvent
+    EVENT_TYPE = TrueDetectEvent
 
 
 class SetTrueDetect(SetEnableCommand):

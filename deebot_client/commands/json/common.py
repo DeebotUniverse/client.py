@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -22,6 +22,7 @@ from deebot_client.message import (
     MessageBody,
     MessageBodyDataDict,
 )
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import CODE
 
@@ -100,12 +101,11 @@ class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
 
     _field_name: str = "enable"
+    EVENT_TYPE: type[EnableEvent]
 
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def event_type(cls) -> type[EnableEvent]:
-        """Event type."""
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("EVENT_TYPE",))
+        return super().__init_subclass__()
 
     @classmethod
     def _handle_body_data_dict(
@@ -115,7 +115,7 @@ class GetEnableCommand(JsonGetCommand, ABC):
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data[cls._field_name]))  # type: ignore[call-arg, assignment]
+        event: EnableEvent = cls.EVENT_TYPE(bool(data[cls._field_name]))
         event_bus.notify(event)
         return HandlingResult.success()
 

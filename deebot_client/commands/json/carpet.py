@@ -11,7 +11,7 @@ class GetCarpetAutoFanBoost(GetEnableCommand):
     """Get carpet auto fan boost command."""
 
     NAME = "getCarpertPressure"
-    event_type = CarpetAutoFanBoostEvent
+    EVENT_TYPE = CarpetAutoFanBoostEvent
 
 
 class SetCarpetAutoFanBoost(SetEnableCommand):

@@ -11,7 +11,7 @@ class GetAdvancedMode(GetEnableCommand):
     """Get advanced mode command."""
 
     NAME = "getAdvancedMode"
-    event_type = AdvancedModeEvent
+    EVENT_TYPE = AdvancedModeEvent
 
 
 class SetAdvancedMode(SetEnableCommand):

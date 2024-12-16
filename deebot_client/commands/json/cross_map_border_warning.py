@@ -11,7 +11,7 @@ class GetCrossMapBorderWarning(GetEnableCommand):
     """Get cross map border warning command."""
 
     NAME = "getCrossMapBorderWarning"
-    event_type = CrossMapBorderWarningEvent
+    EVENT_TYPE = CrossMapBorderWarningEvent
 
 
 class SetCrossMapBorderWarning(SetEnableCommand):
