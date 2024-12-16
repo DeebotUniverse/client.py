@@ -21,9 +21,7 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
     name = "GetLifeSpan"
 
     def __init__(self, life_span: LifeSpan) -> None:
-        # type for JSON commands starts with small letter, while XML types start with upper letter. Workaround:
-        xml_type = life_span.value[0].upper() + life_span.value[1:]
-        super().__init__({"type": xml_type})
+        super().__init__({"type": life_span.xml_value})
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
@@ -32,22 +30,20 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
         :return: A message response
         """
         if (
-            xml.attrib.get("ret") == "ok"
-            and "type" in xml.attrib
-            and "left" in xml.attrib
-            and "total" in xml.attrib
+            xml.attrib.get("ret") != "ok"
+            or (component_type := xml.attrib.get("type")) is None
+            or (left_str := xml.attrib.get("left")) is None
+            or (total_str := xml.attrib.get("total")) is None
         ):
-            component_type = xml.attrib.get("type")
-            if component_type is None:
-                return HandlingResult.analyse()
-            # type for JSON commands starts with small letter, while XML types start with upper letter. Workaround:
-            xml_type = component_type[0].lower() + component_type[1:]
+            return HandlingResult.analyse()
 
-            left = int(xml.attrib.get("left", 0))
-            total = int(xml.attrib.get("total", 0))
-            percent: float = round((left / total) * 100, 2) if total > 0 else 0.0
+        percent = 0.0
+        left = int(left_str)
+        total = int(total_str)
+        if total > 0:
+            percent = round((left / total) * 100, 2)
 
-            event_bus.notify(LifeSpanEvent(LifeSpan(xml_type), percent, left))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        event_bus.notify(
+            LifeSpanEvent(LifeSpan.from_xml(component_type), percent, left)
+        )
+        return HandlingResult.success()
