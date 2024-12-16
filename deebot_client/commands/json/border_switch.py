@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetBorderSwitch(GetEnableCommand):
     """Get border switch command."""
 
-    name = "getBorderSwitch"
-    event_type = BorderSwitchEvent
+    NAME = "getBorderSwitch"
+    EVENT_TYPE = BorderSwitchEvent
 
 
 class SetBorderSwitch(SetEnableCommand):
     """Set border switch command."""
 
-    name = "setBorderSwitch"
+    NAME = "setBorderSwitch"
     get_command = GetBorderSwitch

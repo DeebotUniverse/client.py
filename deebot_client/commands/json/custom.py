@@ -19,12 +19,12 @@ _LOGGER = get_logger(__name__)
 class CustomCommand(JsonCommand):
     """Custom command, used when user wants to execute a command, which is not part of this library."""
 
-    name: str = "CustomCommand"
+    NAME: str = "CustomCommand"
 
     def __init__(
         self, name: str, args: dict[str, Any] | list[Any] | None = None
     ) -> None:
-        self.name = name
+        self.NAME = name
         super().__init__(args)
 
     def _handle_response(
@@ -36,20 +36,20 @@ class CustomCommand(JsonCommand):
         """
         if response.get("ret") == "ok":
             data = response.get("resp", response)
-            event_bus.notify(CustomCommandEvent(self.name, data))
+            event_bus.notify(CustomCommandEvent(self.NAME, data))
             return CommandResult.success()
 
-        _LOGGER.warning('Command "%s" was not successfully: %s', self.name, response)
+        _LOGGER.warning('Command "%s" was not successfully: %s', self.NAME, response)
         return CommandResult(HandlingState.FAILED)
 
     def __eq__(self, obj: object) -> bool:
         if super().__eq__(obj) and isinstance(obj, CustomCommand):
-            return self.name == obj.name
+            return self.NAME == obj.NAME
 
         return False
 
     def __hash__(self) -> int:
-        return super().__hash__() + hash(self.name)
+        return super().__hash__() + hash(self.NAME)
 
 
 class CustomPayloadCommand(CustomCommand):

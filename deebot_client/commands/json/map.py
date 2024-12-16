@@ -32,7 +32,7 @@ _LOGGER = get_logger(__name__)
 class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
-    name = "getCachedMapInfo"
+    NAME = "getCachedMapInfo"
     # version definition for using type of getMapSet v1 or v2
     _map_set_command: type[GetMapSet | GetMapSetV2]
 
@@ -94,7 +94,7 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get major map command."""
 
-    name = "getMajorMap"
+    NAME = "getMajorMap"
 
     @classmethod
     def _handle_body_data_dict(
@@ -135,7 +135,7 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     _ARGS_TYPE = "type"
     _ARGS_SUBSETS = "subsets"
 
-    name = "getMapSet"
+    NAME = "getMapSet"
 
     def __init__(
         self,
@@ -222,7 +222,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         }
     )
 
-    name = "getMapSubSet"
+    NAME = "getMapSubSet"
 
     def __init__(
         self,
@@ -297,7 +297,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMapSetV2(GetMapSet):
     """Get map set v2 command."""
 
-    name = "getMapSet_V2"
+    NAME = "getMapSet_V2"
 
     @classmethod
     def _get_subset_ids(
@@ -341,7 +341,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     _TRACE_POINT_COUNT = 200
 
-    name = "getMapTrace"
+    NAME = "getMapTrace"
 
     def __init__(self, trace_start: int = 0) -> None:
         super().__init__(
@@ -387,7 +387,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get minor map command."""
 
-    name = "getMinorMap"
+    NAME = "getMinorMap"
 
     def __init__(self, *, map_id: str, piece_index: int) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})

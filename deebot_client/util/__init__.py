@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC
 import asyncio
 import base64
 from contextlib import suppress
@@ -23,6 +24,17 @@ _T = TypeVar("_T")
 def md5(text: str) -> str:
     """Hash text using md5."""
     return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
+
+
+def verify_required_class_variables_exists(
+    cls: type[Any], required_variables: tuple[str, ...]
+) -> None:
+    """Verify that the class has the given class variables."""
+    if ABC not in cls.__bases__:
+        for required in required_variables:
+            if not hasattr(cls, required):
+                msg = f"Class {cls.__name__} must have a {required} attribute"
+                raise ValueError(msg)
 
 
 def decompress_7z_base64_data(data: str) -> bytes:

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetEfficiencyMode(JsonGetCommand):
     """Get efficiency mode command."""
 
-    name = "getEfficiency"
+    NAME = "getEfficiency"
 
     @classmethod
     def _handle_body_data_dict(
@@ -36,7 +36,7 @@ class GetEfficiencyMode(JsonGetCommand):
 class SetEfficiencyMode(JsonSetCommand):
     """Set efficiency mode command."""
 
-    name = "setEfficiency"
+    NAME = "setEfficiency"
     get_command = GetEfficiencyMode
     _mqtt_params = MappingProxyType({"efficiency": InitParam(EfficiencyMode)})
 
