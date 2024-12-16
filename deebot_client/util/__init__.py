@@ -96,10 +96,10 @@ class OnChangedList(list[_T]):
         super().__init__(iterable)
         self._on_change = on_change
 
-    def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedList._MODIFYING_FUNCTIONS:
+    def __getattribute__(self, name: str, /) -> Any:
+        if name in OnChangedList._MODIFYING_FUNCTIONS:
             self._on_change()
-        return super().__getattribute__(__name)
+        return super().__getattribute__(name)
 
 
 _KT = TypeVar("_KT")
@@ -124,10 +124,10 @@ class OnChangedDict(dict[_KT, _VT]):
         super().__init__(iterable)
         self._on_change = on_change
 
-    def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedDict._MODIFYING_FUNCTIONS:
+    def __getattribute__(self, name: str, /) -> Any:
+        if name in OnChangedDict._MODIFYING_FUNCTIONS:
             self._on_change()
-        return super().__getattribute__(__name)
+        return super().__getattribute__(name)
 
 
 LST = list[_T] | set[_T] | tuple[_T, ...]
