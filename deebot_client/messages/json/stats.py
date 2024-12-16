@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ReportStats(MessageBodyDataDict):
     """Report stats message."""
 
-    name = "reportStats"
+    NAME = "reportStats"
 
     @classmethod
     def _handle_body_data_dict(

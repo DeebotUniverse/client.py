@@ -30,7 +30,7 @@ __all__ = [
 async def assert_execute_command(
     command: ExecuteCommand, args: dict[str, Any] | list[Any] | None
 ) -> None:
-    assert command.name != "invalid"
+    assert command.NAME != "invalid"
     assert command._args == args
 
     # success
@@ -49,7 +49,7 @@ async def assert_execute_command(
             (
                 "deebot_client.commands.json.common",
                 "WARNING",
-                f'Command "{command.name}" was not successfully. body={body}',
+                f'Command "{command.NAME}" was not successfully. body={body}',
             )
         )
 

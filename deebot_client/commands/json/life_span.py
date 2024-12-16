@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
     """Get life span command."""
 
-    name = "getLifeSpan"
+    NAME = "getLifeSpan"
 
     def __init__(self, life_spans: LST[LifeSpan]) -> None:
         args = [life_span.value for life_span in life_spans]
@@ -50,7 +50,7 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     """Reset life span command."""
 
-    name = "resetLifeSpan"
+    NAME = "resetLifeSpan"
     _mqtt_params = MappingProxyType({"type": InitParam(LifeSpan, "life_span")})
 
     def __init__(self, life_span: LifeSpan) -> None:

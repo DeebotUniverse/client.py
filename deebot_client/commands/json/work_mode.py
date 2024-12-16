@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetWorkMode(JsonGetCommand):
     """Get work mode command."""
 
-    name = "getWorkMode"
+    NAME = "getWorkMode"
 
     @classmethod
     def _handle_body_data_dict(
@@ -36,7 +36,7 @@ class GetWorkMode(JsonGetCommand):
 class SetWorkMode(JsonSetCommand):
     """Set work mode command."""
 
-    name = "setWorkMode"
+    NAME = "setWorkMode"
     get_command = GetWorkMode
     _mqtt_params = MappingProxyType({"mode": InitParam(WorkMode)})
 

@@ -19,23 +19,18 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-class XmlCommand(Command):
+class XmlCommand(Command, ABC):
     """Xml command."""
 
-    data_type: DataType = DataType.XML
-
-    @property  # type: ignore[misc]
-    @classmethod
-    def has_sub_element(cls) -> bool:
-        """Return True if command has inner element."""
-        return False
+    DATA_TYPE = DataType.XML
+    HAS_SUB_ELEMENT = False
 
     def _get_payload(self) -> str:
         element = ctl_element = Element("ctl")
 
         if len(self._args) > 0:
-            if self.has_sub_element:
-                element = SubElement(element, self.name.lower())
+            if self.HAS_SUB_ELEMENT:
+                element = SubElement(element, self.NAME.lower())
 
             if isinstance(self._args, dict):
                 for key, value in self._args.items():
