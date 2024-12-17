@@ -74,8 +74,9 @@ ignore = [
     "D107",  # Missing docstring in `__init__`
     "E501",  # line too long
 
-    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT", # flake8-boolean-trap
 
+    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
 
     # Conflicts with the Ruff formatter
     "COM812",

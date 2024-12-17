@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
+from . import auto_empty
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -129,6 +130,9 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    auto_empty.GetAutoEmpty,
+    auto_empty.SetAutoEmpty,
 
     GetBorderSwitch,
     SetBorderSwitch,

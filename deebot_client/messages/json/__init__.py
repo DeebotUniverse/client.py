@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .stats import ReportStats
@@ -20,7 +21,10 @@ __all__ = [
 # fmt: off
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
+    OnAutoEmpty,
+
     OnBattery,
+
     OnMapSetV2,
 
     ReportStats
