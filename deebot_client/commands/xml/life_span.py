@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetLifeSpan(XmlCommandWithMessageHandling):
     """GetLifeSpan command."""
 
-    name = "GetLifeSpan"
+    NAME = "GetLifeSpan"
 
     def __init__(self, life_span: LifeSpan) -> None:
         super().__init__({"type": life_span.xml_value})
