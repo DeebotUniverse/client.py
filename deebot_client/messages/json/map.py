@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class OnMapSetV2(MessageBodyDataDict):
     """On map set v2 message."""
 
-    name = "onMapSet_V2"
+    NAME = "onMapSet_V2"
 
     @classmethod
     def _handle_body_data_dict(

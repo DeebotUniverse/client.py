@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetWaterInfo(JsonGetCommand):
     """Get water info command."""
 
-    name = "getWaterInfo"
+    NAME = "getWaterInfo"
 
     @classmethod
     def _handle_body_data_dict(
@@ -49,7 +49,7 @@ class GetWaterInfo(JsonGetCommand):
 class SetWaterInfo(JsonSetCommand):
     """Set water info command."""
 
-    name = "setWaterInfo"
+    NAME = "setWaterInfo"
     get_command = GetWaterInfo
     _mqtt_params = MappingProxyType(
         {

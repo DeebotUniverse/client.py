@@ -1,4 +1,4 @@
-"""Fallback Capabilities."""
+"""DEEBOT N8+ Black Capabilities."""
 
 from __future__ import annotations
 
@@ -130,9 +130,23 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
         ),
         life_span=CapabilityLifeSpan(
-            types=(LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH),
+            types=(
+                LifeSpan.BRUSH,
+                LifeSpan.FILTER,
+                LifeSpan.SIDE_BRUSH,
+                LifeSpan.UNIT_CARE,
+            ),
             event=LifeSpanEvent,
-            get=[GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])],
+            get=[
+                GetLifeSpan(
+                    [
+                        LifeSpan.BRUSH,
+                        LifeSpan.FILTER,
+                        LifeSpan.SIDE_BRUSH,
+                        LifeSpan.UNIT_CARE,
+                    ]
+                )
+            ],
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(

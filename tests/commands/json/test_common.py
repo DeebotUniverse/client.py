@@ -84,14 +84,14 @@ async def test_common_functionality(
         assert (
             "deebot_client.command",
             logging.INFO,
-            f'No response received for command "{command.name}" during availability-check.',
+            f'No response received for command "{command.NAME}" during availability-check.',
         ) in caplog.record_tuples
 
     elif expected_log:
         assert (
             "deebot_client.command",
             expected_log[0],
-            expected_log[1].format(command.name),
+            expected_log[1].format(command.NAME),
         ) in caplog.record_tuples
 
     assert available.device_reached is False

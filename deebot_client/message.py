@@ -8,6 +8,8 @@ from enum import IntEnum, auto
 import functools
 from typing import TYPE_CHECKING, Any, TypeVar, final
 
+from deebot_client.util import verify_required_class_variables_exists
+
 from .logging_filter import get_logger
 
 if TYPE_CHECKING:
@@ -61,13 +63,13 @@ def _handle_error_or_analyse(
         try:
             response = func(cls, event_bus, data)
             if response.state == HandlingState.ANALYSE:
-                _LOGGER.debug("Could not handle %s message: %s", cls.name, data)
+                _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             if response.state == HandlingState.ERROR:
-                _LOGGER.warning("Could not parse %s: %s", cls.name, data)
+                _LOGGER.warning("Could not parse %s: %s", cls.NAME, data)
             return response
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.name, data, exc_info=True)
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
 
     return wrapper
@@ -76,11 +78,11 @@ def _handle_error_or_analyse(
 class Message(ABC):
     """Message."""
 
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def name(cls) -> str:
-        """Command name."""
+    NAME: str
+
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("NAME",))
+        return super().__init_subclass__()
 
     @classmethod
     @abstractmethod
@@ -105,7 +107,7 @@ class Message(ABC):
         return cls._handle(event_bus, message)
 
 
-class MessageStr(Message):
+class MessageStr(Message, ABC):
     """String message."""
 
     @classmethod
@@ -137,7 +139,7 @@ class MessageStr(Message):
         return super()._handle(event_bus, message)
 
 
-class MessageBody(Message):
+class MessageBody(Message, ABC):
     """Dict message with body attribute."""
 
     @classmethod
@@ -168,7 +170,7 @@ class MessageBody(Message):
         return super()._handle(event_bus, message)
 
 
-class MessageBodyData(MessageBody):
+class MessageBodyData(MessageBody, ABC):
     """Dict message with body->data attribute."""
 
     @classmethod
@@ -189,11 +191,11 @@ class MessageBodyData(MessageBody):
         try:
             response = cls._handle_body_data(event_bus, data)
             if response.state == HandlingState.ANALYSE:
-                _LOGGER.debug("Could not handle %s message: %s", cls.name, data)
+                _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             return response
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.name, data, exc_info=True)
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
 
     @classmethod
@@ -208,7 +210,7 @@ class MessageBodyData(MessageBody):
         return super()._handle_body(event_bus, body)
 
 
-class MessageBodyDataDict(MessageBodyData):
+class MessageBodyDataDict(MessageBodyData, ABC):
     """Dict message with body->data attribute as dict."""
 
     @classmethod
@@ -235,7 +237,7 @@ class MessageBodyDataDict(MessageBodyData):
         return super()._handle_body_data(event_bus, data)
 
 
-class MessageBodyDataList(MessageBodyData):
+class MessageBodyDataList(MessageBodyData, ABC):
     """Dict message with body->data attribute as list."""
 
     @classmethod

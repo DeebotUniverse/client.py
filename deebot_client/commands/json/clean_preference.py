@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetCleanPreference(GetEnableCommand):
     """Get clean preference command."""
 
-    name = "getCleanPreference"
-    event_type = CleanPreferenceEvent
+    NAME = "getCleanPreference"
+    EVENT_TYPE = CleanPreferenceEvent
 
 
 class SetCleanPreference(SetEnableCommand):
     """Set clean preference command."""
 
-    name = "setCleanPreference"
+    NAME = "setCleanPreference"
     get_command = GetCleanPreference

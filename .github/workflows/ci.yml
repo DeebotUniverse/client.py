@@ -18,17 +18,12 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
-
-      - name: 🏗 Set up Python
-        uses: actions/setup-python@v5
-        with:
-          python-version-file: ".python-version"
 
       - name: 🏗 Install the project
         run: uv sync --locked --dev
@@ -50,28 +45,34 @@ jobs:
       matrix:
         python-version:
           - "3.12"
+          - "3.13"
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@v2
+      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v4
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
-
-      - name: 🏗 Set up Python ${{ matrix.python-version }}
-        run: uv python install ${{ matrix.python-version }}
+          python-version: ${{ matrix.python-version }}
 
       - name: 🏗 Install the project
         run: uv sync --locked --dev
 
       - name: Run pytest
-        run: uv run --frozen pytest tests --cov=./ --cov-report=xml
+        run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
