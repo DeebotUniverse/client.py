@@ -23,6 +23,7 @@ from .map import (
     PositionsEvent,
     PositionType,
 )
+from .mop_auto_wash_frequency import MopAutoWashFrequency, MopAutoWashFrequencyEvent
 from .network import NetworkInfoEvent
 from .water_info import SweepType, WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
@@ -47,6 +48,8 @@ __all__ = [
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
+    "MopAutoWashFrequency",
+    "MopAutoWashFrequencyEvent",
     "NetworkInfoEvent",
     "Position",
     "PositionType",

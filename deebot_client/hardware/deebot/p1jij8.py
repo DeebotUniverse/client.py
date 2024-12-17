@@ -42,6 +42,10 @@ from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
+)
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -75,6 +79,8 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
+    MopAutoWashFrequency,
+    MopAutoWashFrequencyEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     PositionsEvent,
@@ -171,6 +177,16 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 CarpetAutoFanBoostEvent,
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
+            ),
+            mop_auto_wash_frequency=CapabilitySetTypes(
+                event=MopAutoWashFrequencyEvent,
+                get=[GetMopAutoWashFrequency()],
+                set=SetMopAutoWashFrequency,
+                types=(
+                    MopAutoWashFrequency.TEN_MINUTES,
+                    MopAutoWashFrequency.FIFTEEN_MINUTES,
+                    MopAutoWashFrequency.TWENTY_FIVE_MINUTES,
+                ),
             ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
