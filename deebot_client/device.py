@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Callable, Coroutine
+from collections.abc import Callable, Coroutine  # pylint: disable=import-error
 from contextlib import suppress
 from datetime import datetime
 import json
