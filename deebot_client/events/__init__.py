@@ -128,7 +128,7 @@ class LifeSpan(StrEnum):
     xml_value: str
 
     def __new__(cls, value: str, xml_value: str = "") -> Self:
-        obj = str.__new__(cls)
+        obj = str.__new__(cls, value)
         obj._value_ = value
         obj.xml_value = xml_value
         return obj
