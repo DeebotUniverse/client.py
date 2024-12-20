@@ -179,10 +179,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 get=[GetAutoEmpty()],
                 set=SetAutoEmpty,
                 types=(
-                    auto_empty.Frequency.MIN_10,
-                    auto_empty.Frequency.MIN_15,
-                    auto_empty.Frequency.MIN_25,
                     auto_empty.Frequency.AUTO,
+                    auto_empty.Frequency.SMART,
                 ),
             ),
         ),
