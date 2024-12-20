@@ -16,7 +16,6 @@ if TYPE_CHECKING:
 __all__ = [
     "OnBattery",
     "OnMapSetV2",
-    "OnStationState",
     "ReportStats",
 ]
 
@@ -29,8 +28,9 @@ _MESSAGES: list[type[Message]] = [
 
     OnMapSetV2,
 
-    ReportStats,
     OnStationState,
+
+    ReportStats,
 ]
 # fmt: on
 

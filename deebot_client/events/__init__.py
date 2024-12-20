@@ -34,7 +34,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
-    "BaseStationEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -168,17 +167,9 @@ class LifeSpan(StrEnum):
 
 
 @unique
-class BaseStationAction(IntEnum):
-    """Enum class for all possible base station actions."""
-
-    EMPTY_DUSTBIN = 1
-
-
-@unique
 class BaseStationStatus(IntEnum):
     """Enum class for all possible base station statuses."""
 
-    UNKNOWN = -1
     IDLE = 0
     EMPTYING = 1
 

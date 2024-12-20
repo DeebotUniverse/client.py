@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
-from . import auto_empty
+from . import auto_empty, station_action
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -43,7 +43,6 @@ from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
-from .station_action import StationAction
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
@@ -124,7 +123,6 @@ __all__ = [
     "SetVolume",
     "SetWaterInfo",
     "SetWorkMode",
-    "StationAction",
 ]
 
 # fmt: off
@@ -213,6 +211,8 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetSafeProtect,
     SetSafeProtect,
 
+    station_action.StationAction,
+
     GetSweepMode,
     SetSweepMode,
 
@@ -232,9 +232,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetWaterInfo,
 
     GetWorkMode,
-    SetWorkMode,
-
-    StationAction,
+    SetWorkMode
 ]
 # fmt: on
 
