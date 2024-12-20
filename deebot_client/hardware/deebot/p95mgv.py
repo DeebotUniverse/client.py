@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilityCustomCommand,
     CapabilityEvent,
     CapabilityExecute,
+    CapabilityExecuteTypes,
     CapabilityLifeSpan,
     CapabilityMap,
     CapabilitySet,
@@ -19,6 +20,7 @@ from deebot_client.capabilities import (
     CapabilityStats,
     DeviceType,
 )
+from deebot_client.commands import BaseStationAction
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
@@ -118,7 +120,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
         ),
         base_station=CapabilityBaseStation(
-            action=StationAction,
+            action=CapabilityExecuteTypes(
+                StationAction, types=(BaseStationAction.EMPTY_DUSTBIN,)
+            ),
             auto_empty=CapabilitySetTypes(
                 event=auto_empty.AutoEmptyEvent,
                 get=[GetAutoEmpty()],
