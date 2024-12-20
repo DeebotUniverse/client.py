@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .map import OnMapSetV2
+from .station_state import OnStationState
 from .stats import ReportStats
 
 if TYPE_CHECKING:
@@ -27,7 +28,9 @@ _MESSAGES: list[type[Message]] = [
 
     OnMapSetV2,
 
-    ReportStats
+    OnStationState,
+
+    ReportStats,
 ]
 # fmt: on
 
