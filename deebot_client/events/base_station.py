@@ -7,11 +7,11 @@ from enum import IntEnum, unique
 
 from .base import Event as _Event
 
-__all__ = ["BaseStationEvent", "Status"]
+__all__ = ["BaseStationEvent", "State"]
 
 
 @unique
-class Status(IntEnum):
+class State(IntEnum):
     """Enum class for all possible base station statuses."""
 
     IDLE = 0
@@ -22,4 +22,4 @@ class Status(IntEnum):
 class BaseStationEvent(_Event):
     """Base Station Event representation."""
 
-    state: Status
+    state: State

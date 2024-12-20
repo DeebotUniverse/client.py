@@ -115,7 +115,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     auto_empty.Frequency.SMART,
                 ),
             ),
-            status=CapabilityEvent(BaseStationEvent, [GetStationState()]),
+            state=CapabilityEvent(BaseStationEvent, [GetStationState()]),
         ),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(

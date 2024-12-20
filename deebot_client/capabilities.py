@@ -227,7 +227,7 @@ class CapabilityBaseStation:
         [bool | None, auto_empty.Frequency | str | None],
         auto_empty.Frequency,
     ]
-    status: CapabilityEvent[BaseStationEvent]
+    state: CapabilityEvent[BaseStationEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
