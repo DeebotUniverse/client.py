@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get charge state command."""
 
-    name = "getChargeState"
+    NAME = "getChargeState"
 
     @classmethod
     def _handle_body_data_dict(

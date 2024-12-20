@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetPos(XmlCommandWithMessageHandling):
     """GetPos command."""
 
-    name = "GetPos"
+    NAME = "GetPos"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:

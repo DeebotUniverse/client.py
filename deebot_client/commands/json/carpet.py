@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetCarpetAutoFanBoost(GetEnableCommand):
     """Get carpet auto fan boost command."""
 
-    name = "getCarpertPressure"
-    event_type = CarpetAutoFanBoostEvent
+    NAME = "getCarpertPressure"
+    EVENT_TYPE = CarpetAutoFanBoostEvent
 
 
 class SetCarpetAutoFanBoost(SetEnableCommand):
     """Set carpet auto fan boost command."""
 
-    name = "setCarpertPressure"
+    NAME = "setCarpertPressure"
     get_command = GetCarpetAutoFanBoost

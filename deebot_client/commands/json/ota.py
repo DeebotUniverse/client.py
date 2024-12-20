@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetOta(JsonGetCommand):
     """Get ota command."""
 
-    name = "getOta"
+    NAME = "getOta"
 
     @classmethod
     def _handle_body_data_dict(
@@ -50,7 +50,7 @@ class GetOta(JsonGetCommand):
 class SetOta(JsonSetCommand):
     """Set ota command."""
 
-    name = "setOta"
+    NAME = "setOta"
     get_command = GetOta
 
     _mqtt_params = MappingProxyType({"autoSwitch": InitParam(bool, "auto_enabled")})

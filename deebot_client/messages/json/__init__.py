@@ -31,4 +31,4 @@ _MESSAGES: list[type[Message]] = [
 ]
 # fmt: on
 
-MESSAGES: dict[str, type[Message]] = {message.name: message for message in _MESSAGES}  # type: ignore[misc]
+MESSAGES: dict[str, type[Message]] = {message.NAME: message for message in _MESSAGES}

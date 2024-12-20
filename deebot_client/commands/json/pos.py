@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get volume command."""
 
-    name = "getPos"
+    NAME = "getPos"
 
     def __init__(self) -> None:
         super().__init__(["chargePos", "deebotPos"])

@@ -12,6 +12,7 @@ from deebot_client.exceptions import (
     ApiTimeoutError,
     DeebotError,
 )
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
@@ -64,23 +65,17 @@ class Command(ABC):
     """Abstract command object."""
 
     _targets_bot: bool = True
+    NAME: str
+    DATA_TYPE: DataType
+
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("NAME", "DATA_TYPE"))
+        return super().__init_subclass__()
 
     def __init__(self, args: dict[str, Any] | list[Any] | None = None) -> None:
         if args is None:
             args = {}
         self._args = args
-
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def name(cls) -> str:
-        """Command name."""
-
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def data_type(cls) -> DataType:
-        """Data type."""
 
     @abstractmethod
     def _get_payload(self) -> dict[str, Any] | list[Any] | str:
@@ -115,7 +110,7 @@ class Command(ABC):
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning(
                 "Could not execute command %s",
-                self.name,
+                self.NAME,
                 exc_info=True,
             )
         return DeviceCommandResult(device_reached=False)
@@ -132,14 +127,14 @@ class Command(ABC):
         except ApiTimeoutError:
             _LOGGER.warning(
                 "Could not execute command %s: Timeout reached",
-                self.name,
+                self.NAME,
             )
             return CommandResult(HandlingState.ERROR), {}
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
             _LOGGER.debug(
-                "ANALYSE: Could not handle command: %s with %s", self.name, response
+                "ANALYSE: Could not handle command: %s with %s", self.NAME, response
             )
             return (
                 CommandResult(
@@ -150,16 +145,16 @@ class Command(ABC):
                 response,
             )
         if result.state == HandlingState.ERROR:
-            _LOGGER.warning("Could not parse %s: %s", self.name, response)
+            _LOGGER.warning("Could not parse %s: %s", self.NAME, response)
         return result, response
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         payload = {
-            "cmdName": self.name,
+            "cmdName": self.NAME,
             "payload": self._get_payload(),
-            "payloadType": self.data_type.value,
+            "payloadType": self.DATA_TYPE.value,
             "td": "q",
             "toId": device_info["did"],
             "toRes": device_info["resource"],
@@ -195,7 +190,7 @@ class Command(ABC):
             result = self._handle_response(event_bus, response)
             if result.state == HandlingState.ANALYSE:
                 _LOGGER.debug(
-                    "ANALYSE: Could not handle command: %s with %s", self.name, response
+                    "ANALYSE: Could not handle command: %s with %s", self.NAME, response
                 )
                 return CommandResult(
                     HandlingState.ANALYSE_LOGGED,
@@ -206,7 +201,7 @@ class Command(ABC):
         except Exception:  # pylint: disable=broad-except
             _LOGGER.warning(
                 "Could not parse response for %s: %s",
-                self.name,
+                self.NAME,
                 response,
                 exc_info=True,
             )
@@ -223,12 +218,12 @@ class Command(ABC):
 
     def __eq__(self, obj: object) -> bool:
         if isinstance(obj, Command):
-            return self.name == obj.name and self._args == obj._args
+            return self.NAME == obj.NAME and self._args == obj._args
 
         return False
 
     def __hash__(self) -> int:
-        return hash(self.name) + hash(self._args)
+        return hash(self.NAME) + hash(self._args)
 
 
 class CommandWithMessageHandling(Command, Message, ABC):
@@ -253,7 +248,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
                 case 4200:
                     # bot offline
                     _LOGGER.info(
-                        'Device is offline. Could not execute command "%s"', self.name
+                        'Device is offline. Could not execute command "%s"', self.NAME
                     )
                     event_bus.notify(AvailabilityEvent(available=False))
                     return CommandResult(HandlingState.FAILED)
@@ -261,16 +256,16 @@ class CommandWithMessageHandling(Command, Message, ABC):
                     if self._is_available_check:
                         _LOGGER.info(
                             'No response received for command "%s" during availability-check.',
-                            self.name,
+                            self.NAME,
                         )
                     else:
                         _LOGGER.warning(
                             'No response received for command "%s". This can happen if the device has network issues or does not support the command',
-                            self.name,
+                            self.NAME,
                         )
                     return CommandResult(HandlingState.FAILED)
 
-        _LOGGER.warning('Command "%s" was not successfully.', self.name)
+        _LOGGER.warning('Command "%s" was not successfully.', self.NAME)
         return CommandResult(HandlingState.ANALYSE)
 
 

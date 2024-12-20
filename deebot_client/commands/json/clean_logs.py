@@ -23,7 +23,7 @@ class GetCleanLogs(JsonCommand):
     """Get clean logs command."""
 
     _targets_bot: bool = False
-    name = "GetCleanLogs"
+    NAME = "GetCleanLogs"
 
     def __init__(self, count: int = 0) -> None:
         super().__init__({"count": count})
@@ -32,7 +32,7 @@ class GetCleanLogs(JsonCommand):
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         json = {
-            "td": self.name,
+            "td": self.NAME,
             "did": device_info["did"],
             "resource": device_info["resource"],
         }
