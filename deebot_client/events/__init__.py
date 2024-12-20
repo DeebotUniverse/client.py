@@ -3,11 +3,13 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum, IntEnum, unique
-from typing import TYPE_CHECKING, Any
+from enum import IntEnum, StrEnum, unique
+from typing import TYPE_CHECKING, Any, Self
 
 from deebot_client.events.base import Event
 
+from . import auto_empty
+from .auto_empty import AutoEmptyEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -31,6 +33,7 @@ if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
+    "AutoEmptyEvent",
     "BaseStationEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
@@ -58,6 +61,7 @@ __all__ = [
     "WaterInfoEvent",
     "WorkMode",
     "WorkModeEvent",
+    "auto_empty",
 ]
 
 
@@ -123,25 +127,44 @@ class ErrorEvent(Event):
 
 
 @unique
-class LifeSpan(str, Enum):
+class LifeSpan(StrEnum):
     """Enum class for all possible life span components."""
 
-    BRUSH = "brush"
-    FILTER = "heap"
-    SIDE_BRUSH = "sideBrush"
-    UNIT_CARE = "unitCare"
-    ROUND_MOP = "roundMop"
-    AIR_FRESHENER = "dModule"
-    UV_SANITIZER = "uv"
-    HUMIDIFY = "humidify"
-    HUMIDIFY_MAINTENANCE = "wbCare"
-    BLADE = "blade"
-    LENS_BRUSH = "lensBrush"
-    DUST_BAG = "dustBag"
-    CLEANING_FLUID = "autoWater_cleaningFluid"
-    STRAINER = "strainer"
-    HAND_FILTER = "handFilter"
-    BASE_STATION_FILTER = "spHeap"
+    xml_value: str
+
+    def __new__(cls, value: str, xml_value: str = "") -> Self:
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.xml_value = xml_value
+        return obj
+
+    @classmethod
+    def from_xml(cls, value: str) -> LifeSpan:
+        """Get LifeSpan from xml value."""
+        for life_span in LifeSpan:
+            if life_span.xml_value == value:
+                return life_span
+
+        msg = f"{value} is not a valid {cls.__name__}"
+        raise ValueError(msg)
+
+    BRUSH = "brush", "Brush"
+    FILTER = "heap", "Heap"
+    SIDE_BRUSH = "sideBrush", "SideBrush"
+    UNIT_CARE = "unitCare", "UnitCare"
+    ROUND_MOP = "roundMop", "RoundMop"
+    AIR_FRESHENER = "dModule", "DModule"
+    UV_SANITIZER = "uv", "Uv"
+    HUMIDIFY = "humidify", "Humidify"
+    HUMIDIFY_MAINTENANCE = "wbCare", "WbCare"
+    BLADE = "blade", "Blade"
+    LENS_BRUSH = "lensBrush", "LensBrush"
+    DUST_BAG = "dustBag", "DustBag"
+    CLEANING_FLUID = "autoWater_cleaningFluid", "AutoWater_cleaningFluid"
+    STRAINER = "strainer", "Strainer"
+    HAND_FILTER = "handFilter", "HandFilter"
+    DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
+    BASE_STATION_FILTER = "spHeap", "SpHeap"
 
 
 @unique

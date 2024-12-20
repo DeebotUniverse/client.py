@@ -10,14 +10,14 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetSweepMode(GetEnableCommand):
     """GetSweepMode command."""
 
-    name = "getSweepMode"
-    event_type = SweepModeEvent
+    NAME = "getSweepMode"
+    EVENT_TYPE = SweepModeEvent
     _field_name = "type"
 
 
 class SetSweepMode(SetEnableCommand):
     """SetSweepMode command."""
 
-    name = "setSweepMode"
+    NAME = "setSweepMode"
     get_command = GetSweepMode
     _field_name = "type"

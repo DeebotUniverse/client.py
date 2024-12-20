@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetCleanSum(XmlCommandWithMessageHandling):
     """GetCleanSum command."""
 
-    name = "GetCleanSum"
+    NAME = "GetCleanSum"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:

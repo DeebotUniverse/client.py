@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
@@ -39,6 +42,7 @@ from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -78,8 +82,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.hardware import get_static_device_info
-from deebot_client.hardware.deebot import DEVICES, _load
+from deebot_client.hardware import deebot as hardware_deebot, get_static_device_info
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -93,7 +96,7 @@ if TYPE_CHECKING:
     ("class_", "expected"),
     [
         ("not_specified", lambda: None),
-        ("yna5xi", lambda: DEVICES["yna5xi"]),
+        ("yna5xi", lambda: hardware_deebot.DEVICES["yna5xi"]),
     ],
 )
 async def test_get_static_device_info(
@@ -190,6 +193,7 @@ async def test_get_static_device_info(
         (
             "p95mgv",
             {
+                AutoEmptyEvent: [GetAutoEmpty()],
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
                 BatteryEvent: [GetBattery()],
@@ -248,46 +252,12 @@ async def test_capabilities_event_extraction(
 
 def test_all_models_loaded() -> None:
     """Test that all models are loaded."""
-    _load()
-    assert list(DEVICES) == [
-        "1vxt52",
-        "2ap5uq",
-        "2o4lnm",
-        "4vhygi",
-        "55aiho",
-        "5xu9h3",
-        "626v6g",
-        "659yh8",
-        "77atlz",
-        "7bryc5",
-        "85as7h",
-        "85nbtp",
-        "8kwdb4",
-        "9ku8nu",
-        "9s1s80",
-        "b742vd",
-        "buom7k",
-        "clojes",
-        "e6ofmn",
-        "guzput",
-        "ifbw08",
-        "itk04l",
-        "jtmf04",
-        "kr0277",
-        "lf3bn4",
-        "lx3j7m",
-        "p1jij8",
-        "p95mgv",
-        "paeygf",
-        "qhe2o2",
-        "rss8xk",
-        "s69g6z",
-        "ty84oi",
-        "umwv6z",
-        "vi829v",
-        "x5d34r",
-        "yna5xi",
-        "z4lvk7",
-        "zjavof",
-        "zwkcqc",
-    ]
+    hardware_deebot._load()
+    folder = Path(hardware_deebot.__file__).parent
+    assert list(hardware_deebot.DEVICES) == sorted(
+        [
+            name.removesuffix(".py")
+            for name in os.listdir(folder)
+            if (folder / name).is_file() and name != "__init__.py"
+        ]
+    )

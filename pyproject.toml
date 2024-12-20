@@ -38,11 +38,11 @@ version = "0.0.0"
 
 [tool.uv]
 dev-dependencies = [
-    "mypy==1.13.0",
+    "mypy==1.14.0",
     "pre-commit==4.0.1",
     "pycountry==24.6.1",
     "pylint==3.3.2",
-    "pytest-asyncio==0.24.0",
+    "pytest-asyncio==0.25.0",
     "pytest-cov==6.0.0",
     "pytest-docker-fixtures==1.3.19",
     "pytest-timeout==2.3.1",
@@ -74,8 +74,9 @@ ignore = [
     "D107",  # Missing docstring in `__init__`
     "E501",  # line too long
 
-    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT", # flake8-boolean-trap
 
+    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
 
     # Conflicts with the Ruff formatter
     "COM812",

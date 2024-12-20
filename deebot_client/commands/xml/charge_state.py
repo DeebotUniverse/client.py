@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetChargeState(XmlCommandWithMessageHandling):
     """GetChargeState command."""
 
-    name = "GetChargeState"
+    NAME = "GetChargeState"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:

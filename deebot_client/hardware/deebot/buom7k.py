@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from deebot_client.capabilities import (
     Capabilities,
-    CapabilityBaseStation,
-    CapabilityBaseStationAction,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -48,14 +46,12 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
-from deebot_client.commands.json.station_action import StationAction
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
-    BaseStationEvent,
     BatteryEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -96,10 +92,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
         ),
-        base_station=CapabilityBaseStation(
-            action=CapabilityBaseStationAction(command=StationAction),
-            event=CapabilityEvent(BaseStationEvent, []),
-        ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
@@ -134,7 +126,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
                 LifeSpan.ROUND_MOP,
-                LifeSpan.BASE_STATION_FILTER,
             ),
             event=LifeSpanEvent,
             get=[
@@ -145,7 +136,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
                         LifeSpan.ROUND_MOP,
-                        LifeSpan.BASE_STATION_FILTER,
                     ]
                 )
             ],
