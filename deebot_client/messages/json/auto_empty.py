@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class OnAutoEmpty(MessageBodyDataDict):
     """On auto empty message."""
 
-    name = "onAutoEmpty"
+    NAME = "onAutoEmpty"
 
     @classmethod
     def _handle_body_data_dict(

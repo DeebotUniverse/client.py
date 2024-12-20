@@ -14,13 +14,13 @@ from .common import ExecuteCommand, JsonGetCommand
 class GetAutoEmpty(OnAutoEmpty, JsonGetCommand):
     """Get auto empty command."""
 
-    name = "getAutoEmpty"
+    NAME = "getAutoEmpty"
 
 
 class SetAutoEmpty(ExecuteCommand):
     """Set auto empty command."""
 
-    name = "setAutoEmpty"
+    NAME = "setAutoEmpty"
 
     def __init__(
         self, enable: bool | None = None, frequency: Frequency | str | None = None
