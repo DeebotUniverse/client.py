@@ -8,8 +8,9 @@ from typing import TYPE_CHECKING, Any, Self
 
 from deebot_client.events.base import Event
 
-from . import auto_empty
+from . import auto_empty, base_station
 from .auto_empty import AutoEmptyEvent
+from .base_station import BaseStationEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -34,6 +35,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
+    "BaseStationEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -61,6 +63,7 @@ __all__ = [
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
+    "base_station",
 ]
 
 
@@ -164,21 +167,6 @@ class LifeSpan(StrEnum):
     HAND_FILTER = "handFilter", "HandFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
     BASE_STATION_FILTER = "spHeap", "SpHeap"
-
-
-@unique
-class BaseStationStatus(IntEnum):
-    """Enum class for all possible base station statuses."""
-
-    IDLE = 0
-    EMPTYING = 1
-
-
-@dataclass(frozen=True)
-class BaseStationEvent(Event):
-    """Base Station Event representation."""
-
-    state: BaseStationStatus
 
 
 @dataclass(frozen=True)

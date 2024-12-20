@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import BaseStationEvent, BaseStationStatus
+from deebot_client.events.base_station import BaseStationEvent, Status
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -28,14 +28,14 @@ class OnStationState(MessageBodyDataDict):
         # "body":{"data":{"content":{"error":[],"type":1,"motionState":1},"state":1},"code":0,"msg":"ok"} - Emptying
 
         if (state := data.get("state")) == 0:
-            reported_state = BaseStationStatus.IDLE
+            reported_state = Status.IDLE
         elif (
             state == 1
             and (content := data.get("content"))
             and content.get("type") == 1
             and content.get("motionState") == 1
         ):
-            reported_state = BaseStationStatus.EMPTYING
+            reported_state = Status.EMPTYING
         else:
             return HandlingResult.analyse()
 
