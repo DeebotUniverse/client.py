@@ -5,9 +5,9 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from .auto_empty import OnAutoEmpty
-from .base_station import OnStationState
 from .battery import OnBattery
 from .map import OnMapSetV2
+from .station_state import OnStationState
 from .stats import ReportStats
 
 if TYPE_CHECKING:

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
-from . import auto_empty, station_action
+from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -212,6 +212,8 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetSafeProtect,
 
     station_action.StationAction,
+
+    station_state.GetStationState,
 
     GetSweepMode,
     SetSweepMode,

@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
-    BaseStationAction,
     BaseStationEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -62,6 +61,7 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     from deebot_client.command import Command
+    from deebot_client.commands import BaseStationAction
     from deebot_client.commands.json.common import ExecuteCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
@@ -149,21 +149,6 @@ class CapabilityClean:
     )
 
 
-@dataclass(frozen=True, kw_only=True)
-class CapabilityBaseStationAction:
-    """Capabilities for base station action."""
-
-    command: Callable[[BaseStationAction], Command]
-
-
-@dataclass(frozen=True, kw_only=True)
-class CapabilityBaseStation:
-    """Capabilities for base station."""
-
-    action: CapabilityBaseStationAction
-    event: CapabilityEvent[BaseStationEvent] | None = None
-
-
 @dataclass(frozen=True)
 class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
     """Capability custom command."""
@@ -228,17 +213,16 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityStation:
-    """Capabilities for station."""
+class CapabilityBaseStation:
+    """Capabilities for the base station."""
 
-    auto_empty: (
-        CapabilitySetTypes[
-            auto_empty.AutoEmptyEvent,
-            [bool | None, auto_empty.Frequency | str | None],
-            auto_empty.Frequency,
-        ]
-        | None
-    ) = None
+    action: Callable[[BaseStationAction], Command]
+    auto_empty: CapabilitySetTypes[
+        auto_empty.AutoEmptyEvent,
+        [bool | None, auto_empty.Frequency | str | None],
+        auto_empty.Frequency,
+    ]
+    status: CapabilityEvent[BaseStationEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -263,7 +247,6 @@ class Capabilities(ABC):
     play_sound: CapabilityExecute
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
-    station: CapabilityStation = field(default_factory=CapabilityStation)
     stats: CapabilityStats
     water: (
         CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None

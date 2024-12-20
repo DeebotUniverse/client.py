@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from deebot_client.capabilities import (
     Capabilities,
+    CapabilityBaseStation,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -15,7 +16,6 @@ from deebot_client.capabilities import (
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
-    CapabilityStation,
     CapabilityStats,
     DeviceType,
 )
@@ -57,6 +57,8 @@ from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
+from deebot_client.commands.json.station_action import StationAction
+from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import (
@@ -69,6 +71,7 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
+    BaseStationEvent,
     BatteryEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -113,6 +116,21 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         device_type=DeviceType.VACUUM,
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
+        ),
+        base_station=CapabilityBaseStation(
+            action=StationAction,
+            auto_empty=CapabilitySetTypes(
+                event=auto_empty.AutoEmptyEvent,
+                get=[GetAutoEmpty()],
+                set=SetAutoEmpty,
+                types=(
+                    auto_empty.Frequency.MIN_10,
+                    auto_empty.Frequency.MIN_15,
+                    auto_empty.Frequency.MIN_25,
+                    auto_empty.Frequency.AUTO,
+                ),
+            ),
+            status=CapabilityEvent(BaseStationEvent, [GetStationState()]),
         ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
@@ -209,19 +227,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
-        station=CapabilityStation(
-            auto_empty=CapabilitySetTypes(
-                event=auto_empty.AutoEmptyEvent,
-                get=[GetAutoEmpty()],
-                set=SetAutoEmpty,
-                types=(
-                    auto_empty.Frequency.MIN_10,
-                    auto_empty.Frequency.MIN_15,
-                    auto_empty.Frequency.MIN_25,
-                    auto_empty.Frequency.AUTO,
-                ),
-            ),
-        ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),

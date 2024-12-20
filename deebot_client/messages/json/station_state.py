@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class OnStationState(MessageBodyDataDict):
     """On battery message."""
 
-    name = "onStationState"
+    NAME = "onStationState"
 
     @classmethod
     def _handle_body_data_dict(
@@ -26,17 +26,18 @@ class OnStationState(MessageBodyDataDict):
         """
         # "body":{"data":{"content":{"error":[],"type":0},"state":0},"code":0,"msg":"ok"} - Idle
         # "body":{"data":{"content":{"error":[],"type":1,"motionState":1},"state":1},"code":0,"msg":"ok"} - Emptying
-        # Assume anything else is possible
 
-        if data.get("state") == 0:
+        if (state := data.get("state")) == 0:
             reported_state = BaseStationStatus.IDLE
         elif (
-            data.get("content", {}).get("type") == 1
-            and data["content"].get("motionState") == 1
+            state == 1
+            and (content := data.get("content"))
+            and content.get("type") == 1
+            and content.get("motionState") == 1
         ):
             reported_state = BaseStationStatus.EMPTYING
         else:
-            reported_state = BaseStationStatus.UNKNOWN
+            return HandlingResult.analyse()
 
         event_bus.notify(BaseStationEvent(reported_state))
         return HandlingResult.success()

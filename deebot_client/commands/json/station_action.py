@@ -17,7 +17,7 @@ _LOGGER = get_logger(__name__)
 class StationAction(ExecuteCommand):
     """Station Action command."""
 
-    name = "stationAction"
+    NAME = "stationAction"
 
     def __init__(self, action: BaseStationAction) -> None:
         super().__init__({"act": 1, "type": action.value})
