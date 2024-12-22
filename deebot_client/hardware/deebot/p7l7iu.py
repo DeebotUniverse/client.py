@@ -1,4 +1,4 @@
-"""Deebot X2 Omni Hight Capabilities."""
+"""Deebot X2 Omni Height Capabilities."""
 
 from __future__ import annotations
 
