@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from deebot_client.commands.json.station_state import GetStationState
-from deebot_client.events.base_station import BaseStationEvent, State
+from deebot_client.events.station import State, StationEvent
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -31,4 +31,4 @@ async def test_GetStationState(
             }
         )
     )
-    await assert_command(GetStationState(), json, BaseStationEvent(expected))
+    await assert_command(GetStationState(), json, StationEvent(expected))

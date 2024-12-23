@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
-    BaseStationEvent,
     BatteryEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
@@ -42,6 +41,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     SweepModeEvent,
     TotalStatsEvent,
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     from deebot_client.command import Command
-    from deebot_client.commands import BaseStationAction
+    from deebot_client.commands import StationAction
     from deebot_client.commands.json.common import ExecuteCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
@@ -221,13 +221,13 @@ class CapabilitySettings:
 class CapabilityBaseStation:
     """Capabilities for the base station."""
 
-    action: CapabilityExecuteTypes[BaseStationAction]
+    action: CapabilityExecuteTypes[StationAction]
     auto_empty: CapabilitySetTypes[
         auto_empty.AutoEmptyEvent,
         [bool | None, auto_empty.Frequency | str | None],
         auto_empty.Frequency,
     ]
-    state: CapabilityEvent[BaseStationEvent]
+    state: CapabilityEvent[StationEvent]
 
 
 @dataclass(frozen=True, kw_only=True)

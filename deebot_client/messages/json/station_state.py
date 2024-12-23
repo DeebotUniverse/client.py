@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.base_station import BaseStationEvent, State
+from deebot_client.events.station import State, StationEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -39,5 +39,5 @@ class OnStationState(MessageBodyDataDict):
         else:
             return HandlingResult.analyse()
 
-        event_bus.notify(BaseStationEvent(reported_state))
+        event_bus.notify(StationEvent(reported_state))
         return HandlingResult.success()

@@ -6,8 +6,8 @@ from typing import Any
 
 import pytest
 
-from deebot_client.commands import BaseStationAction
-from deebot_client.commands.json.station_action import StationAction
+from deebot_client.commands import StationAction
+from deebot_client.commands.json import station_action
 
 from . import assert_execute_command
 
@@ -16,15 +16,15 @@ from . import assert_execute_command
     ("action", "args"),
     [
         (
-            BaseStationAction.EMPTY_DUSTBIN,
+            StationAction.EMPTY_DUSTBIN,
             {"act": 1, "type": 1},
         ),
     ],
 )
 async def test_StationAction(
-    action: BaseStationAction,
+    action: StationAction,
     args: dict[str, Any],
 ) -> None:
     """Test StationAction."""
-    command = StationAction(action)
+    command = station_action.StationAction(action)
     await assert_execute_command(command, args)

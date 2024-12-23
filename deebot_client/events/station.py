@@ -7,7 +7,7 @@ from enum import IntEnum, unique
 
 from .base import Event as _Event
 
-__all__ = ["BaseStationEvent", "State"]
+__all__ = ["State", "StationEvent"]
 
 
 @unique
@@ -19,7 +19,7 @@ class State(IntEnum):
 
 
 @dataclass(frozen=True)
-class BaseStationEvent(_Event):
+class StationEvent(_Event):
     """Base Station Event representation."""
 
     state: State

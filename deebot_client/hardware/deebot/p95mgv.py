@@ -20,7 +20,8 @@ from deebot_client.capabilities import (
     CapabilityStats,
     DeviceType,
 )
-from deebot_client.commands import BaseStationAction
+from deebot_client.commands import StationAction
+from deebot_client.commands.json import station_action
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
@@ -59,7 +60,6 @@ from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
-from deebot_client.commands.json.station_action import StationAction
 from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
@@ -73,7 +73,6 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
-    BaseStationEvent,
     BatteryEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -97,6 +96,7 @@ from deebot_client.events import (
     ReportStatsEvent,
     RoomsEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
@@ -121,7 +121,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         ),
         base_station=CapabilityBaseStation(
             action=CapabilityExecuteTypes(
-                StationAction, types=(BaseStationAction.EMPTY_DUSTBIN,)
+                station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
             ),
             auto_empty=CapabilitySetTypes(
                 event=auto_empty.AutoEmptyEvent,
@@ -134,7 +134,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     auto_empty.Frequency.AUTO,
                 ),
             ),
-            state=CapabilityEvent(BaseStationEvent, [GetStationState()]),
+            state=CapabilityEvent(StationEvent, [GetStationState()]),
         ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
