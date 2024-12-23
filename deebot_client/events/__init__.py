@@ -166,7 +166,7 @@ class LifeSpan(StrEnum):
     STRAINER = "strainer", "Strainer"
     HAND_FILTER = "handFilter", "HandFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
-    BASE_STATION_FILTER = "spHeap", "SpHeap"
+    STATION_FILTER = "spHeap", "SpHeap"
 
 
 @dataclass(frozen=True)

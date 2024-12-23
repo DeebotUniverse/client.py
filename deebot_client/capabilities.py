@@ -218,8 +218,8 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityBaseStation:
-    """Capabilities for the base station."""
+class CapabilityStation:
+    """Capabilities for the station."""
 
     action: CapabilityExecuteTypes[StationAction]
     auto_empty: CapabilitySetTypes[
@@ -237,7 +237,6 @@ class Capabilities(ABC):
     device_type: DeviceType = field(kw_only=False)
 
     availability: CapabilityEvent[AvailabilityEvent]
-    base_station: CapabilityBaseStation | None = None
     battery: CapabilityEvent[BatteryEvent]
     charge: CapabilityExecute[[]]
     clean: CapabilityClean
@@ -252,6 +251,7 @@ class Capabilities(ABC):
     play_sound: CapabilityExecute[[]]
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
+    station: CapabilityStation | None = None
     stats: CapabilityStats
     water: (
         CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None
