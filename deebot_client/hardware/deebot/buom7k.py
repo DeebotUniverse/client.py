@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from deebot_client.capabilities import (
     Capabilities,
-    CapabilityBaseStation,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -17,6 +16,7 @@ from deebot_client.capabilities import (
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
+    CapabilityStation,
     CapabilityStats,
     DeviceType,
 )
@@ -101,21 +101,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         availability=CapabilityEvent(
             AvailabilityEvent, [GetBattery(is_available_check=True)]
         ),
-        base_station=CapabilityBaseStation(
-            action=CapabilityExecuteTypes(
-                station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
-            ),
-            auto_empty=CapabilitySetTypes(
-                event=AutoEmptyEvent,
-                get=[GetAutoEmpty()],
-                set=SetAutoEmpty,
-                types=(
-                    auto_empty.Frequency.AUTO,
-                    auto_empty.Frequency.SMART,
-                ),
-            ),
-            state=CapabilityEvent(StationEvent, [GetStationState()]),
-        ),
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
@@ -193,6 +178,21 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+        station=CapabilityStation(
+            action=CapabilityExecuteTypes(
+                station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
+            ),
+            auto_empty=CapabilitySetTypes(
+                event=AutoEmptyEvent,
+                get=[GetAutoEmpty()],
+                set=SetAutoEmpty,
+                types=(
+                    auto_empty.Frequency.AUTO,
+                    auto_empty.Frequency.SMART,
+                ),
+            ),
+            state=CapabilityEvent(StationEvent, [GetStationState()]),
+        ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
