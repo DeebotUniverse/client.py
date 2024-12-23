@@ -8,9 +8,8 @@ from typing import TYPE_CHECKING, Any, Self
 
 from deebot_client.events.base import Event
 
-from . import auto_empty, base_station
+from . import auto_empty, station
 from .auto_empty import AutoEmptyEvent
-from .base_station import BaseStationEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -27,6 +26,7 @@ from .map import (
     PositionType,
 )
 from .network import NetworkInfoEvent
+from .station import StationEvent
 from .water_info import SweepType, WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
@@ -35,7 +35,6 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
-    "BaseStationEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -56,6 +55,7 @@ __all__ = [
     "Position",
     "PositionType",
     "PositionsEvent",
+    "StationEvent",
     "SweepModeEvent",
     "SweepType",
     "WaterAmount",
@@ -63,7 +63,7 @@ __all__ = [
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
-    "base_station",
+    "station",
 ]
 
 

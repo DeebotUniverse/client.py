@@ -23,7 +23,7 @@ COMMANDS_WITH_MQTT_P2P_HANDLING: dict[DataType, dict[str, type[CommandMqttP2P]]]
 
 
 @unique
-class BaseStationAction(IntEnum):
-    """Enum class for all possible base station actions."""
+class StationAction(IntEnum):
+    """Enum class for all possible station actions."""
 
     EMPTY_DUSTBIN = 1

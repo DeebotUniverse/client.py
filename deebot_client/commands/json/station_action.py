@@ -4,14 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.logging_filter import get_logger
-
 from .common import ExecuteCommand
 
 if TYPE_CHECKING:
-    from deebot_client.commands import BaseStationAction
-
-_LOGGER = get_logger(__name__)
+    from deebot_client import commands
 
 
 class StationAction(ExecuteCommand):
@@ -19,5 +15,5 @@ class StationAction(ExecuteCommand):
 
     NAME = "stationAction"
 
-    def __init__(self, action: BaseStationAction) -> None:
+    def __init__(self, action: commands.StationAction) -> None:
         super().__init__({"act": 1, "type": action.value})

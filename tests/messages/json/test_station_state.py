@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from deebot_client.events.base_station import BaseStationEvent, Status
+from deebot_client.events.station import State, StationEvent
 from deebot_client.messages.json.station_state import OnStationState
 from tests.messages import assert_message
 
@@ -12,14 +12,14 @@ from tests.messages import assert_message
 @pytest.mark.parametrize(
     ("state", "additional_content", "expected"),
     [
-        (0, {"type": 0}, Status.IDLE),
-        (1, {"type": 1, "motionState": 1}, Status.EMPTYING),
+        (0, {"type": 0}, State.IDLE),
+        (1, {"type": 1, "motionState": 1}, State.EMPTYING),
     ],
 )
 def test_onStationState(
     state: int,
     additional_content: dict[str, Any],
-    expected: Status,
+    expected: State,
 ) -> None:
     data: dict[str, Any] = {
         "header": {
@@ -38,4 +38,4 @@ def test_onStationState(
         },
     }
 
-    assert_message(OnStationState, data, BaseStationEvent(expected))
+    assert_message(OnStationState, data, StationEvent(expected))

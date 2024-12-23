@@ -11,7 +11,6 @@ from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
-    BaseStationEvent,
     BatteryEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
@@ -42,6 +41,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     SweepModeEvent,
     TotalStatsEvent,
@@ -61,7 +61,7 @@ if TYPE_CHECKING:
     from _typeshed import DataclassInstance
 
     from deebot_client.command import Command
-    from deebot_client.commands import BaseStationAction
+    from deebot_client.commands import StationAction
     from deebot_client.commands.json.common import ExecuteCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
@@ -109,10 +109,10 @@ class CapabilitySetEnable(CapabilitySet[_EVENT, [bool]]):
 
 
 @dataclass(frozen=True)
-class CapabilityExecute:
+class CapabilityExecute(Generic[_P]):
     """Capability to execute a command."""
 
-    execute: type[Command]
+    execute: Callable[_P, Command]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -120,6 +120,11 @@ class CapabilityTypes(Generic[_T]):
     """Capability to specify types support."""
 
     types: tuple[_T, ...]
+
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilityExecuteTypes(CapabilityTypes[_T], CapabilityExecute[[_T]]):
+    """Capability to execute a command with types."""
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -169,11 +174,11 @@ class CapabilityMap:
 
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
-    clear: CapabilityExecute | None = None
+    clear: CapabilityExecute[[]] | None = None
     major: CapabilityEvent[MajorMapEvent]
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
-    relocation: CapabilityExecute
+    relocation: CapabilityExecute[[]]
     rooms: CapabilityEvent[RoomsEvent]
     trace: CapabilityEvent[MapTraceEvent]
 
@@ -216,13 +221,13 @@ class CapabilitySettings:
 class CapabilityBaseStation:
     """Capabilities for the base station."""
 
-    action: Callable[[BaseStationAction], Command]
+    action: CapabilityExecuteTypes[StationAction]
     auto_empty: CapabilitySetTypes[
         auto_empty.AutoEmptyEvent,
         [bool | None, auto_empty.Frequency | str | None],
         auto_empty.Frequency,
     ]
-    status: CapabilityEvent[BaseStationEvent]
+    state: CapabilityEvent[StationEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -234,7 +239,7 @@ class Capabilities(ABC):
     availability: CapabilityEvent[AvailabilityEvent]
     base_station: CapabilityBaseStation | None = None
     battery: CapabilityEvent[BatteryEvent]
-    charge: CapabilityExecute
+    charge: CapabilityExecute[[]]
     clean: CapabilityClean
     custom: CapabilityCustomCommand[CustomCommandEvent]
     error: CapabilityEvent[ErrorEvent]
@@ -244,7 +249,7 @@ class Capabilities(ABC):
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
-    play_sound: CapabilityExecute
+    play_sound: CapabilityExecute[[]]
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     stats: CapabilityStats
