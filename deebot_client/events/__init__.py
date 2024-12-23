@@ -249,7 +249,7 @@ class VolumeEvent(Event):
 class EnableEvent(Event):
     """Enabled event."""
 
-    enable: bool
+    enabled: bool
 
 
 @dataclass(frozen=True)
