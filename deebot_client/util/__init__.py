@@ -4,11 +4,9 @@ from __future__ import annotations
 
 from abc import ABC
 import asyncio
-import base64
 from contextlib import suppress
 from enum import Enum
 import hashlib
-import lzma
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from deebot_client.logging_filter import get_logger
@@ -35,22 +33,6 @@ def verify_required_class_variables_exists(
             if not hasattr(cls, required):
                 msg = f"Class {cls.__name__} must have a {required} attribute"
                 raise ValueError(msg)
-
-
-def decompress_7z_base64_data(data: str) -> bytes:
-    """Decompress base64 decoded 7z compressed string."""
-    final_array = bytearray()
-
-    # Decode Base64
-    decoded = base64.b64decode(data)
-
-    for i, idx in enumerate(decoded):
-        if i == 8:
-            final_array.extend(b"\x00\x00\x00\x00")
-        final_array.append(idx)
-
-    dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
-    return dec.decompress(final_array)
 
 
 def create_task(
