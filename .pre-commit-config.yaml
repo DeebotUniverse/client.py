@@ -11,7 +11,7 @@ default_language_version:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.3
+    rev: v0.8.4
     hooks:
       - id: ruff
         args:
@@ -19,7 +19,7 @@ repos:
           - --unsafe-fixes
       - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.0
+    rev: v3.19.1
     hooks:
       - id: pyupgrade
         args:
