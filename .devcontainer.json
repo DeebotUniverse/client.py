@@ -54,7 +54,7 @@
   "postCreateCommand": "curl -LsSf https://astral.sh/uv/install.sh | sh && uv sync --frozen --dev && pre-commit install",
   "postStartCommand": "uv sync --dev",
   "remoteEnv": {
-    "PATH": "/home/vscode/.cargo/bin:/workspaces/client.py/.venv/bin:${containerEnv:PATH}"
+    "PATH": "/home/vscode/.local/bin:/home/vscode/.cargo/bin:/workspaces/client.py/.venv/bin:${containerEnv:PATH}"
   },
   // Comment out connect as root instead. More info: https://aka.ms/vscode-remote/containers/non-root.
   "remoteUser": "vscode",
