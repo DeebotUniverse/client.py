@@ -62,7 +62,7 @@ dev-dependencies = [
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
-module-name = "deebot_client.rs"
+module-name = "deebot_client._rs"
 compability = "musllinux"
 auditwheel = "repair"
 strip = true
