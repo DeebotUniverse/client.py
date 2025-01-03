@@ -70,6 +70,7 @@ jobs:
         with:
           pattern: wheels-*
           path: dist
+          merge-multiple: true
       - name: 🚀 Publish to PyPi
         run: uv publish
       - name: ✍️ Sign published artifacts
