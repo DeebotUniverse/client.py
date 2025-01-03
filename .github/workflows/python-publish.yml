@@ -72,4 +72,9 @@ jobs:
           path: dist
           merge-multiple: true
       - name: 🚀 Publish to PyPi
-        run: ls -al dist
+        run: uv publish
+      - name: ✍️ Sign published artifacts
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          release-signing-artifacts: true
