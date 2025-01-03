@@ -69,6 +69,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           pattern: wheels-*
+          path: dist
       - name: 🚀 Publish to PyPi
         run: uv publish
       - name: ✍️ Sign published artifacts
