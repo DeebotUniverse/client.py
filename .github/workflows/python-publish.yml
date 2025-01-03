@@ -70,5 +70,6 @@ jobs:
         with:
           pattern: wheels-*
           path: dist
+          merge-multiple: true
       - name: 🚀 Publish to PyPi
         run: ls -al dist
