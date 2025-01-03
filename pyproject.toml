@@ -57,13 +57,13 @@ dev-dependencies = [
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
     "types-pillow>=10.2.0.20240822",
-    "maturin>=1.7.8",
+    "maturin[patchelf]>=1.7.8",
+    "maturin-import-hook>=0.2.0",
 ]
 
 [tool.maturin]
 features = ["pyo3/extension-module"]
 module-name = "deebot_client._rs"
-compability = "musllinux"
 auditwheel = "repair"
 strip = true
 exclude = [
