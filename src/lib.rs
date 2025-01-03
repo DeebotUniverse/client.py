@@ -24,7 +24,7 @@ fn decompress_7z_base64_data(value: String) -> Result<String, PyErr> {
 
 /// Deebot client written in Rust
 #[pymodule]
-fn _rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
+fn rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(decompress_7z_base64_data, m)?)?;
     Ok(())
 }
