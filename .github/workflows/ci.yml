@@ -32,7 +32,7 @@ jobs:
         run: uv run --frozen mypy deebot_client/
 
       - name: Pylint review
-        run: uv run --frozen pylint deebot_client/
+        run: uv run --frozen pylint deebot_client/**/*.py
 
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh

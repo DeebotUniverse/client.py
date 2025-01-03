@@ -32,6 +32,7 @@ jobs:
       - name: 🏗 Set package version
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" cargo.toml
       - name: 📦 Build package
         run: uv build
       - name: 🚀 Publish to PyPi
