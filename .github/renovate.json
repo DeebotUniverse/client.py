@@ -21,6 +21,10 @@
       "addLabels": ["github_actions"],
       "matchManagers": ["github-actions"],
       "rangeStrategy": "pin"
+    },
+    {
+      "addLabels": ["rust"],
+      "matchManagers": ["cargo"]
     }
   ],
   "rebaseWhen": "behind-base-branch"
