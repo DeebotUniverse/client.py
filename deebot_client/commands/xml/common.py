@@ -8,10 +8,10 @@ from xml.etree.ElementTree import Element, SubElement
 
 from defusedxml import ElementTree  # type: ignore[import-untyped]
 
-from deebot_client.command import Command, CommandWithMessageHandling
+from deebot_client.command import Command, CommandWithMessageHandling, SetCommand
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, MessageStr
+from deebot_client.message import HandlingResult, MessageStr, HandlingState
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -60,3 +60,27 @@ class XmlCommandWithMessageHandling(
         """
         xml = ElementTree.fromstring(message)
         return cls._handle_xml(event_bus, xml)
+
+
+class ExecuteCommand(XmlCommandWithMessageHandling, ABC):
+    """Command, which is executing something (ex. Charge)."""
+
+    @classmethod
+    def _handle_xml(cls, _: EventBus, xml: Element) -> HandlingResult:
+        """Handle message->xml and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        # Success event looks like <ctl ret='ok'/>
+        if xml.attrib.get("ret") == "ok":
+            return HandlingResult.success()
+
+        _LOGGER.warning('Command "%s" was not successful. XML response: %s', cls.NAME, xml)
+        return HandlingResult(HandlingState.FAILED)
+
+
+class XmlSetCommand(ExecuteCommand, SetCommand, ABC):
+    """Xml base set command.
+
+    Command needs to be linked to the "get" command, for handling (updating) the sensors.
+    """
