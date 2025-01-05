@@ -1,16 +1,22 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
 
 [project]
-name        = "deebot-client"
-license     = "GPL-3.0-or-later"
+name = "deebot-client"
+license = "GPL-3.0-or-later"
 description = "Deebot client library in python 3"
-readme      = "README.md"
-authors     = [
-    {name = "Robert Resch", email = "robert@resch.dev"}
+readme = "README.md"
+authors = [{ name = "Robert Resch", email = "robert@resch.dev" }]
+keywords = [
+    "home",
+    "automation",
+    "homeassistant",
+    "vacuum",
+    "robot",
+    "deebot",
+    "ecovacs",
 ]
-keywords    = ["home", "automation", "homeassistant", "vacuum", "robot", "deebot", "ecovacs"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
@@ -32,17 +38,23 @@ dependencies = [
 version = "0.0.0"
 
 [project.urls]
-"Homepage"    = "https://deebot.readthedocs.io/"
+"Homepage" = "https://deebot.readthedocs.io/"
 "Source Code" = "https://github.com/DeebotUniverse/client.py"
 "Bug Reports" = "https://github.com/DeebotUniverse/client.py/issues"
 
 [tool.uv]
+# Rebuild package when any rust files change
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "**/*.rs" },
+]
 dev-dependencies = [
-    "mypy==1.13.0",
+    "mypy==1.14.1",
     "pre-commit==4.0.1",
     "pycountry==24.6.1",
-    "pylint==3.3.2",
-    "pytest-asyncio==0.25.0",
+    "pylint==3.3.3",
+    "pytest-asyncio==0.25.1",
     "pytest-cov==6.0.0",
     "pytest-docker-fixtures==1.3.19",
     "pytest-timeout==2.3.1",
@@ -51,41 +63,49 @@ dev-dependencies = [
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
     "types-pillow>=10.2.0.20240822",
+    "maturin[patchelf]>=1.7.8",
+    "maturin-import-hook>=0.2.0",
 ]
 
-
-[tool.hatch.build.targets.sdist]
-include = [
-  "/deebot_client",
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "deebot_client.rs"
+auditwheel = "repair"
+strip = true
+exclude = [
+    { path = "**/.*/**", format = "sdist" },
+    { path = "**/.*", format = "sdist" },
+    { path = "*.ini", format = "sdist" },
+    { path = "tests/**", format = "sdist" },
+    { path = "scripts/**", format = "sdist" },
 ]
 
 [tool.ruff.lint]
-select = [
-    "ALL",
-]
+select = ["ALL"]
 
 ignore = [
     "ANN401", # Opinioated warning on disallowing dynamically typed expressions
-    "D203", # Conflicts with other rules
-    "D213", # Conflicts with other rules
-    "EM101", # raw-string-in-exception
+    "D203",   # Conflicts with other rules
+    "D213",   # Conflicts with other rules
+    "EM101",  # raw-string-in-exception
 
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in `__init__`
-    "E501",  # line too long
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in `__init__`
+    "E501", # line too long
 
-    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT", # flake8-boolean-trap
 
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
 
     # Conflicts with the Ruff formatter
     "COM812",
     "ISC001",
 
     # Remove later
-    "TD", # Todos
-    "A", # bultins
-    "DTZ", # use tz need to test it first
-    "TRY", # tryceratops
+    "TD",     # Todos
+    "A",      # bultins
+    "DTZ",    # use tz need to test it first
+    "TRY",    # tryceratops
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`
 
@@ -98,26 +118,27 @@ fixture-parentheses = false
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
-known-first-party = [
-    "deebot_client",
-]
+known-first-party = ["deebot_client"]
 required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.per-file-ignores]
 "tests/**" = [
-    "D100",  # Missing docstring in public module
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "N802",  # Function name {name} should be lowercase
-    "N816",  # Variable {name} in global scope should not be mixedCase
+    "D100",    # Missing docstring in public module
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+    "N802",    # Function name {name} should be lowercase
+    "N816",    # Variable {name} in global scope should not be mixedCase
     "PLR0913", # Too many arguments in function definition
-    "S101",  # Use of assert detected
-    "SLF001", # Private member accessed: {access}
-    "T201",  # print found
+    "S101",    # Use of assert detected
+    "SLF001",  # Private member accessed: {access}
+    "T201",    # print found
 ]
 "deebot_client/hardware/deebot/*" = [
-    "N999",  # Invalid module name
+    "N999", # Invalid module name
+]
+"deebot_client/rs.pyi" = [
+    "PYI021", #  docstring-in-stub
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
@@ -133,15 +154,12 @@ max-args = 7
 
 [tool.pylint.MAIN]
 py-version = "3.13"
-ignore = [
-    "tests",
-]
-fail-on = [
-    "I",
-]
+ignore = ["tests"]
+fail-on = ["I"]
+extension-pkg-allow-list = ["deebot_client.rs"]
 
 [tool.pylint.BASIC]
-good-names= ["i","j","k","ex","_","T","x","y","id","tg"]
+good-names = ["i", "j", "k", "ex", "_", "T", "x", "y", "id", "tg"]
 
 [tool.pylint."MESSAGES CONTROL"]
 # Reasons disabled:
@@ -170,10 +188,7 @@ disable = [
     "too-few-public-methods",
     "invalid-name",
 ]
-enable = [
-    "useless-suppression",
-    "use-symbolic-message-instead",
-]
+enable = ["useless-suppression", "use-symbolic-message-instead"]
 
 [tool.pylint.REPORTS]
 score = false
@@ -183,7 +198,4 @@ score = false
 expected-line-ending-format = "LF"
 
 [tool.pylint.EXCEPTIONS]
-overgeneral-exceptions = [
-    "builtins.BaseException",
-    "builtins.Exception",
-]
+overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]

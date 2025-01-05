@@ -1,4 +1,4 @@
-"""Deebot T10 PLUS Capabilities."""
+"""Deebot DEEBOT T30S COMBO Capabilities."""
 
 from __future__ import annotations
 
@@ -31,8 +31,10 @@ from deebot_client.commands.json.carpet import (
 )
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
+from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
+from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
     GetCleanPreference,
     SetCleanPreference,
@@ -46,11 +48,7 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficie
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-from deebot_client.commands.json.map import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapTrace,
-)
+from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -62,6 +60,7 @@ from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
+from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import (
     GetVoiceAssistantState,
@@ -69,6 +68,7 @@ from deebot_client.commands.json.voice_assistant_state import (
 )
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
+from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -76,7 +76,9 @@ from deebot_client.events import (
     BatteryEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
+    ChildLockEvent,
     CleanCountEvent,
+    CleanLogEvent,
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
@@ -98,14 +100,18 @@ from deebot_client.events import (
     StateEvent,
     StationEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    WorkMode,
+    WorkModeEvent,
     auto_empty,
 )
+from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -129,8 +135,20 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 SetContinuousCleaning,
             ),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
+            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             preference=CapabilitySetEnable(
                 CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
+            ),
+            work_mode=CapabilitySetTypes(
+                event=WorkModeEvent,
+                get=[GetWorkMode()],
+                set=SetWorkMode,
+                types=(
+                    WorkMode.MOP,
+                    WorkMode.MOP_AFTER_VACUUM,
+                    WorkMode.VACUUM,
+                    WorkMode.VACUUM_AND_MOP,
+                ),
             ),
         ),
         custom=CapabilityCustomCommand(
@@ -152,6 +170,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             types=(
                 LifeSpan.BRUSH,
                 LifeSpan.FILTER,
+                LifeSpan.HAND_FILTER,
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
             ),
@@ -161,6 +180,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     [
                         LifeSpan.BRUSH,
                         LifeSpan.FILTER,
+                        LifeSpan.HAND_FILTER,
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
                     ]
@@ -169,9 +189,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            cached_info=CapabilityEvent(
-                CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
-            ),
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             multi_state=CapabilitySetEnable(
@@ -179,7 +197,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
-            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo(version=2)]),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
@@ -193,6 +211,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 [GetCarpetAutoFanBoost()],
                 SetCarpetAutoFanBoost,
             ),
+            child_lock=CapabilitySetEnable(
+                ChildLockEvent, [GetChildLock()], SetChildLock
+            ),
             efficiency_mode=CapabilitySetTypes(
                 event=EfficiencyModeEvent,
                 get=[GetEfficiencyMode()],
@@ -203,6 +224,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 ),
             ),
             ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),
+            sweep_mode=CapabilitySetEnable(
+                SweepModeEvent, [GetSweepMode()], SetSweepMode
+            ),
             true_detect=CapabilitySetEnable(
                 TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
             ),
@@ -219,14 +243,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
             ),
             auto_empty=CapabilitySetTypes(
-                event=auto_empty.AutoEmptyEvent,
+                event=AutoEmptyEvent,
                 get=[GetAutoEmpty()],
                 set=SetAutoEmpty,
                 types=(
-                    auto_empty.Frequency.MIN_10,
-                    auto_empty.Frequency.MIN_15,
-                    auto_empty.Frequency.MIN_25,
                     auto_empty.Frequency.AUTO,
+                    auto_empty.Frequency.SMART,
                 ),
             ),
             state=CapabilityEvent(StationEvent, [GetStationState()]),

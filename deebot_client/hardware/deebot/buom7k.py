@@ -9,15 +9,20 @@ from deebot_client.capabilities import (
     CapabilityCustomCommand,
     CapabilityEvent,
     CapabilityExecute,
+    CapabilityExecuteTypes,
     CapabilityLifeSpan,
     CapabilityMap,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
+    CapabilityStation,
     CapabilityStats,
     DeviceType,
 )
+from deebot_client.commands import StationAction
+from deebot_client.commands.json import station_action
+from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
@@ -46,6 +51,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
+from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
@@ -74,12 +80,15 @@ from deebot_client.events import (
     ReportStatsEvent,
     RoomsEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     TotalStatsEvent,
     VolumeEvent,
     WaterAmount,
     WaterInfoEvent,
+    auto_empty,
 )
+from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
@@ -169,6 +178,21 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+        station=CapabilityStation(
+            action=CapabilityExecuteTypes(
+                station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
+            ),
+            auto_empty=CapabilitySetTypes(
+                event=AutoEmptyEvent,
+                get=[GetAutoEmpty()],
+                set=SetAutoEmpty,
+                types=(
+                    auto_empty.Frequency.AUTO,
+                    auto_empty.Frequency.SMART,
+                ),
+            ),
+            state=CapabilityEvent(StationEvent, [GetStationState()]),
+        ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),

@@ -3,7 +3,6 @@ name: CI
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
 
@@ -19,7 +18,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"
@@ -33,7 +32,7 @@ jobs:
         run: uv run --frozen mypy deebot_client/
 
       - name: Pylint review
-        run: uv run --frozen pylint deebot_client/
+        run: uv run --frozen pylint deebot_client/**/*.py
 
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
@@ -51,7 +50,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: 🏗 Install uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           cache-dependency-glob: "uv.lock"

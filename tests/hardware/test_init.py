@@ -10,6 +10,7 @@ import pytest
 
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
@@ -34,6 +35,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
+from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
@@ -41,6 +43,7 @@ from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -63,6 +66,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
@@ -191,8 +195,10 @@ async def test_get_static_device_info(
         (
             "p95mgv",
             {
+                AutoEmptyEvent: [GetAutoEmpty()],
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
+                StationEvent: [GetStationState()],
                 BatteryEvent: [GetBattery()],
                 CachedMapInfoEvent: [GetCachedMapInfo()],
                 CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
