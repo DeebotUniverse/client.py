@@ -66,8 +66,11 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-      - name: 🏗 Install pip for maturin for now...
-        run: uv pip install pip
+      - name: 🏗 Prepare for build
+        run: |
+          uv pip install pip
+          sudo apt update
+          sudo apt install -y pkg-config liblzma-dev
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         with:
