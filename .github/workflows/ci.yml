@@ -92,7 +92,7 @@ jobs:
           set -e
           uv sync --locked --only-dev
           uv pip install --force-reinstall dist/*
-          pytest
+          pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'manylinux') &&  matrix.config.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
