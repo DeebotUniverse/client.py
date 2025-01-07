@@ -66,6 +66,8 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: 🏗 Install pip for maturin
+        run: uv pip install pip
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         with:
@@ -73,9 +75,6 @@ jobs:
           args: --release --uv --out dist --find-interpreter
           sccache: "true"
           manylinux: ${{ matrix.linux }}
-          before-script-linux: |
-            apt-get update
-            apt-get install -y --no-install-recommends python3 python3-pip
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
