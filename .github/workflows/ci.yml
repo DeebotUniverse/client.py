@@ -73,6 +73,8 @@ jobs:
           args: --release --uv --out dist --find-interpreter
           sccache: "true"
           manylinux: ${{ matrix.linux }}
+          before-script-linux: |
+            uv pip install -U pip
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
