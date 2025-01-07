@@ -38,7 +38,7 @@ jobs:
         run: scripts/check_getLogger.sh
 
   wheels:
-    name: Build wheels and test them
+    name: Python ${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -74,7 +74,8 @@ jobs:
           sccache: "true"
           manylinux: ${{ matrix.linux }}
           before-script-linux: |
-            uv pip install -U pip
+            apt-get update
+            apt-get install -y --no-install-recommends python3 python3-pip
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
