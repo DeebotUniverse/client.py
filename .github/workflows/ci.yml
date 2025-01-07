@@ -77,7 +77,7 @@ jobs:
         id: build
         with:
           target: ${{ matrix.platform }}
-          args: --release --out dist -i ${{ matrix.python-version}}
+          args: --release --out dist -i ${{ matrix.python-version}} --auditwheel repair
           # sccache: "true"
           manylinux: ${{ matrix.linux.compatibility }}
           before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
@@ -91,7 +91,7 @@ jobs:
         shell: bash
         run: |
           set -e
-          uv sync --dev --locked --no-install-workspace
+          uv sync --locked --only-dev
           uv pip install deebot-client --find-links dist --force-reinstall
           pytest
       - name: pytest
@@ -103,7 +103,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --dev --locked --no-install-workspace
+            uv sync --locked --only-dev
           run: |
             set -e
             uv pip install deebot-client --find-links dist --force-reinstall
@@ -117,7 +117,7 @@ jobs:
           run: |
             set -e
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --dev --locked --no-install-workspace
+            uv sync --locked --only-dev
             uv pip install deebot-client --no-index --find-links dist --force-reinstall
             pytest
       - name: pytest
@@ -129,7 +129,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --dev --locked --no-install-workspace
+            uv sync --locked --only-dev
           run: |
             set -e
             uv pip install deebot-client --no-index --find-links dist --force-reinstall
