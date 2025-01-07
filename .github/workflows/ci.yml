@@ -38,7 +38,7 @@ jobs:
         run: scripts/check_getLogger.sh
 
   wheels:
-    name: Py${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux }}
+    name: Py${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux.compatibility }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -71,8 +71,10 @@ jobs:
       - name: 🏗 Prepare for build
         run: |
           uv pip install pip
+          ls -al .venv/bin/
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
+        id: build
         with:
           target: ${{ matrix.platform }}
           args: --release --out dist --find-interpreter
@@ -140,7 +142,7 @@ jobs:
           fail_ci_if_error: true
 
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.build.conclusion == 'success' }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
