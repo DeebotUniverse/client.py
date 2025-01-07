@@ -44,9 +44,9 @@ jobs:
       fail-fast: false
       matrix:
         config:
-          - platform: "x86_64"
-            manylinux: "musllinux_1_2"
-            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
+          # - platform: "x86_64"
+          #   manylinux: "musllinux_1_2"
+          #   before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
           - platform: "x86_64"
             manylinux: "manylinux_2_28"
             before-script: "yum install -y xz-devel"
@@ -67,6 +67,7 @@ jobs:
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
       - name: 🏗 Prepare for build
         run: |
+          uv sync --only-dev
           uv pip install pip
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
@@ -81,6 +82,9 @@ jobs:
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.config.manylinux }}-${{ matrix.config.platform }}
           path: dist
+      - name: Remove sources to avoid conflicts during tests
+        run: |
+          rm -rf deebot_client*
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
         shell: bash
