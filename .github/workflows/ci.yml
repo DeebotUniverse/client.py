@@ -56,19 +56,14 @@ jobs:
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
-      - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v5
+      - name: 🏗 Set up Python ${{ matrix.python-version }}
+        uses: actions/setup-python@v5
         with:
-          enable-cache: true
           python-version: ${{ matrix.python-version }}
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-      - name: 🏗 Prepare for build
-        run: |
-          uv pip install pip
-          ls -al .venv/bin/
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         id: build
@@ -84,13 +79,15 @@ jobs:
           path: dist
       - name: Delete source files for tests
         run: rm -rf deebot_client/
-      - name: pytest
+      - name: pytest x86_64 manylinux
         if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
         shell: bash
         run: |
           set -e
-          uv sync --locked --only-dev
-          uv pip install deebot-client --find-links dist --force-reinstall
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install deebot-client --find-links dist --force-reinstall
+          pip install pytest
           pytest
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'manylinux') &&  matrix.config.platform != 'x86_64' }}
