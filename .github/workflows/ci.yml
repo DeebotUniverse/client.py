@@ -79,7 +79,7 @@ jobs:
           target: ${{ matrix.platform }}
           args: --release --out dist -i ${{ matrix.python-version}}
           manylinux: ${{ matrix.linux.compatibility }}
-          before-script-linux: apt update && apt install -y pkg-config liblzma-dev
+          before-script-linux: yum install -y pkgconfig xz-devel
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
