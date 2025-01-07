@@ -46,25 +46,13 @@ jobs:
         config:
           - platform: "x86_64"
             manylinux: "musllinux_1_2"
-            container: "alpine:latest"
-            before-script: "apk add pkgconf xz-dev"
+            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
           - platform: "x86_64"
-            manylinux: "manylinux_2_34"
-            container: "quay.io/pypa/manylinux_2_34_x86_64:latest"
+            manylinux: "manylinux_2_28"
             before-script: "yum install -y xz-devel"
         python-version:
           - "3.12"
           - "3.13"
-        # platform:
-        #  - target: "x86_64"
-        # - "x86"
-        # - "aarch64"
-        # - "armv7"
-        # linux:
-        #  - compatibility: "manylinux_2_28"
-        ##    script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
-        #  - compatibility: "musllinux_1_2"
-        #    script: apk add --no-cache pkgconfig xz-dev
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
@@ -87,7 +75,6 @@ jobs:
         with:
           target: ${{ matrix.config.platform }}
           args: --release --out dist -i ${{ matrix.python-version}}
-          container: ${{ matrix.config.container }}
           manylinux: ${{ matrix.config.manylinux }}
           before-script-linux: ${{ matrix.config.before-script }}
       - name: ⬆️ Upload wheel
