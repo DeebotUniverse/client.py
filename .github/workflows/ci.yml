@@ -47,11 +47,11 @@ jobs:
           - platform: "x86_64"
             manylinux: "musllinux_1_2"
             container: "alpine:latest"
-            before-script: "sudo apk add pkgconf xz-dev"
+            before-script: "apk add pkgconf xz-dev"
           - platform: "x86_64"
             manylinux: "manylinux_2_34"
             container: "quay.io/pypa/manylinux_2_34_x86_64:latest"
-            before-script: "yum install pkgconfig xz-devel"
+            before-script: "yum install -y xz-devel"
         python-version:
           - "3.12"
           - "3.13"
