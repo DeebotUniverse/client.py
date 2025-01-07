@@ -77,7 +77,7 @@ jobs:
         id: build
         with:
           target: ${{ matrix.platform }}
-          args: --release --out dist
+          args: --release --out dist -i {{ matrix.python-version}}
           # sccache: "true"
           manylinux: ${{ matrix.linux.compatibility }}
           before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
