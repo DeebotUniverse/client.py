@@ -75,6 +75,10 @@ jobs:
         run: |
           uv sync --locked --only-dev
           python3 -m ensurepip
+      - name: Cache Docker images.
+        uses: ScribeMD/docker-cache@0.5.0
+        with:
+          key: docker-${{ runner.os }}-${{ matrix.config.platform }}-${{ matrix.config.manylinux }}
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         id: build
