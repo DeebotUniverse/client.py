@@ -52,8 +52,10 @@ jobs:
           - "aarch64"
           - "armv7"
         linux:
-          - "manylinux_2_34"
-          - "musllinux_1_2"
+          - compatibility: "manylinux_2_34"
+            script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
+          - compatibility: "musllinux_1_2"
+            script: apk add --no-cache pkgconfig xz-dev
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
@@ -69,22 +71,21 @@ jobs:
       - name: 🏗 Prepare for build
         run: |
           uv pip install pip
-          sudo apt update
-          sudo apt install -y pkg-config liblzma-dev
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform }}
           args: --release --out dist --find-interpreter
           sccache: "true"
-          manylinux: ${{ matrix.linux }}
+          manylinux: ${{ matrix.linux.compatibility }}
+          before-script-linux: ${{ matrix.linux.script }}
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.python-version }}-${{ matrix.linux }}-${{ matrix.platform.target }}
+          name: wheels-${{ matrix.python-version }}-${{ matrix.linux.compatibility }}-${{ matrix.platform.target }}
           path: dist
       - name: pytest
-        if: ${{ startsWith(matrix.linux, 'manylinux') && matrix.platform == 'x86_64' }}
+        if: ${{ startsWith(matrix.linux.compatibility, 'manylinux') && matrix.platform == 'x86_64' }}
         shell: bash
         run: |
           set -e
@@ -92,7 +93,7 @@ jobs:
           uv pip install deebot-client --find-links dist --force-reinstall
           pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux, 'manylinux') &&  matrix.platform != 'x86_64' }}
+        if: ${{ startsWith(matrix.linux.compatibility, 'manylinux') &&  matrix.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform }}
@@ -106,7 +107,7 @@ jobs:
             uv pip install deebot-client --find-links dist --force-reinstall
             pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux, 'musllinux') && matrix.platform == 'x86_64' }}
+        if: ${{ startsWith(matrix.linux.compatibility, 'musllinux') && matrix.platform == 'x86_64' }}
         uses: addnab/docker-run-action@v3
         with:
           image: alpine:latest
@@ -118,7 +119,7 @@ jobs:
             uv pip install deebot-client --no-index --find-links dist --force-reinstall
             pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux, 'musllinux') && matrix.platform != 'x86_64' }}
+        if: ${{ startsWith(matrix.linux.compatibility, 'musllinux') && matrix.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform.target }}
