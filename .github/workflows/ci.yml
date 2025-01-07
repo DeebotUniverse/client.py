@@ -38,7 +38,7 @@ jobs:
         run: scripts/check_getLogger.sh
 
   wheels:
-    name: Python ${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux }}
+    name: Py${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -66,13 +66,13 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-      - name: 🏗 Install pip for maturin
+      - name: 🏗 Install pip for maturin for now...
         run: uv pip install pip
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform }}
-          args: --release --uv --out dist --find-interpreter
+          args: --release --out dist --find-interpreter
           sccache: "true"
           manylinux: ${{ matrix.linux }}
       - name: ⬆️ Upload wheel
