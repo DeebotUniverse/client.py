@@ -37,31 +37,94 @@ jobs:
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
-  tests:
-    runs-on: "ubuntu-latest"
-    name: Run tests
+  wheels:
+    name: Build wheels and test them
+    runs-on: ubuntu-latest
     strategy:
       matrix:
         python-version:
           - "3.12"
           - "3.13"
+        platform:
+          - "x86_64"
+          - "x86"
+          - "aarch64"
+          - "armv7"
+        linux:
+          - "manylinux_2_34"
+          - "musllinux_1_2"
     steps:
-      - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
           python-version: ${{ matrix.python-version }}
-
-      - name: 🏗 Install the project
-        run: uv sync --locked --dev
-
-      - name: Run pytest
-        run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+      - name: 🏗 Set package version
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: 📦 Build wheel
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+          manylinux: ${{ matrix.linux }}
+      - name: ⬆️ Upload wheel
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.python-version }}-${{ matrix.linux }}-${{ matrix.platform.target }}
+          path: dist
+      - name: pytest
+        if: ${{ startsWith(matrix.linux, 'manylinux') && matrix.platform == 'x86_64' }}
+        shell: bash
+        run: |
+          set -e
+          uv sync --dev --locked --no-install-workspace
+          uv pip install deebot-client --find-links dist --force-reinstall
+          pytest
+      - name: pytest
+        if: ${{ startsWith(matrix.linux, 'manylinux') &&  matrix.platform != 'x86_64' }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform }}
+          distro: ubuntu_latest
+          githubToken: ${{ github.token }}
+          install: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            uv sync --dev --locked --no-install-workspace
+          run: |
+            set -e
+            uv pip install deebot-client --find-links dist --force-reinstall
+            pytest
+      - name: pytest
+        if: ${{ startsWith(matrix.linux, 'musllinux') && matrix.platform == 'x86_64' }}
+        uses: addnab/docker-run-action@v3
+        with:
+          image: alpine:latest
+          options: -v ${{ github.workspace }}:/io -w /io
+          run: |
+            set -e
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            uv sync --dev --locked --no-install-workspace
+            uv pip install deebot-client --no-index --find-links dist --force-reinstall
+            pytest
+      - name: pytest
+        if: ${{ startsWith(matrix.linux, 'musllinux') && matrix.platform != 'x86_64' }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          install: |
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            uv sync --dev --locked --no-install-workspace
+          run: |
+            set -e
+            uv pip install deebot-client --no-index --find-links dist --force-reinstall
+            pytest
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
@@ -75,3 +138,19 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  sdist:
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
