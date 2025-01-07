@@ -53,8 +53,10 @@ jobs:
           # - "armv7"
         linux:
           - compatibility: "manylinux_2_34"
+            manylinux: "auto"
             script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
           - compatibility: "musllinux_1_2"
+            manylinux: "musllinux_1_2"
             script: apk add --no-cache pkgconfig xz-dev
     steps:
       - name: ⤵️ Check out code from GitHub
@@ -77,14 +79,13 @@ jobs:
         id: build
         with:
           target: ${{ matrix.platform }}
-          args: --release --out dist -i ${{ matrix.python-version}} --auditwheel repair
-          # sccache: "true"
+          args: --release --out dist -i ${{ matrix.python-version}}
           manylinux: ${{ matrix.linux.compatibility }}
           before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.python-version }}-${{ matrix.linux.compatibility }}-${{ matrix.platform.target }}
+          name: wheels-${{ matrix.python-version }}-${{ matrix.linux.compatibility }}-${{ matrix.platform }}
           path: dist
       - name: pytest
         if: ${{ startsWith(matrix.linux.compatibility, 'manylinux') && matrix.platform == 'x86_64' }}
@@ -124,7 +125,7 @@ jobs:
         if: ${{ startsWith(matrix.linux.compatibility, 'musllinux') && matrix.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
-          arch: ${{ matrix.platform.target }}
+          arch: ${{ matrix.platform }}
           distro: alpine_latest
           githubToken: ${{ github.token }}
           install: |
