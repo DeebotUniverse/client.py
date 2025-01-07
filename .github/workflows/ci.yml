@@ -52,10 +52,10 @@ jobs:
             before-script: "yum install -y xz-devel"
           - platform: "armv7"
             manylinux: "manylinux_2_28"
-            before-script: "yum install -y xz-devel"
+            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
           - platform: "aarch64"
             manylinux: "manylinux_2_28"
-            before-script: "yum install -y xz-devel"
+            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
         python-version:
           - "3.12"
           - "3.13"
