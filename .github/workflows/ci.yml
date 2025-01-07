@@ -49,7 +49,9 @@ jobs:
           #   before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
           - platform: "x86_64"
             manylinux: "manylinux_2_28"
-            before-script: "yum install -y xz-devel"
+            before-script: |
+              yum install -y xz-devel
+              python3 -m ensurepip
         python-version:
           - "3.12"
           - "3.13"
@@ -77,6 +79,7 @@ jobs:
           args: --release --out dist -i ${{ matrix.python-version}}
           manylinux: ${{ matrix.config.manylinux }}
           before-script-linux: ${{ matrix.config.before-script }}
+          sccache: "true"
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
@@ -106,7 +109,7 @@ jobs:
           run: |
             set -e
             uv pip install --force-reinstall dist/*
-            pytest
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform == 'x86_64' }}
         uses: addnab/docker-run-action@v3
@@ -118,7 +121,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
             uv sync --locked --only-dev
             uv pip install --force-reinstall dist/*
-            pytest
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
@@ -132,7 +135,7 @@ jobs:
           run: |
             set -e
             uv pip install --force-reinstall dist/*
-            pytest
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
