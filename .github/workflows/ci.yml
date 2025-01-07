@@ -52,11 +52,9 @@ jobs:
           # - "aarch64"
           # - "armv7"
         linux:
-          - compatibility: "manylinux_2_34"
-            manylinux: "auto"
+          - compatibility: "manylinux_2_28"
             script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
           - compatibility: "musllinux_1_2"
-            manylinux: "musllinux_1_2"
             script: apk add --no-cache pkgconfig xz-dev
     steps:
       - name: ⤵️ Check out code from GitHub
@@ -80,9 +78,8 @@ jobs:
         with:
           target: ${{ matrix.platform }}
           args: --release --out dist -i ${{ matrix.python-version}}
-          manylinux: ${{ matrix.linux.manylinux }}
+          manylinux: ${{ matrix.linux.compatibility }}
           before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
-          docker-options: -e C
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
