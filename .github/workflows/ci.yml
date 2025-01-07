@@ -76,7 +76,7 @@ jobs:
         with:
           target: ${{ matrix.platform }}
           args: --release --out dist --find-interpreter
-          sccache: "true"
+          # sccache: "true"
           manylinux: ${{ matrix.linux.compatibility }}
           before-script-linux: ${{ matrix.linux.script }}
       - name: ⬆️ Upload wheel
