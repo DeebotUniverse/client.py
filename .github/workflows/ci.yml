@@ -49,9 +49,13 @@ jobs:
           #   before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
           - platform: "x86_64"
             manylinux: "manylinux_2_28"
-            before-script: |
-              yum install -y xz-devel
-              python3 -m ensurepip
+            before-script: "yum install -y xz-devel"
+          - platform: "armv7"
+            manylinux: "manylinux_2_28"
+            before-script: "yum install -y xz-devel"
+          - platform: "aarch64"
+            manylinux: "manylinux_2_28"
+            before-script: "yum install -y xz-devel"
         python-version:
           - "3.12"
           - "3.13"
@@ -69,8 +73,8 @@ jobs:
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
       - name: 🏗 Prepare for build
         run: |
-          uv sync --only-dev
-          uv pip install pip
+          uv sync --locked --only-dev
+          python3 -m ensurepip
       - name: 📦 Build wheel
         uses: PyO3/maturin-action@v1
         id: build
@@ -79,7 +83,6 @@ jobs:
           args: --release --out dist -i ${{ matrix.python-version}}
           manylinux: ${{ matrix.config.manylinux }}
           before-script-linux: ${{ matrix.config.before-script }}
-          sccache: "true"
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
@@ -93,7 +96,6 @@ jobs:
         shell: bash
         run: |
           set -e
-          uv sync --locked --only-dev
           uv pip install --force-reinstall dist/*
           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
       - name: pytest
