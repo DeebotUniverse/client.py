@@ -82,6 +82,8 @@ jobs:
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.config.manylinux }}-${{ matrix.config.platform }}
           path: dist
+      - name: Delete source files for tests
+        run: rm -rf deebot_client/
       - name: pytest
         if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
         shell: bash
