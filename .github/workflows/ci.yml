@@ -38,24 +38,33 @@ jobs:
         run: scripts/check_getLogger.sh
 
   wheels:
-    name: Py${{ matrix.python-version }} on ${{ matrix.platform }} with ${{ matrix.linux.compatibility }}
+    name: Py${{ matrix.python-version }} on ${{ matrix.config.platform }} with ${{ matrix.config.manylinux }}
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
+        config:
+          - platform: "x86_64"
+            manylinux: "musllinux_1_2"
+            container: "alpine:latest"
+            before-script: "sudo apk add pkgconf xz-dev"
+          - platform: "x86_64"
+            manylinux: "manylinux_2_34"
+            container: "quay.io/pypa/manylinux_2_34_x86_64:latest"
+            before-script: "yum install pkgconfig xz-devel"
         python-version:
           - "3.12"
           - "3.13"
-        platform:
-          - "x86_64"
-          # - "x86"
-          # - "aarch64"
-          # - "armv7"
-        linux:
-          - compatibility: "manylinux_2_28"
-            script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
-          - compatibility: "musllinux_1_2"
-            script: apk add --no-cache pkgconfig xz-dev
+        # platform:
+        #  - target: "x86_64"
+        # - "x86"
+        # - "aarch64"
+        # - "armv7"
+        # linux:
+        #  - compatibility: "manylinux_2_28"
+        ##    script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
+        #  - compatibility: "musllinux_1_2"
+        #    script: apk add --no-cache pkgconfig xz-dev
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
@@ -76,17 +85,18 @@ jobs:
         uses: PyO3/maturin-action@v1
         id: build
         with:
-          target: ${{ matrix.platform }}
+          target: ${{ matrix.config.platform }}
           args: --release --out dist -i ${{ matrix.python-version}}
-          manylinux: ${{ matrix.linux.compatibility }}
-          before-script-linux: yum install -y pkgconfig xz-devel
+          container: ${{ matrix.config.container }}
+          manylinux: ${{ matrix.config.manylinux }}
+          before-script-linux: ${{ matrix.config.before-script }}
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.python-version }}-${{ matrix.linux.compatibility }}-${{ matrix.platform }}
+          name: wheels-${{ matrix.python-version }}-${{ matrix.config.manylinux }}-${{ matrix.config.platform }}
           path: dist
       - name: pytest
-        if: ${{ startsWith(matrix.linux.compatibility, 'manylinux') && matrix.platform == 'x86_64' }}
+        if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
         shell: bash
         run: |
           set -e
@@ -94,10 +104,10 @@ jobs:
           uv pip install deebot-client --find-links dist --force-reinstall
           pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux.compatibility, 'manylinux') &&  matrix.platform != 'x86_64' }}
+        if: ${{ startsWith(matrix.config.manylinux, 'manylinux') &&  matrix.config.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
-          arch: ${{ matrix.platform }}
+          arch: ${{ matrix.config.platform }}
           distro: ubuntu_latest
           githubToken: ${{ github.token }}
           install: |
@@ -108,7 +118,7 @@ jobs:
             uv pip install deebot-client --find-links dist --force-reinstall
             pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux.compatibility, 'musllinux') && matrix.platform == 'x86_64' }}
+        if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform == 'x86_64' }}
         uses: addnab/docker-run-action@v3
         with:
           image: alpine:latest
@@ -120,10 +130,10 @@ jobs:
             uv pip install deebot-client --no-index --find-links dist --force-reinstall
             pytest
       - name: pytest
-        if: ${{ startsWith(matrix.linux.compatibility, 'musllinux') && matrix.platform != 'x86_64' }}
+        if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform != 'x86_64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
-          arch: ${{ matrix.platform }}
+          arch: ${{ matrix.config.platform }}
           distro: alpine_latest
           githubToken: ${{ github.token }}
           install: |
