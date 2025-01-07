@@ -48,9 +48,9 @@ jobs:
           - "3.13"
         platform:
           - "x86_64"
-          - "x86"
-          - "aarch64"
-          - "armv7"
+          # - "x86"
+          # - "aarch64"
+          # - "armv7"
         linux:
           - compatibility: "manylinux_2_34"
             script: sudo apt update && sudo apt install -y pkg-config liblzma-dev
@@ -80,7 +80,7 @@ jobs:
           args: --release --out dist --find-interpreter
           # sccache: "true"
           manylinux: ${{ matrix.linux.compatibility }}
-          before-script-linux: ${{ matrix.linux.script }}
+          before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
