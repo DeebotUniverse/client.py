@@ -80,8 +80,9 @@ jobs:
         with:
           target: ${{ matrix.platform }}
           args: --release --out dist -i ${{ matrix.python-version}}
-          manylinux: ${{ matrix.linux.compatibility }}
+          manylinux: ${{ matrix.linux.manylinux }}
           before-script-linux: sudo apt update && sudo apt install -y pkg-config liblzma-dev
+          docker-options: -e C
       - name: ⬆️ Upload wheel
         uses: actions/upload-artifact@v4
         with:
