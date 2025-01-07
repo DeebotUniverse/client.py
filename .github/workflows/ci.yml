@@ -41,6 +41,7 @@ jobs:
     name: Build wheels and test them
     runs-on: ubuntu-latest
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.12"
@@ -69,7 +70,7 @@ jobs:
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform }}
-          args: --release --out dist --find-interpreter
+          args: --release --uv --out dist --find-interpreter
           sccache: "true"
           manylinux: ${{ matrix.linux }}
       - name: ⬆️ Upload wheel
