@@ -54,16 +54,23 @@ jobs:
           # a GitHub package registry.
           githubToken: ${{ github.token }}
 
+          # Install some dependencies in the container. This speeds up builds if
+          # you are also using githubToken. Any dependencies installed here will
+          # be part of the container image that gets cached, so subsequent
+          # builds don't have to re-install them. The image layer is cached
+          # publicly in your project's package repository, so it is vital that
+          # no secrets are present in the container state or logs.
+          install: |
+            apk add --no-cache xz-dev
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+
           # Set an output parameter `uname` for use in subsequent steps
           run: |
-            uname -a
-            ls -al
-            echo ::set-output name=uname::$(uname -a)
-
-      - name: Get the output
-        # Echo the `uname` output parameter from the `runcmd` step
-        run: |
-          echo "The uname output was ${{ steps.runcmd.outputs.uname }}"
+            uv sync --locked --dev
+            uv build --wheel
+            rm -rf deebot_client*
+            uv pip install --force-reinstall dist/*
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
   test:
     runs-on: "ubuntu-latest"
