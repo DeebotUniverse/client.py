@@ -49,7 +49,8 @@ jobs:
           image: ghcr.io/astral-sh/uv:alpine
           run: |
             apk add --no-cache xz-dev
-            uv build -p 3.13
+            uv venv -p 3.13
+            uv build --wheel
             rm -rf deebot_client*
             uv sync --locked --only-dev
             uv pip install --force-reinstall dist/*
