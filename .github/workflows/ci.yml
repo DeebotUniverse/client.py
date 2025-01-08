@@ -61,11 +61,13 @@ jobs:
           # publicly in your project's package repository, so it is vital that
           # no secrets are present in the container state or logs.
           install: |
+            set -euxo pipefail
             apk add --no-cache xz-dev
-            curl -LsSf https://astral.sh/uv/install.sh | sh
+            wget -qO- https://astral.sh/uv/install.sh | sh
 
           # Set an output parameter `uname` for use in subsequent steps
           run: |
+            set -euxo pipefail
             uv sync --locked --dev
             uv build --wheel
             rm -rf deebot_client*
