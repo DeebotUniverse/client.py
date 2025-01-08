@@ -40,7 +40,17 @@ jobs:
   container-test-job:
     runs-on: ubuntu-latest
     container: node:alpine
+    default:
+      run:
+        shell: run-in-container.sh {0}
     steps:
+      - uses: sandervocke/setup-qemu-container@v1
+        with:
+          container: alpine
+          arch: arm
+      - name: Print architecture from within container
+        run: |
+          echo "Arch in container: $(uname -m)"
       - name: Check for dockerenv file
         run: |
           (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
