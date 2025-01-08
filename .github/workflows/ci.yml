@@ -50,6 +50,7 @@ jobs:
           run: |
             apk add --no-cache xz-dev
             uv venv -p 3.13
+            ls -al
             uv build --wheel
             rm -rf deebot_client*
             uv sync --locked --only-dev
