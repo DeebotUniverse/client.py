@@ -64,6 +64,8 @@ jobs:
             set -euxo pipefail
             apk add --no-cache xz-dev
             wget -qO- https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv python install 3.13
 
           # Set an output parameter `uname` for use in subsequent steps
           run: |
