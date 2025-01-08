@@ -69,7 +69,7 @@ jobs:
           run: |
             set -euxo pipefail
             source $HOME/.local/bin/env
-            uv sync --locked --dev
+            uv sync --frozen --dev
             uv build --wheel
             rm -rf deebot_client*
             uv pip install --force-reinstall dist/*
