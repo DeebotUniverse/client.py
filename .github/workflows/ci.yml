@@ -37,33 +37,23 @@ jobs:
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
-  container-test-job:
-    runs-on: ubuntu-latest
-    defaults:
-      run:
-        shell: run-in-container.sh {0}
+  test:
+    runs-on: "ubuntu-latest"
     steps:
-      - uses: sandervocke/setup-qemu-container@v1
-        with:
-          container: alpine
-          arch: arm
-      - name: Print architecture from within container
-        run: |
-          echo "Arch in container: $(uname -m)"
-      - name: Check for dockerenv file
-        run: |
-          (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
-          apk add pkgconf xz-dev
-
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@v5
+      - name: Build for Alpine targets
+        uses: addnab/docker-run-action@v3
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
+          image: ghcr.io/astral-sh/uv:alpine
+          run: |
+            apk add --no-cache xz-dev
+            uv build
+            rm -rf deebot_client*
+            uv sync --locked --only-dev
+            uv pip install --force-reinstall dist/*
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
   # wheels:
   #   name: Py${{ matrix.python-version }} on ${{ matrix.config.platform }} with ${{ matrix.config.manylinux }}
