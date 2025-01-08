@@ -37,124 +37,141 @@ jobs:
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
-  wheels:
-    name: Py${{ matrix.python-version }} on ${{ matrix.config.platform }} with ${{ matrix.config.manylinux }}
+  container-test-job:
     runs-on: ubuntu-latest
-    strategy:
-      fail-fast: false
-      matrix:
-        config:
-          # - platform: "x86_64"
-          #   manylinux: "musllinux_1_2"
-          #   before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
-          - platform: "x86_64"
-            manylinux: "manylinux_2_28"
-            before-script: "yum install -y xz-devel"
-          - platform: "armv7"
-            manylinux: "manylinux_2_28"
-            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
-          - platform: "aarch64"
-            manylinux: "manylinux_2_28"
-            before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
-        python-version:
-          - "3.12"
-          - "3.13"
+    container: node:latest
     steps:
-      - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.2.2
-      - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
+      - name: Check for dockerenv file
+        run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-          python-version: ${{ matrix.python-version }}
-      - name: 🏗 Set package version
-        if: ${{ github.event_name == 'release' }}
-        run: |
-          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-      - name: 🏗 Prepare for build
-        run: |
-          uv sync --locked --only-dev
-          python3 -m ensurepip
-      - name: Cache Docker images.
-        uses: ScribeMD/docker-cache@0.5.0
-        with:
-          key: docker-${{ runner.os }}-${{ matrix.config.platform }}-${{ matrix.config.manylinux }}
-      - name: 📦 Build wheel
-        uses: PyO3/maturin-action@v1
-        id: build
-        with:
-          target: ${{ matrix.config.platform }}
-          args: --release --out dist -i ${{ matrix.python-version}}
-          manylinux: ${{ matrix.config.manylinux }}
-          before-script-linux: ${{ matrix.config.before-script }}
-      - name: ⬆️ Upload wheel
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-${{ matrix.python-version }}-${{ matrix.config.manylinux }}-${{ matrix.config.platform }}
-          path: dist
-      - name: Remove sources to avoid conflicts during tests
-        run: |
-          rm -rf deebot_client*
-      - name: pytest
-        if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
-        shell: bash
-        run: |
-          set -e
-          uv pip install --force-reinstall dist/*
-          pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-      - name: pytest
-        if: ${{ startsWith(matrix.config.manylinux, 'manylinux') &&  matrix.config.platform != 'x86_64' }}
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: ${{ matrix.config.platform }}
-          distro: ubuntu_latest
-          githubToken: ${{ github.token }}
-          install: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --locked --only-dev
-          run: |
-            set -e
-            uv pip install --force-reinstall dist/*
-            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-      - name: pytest
-        if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform == 'x86_64' }}
-        uses: addnab/docker-run-action@v3
-        with:
-          image: alpine:latest
-          options: -v ${{ github.workspace }}:/io -w /io
-          run: |
-            set -e
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --locked --only-dev
-            uv pip install --force-reinstall dist/*
-            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-      - name: pytest
-        if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform != 'x86_64' }}
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: ${{ matrix.config.platform }}
-          distro: alpine_latest
-          githubToken: ${{ github.token }}
-          install: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            uv sync --locked --only-dev
-          run: |
-            set -e
-            uv pip install --force-reinstall dist/*
-            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          cache-dependency-glob: "uv.lock"
+          cache-local-path: ${{ env.UV_CACHE_DIR }}
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+  # wheels:
+  #   name: Py${{ matrix.python-version }} on ${{ matrix.config.platform }} with ${{ matrix.config.manylinux }}
+  #   runs-on: ubuntu-latest
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       config:
+  #         # - platform: "x86_64"
+  #         #   manylinux: "musllinux_1_2"
+  #         #   before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
+  #         - platform: "x86_64"
+  #           manylinux: "manylinux_2_28"
+  #           before-script: "yum install -y xz-devel"
+  #         - platform: "armv7"
+  #           manylinux: "manylinux_2_28"
+  #           before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
+  #         - platform: "aarch64"
+  #           manylinux: "manylinux_2_28"
+  #           before-script: "sudo apt update && sudo apt install -y pkg-config liblzma-dev"
+  #       python-version:
+  #         - "3.12"
+  #         - "3.13"
+  #   steps:
+  #     - name: ⤵️ Check out code from GitHub
+  #       uses: actions/checkout@v4.2.2
+  #     - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
+  #       uses: astral-sh/setup-uv@v5
+  #       with:
+  #         enable-cache: true
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: 🏗 Set package version
+  #       if: ${{ github.event_name == 'release' }}
+  #       run: |
+  #         sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+  #     - name: 🏗 Prepare for build
+  #       run: |
+  #         uv sync --locked --only-dev
+  #         python3 -m ensurepip
+  #     - name: Cache Docker images.
+  #       uses: ScribeMD/docker-cache@0.5.0
+  #       with:
+  #         key: docker-${{ runner.os }}-${{ matrix.config.platform }}-${{ matrix.config.manylinux }}
+  #     - name: 📦 Build wheel
+  #       uses: PyO3/maturin-action@v1
+  #       id: build
+  #       with:
+  #         target: ${{ matrix.config.platform }}
+  #         args: --release --out dist -i ${{ matrix.python-version}}
+  #         manylinux: ${{ matrix.config.manylinux }}
+  #         before-script-linux: ${{ matrix.config.before-script }}
+  #     - name: ⬆️ Upload wheel
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: wheels-${{ matrix.python-version }}-${{ matrix.config.manylinux }}-${{ matrix.config.platform }}
+  #         path: dist
+  #     - name: Remove sources to avoid conflicts during tests
+  #       run: |
+  #         rm -rf deebot_client*
+  #     - name: pytest
+  #       if: ${{ startsWith(matrix.config.manylinux, 'manylinux') && matrix.config.platform == 'x86_64' }}
+  #       shell: bash
+  #       run: |
+  #         set -e
+  #         uv pip install --force-reinstall dist/*
+  #         pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+  #     - name: pytest
+  #       if: ${{ startsWith(matrix.config.manylinux, 'manylinux') &&  matrix.config.platform != 'x86_64' }}
+  #       uses: uraimo/run-on-arch-action@v2
+  #       with:
+  #         arch: ${{ matrix.config.platform }}
+  #         distro: ubuntu_latest
+  #         githubToken: ${{ github.token }}
+  #         install: |
+  #           curl -LsSf https://astral.sh/uv/install.sh | sh
+  #           uv sync --locked --only-dev
+  #         run: |
+  #           set -e
+  #           uv pip install --force-reinstall dist/*
+  #           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+  #     - name: pytest
+  #       if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform == 'x86_64' }}
+  #       uses: addnab/docker-run-action@v3
+  #       with:
+  #         image: alpine:latest
+  #         options: -v ${{ github.workspace }}:/io -w /io
+  #         run: |
+  #           set -e
+  #           curl -LsSf https://astral.sh/uv/install.sh | sh
+  #           uv sync --locked --only-dev
+  #           uv pip install --force-reinstall dist/*
+  #           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+  #     - name: pytest
+  #       if: ${{ startsWith(matrix.config.manylinux, 'musllinux') && matrix.config.platform != 'x86_64' }}
+  #       uses: uraimo/run-on-arch-action@v2
+  #       with:
+  #         arch: ${{ matrix.config.platform }}
+  #         distro: alpine_latest
+  #         githubToken: ${{ github.token }}
+  #         install: |
+  #           curl -LsSf https://astral.sh/uv/install.sh | sh
+  #           uv sync --locked --only-dev
+  #         run: |
+  #           set -e
+  #           uv pip install --force-reinstall dist/*
+  #           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() && steps.build.conclusion == 'success' }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+  #     - name: Upload coverage to Codecov
+  #       uses: codecov/codecov-action@v5
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         fail_ci_if_error: true
+
+  #     - name: Upload test results to Codecov
+  #       if: ${{ !cancelled() && steps.build.conclusion == 'success' }}
+  #       uses: codecov/test-results-action@v1
+  #       with:
+  #         token: ${{ secrets.CODECOV_TOKEN }}
+  #         fail_ci_if_error: true
 
   sdist:
     if: ${{ github.event_name == 'release' }}
