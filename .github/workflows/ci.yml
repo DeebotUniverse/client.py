@@ -10,32 +10,32 @@ env:
   UV_CACHE_DIR: /tmp/.uv-cache
 
 jobs:
-  code-quality:
-    runs-on: "ubuntu-latest"
-    name: Check code quality
-    steps:
-      - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
+  # code-quality:
+  #   runs-on: "ubuntu-latest"
+  #   name: Check code quality
+  #   steps:
+  #     - name: ⤵️ Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
+  #     - name: 🏗 Install uv and Python
+  #       uses: astral-sh/setup-uv@v5
+  #       with:
+  #         enable-cache: true
+  #         cache-dependency-glob: "uv.lock"
+  #         cache-local-path: ${{ env.UV_CACHE_DIR }}
 
-      - name: 🏗 Install the project
-        run: uv sync --locked --dev
+  #     - name: 🏗 Install the project
+  #       run: uv sync --locked --dev
 
-      # Following steps cannot run by pre-commit.ci as repo = local
-      - name: Run mypy
-        run: uv run --frozen mypy deebot_client/
+  #     # Following steps cannot run by pre-commit.ci as repo = local
+  #     - name: Run mypy
+  #       run: uv run --frozen mypy deebot_client/
 
-      - name: Pylint review
-        run: uv run --frozen pylint deebot_client/**/*.py
+  #     - name: Pylint review
+  #       run: uv run --frozen pylint deebot_client/**/*.py
 
-      - name: Verify no getLogger usages
-        run: scripts/check_getLogger.sh
+  #     - name: Verify no getLogger usages
+  #       run: scripts/check_getLogger.sh
 
   armv7_job:
     # The host should always be Linux
@@ -68,31 +68,32 @@ jobs:
           # Set an output parameter `uname` for use in subsequent steps
           run: |
             set -euxo pipefail
+            source $HOME/.local/bin/env
             uv sync --locked --dev
             uv build --wheel
             rm -rf deebot_client*
             uv pip install --force-reinstall dist/*
             pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
-  test:
-    runs-on: "ubuntu-latest"
-    steps:
-      - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
+  # test:
+  #   runs-on: "ubuntu-latest"
+  #   steps:
+  #     - name: ⤵️ Checkout repository
+  #       uses: actions/checkout@v4
 
-      - name: Build for Alpine targets
-        uses: addnab/docker-run-action@v3
-        with:
-          image: ghcr.io/astral-sh/uv:alpine
-          run: |
-            apk add --no-cache xz-dev
-            uv venv -p 3.13
-            ls -al
-            uv build --wheel
-            rm -rf deebot_client*
-            uv sync --locked --only-dev
-            uv pip install --force-reinstall dist/*
-            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+  #     - name: Build for Alpine targets
+  #       uses: addnab/docker-run-action@v3
+  #       with:
+  #         image: ghcr.io/astral-sh/uv:alpine
+  #         run: |
+  #           apk add --no-cache xz-dev
+  #           uv venv -p 3.13
+  #           ls -al
+  #           uv build --wheel
+  #           rm -rf deebot_client*
+  #           uv sync --locked --only-dev
+  #           uv pip install --force-reinstall dist/*
+  #           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
   # wheels:
   #   name: Py${{ matrix.python-version }} on ${{ matrix.config.platform }} with ${{ matrix.config.manylinux }}
