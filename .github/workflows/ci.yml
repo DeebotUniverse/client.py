@@ -47,8 +47,7 @@ jobs:
         name: Run commands
         id: runcmd
         with:
-          arch: armv7
-          distro: alpine_latest
+          base_image: "--platform=linux/arm/v7 python:alpine"
 
           # Not required, but speeds up builds by storing container images in
           # a GitHub package registry.
@@ -65,7 +64,6 @@ jobs:
             apk add --no-cache xz-dev
             wget -qO- https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
-            uv python install 3.13
 
           # Set an output parameter `uname` for use in subsequent steps
           run: |
