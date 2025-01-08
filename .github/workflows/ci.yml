@@ -39,7 +39,7 @@ jobs:
 
   container-test-job:
     runs-on: ubuntu-latest
-    container: alpine:latest
+    container: node:alpine
     steps:
       - name: Check for dockerenv file
         run: |
