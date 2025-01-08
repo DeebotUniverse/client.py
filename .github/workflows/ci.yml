@@ -40,7 +40,7 @@ jobs:
   container-test-job:
     runs-on: ubuntu-latest
     container: node:alpine
-    default:
+    defaults:
       run:
         shell: run-in-container.sh {0}
     steps:
