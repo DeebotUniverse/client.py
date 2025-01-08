@@ -39,10 +39,12 @@ jobs:
 
   container-test-job:
     runs-on: ubuntu-latest
-    container: node:latest
+    container: alpine:latest
     steps:
       - name: Check for dockerenv file
-        run: (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+        run: |
+          (ls /.dockerenv && echo Found dockerenv) || (echo No dockerenv)
+          apk add pkgconf xz-dev
 
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
