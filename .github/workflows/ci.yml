@@ -47,6 +47,8 @@ jobs:
         name: Run commands
         id: runcmd
         with:
+          arch: none
+          distro: none
           base_image: "--platform=linux/arm/v7 python:alpine"
 
           # Not required, but speeds up builds by storing container images in
