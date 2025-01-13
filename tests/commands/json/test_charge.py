@@ -46,5 +46,5 @@ async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:
     assert (
         "deebot_client.commands.json.common",
         logging.WARNING,
-        f'Command "charge" was not successfully. body={json['resp']['body']}',
+        f'Command "charge" was not successfully. body={json["resp"]["body"]}',
     ) in caplog.record_tuples

@@ -248,9 +248,9 @@ async def test_capabilities_event_extraction(
     capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
-        assert (
-            capabilities.get_refresh_commands(event) == expected_commands
-        ), f"Refresh commands doesn't match for {event}"
+        assert capabilities.get_refresh_commands(event) == expected_commands, (
+            f"Refresh commands doesn't match for {event}"
+        )
 
 
 def test_all_models_loaded() -> None:
