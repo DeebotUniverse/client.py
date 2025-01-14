@@ -51,6 +51,8 @@ jobs:
   code-quality:
     runs-on: "ubuntu-latest"
     name: Check code quality
+    needs:
+      - "wheels"
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -92,6 +94,8 @@ jobs:
         python-version:
           - "3.12"
           - "3.13"
+    needs:
+      - "wheels"
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -154,6 +158,8 @@ jobs:
     needs:
       - "wheels"
       - "sdist"
+      - "tests"
+      - "code-quality"
     environment:
       name: release
       url: https://pypi.org/manage/project/deebot-client/releases/
