@@ -11,14 +11,34 @@ on:
 env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
   DEFAULT_PYTHON: "3.12"
+  ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
+  info:
+    name: Collect information & changes data
+    outputs:
+      venv_cache_key: ${{ steps.info.outputs.venv_key }}
+      python_versions: ${{ steps.info.outputs.python_versions }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️  Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: Collect information
+        id: info
+        run: |
+          venv_key=venv-${{ runner.os }}-${{ matrix.python-version }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+          echo "venv cache key: ${venv_key}"
+          echo "venv_key=${venv_key}" >> $GITHUB_OUTPUT
+          echo "python_versions: ${ALL_PYTHON_VERSIONS}"
+          echo "python_versions=${ALL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+
   base:
     name: Prepare dependencies
-    runs-on: "ubuntu-latest"
+    runs-on: ubuntu-latest
+    needs: info
     strategy:
       matrix:
-        python-version: ["3.12", "3.13"]
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
@@ -33,11 +53,8 @@ jobs:
         uses: actions/cache@v4.2.0
         with:
           path: .venv
-          key: |
-            ${{ runner.os }}-${{ matrix.python-version }}
-            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
-            -$(date -u '+%Y-%m-%dT%H:%M:%s')
-          restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-
+          key: ${{ needs.info.outputs.venv_cache_key }}
+          restore-keys: venv-${{ runner.os }}-${{ matrix.python-version }}-
       - name: 🏗 Set up uv
         if: steps.cache-venv.outputs.cache-hit != 'true'
         uses: astral-sh/setup-uv@v5
@@ -57,7 +74,9 @@ jobs:
   code-quality:
     runs-on: "ubuntu-latest"
     name: Check code quality
-    needs: base
+    needs:
+      - info
+      - base
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -74,9 +93,7 @@ jobs:
         with:
           path: venv
           fail-on-cache-miss: true
-          key: >-
-            ${{ runner.os }}-${{ env.DEFAULT_PYTHON }}
-            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+          key: ${{ needs.info.outputs.venv_cache_key }}
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
@@ -97,10 +114,12 @@ jobs:
   tests:
     runs-on: "ubuntu-latest"
     name: Run tests
+    needs:
+      - info
+      - base
     strategy:
       matrix:
-        python-version: ["3.12", "3.13"]
-    needs: base
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -118,9 +137,7 @@ jobs:
         with:
           path: venv
           fail-on-cache-miss: true
-          key: >-
-            ${{ runner.os }}-${{ matrix.python-version }}
-            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+          key: ${{ needs.info.outputs.venv_cache_key }}
 
       - name: Run pytest
         run: |
