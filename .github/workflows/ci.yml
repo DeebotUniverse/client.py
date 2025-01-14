@@ -12,7 +12,6 @@ env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
   DEFAULT_PYTHON: "3.13"
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
-  UV_PROJECT_ENVIRONMENT: "venv"
 
 jobs:
   info:
@@ -53,7 +52,7 @@ jobs:
         id: cache-venv
         uses: actions/cache@v4.2.0
         with:
-          path: venv
+          path: .venv
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
           restore-keys: ${{ matrix.python-version }}-venv-${{ runner.os }}-
       - name: 🏗 Install additional OS dependencies
@@ -87,25 +86,22 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: venv
+          path: .venv
           fail-on-cache-miss: true
           key: ${{ env.DEFAULT_PYTHON }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
         run: |
-          . venv/bin/activate
-          mypy deebot_client/
+          uv run --frozen mypy deebot_client/
 
       - name: Pylint review
         run: |
-          . venv/bin/activate
-          pylint deebot_client/**/*.py
+          uv run --frozen pylint deebot_client/**/*.py
 
       - name: Verify no getLogger usages
         run: |
-          . venv/bin/activate
-          scripts/check_getLogger.sh
+          uv run --frozen scripts/check_getLogger.sh
 
   tests:
     runs-on: "ubuntu-latest"
@@ -119,6 +115,10 @@ jobs:
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
+        with:
+          # Root files and tests folder
+          sparse-checkout: |
+            tests
 
       - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
         if: steps.cache-venv.outputs.cache-hit != 'true'
@@ -131,14 +131,13 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: venv
+          path: .venv
           fail-on-cache-miss: true
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       - name: Run pytest
         run: |
-          . venv/bin/activate
-          pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+          uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
