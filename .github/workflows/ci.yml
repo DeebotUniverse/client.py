@@ -17,7 +17,7 @@ jobs:
   info:
     name: Collect information & changes data
     outputs:
-      venv_cache_key: ${{ steps.info.outputs.venv_key }}
+      venv_cache_key_partly: ${{ steps.info.outputs.venv_key_partly }}
       python_versions: ${{ steps.info.outputs.python_versions }}
     runs-on: ubuntu-latest
     steps:
@@ -26,9 +26,9 @@ jobs:
       - name: Collect information
         id: info
         run: |
-          venv_key=venv-${{ runner.os }}-${{ matrix.python-version }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
-          echo "venv cache key: ${venv_key}"
-          echo "venv_key=${venv_key}" >> $GITHUB_OUTPUT
+          venv_key_partly=venv-${{ runner.os }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+          echo "venv cache key partly : ${venv_key_partly}"
+          echo "venv_key_partly=${venv_key_partly}" >> $GITHUB_OUTPUT
           echo "python_versions: ${ALL_PYTHON_VERSIONS}"
           echo "python_versions=${ALL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
 
@@ -53,8 +53,8 @@ jobs:
         uses: actions/cache@v4.2.0
         with:
           path: .venv
-          key: ${{ needs.info.outputs.venv_cache_key }}
-          restore-keys: venv-${{ runner.os }}-${{ matrix.python-version }}-
+          key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
+          restore-keys: ${{ matrix.python-version }}-venv-${{ runner.os }}-
       - name: 🏗 Set up uv
         if: steps.cache-venv.outputs.cache-hit != 'true'
         uses: astral-sh/setup-uv@v5
@@ -93,7 +93,7 @@ jobs:
         with:
           path: venv
           fail-on-cache-miss: true
-          key: ${{ needs.info.outputs.venv_cache_key }}
+          key: ${{ env.DEFAULT_PYTHON }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
@@ -137,7 +137,7 @@ jobs:
         with:
           path: venv
           fail-on-cache-miss: true
-          key: ${{ needs.info.outputs.venv_cache_key }}
+          key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       - name: Run pytest
         run: |
