@@ -73,6 +73,7 @@ jobs:
         with:
           pattern: wheels-${{ env.DEFAULT_PYTHON }}-manylinux*
           path: dist
+          merge-multiple: true
 
       - name: 🏗 Install project
         run: uv pip install -e dist/*
@@ -117,6 +118,7 @@ jobs:
         with:
           pattern: wheels-${{ matrix.python-version }}-manylinux*
           path: dist
+          merge-multiple: true
 
       - name: 🏗 Install project
         run: uv pip install -e dist/*
