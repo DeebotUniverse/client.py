@@ -11,7 +11,6 @@ on:
 env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
   DEFAULT_PYTHON: "3.12"
-  ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
   base:
@@ -19,7 +18,7 @@ jobs:
     runs-on: "ubuntu-latest"
     strategy:
       matrix:
-        python-version: ${{ fromJSON(env.ALL_PYTHON_VERSIONS) }}
+        python-version: ["3.12", "3.13"]
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
@@ -100,7 +99,7 @@ jobs:
     name: Run tests
     strategy:
       matrix:
-        python-version: ${{ fromJSON(env.ALL_PYTHON_VERSIONS) }}
+        python-version: ["3.12", "3.13"]
     needs: base
     steps:
       - name: ⤵️ Checkout repository
