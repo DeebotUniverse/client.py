@@ -5,11 +5,49 @@ on:
     branches:
       - dev
   pull_request:
+  release:
+    types: [published]
 
 env:
-  UV_CACHE_DIR: /tmp/.uv-cache
+  UV_CACHE_DIR: "/tmp/.uv-cache"
+  DEFAULT_PYTHON: "3.12"
 
 jobs:
+  wheels:
+    name: Build wheels
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version:
+          - "3.12"
+          - "3.13"
+        linux-compatibility:
+          - "manylinux_2_34"
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          python-version: ${{ matrix.python-version }}
+      - name: Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+      - name: 🏗 Set package version
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: 📦 Build package
+        run: uv build --wheel --config-settings build-args='--compatibility ${{ matrix.linux-compatibility }}'
+      - name: ⬆️ Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.python-version }}-${{ matrix.linux-compatibility }}
+          path: dist
+
   code-quality:
     runs-on: "ubuntu-latest"
     name: Check code quality
@@ -24,15 +62,17 @@ jobs:
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
 
-      - name: Install additional OS dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install \
-            pkg-config \
-            liblzma-dev
+      - name: 🏗 Install dev dependencies
+        run: uv sync --locked --only-dev
 
-      - name: 🏗 Install the project
-        run: uv sync --locked --dev
+      - name: ⬇️ Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-${{ env.DEFAULT_PYTHON }}-manylinux*
+          path: dist
+
+      - name: 🏗 Install project
+        run: uv pip install -e dist/*
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
@@ -64,15 +104,17 @@ jobs:
           cache-local-path: ${{ env.UV_CACHE_DIR }}
           python-version: ${{ matrix.python-version }}
 
-      - name: Install additional OS dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install \
-            pkg-config \
-            liblzma-dev
+      - name: 🏗 Install dev dependencies
+        run: uv sync --locked --only-dev
 
-      - name: 🏗 Install the project
-        run: uv sync --locked --dev
+      - name: ⬇️ Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-${{ matrix.python-version }}-manylinux*
+          path: dist
+
+      - name: 🏗 Install project
+        run: uv pip install -e dist/*
 
       - name: Run pytest
         run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
@@ -89,3 +131,52 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  sdist:
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
+
+  release:
+    name: Releasing to PyPi
+    runs-on: ubuntu-latest
+    needs:
+      - "wheels"
+      - "sdist"
+    environment:
+      name: release
+      url: https://pypi.org/manage/project/deebot-client/releases/
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: 🏗 Set up uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: ⬇️ Download wheels
+        uses: actions/download-artifact@v4
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - name: 🚀 Publish to PyPi
+        run: uv publish
+      - name: ✍️ Sign published artifacts
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          release-signing-artifacts: true
