@@ -12,6 +12,7 @@ env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
   DEFAULT_PYTHON: "3.13"
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
+  UV_PROJECT_ENVIRONMENT: "venv"
 
 jobs:
   info:
@@ -52,7 +53,7 @@ jobs:
         id: cache-venv
         uses: actions/cache@v4.2.0
         with:
-          path: .venv
+          path: venv
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
           restore-keys: ${{ matrix.python-version }}-venv-${{ runner.os }}-
       - name: 🏗 Set up uv
@@ -70,8 +71,9 @@ jobs:
       - name: 📦 Build project
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
+          python -m venv ${{ env.UV_PROJECT_ENVIRONMENT }}
+          . venv/bin/activate
           uv sync --locked --dev
-          ls -al .venv/lib/*/site-packages/*
 
   code-quality:
     runs-on: "ubuntu-latest"
@@ -93,24 +95,24 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: .venv
+          path: venv
           fail-on-cache-miss: true
           key: ${{ env.DEFAULT_PYTHON }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
         run: |
-          . .venv/bin/activate
+          . venv/bin/activate
           mypy deebot_client/
 
       - name: Pylint review
         run: |
-          . .venv/bin/activate
+          . venv/bin/activate
           pylint deebot_client/**/*.py
 
       - name: Verify no getLogger usages
         run: |
-          . .venv/bin/activate
+          . venv/bin/activate
           scripts/check_getLogger.sh
 
   tests:
@@ -137,15 +139,13 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: .venv
+          path: venv
           fail-on-cache-miss: true
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       - name: Run pytest
         run: |
-          . .venv/bin/activate
-          ls -al .venv/lib/*/site-packages/*
-          ls -al .venv/bin/*
+          . venv/bin/activate
           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
       - name: Upload coverage to Codecov
