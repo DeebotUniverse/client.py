@@ -66,8 +66,6 @@ jobs:
       - name: 📦 Setup project
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
-          python -m venv ${{ env.UV_PROJECT_ENVIRONMENT }}
-          . venv/bin/activate
           uv sync --locked --dev
 
   code-quality:
