@@ -10,7 +10,7 @@ on:
 
 env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
-  DEFAULT_PYTHON: "3.12"
+  DEFAULT_PYTHON: "3.13"
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
@@ -91,7 +91,7 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: venv
+          path: .venv
           fail-on-cache-miss: true
           key: ${{ env.DEFAULT_PYTHON }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
@@ -135,7 +135,7 @@ jobs:
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
-          path: venv
+          path: .venv
           fail-on-cache-miss: true
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
@@ -151,7 +151,7 @@ jobs:
           fail_ci_if_error: true
 
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
+        if: ${{ !cancelled() && steps.cache-venv.conclusion == 'success' }}
         uses: codecov/test-results-action@v1
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
