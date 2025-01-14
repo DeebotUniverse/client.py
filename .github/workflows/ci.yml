@@ -11,8 +11,136 @@ on:
 env:
   UV_CACHE_DIR: "/tmp/.uv-cache"
   DEFAULT_PYTHON: "3.12"
+  ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
+  base:
+    name: Prepare dependencies
+    runs-on: "ubuntu-latest"
+    strategy:
+      matrix:
+        python-version: ${{ fromJSON(env.ALL_PYTHON_VERSIONS) }}
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: 🏗 Set up Python ${{ matrix.python-version }}
+        id: python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+      - name: 🏗  Restore base Python virtual environment
+        id: cache-venv
+        uses: actions/cache@v4.2.0
+        with:
+          path: .venv
+          key: |
+            ${{ runner.os }}-${{ matrix.python-version }}
+            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+            -$(date -u '+%Y-%m-%dT%H:%M:%s')
+          restore-keys: ${{ runner.os }}-${{ matrix.python-version }}-
+      - name: 🏗 Set up uv
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: 🏗 Install additional OS dependencies
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+      - name: 📦 Build project
+        if: steps.cache-venv.outputs.cache-hit != 'true'
+        run: uv sync --locked --dev
+
+  code-quality:
+    runs-on: "ubuntu-latest"
+    name: Check code quality
+    needs: base
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Set up Python ${{ env.DEFAULT_PYTHON }}
+        id: python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: ${{ env.DEFAULT_PYTHON }}
+          check-latest: true
+      - name: 🏗  Restore full Python ${{ env.DEFAULT_PYTHON }} virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4.2.0
+        with:
+          path: venv
+          fail-on-cache-miss: true
+          key: >-
+            ${{ runner.os }}-${{ env.DEFAULT_PYTHON }}
+            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+
+      # Following steps cannot run by pre-commit.ci as repo = local
+      - name: Run mypy
+        run: |
+          . .venv/bin/activate
+          mypy deebot_client/
+
+      - name: Pylint review
+        run: |
+          . .venv/bin/activate
+          pylint deebot_client/**/*.py
+
+      - name: Verify no getLogger usages
+        run: |
+          . .venv/bin/activate
+          scripts/check_getLogger.sh
+
+  tests:
+    runs-on: "ubuntu-latest"
+    name: Run tests
+    strategy:
+      matrix:
+        python-version: ${{ fromJSON(env.ALL_PYTHON_VERSIONS) }}
+    needs: base
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Set up Python ${{ matrix.python-version }}
+        id: python
+        uses: actions/setup-python@v5.3.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          check-latest: true
+
+      - name: 🏗  Restore full Python ${{ matrix.python-version }} virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4.2.0
+        with:
+          path: venv
+          fail-on-cache-miss: true
+          key: >-
+            ${{ runner.os }}-${{ matrix.python-version }}
+            -${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+
+      - name: Run pytest
+        run: |
+          . .venv/bin/activate
+          pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          fail_ci_if_error: true
+
   wheels:
     name: Build wheels
     runs-on: ubuntu-latest
@@ -48,96 +176,6 @@ jobs:
         with:
           name: wheels-${{ matrix.python-version }}-${{ matrix.linux-compatibility }}
           path: dist
-
-  code-quality:
-    runs-on: "ubuntu-latest"
-    name: Check code quality
-    needs:
-      - "wheels"
-    steps:
-      - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
-
-      - name: 🏗 Install dev dependencies
-        run: uv sync --locked --only-dev
-
-      - name: ⬇️ Download wheels
-        uses: actions/download-artifact@v4
-        with:
-          pattern: wheels-${{ env.DEFAULT_PYTHON }}-manylinux*
-          path: dist
-          merge-multiple: true
-
-      - name: 🏗 Install project
-        run: uv pip install -e dist/*
-
-      # Following steps cannot run by pre-commit.ci as repo = local
-      - name: Run mypy
-        run: uv run --frozen mypy deebot_client/
-
-      - name: Pylint review
-        run: uv run --frozen pylint deebot_client/**/*.py
-
-      - name: Verify no getLogger usages
-        run: scripts/check_getLogger.sh
-
-  tests:
-    runs-on: "ubuntu-latest"
-    name: Run tests
-    strategy:
-      matrix:
-        python-version:
-          - "3.12"
-          - "3.13"
-    needs:
-      - "wheels"
-    steps:
-      - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
-
-      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
-          python-version: ${{ matrix.python-version }}
-
-      - name: 🏗 Install dev dependencies
-        run: uv sync --locked --only-dev
-
-      - name: ⬇️ Download wheels
-        uses: actions/download-artifact@v4
-        with:
-          pattern: wheels-${{ matrix.python-version }}-manylinux*
-          path: dist
-          merge-multiple: true
-
-      - name: 🏗 Install project
-        run: uv pip install -e dist/*
-
-      - name: Run pytest
-        run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
-
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() }}
-        uses: codecov/test-results-action@v1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
 
   sdist:
     if: ${{ github.event_name == 'release' }}
