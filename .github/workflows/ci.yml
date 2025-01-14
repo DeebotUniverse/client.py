@@ -71,7 +71,7 @@ jobs:
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           uv sync --locked --dev
-          ls -al .venv/lib/*
+          ls -al .venv/lib/*/site-packages/*
 
   code-quality:
     runs-on: "ubuntu-latest"
@@ -144,7 +144,7 @@ jobs:
       - name: Run pytest
         run: |
           . .venv/bin/activate
-          ls -al .venv/lib/*
+          ls -al .venv/lib/*/site-packages/*
           ls -al .venv/bin/*
           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
 
