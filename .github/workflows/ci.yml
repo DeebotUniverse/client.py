@@ -24,6 +24,13 @@ jobs:
           cache-dependency-glob: "uv.lock"
           cache-local-path: ${{ env.UV_CACHE_DIR }}
 
+      - name: Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
       - name: 🏗 Install the project
         run: uv sync --locked --dev
 
