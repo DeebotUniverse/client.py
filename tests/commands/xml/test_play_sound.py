@@ -9,6 +9,7 @@ from tests.commands import assert_command
 
 from . import get_request_xml
 
+
 @pytest.mark.parametrize(
     ("xml_response", "command_result"),
     [
@@ -19,8 +20,5 @@ from . import get_request_xml
 async def test_play_sound(xml_response: str, command_result: HandlingState) -> None:
     json = get_request_xml(xml_response)
     await assert_command(
-        PlaySound(),
-        json,
-        None,
-        command_result=CommandResult(command_result)
+        PlaySound(), json, None, command_result=CommandResult(command_result)
     )
