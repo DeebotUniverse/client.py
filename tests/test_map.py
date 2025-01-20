@@ -53,7 +53,7 @@ from deebot_client.models import Room
 from .common import block_till_done
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable, Sequence
 
     from pytest_codspeed import BenchmarkFixture
 
@@ -124,9 +124,27 @@ async def test_MapData(event_bus: EventBus) -> None:
     await test_cycle()
 
 
+def _test_Map_subscriptions_subscribe(event_bus_mock: Mock) -> None:
+    async def on_cached_info(_: CachedMapInfoEvent) -> None:
+        pass
+
+    event_bus_mock.subscribe(CachedMapInfoEvent, on_cached_info)
+    event_bus_mock.subscribe.reset_mock()
+
+
+@pytest.mark.parametrize(
+    ("prepare_fn", "events_with_subscriber"),
+    [(lambda _: None, []), (_test_Map_subscriptions_subscribe, [CachedMapInfoEvent])],
+    ids=["No CachedMapInfoEvent subscribers", "Already CachedMapInfoEvent subscribers"],
+)
 async def test_Map_subscriptions(
-    execute_mock: AsyncMock, event_bus_mock: Mock, event_bus: EventBus
+    execute_mock: AsyncMock,
+    event_bus_mock: Mock,
+    event_bus: EventBus,
+    prepare_fn: Callable[[Mock], None],
+    events_with_subscriber: list[type[Event]],
 ) -> None:
+    prepare_fn(event_bus_mock)
     map = Map(execute_mock, event_bus_mock)
 
     calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
@@ -161,7 +179,8 @@ async def test_Map_subscriptions(
 
     event_unsub()
     for event in events:
-        assert not event_bus.has_subscribers(event)
+        if event not in events_with_subscriber:
+            assert not event_bus.has_subscribers(event)
 
     await map.teardown()
     assert not map._unsubscribers
