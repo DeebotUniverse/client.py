@@ -62,7 +62,7 @@ dev = [
 ]
 lint = [
     "mypy==1.14.1",
-    "pre-commit==4.0.1",
+    "pre-commit==4.1.0",
     "pylint==3.3.3",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
