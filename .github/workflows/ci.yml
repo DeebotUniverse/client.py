@@ -101,7 +101,7 @@ jobs:
       - name: 🏗 Setup Python
         uses: actions/setup-python@v5
         with:
-          python-version-file: "pyproject.toml"
+          python-version-file: ".python-version"
 
       - name: Install additional OS dependencies
         run: |
