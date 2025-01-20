@@ -13,6 +13,8 @@ from deebot_client.rs import decompress_7z_base64_data
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
 
+    from pytest_codspeed import BenchmarkFixture
+
 
 @pytest.mark.parametrize(
     ("input", "expected"),
@@ -36,10 +38,16 @@ if TYPE_CHECKING:
     ],
     ids=["1", "2", "3", "4"],
 )
-def test_decompress_7z_base64_data(input: str, expected: bytes) -> None:
+def test_decompress_7z_base64_data(
+    benchmark: BenchmarkFixture, input: str, expected: bytes
+) -> None:
     """Test decompress_7z_base64_data function."""
-    assert _decompress_7z_base64_data_python(input) == expected
-    assert decompress_7z_base64_data(input) == expected
+    # Benchmark only the production function
+    result = benchmark(decompress_7z_base64_data, input)
+    assert result == expected
+
+    # Verify that the old python function is producing the same result
+    assert _decompress_7z_base64_data_python(input) == result
 
 
 @pytest.mark.parametrize(
