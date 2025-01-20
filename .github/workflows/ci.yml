@@ -32,7 +32,7 @@ jobs:
             liblzma-dev
 
       - name: 🏗 Install the project
-        run: uv sync --locked --dev
+        run: uv sync --locked --group lint
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
@@ -72,7 +72,7 @@ jobs:
             liblzma-dev
 
       - name: 🏗 Install the project
-        run: uv sync --locked --dev
+        run: uv sync --locked --group test
 
       - name: Run pytest
         run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
@@ -112,7 +112,7 @@ jobs:
 
       - name: 🏗 Install the project
         run: |
-          uv export --dev > requirements.txt
+          uv export --group benchmark > requirements.txt
           uv pip install -e . --system -r requirements.txt
 
       - name: Run benchmarks
