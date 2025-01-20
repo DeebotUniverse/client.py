@@ -275,7 +275,7 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             # This command is used by new and old bots
             if data.get("compress", 0) == 1:
                 # Newer bot's return coordinates as base64 decoded string
-                coordinates = decompress_7z_base64_data(data["value"])
+                coordinates = decompress_7z_base64_data(data["value"]).decode()
             else:
                 # Older bot's return coordinates direct as comma/semicolon separated list
                 coordinates = data["value"]
@@ -305,7 +305,7 @@ class GetMapSetV2(GetMapSet):
     ) -> list[int] | None:
         """Return subset ids."""
         # subset is based64 7z compressed
-        subsets = json.loads(decompress_7z_base64_data(data["subsets"]))
+        subsets = json.loads(decompress_7z_base64_data(data["subsets"]).decode())
 
         match data["type"]:
             case MapSetType.ROOMS:

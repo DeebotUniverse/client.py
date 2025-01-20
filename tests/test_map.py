@@ -159,7 +159,7 @@ async def test_Map_subscriptions(
 
 @patch(
     "deebot_client.map.decompress_7z_base64_data",
-    Mock(return_value="\x10\x00\x00\x01\x00"),
+    Mock(return_value=b"\x10\x00\x00\x01\x00"),
 )
 async def test_Map_svg_traces_path(
     execute_mock: AsyncMock, event_bus_mock: Mock
