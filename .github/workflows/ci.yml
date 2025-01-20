@@ -88,19 +88,20 @@ jobs:
         with:
           fail_ci_if_error: true
 
-  benchmark:
+  benchmarks:
     runs-on: "ubuntu-latest"
     name: Run benchmarks
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
 
-      - name: 🏗 Install uv and Python
+      - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
+
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@v5
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
+          python-version-file: "pyproject.toml"
 
       - name: Install additional OS dependencies
         run: |
@@ -110,10 +111,10 @@ jobs:
             liblzma-dev
 
       - name: 🏗 Install the project
-        run: uv sync --locked --dev
+        run: uv pip install -e . --system
 
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@v3
+        uses: CodSpeedHQ/action@main
         with:
+          run: pytest tests/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
-          run: uv run --frozen python -m pytest tests/ --codspeed
