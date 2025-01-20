@@ -43,11 +43,11 @@ def test_decompress_7z_base64_data(
 ) -> None:
     """Test decompress_7z_base64_data function."""
     # Benchmark only the production function
-    result = benchmark(decompress_7z_base64_data, input)
+    result = benchmark(_decompress_7z_base64_data_python, input)
     assert result == expected
 
     # Verify that the old python function is producing the same result
-    assert _decompress_7z_base64_data_python(input) == result
+    assert decompress_7z_base64_data(input) == result
 
 
 @pytest.mark.parametrize(
