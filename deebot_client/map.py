@@ -395,7 +395,7 @@ class Map:
 
     def _update_trace_points(self, data: str) -> None:
         _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = decompress_7z_base64_data(data).encode()
+        trace_points = decompress_7z_base64_data(data)
 
         for i in range(0, len(trace_points), 5):
             position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
@@ -622,7 +622,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = decompress_7z_base64_data(base64_data).encode()
+        decoded = decompress_7z_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 
