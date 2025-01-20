@@ -53,7 +53,7 @@
   // "forwardPorts": [],
   // Use 'postCreateCommand' to run commands after the container is created.
   "postCreateCommand": "scripts/setup.sh",
-  "postStartCommand": "uv sync --dev",
+  "postStartCommand": "uv sync --group dev",
   "remoteEnv": {
     "PATH": "/home/vscode/.local/bin:/home/vscode/.cargo/bin:/workspaces/client.py/.venv/bin:${containerEnv:PATH}"
   },
