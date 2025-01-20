@@ -111,7 +111,9 @@ jobs:
             liblzma-dev
 
       - name: 🏗 Install the project
-        run: uv pip install -e . --system
+        run: |
+          uv export --dev > requirements.txt
+          uv pip install -e . --system -r requirements.txt
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
