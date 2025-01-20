@@ -468,7 +468,18 @@ class Map:
 
         unsubscribers.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
 
-        self._event_bus.request_refresh(CachedMapInfoEvent)
+        async def on_cached_info(_: CachedMapInfoEvent) -> None:
+            # We need to subscribe to it, otherwise it could happen
+            # that the required MapSet Events are not get
+            pass
+
+        cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
+        unsubscribers.append(
+            self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
+        )
+        if cached_map_subscribers:
+            # Request update only if there was already a subscriber before
+            self._event_bus.request_refresh(CachedMapInfoEvent)
 
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.positions = event.positions
