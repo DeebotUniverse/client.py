@@ -142,7 +142,13 @@ async def test_Map_subscriptions(
     event_unsub = event_bus_mock.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
 
-    events = [MajorMapEvent, MinorMapEvent, PositionsEvent, MapTraceEvent]
+    events = [
+        MajorMapEvent,
+        MinorMapEvent,
+        CachedMapInfoEvent,
+        PositionsEvent,
+        MapTraceEvent,
+    ]
 
     calls.append(call(MapChangedEvent, on_change))
     calls.extend([call(event, ANY) for event in events])
