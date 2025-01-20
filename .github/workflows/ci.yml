@@ -80,12 +80,43 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() }}
         uses: codecov/test-results-action@v1
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  benchmarks:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
+      - name: 🏗 Install the project
+        run: |
+          uv export --dev > requirements.txt
+          uv pip install -e . --system -r requirements.txt
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          run: pytest tests/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}
