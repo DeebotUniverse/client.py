@@ -88,6 +88,30 @@ jobs:
         with:
           fail_ci_if_error: true
 
+  benchmark:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-local-path: ${{ env.UV_CACHE_DIR }}
+
+      - name: Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
+      - name: 🏗 Install the project
+        run: uv sync --locked --dev
+
       - name: Run benchmarks
         uses: CodSpeedHQ/action@v3
         with:
