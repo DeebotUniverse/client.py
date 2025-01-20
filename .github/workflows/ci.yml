@@ -72,39 +72,30 @@ jobs:
     name: Check code quality
     needs:
       - info
-      - base
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
       - name: 🏗 Set up uv and Python ${{ env.DEFAULT_PYTHON }}
-        if: steps.cache-venv.outputs.cache-hit != 'true'
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
           python-version: ${{ env.DEFAULT_PYTHON }}
-      - name: 🏗  Restore full Python ${{ env.DEFAULT_PYTHON }} virtual environment
-        id: cache-venv
-        uses: actions/cache/restore@v4.2.0
-        with:
-          path: .venv
-          fail-on-cache-miss: true
-          key: ${{ env.DEFAULT_PYTHON }}-${{ needs.info.outputs.venv_cache_key_partly }}
-
+      - name: 🏗 Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+      - name: 📦 Setup project
+        run: |
+          uv sync --locked --dev
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: |
-          . .venv/bin/activate
-          mypy deebot_client/
-
+        run: uv run --frozen mypy deebot_client/
       - name: Pylint review
-        run: |
-          . .venv/bin/activate
-          pylint deebot_client/**/*.py
-
+        run: uv run --frozen pylint deebot_client/**/*.py
       - name: Verify no getLogger usages
-        run: |
-          . .venv/bin/activate
-          scripts/check_getLogger.sh
+        run: uv run --frozen scripts/check_getLogger.sh
 
   tests:
     runs-on: "ubuntu-latest"
