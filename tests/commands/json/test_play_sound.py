@@ -16,7 +16,10 @@ from . import assert_command
     ("json", "command_result"),
     [
         (get_request_json(get_success_body()), CommandResult.success()),
-        (get_request_json({"code": -1, "msg": "failed", "data": ""}), CommandResult(HandlingState.FAILED)),
+        (
+            get_request_json({"code": -1, "msg": "failed", "data": ""}),
+            CommandResult(HandlingState.FAILED),
+        ),
     ],
 )
 async def test_play_sound(json: dict[str, Any], command_result: CommandResult) -> None:
