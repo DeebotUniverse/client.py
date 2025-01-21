@@ -57,4 +57,3 @@ class SetCleanSpeed(XmlSetCommand):
         if isinstance(speed, FanSpeedLevel):
             speed = speed.name.lower()
         super().__init__({"speed": speed})
-

@@ -47,10 +47,14 @@ async def test_get_fan_speed_error(xml: str) -> None:
 async def test_set_fan_speed() -> None:
     command = SetCleanSpeed(FanSpeedLevel.STRONG)
     json = get_request_xml("<ctl ret='ok' />")
-    await assert_command(command, json, None, command_result=CommandResult(HandlingState.SUCCESS))
+    await assert_command(
+        command, json, None, command_result=CommandResult(HandlingState.SUCCESS)
+    )
 
 
 async def test_set_fan_speed_error() -> None:
     command = SetCleanSpeed("invalid")
     json = get_request_xml("<ctl ret='error' />")
-    await assert_command(command, json, None, command_result=CommandResult(HandlingState.FAILED))
+    await assert_command(
+        command, json, None, command_result=CommandResult(HandlingState.FAILED)
+    )

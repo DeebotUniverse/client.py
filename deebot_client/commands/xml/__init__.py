@@ -8,7 +8,6 @@ from deebot_client.command import Command, CommandMqttP2P
 
 from .charge_state import GetChargeState
 from .error import GetError
-
 from .fan_speed import GetCleanSpeed, SetCleanSpeed
 from .life_span import GetLifeSpan
 from .play_sound import PlaySound
@@ -19,14 +18,14 @@ if TYPE_CHECKING:
     from .common import XmlCommand
 
 __all__ = [
-    "GetCleanSpeed",
-    "SetCleanSpeed",
     "GetChargeState",
+    "GetCleanSpeed",
     "GetCleanSum",
     "GetError",
     "GetLifeSpan",
     "GetPos",
     "PlaySound",
+    "SetCleanSpeed",
 ]
 
 # fmt: off
