@@ -9,7 +9,10 @@ use std::io::Cursor;
 fn _decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut bytes = general_purpose::STANDARD.decode(value)?;
 
-    // Insert required 0 bytes
+    if bytes.len() < 8 {
+        return Err("Invalid 7z compressed data".into());
+    }
+
     for _ in 0..=3 {
         bytes.insert(8, 0);
     }
@@ -48,21 +51,16 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
     let mut trace_values = Vec::new();
     for i in (0..trace_points.len()).step_by(5) {
         if i + 4 >= trace_points.len() {
-            break; // Avoid out-of-bounds slice
+            return Err("Invalid trace points length".into());
         }
 
-        // Read position_x and position_y
         let mut cursor = Cursor::new(&trace_points[i..i + 4]);
         let x = cursor.read_i16::<LittleEndian>()?;
         let y = cursor.read_i16::<LittleEndian>()?;
 
-        // Extract point_data
-        let point_data = trace_points[i + 4];
-
         // Determine connection status
-        let connected = (point_data >> 7 & 1) == 0;
+        let connected = (trace_points[i + 4] >> 7 & 1) == 0;
 
-        // Append the TracePoint to trace_values
         trace_values.push(TracePoint { x, y, connected });
     }
     Ok(trace_values)
