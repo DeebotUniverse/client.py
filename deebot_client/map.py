@@ -383,10 +383,6 @@ class Map:
 
     # ---------------------------- METHODS ----------------------------
 
-    def _update_trace_points(self, data: str) -> None:
-        _LOGGER.debug("[_update_trace_points]: %s", data)
-        self._map_data.trace_values.extend(extract_trace_points(data))
-
     def _draw_map_pieces(self, image: Image.Image) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
@@ -467,7 +463,7 @@ class Map:
             if event.start == 0:
                 self._map_data.trace_values.clear()
 
-            self._update_trace_points(event.data)
+            self._map_data.trace_values.extend(extract_trace_points(event.data))
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
