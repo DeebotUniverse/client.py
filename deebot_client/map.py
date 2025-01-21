@@ -10,7 +10,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
 import itertools
-import struct
 from typing import TYPE_CHECKING, Any, Final
 import zlib
 
@@ -35,9 +34,7 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs import (
-    decompress_7z_base64_data,
-)
+from .rs import TracePoint, decompress_7z_base64_data, extract_trace_points
 from .util import (
     OnChangedDict,
     OnChangedList,
@@ -148,13 +145,6 @@ class Point:
     def flatten(self) -> tuple[float, float]:
         """Flatten point."""
         return (self.x, self.y)
-
-
-@dataclasses.dataclass(frozen=True)
-class TracePoint(Point):
-    """Trace point."""
-
-    connected: bool
 
 
 @dataclasses.dataclass
@@ -394,21 +384,8 @@ class Map:
     # ---------------------------- METHODS ----------------------------
 
     def _update_trace_points(self, data: str) -> None:
-        _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = decompress_7z_base64_data(data)
-
-        for i in range(0, len(trace_points), 5):
-            position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
-
-            point_data = trace_points[i + 4]
-
-            connected = point_data >> 7 & 1 == 0
-
-            self._map_data.trace_values.append(
-                TracePoint(position_x, position_y, connected)
-            )
-
-        _LOGGER.debug("[_update_trace_points] finish")
+        _LOGGER.debug("[_update_trace_points]: %s", data)
+        self._map_data.trace_values.extend(extract_trace_points(data))
 
     def _draw_map_pieces(self, image: Image.Image) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
