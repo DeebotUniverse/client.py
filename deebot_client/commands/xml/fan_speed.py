@@ -49,7 +49,7 @@ class GetCleanSpeed(XmlCommandWithMessageHandling):
 class SetCleanSpeed(XmlSetCommand):
     """Set clean speed command."""
 
-    name = "SetCleanSpeed"
+    NAME = "SetCleanSpeed"
     get_command = GetCleanSpeed
     _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
 
