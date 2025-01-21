@@ -2,12 +2,11 @@
 
 from __future__ import annotations
 
+from abc import ABC
 import asyncio
-import base64
 from contextlib import suppress
 from enum import Enum
 import hashlib
-import lzma
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from deebot_client.logging_filter import get_logger
@@ -25,20 +24,15 @@ def md5(text: str) -> str:
     return hashlib.md5(bytes(str(text), "utf8")).hexdigest()  # noqa: S324
 
 
-def decompress_7z_base64_data(data: str) -> bytes:
-    """Decompress base64 decoded 7z compressed string."""
-    final_array = bytearray()
-
-    # Decode Base64
-    decoded = base64.b64decode(data)
-
-    for i, idx in enumerate(decoded):
-        if i == 8:
-            final_array.extend(b"\x00\x00\x00\x00")
-        final_array.append(idx)
-
-    dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
-    return dec.decompress(final_array)
+def verify_required_class_variables_exists(
+    cls: type[Any], required_variables: tuple[str, ...]
+) -> None:
+    """Verify that the class has the given class variables."""
+    if ABC not in cls.__bases__:
+        for required in required_variables:
+            if not hasattr(cls, required):
+                msg = f"Class {cls.__name__} must have a {required} attribute"
+                raise ValueError(msg)
 
 
 def create_task(
@@ -96,10 +90,10 @@ class OnChangedList(list[_T]):
         super().__init__(iterable)
         self._on_change = on_change
 
-    def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedList._MODIFYING_FUNCTIONS:
+    def __getattribute__(self, name: str, /) -> Any:
+        if name in OnChangedList._MODIFYING_FUNCTIONS:
             self._on_change()
-        return super().__getattribute__(__name)
+        return super().__getattribute__(name)
 
 
 _KT = TypeVar("_KT")
@@ -124,10 +118,10 @@ class OnChangedDict(dict[_KT, _VT]):
         super().__init__(iterable)
         self._on_change = on_change
 
-    def __getattribute__(self, __name: str) -> Any:
-        if __name in OnChangedDict._MODIFYING_FUNCTIONS:
+    def __getattribute__(self, name: str, /) -> Any:
+        if name in OnChangedDict._MODIFYING_FUNCTIONS:
             self._on_change()
-        return super().__getattribute__(__name)
+        return super().__getattribute__(name)
 
 
 LST = list[_T] | set[_T] | tuple[_T, ...]

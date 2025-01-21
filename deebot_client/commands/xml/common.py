@@ -11,7 +11,7 @@ from defusedxml import ElementTree  # type: ignore[import-untyped]
 from deebot_client.command import Command, CommandWithMessageHandling, SetCommand
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, MessageStr, HandlingState
+from deebot_client.message import HandlingResult, HandlingState, MessageStr
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -19,22 +19,18 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-class XmlCommand(Command):
+class XmlCommand(Command, ABC):
     """Xml command."""
 
-    data_type: DataType = DataType.XML
-
-    @property  # type: ignore[misc]
-    def has_sub_element(cls) -> bool:
-        """Return True if command has inner element."""
-        return False
+    DATA_TYPE = DataType.XML
+    HAS_SUB_ELEMENT = False
 
     def _get_payload(self) -> str:
         element = ctl_element = Element("ctl")
 
         if len(self._args) > 0:
-            if self.has_sub_element:
-                element = SubElement(element, self.name.lower())
+            if self.HAS_SUB_ELEMENT:
+                element = SubElement(element, self.NAME.lower())
 
             if isinstance(self._args, dict):
                 for key, value in self._args.items():
@@ -70,7 +66,7 @@ class ExecuteCommand(XmlCommandWithMessageHandling, ABC):
     """Command, which is executing something (ex. Charge)."""
 
     @classmethod
-    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+    def _handle_xml(cls, _: EventBus, xml: Element) -> HandlingResult:
         """Handle message->xml and notify the correct event subscribers.
 
         :return: A message response
@@ -79,7 +75,9 @@ class ExecuteCommand(XmlCommandWithMessageHandling, ABC):
         if xml.attrib.get("ret") == "ok":
             return HandlingResult.success()
 
-        _LOGGER.warning('Command "%s" was not successful. XML response: %s', cls.name, xml)
+        _LOGGER.warning(
+            'Command "%s" was not successful. XML response: %s', cls.NAME, xml
+        )
         return HandlingResult(HandlingState.FAILED)
 
 

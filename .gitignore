@@ -21,3 +21,11 @@ nosetests.xml
 .*_cache
 
 test.py
+.env
+
+/target
+
+# rust so
+*.cpython*.so
+
+.codspeed

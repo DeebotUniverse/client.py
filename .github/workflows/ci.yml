@@ -3,35 +3,44 @@ name: CI
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
 
 env:
-  DEFAULT_PYTHON: "3.12"
+  UV_CACHE_DIR: /tmp/.uv-cache
 
 jobs:
   code-quality:
     runs-on: "ubuntu-latest"
     name: Check code quality
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Set up Python ${{ env.DEFAULT_PYTHON }}
-        id: python
-        uses: actions/setup-python@v5.2.0
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@v5
         with:
-          python-version: ${{ env.DEFAULT_PYTHON }}
-          cache: "pip"
-          cache-dependency-path: "requirements*"
-      - name: Install dependencies
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-local-path: ${{ env.UV_CACHE_DIR }}
+
+      - name: Install additional OS dependencies
         run: |
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
+      - name: 🏗 Install the project
+        run: uv sync --locked --group lint
+
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: mypy deebot_client/
+        run: uv run --frozen mypy deebot_client/
+
       - name: Pylint review
-        run: pylint deebot_client/
+        run: uv run --frozen pylint deebot_client/**/*.py
+
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
@@ -40,24 +49,74 @@ jobs:
     name: Run tests
     strategy:
       matrix:
-        python-version: ["3.12"]
+        python-version:
+          - "3.12"
+          - "3.13"
     steps:
-      - uses: "actions/checkout@v4"
-      - name: Set up Python ${{ matrix.python-version }}
-        id: python
-        uses: actions/setup-python@v5.2.0
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
+        uses: astral-sh/setup-uv@v5
         with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-local-path: ${{ env.UV_CACHE_DIR }}
           python-version: ${{ matrix.python-version }}
-          cache: "pip"
-          cache-dependency-path: "requirements*"
-      - name: Install dependencies
+
+      - name: Install additional OS dependencies
         run: |
-          pip install -r requirements.txt
-          pip install -r requirements-test.txt
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
+      - name: 🏗 Install the project
+        run: uv sync --locked --group test
+
       - name: Run pytest
-        run: pytest --cov=./ --cov-report=xml
+        run: uv run --frozen pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
+
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v4
+        uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() }}
+        uses: codecov/test-results-action@v1
+        with:
+          fail_ci_if_error: true
+
+  benchmarks:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: Install additional OS dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get -y install \
+            pkg-config \
+            liblzma-dev
+
+      - name: 🏗 Install the project
+        run: |
+          uv export --group benchmark > requirements.txt
+          uv pip install -e . --system -r requirements.txt
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          run: pytest tests/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}

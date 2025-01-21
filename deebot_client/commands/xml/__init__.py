@@ -8,7 +8,10 @@ from deebot_client.command import Command, CommandMqttP2P
 
 from .charge_state import GetChargeState
 from .error import GetError
+
 from .fan_speed import GetCleanSpeed, SetCleanSpeed
+from .life_span import GetLifeSpan
+from .play_sound import PlaySound
 from .pos import GetPos
 from .stats import GetCleanSum
 
@@ -21,7 +24,9 @@ __all__ = [
     "GetChargeState",
     "GetCleanSum",
     "GetError",
+    "GetLifeSpan",
     "GetPos",
+    "PlaySound",
 ]
 
 # fmt: off
@@ -30,13 +35,12 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetCleanSpeed,
     SetCleanSpeed,
     GetError,
+    GetLifeSpan,
+    PlaySound,
 ]
 # fmt: on
 
-COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd  # type: ignore[misc]
-    for cmd in _COMMANDS
-}
+COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
     cmd_name: cmd

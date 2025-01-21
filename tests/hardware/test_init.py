@@ -2,12 +2,15 @@
 
 from __future__ import annotations
 
+import os
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
 
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
@@ -32,6 +35,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
+from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
@@ -39,6 +43,7 @@ from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -61,6 +66,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
@@ -78,8 +84,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.hardware import get_static_device_info
-from deebot_client.hardware.deebot import DEVICES, FALLBACK, _load
+from deebot_client.hardware import deebot as hardware_deebot, get_static_device_info
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -92,8 +97,8 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        ("not_specified", lambda: DEVICES[FALLBACK]),
-        ("yna5xi", lambda: DEVICES["yna5xi"]),
+        ("not_specified", lambda: None),
+        ("yna5xi", lambda: hardware_deebot.DEVICES["yna5xi"]),
     ],
 )
 async def test_get_static_device_info(
@@ -107,40 +112,6 @@ async def test_get_static_device_info(
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        (
-            FALLBACK,
-            {
-                AdvancedModeEvent: [GetAdvancedMode()],
-                AvailabilityEvent: [GetBattery(is_available_check=True)],
-                BatteryEvent: [GetBattery()],
-                CachedMapInfoEvent: [GetCachedMapInfo()],
-                CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
-                CleanCountEvent: [GetCleanCount()],
-                CleanLogEvent: [GetCleanLogs()],
-                CleanPreferenceEvent: [GetCleanPreference()],
-                ContinuousCleaningEvent: [GetContinuousCleaning()],
-                CustomCommandEvent: [],
-                ErrorEvent: [GetError()],
-                FanSpeedEvent: [GetFanSpeed()],
-                LifeSpanEvent: [
-                    GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH])
-                ],
-                MapChangedEvent: [],
-                MajorMapEvent: [GetMajorMap()],
-                MapTraceEvent: [GetMapTrace()],
-                MultimapStateEvent: [GetMultimapState()],
-                NetworkInfoEvent: [GetNetInfo()],
-                PositionsEvent: [GetPos()],
-                ReportStatsEvent: [],
-                RoomsEvent: [GetCachedMapInfo()],
-                StateEvent: [GetChargeState(), GetCleanInfo()],
-                StatsEvent: [GetStats()],
-                TotalStatsEvent: [GetTotalStats()],
-                TrueDetectEvent: [GetTrueDetect()],
-                VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
-            },
-        ),
         (
             "5xu9h3",
             {
@@ -224,8 +195,10 @@ async def test_get_static_device_info(
         (
             "p95mgv",
             {
+                AutoEmptyEvent: [GetAutoEmpty()],
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
+                StationEvent: [GetStationState()],
                 BatteryEvent: [GetBattery()],
                 CachedMapInfoEvent: [GetCachedMapInfo()],
                 CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
@@ -265,49 +238,29 @@ async def test_get_static_device_info(
             },
         ),
     ],
-    ids=[FALLBACK, "5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    capabilities = (await get_static_device_info(class_)).capabilities
+    info = await get_static_device_info(class_)
+    assert info is not None
+    capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
-        assert (
-            capabilities.get_refresh_commands(event) == expected_commands
-        ), f"Refresh commands doesn't match for {event}"
+        assert capabilities.get_refresh_commands(event) == expected_commands, (
+            f"Refresh commands doesn't match for {event}"
+        )
 
 
 def test_all_models_loaded() -> None:
     """Test that all models are loaded."""
-    _load()
-    assert list(DEVICES) == [
-        "2ap5uq",
-        "2o4lnm",
-        "55aiho",
-        "5xu9h3",
-        "626v6g",
-        "77atlz",
-        "85nbtp",
-        "9ku8nu",
-        "9s1s80",
-        "clojes",
-        "e6ofmn",
-        "fallback",
-        "guzput",
-        "itk04l",
-        "kr0277",
-        "lf3bn4",
-        "lx3j7m",
-        "p1jij8",
-        "p95mgv",
-        "paeygf",
-        "rss8xk",
-        "s69g6z",
-        "umwv6z",
-        "vi829v",
-        "x5d34r",
-        "yna5xi",
-        "z4lvk7",
-        "zjavof",
-    ]
+    hardware_deebot._load()
+    folder = Path(hardware_deebot.__file__).parent
+    assert list(hardware_deebot.DEVICES) == sorted(
+        [
+            name.removesuffix(".py")
+            for name in os.listdir(folder)
+            if (folder / name).is_file() and name != "__init__.py"
+        ]
+    )

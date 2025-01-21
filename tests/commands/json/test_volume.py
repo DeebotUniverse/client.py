@@ -15,6 +15,6 @@ async def test_GetVolume() -> None:
 
 
 @pytest.mark.parametrize("level", [0, 2, 10])
-async def test_SetCleanCount(level: int) -> None:
+async def test_SetVolume(level: int) -> None:
     args = {"volume": level}
     await assert_set_command(SetVolume(level), args, VolumeEvent(level, None))

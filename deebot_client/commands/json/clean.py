@@ -22,7 +22,7 @@ _LOGGER = get_logger(__name__)
 class Clean(ExecuteCommand):
     """Clean command."""
 
-    name = "clean"
+    NAME = "clean"
 
     def __init__(self, action: CleanAction) -> None:
         super().__init__(self._get_args(action))
@@ -77,7 +77,7 @@ class CleanArea(Clean):
 class CleanV2(Clean):
     """Clean V2 command."""
 
-    name = "clean_V2"
+    NAME = "clean_V2"
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
         content: dict[str, str] = {}
@@ -85,7 +85,7 @@ class CleanV2(Clean):
         match action:
             case CleanAction.START:
                 content["type"] = CleanMode.AUTO.value
-            case CleanAction.STOP:
+            case CleanAction.STOP | CleanAction.PAUSE:
                 content["type"] = ""
         return args
 
@@ -107,7 +107,7 @@ class CleanAreaV2(CleanV2):
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
-    name = "getCleanInfo"
+    NAME = "getCleanInfo"
 
     @classmethod
     def _handle_body_data_dict(
@@ -158,4 +158,4 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetCleanInfoV2(GetCleanInfo):
     """Get clean info v2 command."""
 
-    name = "getCleanInfo_V2"
+    NAME = "getCleanInfo_V2"

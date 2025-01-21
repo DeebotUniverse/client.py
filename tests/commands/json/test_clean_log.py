@@ -150,5 +150,5 @@ async def test_GetCleanLogs_handle_error(caplog: pytest.LogCaptureFixture) -> No
     assert (
         "deebot_client.command",
         logging.WARNING,
-        f"Could not parse response for {GetCleanLogs.name}: {{}}",
+        f"Could not parse response for {GetCleanLogs.NAME}: {{}}",
     ) in caplog.record_tuples

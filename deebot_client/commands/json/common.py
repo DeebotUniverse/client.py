@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from abc import ABC, abstractmethod
+from abc import ABC
 from datetime import datetime
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -22,6 +22,7 @@ from deebot_client.message import (
     MessageBody,
     MessageBodyDataDict,
 )
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import CODE
 
@@ -32,10 +33,10 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-class JsonCommand(Command):
+class JsonCommand(Command, ABC):
     """Json base command."""
 
-    data_type: DataType = DataType.JSON
+    DATA_TYPE = DataType.JSON
 
     def _get_payload(self) -> dict[str, Any] | list[Any]:
         payload = {
@@ -72,7 +73,7 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
         if body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
-        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
+        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.NAME, body)
         return HandlingResult(HandlingState.FAILED)
 
 
@@ -100,12 +101,11 @@ class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
 
     _field_name: str = "enable"
+    EVENT_TYPE: type[EnableEvent]
 
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def event_type(cls) -> type[EnableEvent]:
-        """Event type."""
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("EVENT_TYPE",))
+        return super().__init_subclass__()
 
     @classmethod
     def _handle_body_data_dict(
@@ -115,7 +115,7 @@ class GetEnableCommand(JsonGetCommand, ABC):
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data[cls._field_name]))  # type: ignore[call-arg, assignment]
+        event: EnableEvent = cls.EVENT_TYPE(bool(data[cls._field_name]))
         event_bus.notify(event)
         return HandlingResult.success()
 
@@ -132,5 +132,5 @@ class SetEnableCommand(JsonSetCommand, ABC):
         cls._mqtt_params = MappingProxyType({cls._field_name: InitParam(bool, _ENABLE)})
         super().__init_subclass__(**kwargs)
 
-    def __init__(self, enable: bool) -> None:  # noqa: FBT001
+    def __init__(self, enable: bool) -> None:
         super().__init__({self._field_name: 1 if enable else 0})

@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
+from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -54,42 +55,30 @@ if TYPE_CHECKING:
     from .common import JsonCommand
 
 __all__ = [
+    "Charge",
+    "Clean",
+    "CleanArea",
+    "CleanV2",
+    "ClearMap",
     "GetAdvancedMode",
-    "SetAdvancedMode",
     "GetBattery",
     "GetBorderSwitch",
-    "SetBorderSwitch",
+    "GetCachedMapInfo",
     "GetCarpetAutoFanBoost",
-    "SetCarpetAutoFanBoost",
-    "GetCleanCount",
-    "SetCleanCount",
-    "GetCleanPreference",
-    "SetCleanPreference",
-    "ClearMap",
-    "Charge",
-    "GetChildLock",
-    "SetChildLock",
     "GetChargeState",
-    "Clean",
-    "CleanV2",
-    "CleanArea",
+    "GetChildLock",
+    "GetCleanCount",
     "GetCleanInfo",
     "GetCleanInfoV2",
     "GetCleanLogs",
+    "GetCleanPreference",
     "GetContinuousCleaning",
-    "SetContinuousCleaning",
-    "SetCutDirection",
-    "GetCutDirection",
     "GetCrossMapBorderWarning",
-    "SetCrossMapBorderWarning",
+    "GetCutDirection",
     "GetEfficiencyMode",
-    "SetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
-    "SetFanSpeed",
     "GetLifeSpan",
-    "ResetLifeSpan",
-    "GetCachedMapInfo",
     "GetMajorMap",
     "GetMapSet",
     "GetMapSetV2",
@@ -97,30 +86,42 @@ __all__ = [
     "GetMapTrace",
     "GetMinorMap",
     "GetMoveUpWarning",
-    "SetMoveUpWarning",
     "GetMultimapState",
-    "SetMultimapState",
     "GetNetInfo",
     "GetOta",
-    "SetOta",
-    "PlaySound",
     "GetPos",
-    "SetRelocationState",
     "GetSafeProtect",
-    "SetSafeProtect",
     "GetStats",
     "GetSweepMode",
-    "SetSweepMode",
     "GetTotalStats",
     "GetTrueDetect",
-    "SetTrueDetect",
     "GetVoiceAssistantState",
-    "SetVoiceAssistantState",
     "GetVolume",
-    "SetVolume",
     "GetWaterInfo",
-    "SetWaterInfo",
     "GetWorkMode",
+    "PlaySound",
+    "ResetLifeSpan",
+    "SetAdvancedMode",
+    "SetBorderSwitch",
+    "SetCarpetAutoFanBoost",
+    "SetChildLock",
+    "SetCleanCount",
+    "SetCleanPreference",
+    "SetContinuousCleaning",
+    "SetCrossMapBorderWarning",
+    "SetCutDirection",
+    "SetEfficiencyMode",
+    "SetFanSpeed",
+    "SetMoveUpWarning",
+    "SetMultimapState",
+    "SetOta",
+    "SetRelocationState",
+    "SetSafeProtect",
+    "SetSweepMode",
+    "SetTrueDetect",
+    "SetVoiceAssistantState",
+    "SetVolume",
+    "SetWaterInfo",
     "SetWorkMode",
 ]
 
@@ -129,6 +130,9 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    auto_empty.GetAutoEmpty,
+    auto_empty.SetAutoEmpty,
 
     GetBorderSwitch,
     SetBorderSwitch,
@@ -207,6 +211,10 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetSafeProtect,
     SetSafeProtect,
 
+    station_action.StationAction,
+
+    station_state.GetStationState,
+
     GetSweepMode,
     SetSweepMode,
 
@@ -230,10 +238,7 @@ _COMMANDS: list[type[JsonCommand]] = [
 ]
 # fmt: on
 
-COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd  # type: ignore[misc]
-    for cmd in _COMMANDS
-}
+COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}
 
 COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
     cmd_name: cmd

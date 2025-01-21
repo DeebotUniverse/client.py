@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.hardware.deebot import get_static_device_info
@@ -20,6 +21,15 @@ if TYPE_CHECKING:
     from .authentication import Authenticator
 
 _LOGGER = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class Devices:
+    """Devices."""
+
+    mqtt: list[DeviceInfo]
+    xmpp: list[ApiDeviceInfo]
+    not_supported: list[ApiDeviceInfo]
 
 
 class ApiClient:
@@ -46,7 +56,7 @@ class ApiClient:
 
         return result
 
-    async def get_devices(self) -> list[DeviceInfo | ApiDeviceInfo]:
+    async def get_devices(self) -> Devices:
         """Get compatible devices."""
         try:
             async with asyncio.TaskGroup() as tg:
@@ -62,21 +72,35 @@ class ApiClient:
         api_devices = task_device_list.result()
         api_devices.update(task_global_device_list.result())
 
-        devices: list[DeviceInfo | ApiDeviceInfo] = []
+        mqtt: list[DeviceInfo] = []
+        xmpp: list[ApiDeviceInfo] = []
+        not_supported: list[ApiDeviceInfo] = []
         for device in api_devices.values():
             match device.get("company"):
                 case "eco-ng":
-                    static_device_info = await get_static_device_info(device["class"])
-                    devices.append(DeviceInfo(device, static_device_info))
+                    if static_device_info := await get_static_device_info(
+                        device["class"]
+                    ):
+                        mqtt.append(DeviceInfo(device, static_device_info))
+                    else:
+                        _LOGGER.warning(
+                            'Device class "%s" not recognized. Please add support for it: %s',
+                            device["class"],
+                            device,
+                        )
+                        not_supported.append(device)
                 case "eco-legacy":
-                    devices.append(device)
+                    xmpp.append(device)
                 case _:
-                    _LOGGER.debug("Skipping device as it is not supported: %s", device)
+                    _LOGGER.warning(
+                        "Skipping device as it is not supported: %s", device
+                    )
+                    not_supported.append(device)
 
-        if not devices:
+        if not mqtt and not xmpp and not not_supported:
             _LOGGER.warning("No devices returned by the api. Please check the logs.")
 
-        return devices
+        return Devices(mqtt, xmpp, not_supported)
 
     async def get_product_iot_map(self) -> dict[str, Any]:
         """Get product iot map."""

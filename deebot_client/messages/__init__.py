@@ -62,8 +62,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
 
     converted_name = message_name
     # T8 series and newer
-    if converted_name.endswith("_V2"):
-        converted_name = converted_name[:-3]
+    converted_name = converted_name.removesuffix("_V2")
 
     if message_type := messages.get(converted_name, None):
         return message_type
