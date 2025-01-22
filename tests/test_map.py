@@ -48,7 +48,7 @@ from deebot_client.map import (
     _points_to_svg_path,
 )
 from deebot_client.models import Room
-from deebot_client.rs import TracePoint
+from deebot_client.rs.map import TracePoint
 
 from .common import block_till_done
 

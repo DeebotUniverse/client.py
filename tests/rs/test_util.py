@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from deebot_client.rs import decompress_7z_base64_data
+from deebot_client.rs.util import decompress_7z_base64_data
 
 if TYPE_CHECKING:
     from contextlib import AbstractContextManager
