@@ -59,13 +59,13 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
 
 fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
     let decompressed_data = decompress_7z_base64_data(value)?;
-    Ok(process_trace_points(&decompressed_data)?)
+    process_trace_points(&decompressed_data)
 }
 
 #[pyfunction(name = "extract_trace_points")]
 /// Extract trace points from 7z compressed data string.
 fn python_extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
-    Ok(extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))?)
+    extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 fn round(value: f32, digits: usize) -> f32 {
@@ -139,7 +139,7 @@ fn points_to_svg_path(points: &[Point]) -> String {
 }
 
 fn add_trace_points(document: Document, trace_points: &[TracePoint]) -> Document {
-    if trace_points.len() == 0 {
+    if trace_points.is_empty() {
         return document;
     }
 
@@ -216,17 +216,17 @@ fn add_svg_subset(document: Document, subset: &MapSubset) -> Document {
 
     if points.len() == 2 {
         // Only 2 points: use a Path
-        return document.add(
+        document.add(
             Path::new()
                 .set("stroke", get_color(&subset.set_type))
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
                 .set("d", points_to_svg_path(&points)),
-        );
+        )
     } else {
         // More than 2 points: use a Polygon
-        return document.add(
+        document.add(
             Polygon::new()
                 .set("fill", format!("{}30", get_color(&subset.set_type)))
                 .set("stroke", get_color(&subset.set_type))
@@ -240,7 +240,7 @@ fn add_svg_subset(document: Document, subset: &MapSubset) -> Document {
                         .flat_map(|p| vec![p.x, p.y])
                         .collect::<Vec<f32>>(),
                 ),
-        );
+        )
     }
 }
 
