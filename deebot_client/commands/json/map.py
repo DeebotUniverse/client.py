@@ -18,7 +18,7 @@ from deebot_client.events import (
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
-from deebot_client.rs import decompress_7z_base64_data
+from deebot_client.rs.util import decompress_7z_base64_data
 
 from .common import JsonCommandWithMessageHandling
 
