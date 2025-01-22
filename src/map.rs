@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::Cursor;
 
 use super::util::decompress_7z_base64_data;
 use base64::engine::general_purpose;
@@ -7,11 +8,10 @@ use byteorder::{LittleEndian, ReadBytesExt};
 use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use std::io::Cursor;
 use svg::node::element::{
     Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Use,
 };
-use svg::Document;
+use svg::{Document, Node};
 
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
@@ -22,10 +22,8 @@ const ROUND_TO_DIGITS: usize = 3;
 struct TracePoint {
     #[pyo3(get)]
     x: i16,
-
     #[pyo3(get)]
     y: i16,
-
     #[pyo3(get)]
     connected: bool,
 }
@@ -39,22 +37,19 @@ impl TracePoint {
 }
 
 fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn Error>> {
-    let mut trace_values = Vec::new();
-    for i in (0..trace_points.len()).step_by(5) {
-        if i + 4 >= trace_points.len() {
-            return Err("Invalid trace points length".into());
-        }
-
-        let mut cursor = Cursor::new(&trace_points[i..i + 4]);
-        let x = cursor.read_i16::<LittleEndian>()?;
-        let y = cursor.read_i16::<LittleEndian>()?;
-
-        // Determine connection status
-        let connected = (trace_points[i + 4] >> 7 & 1) == 0;
-
-        trace_values.push(TracePoint { x, y, connected });
-    }
-    Ok(trace_values)
+    trace_points
+        .chunks(5)
+        .map(|chunk| {
+            if chunk.len() < 5 {
+                return Err("Invalid trace points length".into());
+            }
+            let mut cursor = Cursor::new(&chunk[0..4]);
+            let x = cursor.read_i16::<LittleEndian>()?;
+            let y = cursor.read_i16::<LittleEndian>()?;
+            let connected = (chunk[4] >> 7 & 1) == 0;
+            Ok(TracePoint { x, y, connected })
+        })
+        .collect()
 }
 
 fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
@@ -63,8 +58,7 @@ fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>
 }
 
 #[pyfunction(name = "extract_trace_points")]
-/// Extract trace points from 7z compressed data string.
-fn python_extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
+fn python_extract_trace_points(value: String) -> PyResult<Vec<TracePoint>> {
     extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
@@ -138,11 +132,13 @@ fn points_to_svg_path(points: &[Point]) -> String {
     svg_path
 }
 
-fn add_trace_points(document: Document, trace_points: &[TracePoint]) -> Document {
+fn add_trace_points(document: &mut Document, trace_points: &[TracePoint]) {
     if trace_points.is_empty() {
-        return document;
+        return;
     }
 
+    let path_data =
+        points_to_svg_path(&trace_points.iter().map(Into::into).collect::<Vec<Point>>());
     let trace = Path::new()
         .set("fill", "none")
         .set("stroke", "#fff")
@@ -150,17 +146,9 @@ fn add_trace_points(document: Document, trace_points: &[TracePoint]) -> Document
         .set("stroke-linejoin", "round")
         .set("vector-effect", "non-scaling-stroke")
         .set("transform", "scale(0.2-0.2)")
-        .set(
-            "d",
-            points_to_svg_path(
-                &trace_points
-                    .iter()
-                    .map(|p| p.into())
-                    .collect::<Vec<Point>>(),
-            ),
-        );
+        .set("d", path_data);
 
-    document.add(trace)
+    document.append(trace)
 }
 
 #[derive(Debug)]
@@ -196,27 +184,24 @@ fn get_color(set_type: &str) -> &'static str {
     }
 }
 
-fn add_svg_subset(document: Document, subset: &MapSubset) -> Document {
+fn add_svg_subset(document: &mut Document, subset: &MapSubset) {
     debug!("Adding subset: {:?}", subset);
-    let subset_coordinates: Vec<f32> = subset
+    let points: Vec<Point> = subset
         .coordinates
-        .trim_matches(|c: char| c == '[' || c == ']' || c.is_whitespace())
         .split(',')
         .map(|s| {
             s.trim_matches(|c: char| !c.is_numeric() && c != '-')
                 .parse::<f32>()
                 .unwrap_or_default()
         })
-        .collect();
-
-    let points: Vec<Point> = subset_coordinates
+        .collect::<Vec<f32>>()
         .chunks(2)
         .map(|chunk| calc_point(chunk[0], chunk[1]))
         .collect();
 
     if points.len() == 2 {
         // Only 2 points: use a Path
-        document.add(
+        document.append(
             Path::new()
                 .set("stroke", get_color(&subset.set_type))
                 .set("stroke-width", 1.5)
@@ -226,7 +211,7 @@ fn add_svg_subset(document: Document, subset: &MapSubset) -> Document {
         )
     } else {
         // More than 2 points: use a Polygon
-        document.add(
+        document.append(
             Polygon::new()
                 .set("fill", format!("{}30", get_color(&subset.set_type)))
                 .set("stroke", get_color(&subset.set_type))
@@ -367,17 +352,17 @@ impl Svg {
             .add(image);
 
         for subset in self.subsets.iter() {
-            document = add_svg_subset(document, subset);
+            add_svg_subset(&mut document, subset);
         }
-        document = add_trace_points(document, self.trace_points.as_slice());
-        document = self.add_poistions(document);
+        add_trace_points(&mut document, self.trace_points.as_slice());
+        self.add_poistions(&mut document);
 
         Ok(document.to_string().replace("\n", ""))
     }
 }
 
 impl Svg {
-    fn add_poistions(&self, mut document: Document) -> Document {
+    fn add_poistions(&self, document: &mut Document) {
         let mut positions: Vec<&Position> = self.positions.iter().to_owned().collect();
         positions.sort_by_key(|d| -> i32 {
             match d.position_type.as_str() {
@@ -395,13 +380,15 @@ impl Svg {
                 "chargePos" => "c",
                 _ => "",
             };
-            let svg_position = Use::new()
-                .set("href", format!("#{}", use_id))
-                .set("x", pos.x)
-                .set("y", pos.y);
-            document = document.add(svg_position);
+            if !use_id.is_empty() {
+                document.append(
+                    Use::new()
+                        .set("href", format!("#{}", use_id))
+                        .set("x", pos.x)
+                        .set("y", pos.y),
+                );
+            }
         }
-        document
     }
 }
 
