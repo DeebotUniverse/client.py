@@ -1,5 +1,7 @@
 from typing import Self
 
+from deebot_client.events.map import MapSubsetEvent, Position
+
 class TracePoint:
     """Trace point."""
 
@@ -20,3 +22,19 @@ class TracePoint:
 
 def extract_trace_points(value: str) -> list[TracePoint]:
     """Extract trace points from 7z compressed data string."""
+
+class Svg:
+    """SVG in rust."""
+
+    def __new__(
+        cls,
+        viewbox: tuple[float, float, float, float],
+        image: bytes,
+        trace_points: list[TracePoint],
+        subsets: list[MapSubsetEvent],
+        position: list[Position],
+    ) -> Self:
+        """Create a new Svg object."""
+
+    def generate(self) -> str:
+        """Generate SVG image."""
