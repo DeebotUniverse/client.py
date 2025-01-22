@@ -2,18 +2,14 @@
 
 from __future__ import annotations
 
-import ast
 import asyncio
 import dataclasses
 from datetime import UTC, datetime
-from decimal import Decimal
 from io import BytesIO
-import itertools
-from typing import TYPE_CHECKING, Any, Final
+from typing import TYPE_CHECKING, Final
 import zlib
 
 from PIL import Image, ImageColor, ImageOps, ImagePalette
-import svg
 
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
@@ -27,7 +23,6 @@ from .events import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
     RoomsEvent,
 )
 from .exceptions import MapError
@@ -41,88 +36,16 @@ from .util import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Sequence
+    from collections.abc import Callable
 
     from .device import DeviceCommandExecute
     from .event_bus import EventBus
 
 
-def _attributes_as_str(self) -> str:  # type: ignore[no-untyped-def] # noqa: ANN001
-    """Return attributes as compact svg string."""
-    result = ""
-    for p in dataclasses.astuple(self):
-        value = p
-        if isinstance(p, bool):
-            value = int(p)
-        if result == "" or (isinstance(value, Decimal | float | int) and value < 0):
-            result += f"{value}"
-        else:
-            # only positive values need to have a space
-            result += f" {value}"
-    return result
-
-
-svg.PathData.attributes_as_str = _attributes_as_str  # type: ignore[attr-defined]
-
-_ALWAYS_WRITE_COMMAND_NAME: tuple[str, ...] = (
-    svg.MoveTo.command,
-    svg.MoveToRel.command,
-)
-
-
-@dataclasses.dataclass
-class Path(svg.Path):  # noqa: TID251
-    """Path which removes unnecessary spaces."""
-
-    @classmethod
-    def _as_str(cls, val: Any) -> str:
-        if isinstance(val, list) and val and isinstance(val[0], svg.PathData):
-            result = ""
-            current = None
-            for elem in val:
-                if hasattr(elem, "attributes_as_str"):
-                    attributes = elem.attributes_as_str()
-                    # if the command is the same as the previous one, we can omit it
-                    if (
-                        current != elem.command
-                        or elem.command in _ALWAYS_WRITE_COMMAND_NAME
-                    ):
-                        current = elem.command
-                        result += elem.command
-                    elif attributes[0] != "-":
-                        # only positive values need to have a space
-                        result += " "
-                    result += elem.attributes_as_str()
-                else:
-                    current = None
-                    result += cls._as_str(elem)
-            return result
-        return super()._as_str(val)
-
-
 _LOGGER = get_logger(__name__)
-_PIXEL_WIDTH = 50
-_ROUND_TO_DIGITS = 3
 
-
-@dataclasses.dataclass(frozen=True)
-class _PositionSvg:
-    order: int
-    svg_id: str
-
-
-_POSITIONS_SVG = {
-    PositionType.DEEBOT: _PositionSvg(0, "d"),
-    PositionType.CHARGER: _PositionSvg(1, "c"),
-}
 
 _OFFSET = 400
-_TRACE_MAP = "trace_map"
-_COLORS = {
-    _TRACE_MAP: "#fff",
-    MapSetType.VIRTUAL_WALLS: "#f00000",
-    MapSetType.NO_MOP_ZONES: "#ffa500",
-}
 _DEFAULT_MAP_BACKGROUND_COLOR = ImageColor.getrgb("#badaff")  # floor
 _MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
     0: ImageColor.getrgb("#000000"),  # unknown (will be transparent)
@@ -135,183 +58,12 @@ _MAP_BACKGROUND_COLORS: dict[int, tuple[int, ...]] = {
 }
 
 
-@dataclasses.dataclass(frozen=True)
-class Point:
-    """Point."""
-
-    x: float
-    y: float
-
-    def flatten(self) -> tuple[float, float]:
-        """Flatten point."""
-        return (self.x, self.y)
-
-
 @dataclasses.dataclass
 class BackgroundImage:
     """Background image."""
 
     bounding_box: tuple[float, float, float, float]
     image: bytes
-
-
-class ViewBoxFloat:
-    """ViewBox where all values are converted to float."""
-
-    def __init__(self, view_box: svg.ViewBoxSpec) -> None:
-        self.min_x = float(view_box.min_x)
-        self.min_y = float(view_box.min_y)
-        self.width = float(view_box.width)
-        self.height = float(view_box.height)
-        self.max_x = self.min_x + self.width
-        self.max_y = self.min_y + self.height
-
-
-# SVG definitions referred by map elements
-_SVG_DEFS = svg.Defs(
-    elements=[
-        # Gradient used by Bot icon
-        svg.RadialGradient(
-            id=f"{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg",
-            cx=svg.Length(50, "%"),
-            cy=svg.Length(50, "%"),
-            r=svg.Length(50, "%"),
-            fx=svg.Length(50, "%"),
-            fy=svg.Length(50, "%"),
-            elements=[
-                svg.Stop(offset=svg.Length(70, "%"), style="stop-color:#00f"),
-                svg.Stop(offset=svg.Length(97, "%"), style="stop-color:#00f0"),
-            ],
-        ),
-        # Bot circular icon
-        svg.G(
-            id=_POSITIONS_SVG[PositionType.DEEBOT].svg_id,
-            elements=[
-                svg.Circle(
-                    r=5, fill=f"url(#{_POSITIONS_SVG[PositionType.DEEBOT].svg_id}bg)"
-                ),
-                svg.Circle(r=3.5, stroke="white", fill="blue", stroke_width=0.5),
-            ],
-        ),
-        # Charger pin icon (pre-flipped vertically)
-        svg.G(
-            id=_POSITIONS_SVG[PositionType.CHARGER].svg_id,
-            elements=[
-                Path(
-                    fill="#ffe605",
-                    d=[
-                        svg.M(4, -6.4),
-                        svg.C(4, -4.2, 0, 0, 0, 0),
-                        svg.s(-4, -4.2, -4, -6.4),
-                        svg.s(1.8, -4, 4, -4),
-                        svg.s(4, 1.8, 4, 4),
-                        svg.Z(),
-                    ],
-                ),
-                svg.Circle(fill="#fff", r=2.8, cy=-6.4),
-            ],
-        ),
-    ]
-)
-
-
-def _calc_point(
-    x: float,
-    y: float,
-) -> Point:
-    return Point(
-        0 if x is None else round(x / _PIXEL_WIDTH, _ROUND_TO_DIGITS),
-        0 if y is None else round(-y / _PIXEL_WIDTH, _ROUND_TO_DIGITS),
-    )
-
-
-def _calc_point_in_viewbox(x: float, y: float, view_box: ViewBoxFloat) -> Point:
-    point = _calc_point(x, y)
-    return Point(
-        min(
-            max(point.x, view_box.min_x),
-            view_box.max_x,
-        ),
-        min(
-            max(point.y, view_box.min_y),
-            view_box.max_y,
-        ),
-    )
-
-
-def _points_to_svg_path(
-    points: Sequence[Point | TracePoint],
-) -> list[svg.PathData]:
-    # Convert a set of simple point (x, y), or trace points (x, y, connected, type) to
-    # SVG path instructions.
-    path_data: list[svg.PathData] = []
-
-    # First instruction: move to the starting point using absolute coordinates
-    first_p = points[0]
-    path_data.append(svg.MoveTo(first_p.x, first_p.y))
-
-    for prev_p, p in itertools.pairwise(points):
-        x = round(p.x - prev_p.x, _ROUND_TO_DIGITS)
-        y = round(p.y - prev_p.y, _ROUND_TO_DIGITS)
-        if x == 0 and y == 0:
-            continue
-        if isinstance(p, TracePoint) and not p.connected:
-            path_data.append(svg.MoveToRel(x, y))
-        elif x == 0:
-            path_data.append(svg.VerticalLineToRel(y))
-        elif y == 0:
-            path_data.append(svg.HorizontalLineToRel(x))
-        else:
-            path_data.append(svg.LineToRel(x, y))
-    return path_data
-
-
-def _get_svg_positions(
-    positions: list[Position], view_box: ViewBoxFloat
-) -> list[svg.Element]:
-    svg_positions: list[svg.Element] = []
-    for position in sorted(positions, key=lambda x: _POSITIONS_SVG[x.type].order):
-        pos = _calc_point_in_viewbox(position.x, position.y, view_box)
-        svg_positions.append(
-            svg.Use(href=f"#{_POSITIONS_SVG[position.type].svg_id}", x=pos.x, y=pos.y)
-        )
-
-    return svg_positions
-
-
-def _get_svg_subset(
-    subset: MapSubsetEvent,
-) -> Path | svg.Polygon:
-    _LOGGER.debug("Creating svg subset for %s", subset)
-
-    subset_coordinates: list[int | str] = ast.literal_eval(subset.coordinates)
-    points = [
-        _calc_point(
-            float(subset_coordinates[i]),
-            float(subset_coordinates[i + 1]),
-        )
-        for i in range(0, len(subset_coordinates), 2)
-    ]
-
-    if len(points) == 2:
-        # Only 2 point, use a path
-        return Path(
-            stroke=_COLORS[subset.type],
-            stroke_width=1.5,
-            stroke_dasharray=[4],
-            vector_effect="non-scaling-stroke",
-            d=_points_to_svg_path(points),
-        )
-
-    # For any other points count, return a polygon that should fit any required shape
-    return svg.Polygon(
-        fill=_COLORS[subset.type] + "30",  # Set alpha channel to 30 for fill color
-        stroke=_COLORS[subset.type],
-        stroke_width=1.5,
-        stroke_dasharray=[4],
-        vector_effect="non-scaling-stroke",
-        points=[num for p in points for num in p.flatten()],
-    )
 
 
 def _set_image_palette(image: Image.Image) -> Image.Image:
@@ -399,23 +151,6 @@ class Map:
             current_piece = self._map_data.map_pieces[i]
             if current_piece.in_use:
                 image.paste(current_piece.image, (image_x, image_y))
-
-    def _get_svg_traces_path(self) -> Path | None:
-        if len(self._map_data.trace_values) > 0:
-            _LOGGER.debug("[get_svg_map] Draw Trace")
-            return Path(
-                fill="none",
-                stroke=_COLORS[_TRACE_MAP],
-                stroke_width=1.5,
-                stroke_linejoin="round",
-                vector_effect="non-scaling-stroke",
-                transform=[
-                    svg.Scale(0.2, -0.2),
-                ],
-                d=_points_to_svg_path(self._map_data.trace_values),
-            )
-
-        return None
 
     async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
         """On first MapChanged subscription."""
