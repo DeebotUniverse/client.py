@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import ast
 import asyncio
-import base64
 import dataclasses
 from datetime import UTC, datetime
 from decimal import Decimal
@@ -34,7 +33,7 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs.map import TracePoint, extract_trace_points
+from .rs.map import Svg, TracePoint, extract_trace_points
 from .rs.util import decompress_7z_base64_data
 from .util import (
     OnChangedDict,
@@ -523,45 +522,19 @@ class Map:
             self._last_image = None
             return None
 
-        # Build the SVG elements
-        svg_map = svg.SVG()
-        svg_map.elements = [_SVG_DEFS]
-
-        # Set map viewBox based on background map bounding box.
-        svg_map.viewBox = svg.ViewBoxSpec(
-            background.bounding_box[0] - _OFFSET,
-            _OFFSET - background.bounding_box[3],
-            (background.bounding_box[2] - background.bounding_box[0]),
-            (background.bounding_box[3] - background.bounding_box[1]),
+        svg_rs = Svg(
+            (
+                background.bounding_box[0] - _OFFSET,
+                _OFFSET - background.bounding_box[3],
+                (background.bounding_box[2] - background.bounding_box[0]),
+                (background.bounding_box[3] - background.bounding_box[1]),
+            ),
+            background.image,
+            self._map_data.trace_values,
+            list(self._map_data.map_subsets.values()),
+            self._map_data.positions,
         )
-
-        # Map background.
-        svg_map.elements.append(
-            svg.Image(
-                x=svg_map.viewBox.min_x,
-                y=svg_map.viewBox.min_y,
-                width=svg_map.viewBox.width,
-                height=svg_map.viewBox.height,
-                style="image-rendering: pixelated",
-                href=f"data:image/png;base64,{base64.b64encode(background.image).decode('ascii')}",
-            )
-        )
-
-        # Additional subsets (VirtualWalls and NoMopZones)
-        svg_map.elements.extend(
-            [_get_svg_subset(subset) for subset in self._map_data.map_subsets.values()]
-        )
-
-        # Traces (if any)
-        if svg_traces_path := self._get_svg_traces_path():
-            svg_map.elements.append(svg_traces_path)
-
-        # Bot and Charge stations
-        svg_map.elements.extend(
-            _get_svg_positions(self._map_data.positions, ViewBoxFloat(svg_map.viewBox))
-        )
-
-        self._last_image = str(svg_map)
+        self._last_image = svg_rs.generate()
         _LOGGER.debug("[get_svg_map] Finish")
         return self._last_image
 
