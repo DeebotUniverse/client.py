@@ -3,15 +3,25 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from xml.etree.ElementTree import Element, SubElement
 
 from defusedxml import ElementTree  # type: ignore[import-untyped]
 
-from deebot_client.command import Command, CommandWithMessageHandling, SetCommand
+from deebot_client.command import (
+    Command,
+    CommandWithMessageHandling,
+    GetCommand,
+    SetCommand,
+)
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, HandlingState, MessageStr
+from deebot_client.message import (
+    HandlingResult,
+    HandlingState,
+    MessageBodyDataDict,
+    MessageStr,
+)
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -86,3 +96,16 @@ class XmlSetCommand(ExecuteCommand, SetCommand, ABC):
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
     """
+
+
+class XmlGetCommand(
+    XmlCommandWithMessageHandling, MessageBodyDataDict, GetCommand, ABC
+):
+    """Xml get command."""
+
+    @classmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle arguments of set command."""
+        return cls._handle_body_data_dict(event_bus, args)
