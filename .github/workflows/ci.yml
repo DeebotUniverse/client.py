@@ -52,6 +52,9 @@ jobs:
         python-version:
           - "3.12"
           - "3.13"
+    env:
+      # To enable backtrace in case of a crash
+      RUST_BACKTRACE: 1
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4

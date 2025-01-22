@@ -47,12 +47,16 @@ async def test_get_clean_speed_error(xml: str) -> None:
 @pytest.mark.parametrize(
     ("command", "xml", "result"),
     [
-        (SetCleanSpeed(FanSpeedLevel.STRONG), "<ctl ret='ok' />", HandlingState.SUCCESS),
-        (SetCleanSpeed("invalid"), "<ctl ret='error' />", HandlingState.FAILED)
-    ]
+        (
+            SetCleanSpeed(FanSpeedLevel.STRONG),
+            "<ctl ret='ok' />",
+            HandlingState.SUCCESS,
+        ),
+        (SetCleanSpeed("invalid"), "<ctl ret='error' />", HandlingState.FAILED),
+    ],
 )
-async def test_set_clean_speed(command: CommandWithMessageHandling, xml: str, result: HandlingState) -> None:
+async def test_set_clean_speed(
+    command: CommandWithMessageHandling, xml: str, result: HandlingState
+) -> None:
     json = get_request_xml(xml)
-    await assert_command(
-        command, json, None, command_result=CommandResult(result)
-    )
+    await assert_command(command, json, None, command_result=CommandResult(result))

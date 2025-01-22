@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import ANY, AsyncMock, Mock, call, patch
+from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 from svg import (
@@ -40,7 +40,6 @@ from deebot_client.map import (
     MapData,
     Path,
     Point,
-    TracePoint,
     ViewBoxFloat,
     _calc_point,
     _calc_point_in_viewbox,
@@ -49,6 +48,7 @@ from deebot_client.map import (
     _points_to_svg_path,
 )
 from deebot_client.models import Room
+from deebot_client.rs import TracePoint
 
 from .common import block_till_done
 
@@ -186,10 +186,6 @@ async def test_Map_subscriptions(
     assert not map._unsubscribers
 
 
-@patch(
-    "deebot_client.map.decompress_7z_base64_data",
-    Mock(return_value=b"\x10\x00\x00\x01\x00"),
-)
 async def test_Map_svg_traces_path(
     execute_mock: AsyncMock, event_bus_mock: Mock
 ) -> None:
@@ -198,7 +194,8 @@ async def test_Map_svg_traces_path(
     path = map._get_svg_traces_path()
     assert path is None
 
-    map._update_trace_points("")
+    # Normally trace points would be added by MapTraceEvent
+    map._map_data.trace_values.append(TracePoint(x=16, y=256, connected=True))
     path = map._get_svg_traces_path()
 
     assert path == Path(
