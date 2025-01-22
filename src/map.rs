@@ -8,7 +8,6 @@ use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::io::Cursor;
-use svg::node::element::path::Data;
 use svg::node::element::{
     Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Use,
 };
@@ -74,11 +73,25 @@ fn round(value: f32, digits: usize) -> f32 {
     (value * factor).round() / factor
 }
 
-fn points_to_svg_path(points: &[Point]) -> Data {
-    let mut path = Data::new();
+#[derive(PartialEq)]
+enum SvgPathCommand {
+    // To means absolute, by means relative
+    MoveTo,
+    MoveBy,
+    LineBy,
+    HorizontalLineBy,
+    VerticalLineBy,
+}
+
+fn points_to_svg_path(points: &[Point]) -> String {
+    // Until https://github.com/bodoni/svg/issues/68 is not implemented
+    // we need to generate the path manually to avoid the extra spaces/characters which can be omitted
+    let mut svg_path = String::new();
+    let mut last_command = SvgPathCommand::MoveTo;
 
     if let Some(first_p) = points.first() {
-        path = path.move_to((first_p.x, first_p.y));
+        let space = if 0.0 < first_p.y { " " } else { "" };
+        svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
     }
 
     for pair in points.windows(2) {
@@ -90,17 +103,39 @@ fn points_to_svg_path(points: &[Point]) -> Data {
             }
 
             if !p.connected {
-                path = path.move_by((p.x, p.y));
+                let space = if 0.0 < y { " " } else { "" };
+                svg_path.push_str(&format!("m{}{}{}", x, space, y));
+                last_command = SvgPathCommand::MoveBy;
             } else if x == 0.0 {
-                path = path.vertical_line_by(y);
+                if last_command != SvgPathCommand::VerticalLineBy {
+                    svg_path.push('v');
+                    last_command = SvgPathCommand::VerticalLineBy;
+                } else if y >= 0.0 {
+                    svg_path.push(' ');
+                }
+                svg_path.push_str(&format!("{}", y));
             } else if y == 0.0 {
-                path = path.horizontal_line_by(x);
+                if last_command != SvgPathCommand::HorizontalLineBy {
+                    svg_path.push('h');
+                    last_command = SvgPathCommand::HorizontalLineBy;
+                } else if x >= 0.0 {
+                    svg_path.push(' ');
+                }
+                svg_path.push_str(&format!("{}", x));
             } else {
-                path = path.line_by((x, y));
+                if last_command != SvgPathCommand::LineBy {
+                    svg_path.push('l');
+                    last_command = SvgPathCommand::LineBy;
+                } else if x >= 0.0 {
+                    svg_path.push(' ');
+                }
+                let space = if 0.0 < y { " " } else { "" };
+                svg_path.push_str(&format!("{}{}{}", x, space, y));
             }
         }
     }
-    path
+
+    svg_path
 }
 
 fn add_trace_points(document: Document, trace_points: &[TracePoint]) -> Document {
@@ -114,7 +149,7 @@ fn add_trace_points(document: Document, trace_points: &[TracePoint]) -> Document
         .set("stroke-width", 1.5)
         .set("stroke-linejoin", "round")
         .set("vector-effect", "non-scaling-stroke")
-        .set("transform", "scale(0.2, -0.2)")
+        .set("transform", "scale(0.2-0.2)")
         .set(
             "d",
             points_to_svg_path(
@@ -302,18 +337,12 @@ impl Svg {
                 // Charger pin icon (pre-flipped vertically)
                 Group::new()
                     .set("id", "c")
-                    .add(
-                        Path::new().set("fill", "#ffe605").set(
-                            "d",
-                            Data::new()
-                                .move_to((4, -6.4))
-                                .cubic_curve_to((4, -4.2, 0, 0, 0, 0))
-                                .smooth_cubic_curve_by((-4, -4.2, -4, -6.4))
-                                .smooth_cubic_curve_by((1.8, -4, 4, -4))
-                                .smooth_cubic_curve_by((4, 1.8, 4, 4))
-                                .close(),
-                        ),
-                    )
+                    .add(Path::new().set("fill", "#ffe605").set(
+                        "d",
+                        // Path data cannot be used as it's adds a , after each parameter
+                        // and repeats the command when used sequentially
+                        "M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4 1.8-4 4-4 4 1.8 4 4z",
+                    ))
                     .add(
                         Circle::new()
                             .set("fill", "#fff")
