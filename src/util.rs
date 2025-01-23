@@ -1,4 +1,5 @@
 use std::error::Error;
+use std::io::Cursor;
 
 use base64::{engine::general_purpose, Engine as _};
 use pyo3::exceptions::PyValueError;
@@ -15,7 +16,11 @@ pub fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error
         bytes.insert(8, 0);
     }
 
-    Ok(lzma::decompress(&bytes)?)
+    let mut cursor = Cursor::new(bytes);
+    let mut decomp: Vec<u8> = Vec::new();
+    lzma_rs::lzma_decompress(&mut cursor, &mut decomp)?;
+
+    Ok(decomp)
 }
 
 /// Decompress base64 decoded 7z compressed string.
