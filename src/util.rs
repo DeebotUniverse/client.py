@@ -15,12 +15,7 @@ pub fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error
     for _ in 0..=3 {
         bytes.insert(8, 0);
     }
-
-    let mut cursor = Cursor::new(bytes);
-    let mut decomp: Vec<u8> = Vec::new();
-    lzma_rs::lzma_decompress(&mut cursor, &mut decomp)?;
-
-    Ok(decomp)
+    Ok(liblzma::decode_all(Cursor::new(bytes))?)
 }
 
 /// Decompress base64 decoded 7z compressed string.
