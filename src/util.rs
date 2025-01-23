@@ -1,7 +1,9 @@
 use std::error::Error;
-use std::io::Cursor;
+use std::io::{Cursor, Read};
 
 use base64::{engine::general_purpose, Engine as _};
+use liblzma::read::XzDecoder;
+use liblzma::stream::Stream;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -15,7 +17,14 @@ pub fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error
     for _ in 0..=3 {
         bytes.insert(8, 0);
     }
-    Ok(liblzma::decode_all(Cursor::new(bytes))?)
+
+    let source = Cursor::new(&bytes);
+    let stream = Stream::new_lzma_decoder(u64::MAX)?;
+    let mut r = XzDecoder::new_stream(source, stream);
+    let mut result = Vec::new();
+    r.read_to_end(&mut result)?;
+
+    Ok(result)
 }
 
 /// Decompress base64 decoded 7z compressed string.
