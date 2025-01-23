@@ -19,7 +19,6 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
-    MessageBodyDataDict,
     MessageStr,
 )
 
@@ -98,14 +97,12 @@ class XmlSetCommand(ExecuteCommand, SetCommand, ABC):
     """
 
 
-class XmlGetCommand(
-    XmlCommandWithMessageHandling, MessageBodyDataDict, GetCommand, ABC
-):
+class XmlGetCommand(XmlCommandWithMessageHandling, GetCommand, ABC):
     """Xml get command."""
 
     @classmethod
+    @abstractmethod
     def handle_set_args(
         cls, event_bus: EventBus, args: dict[str, Any]
     ) -> HandlingResult:
         """Handle arguments of set command."""
-        return cls._handle_body_data_dict(event_bus, args)

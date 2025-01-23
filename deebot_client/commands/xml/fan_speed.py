@@ -23,14 +23,14 @@ class GetCleanSpeed(XmlGetCommand):
     NAME = "GetCleanSpeed"
 
     @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
-        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(data["speed"]))))
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(args["speed"]))))
         return HandlingResult.success()
 
     @classmethod
