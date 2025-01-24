@@ -55,17 +55,10 @@ jobs:
           path: .venv
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
           restore-keys: ${{ matrix.python-version }}-venv-${{ runner.os }}-
-      - name: 🏗 Install additional OS dependencies
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install \
-            pkg-config \
-            liblzma-dev
       - name: 📦 Setup project
         if: steps.cache-venv.outputs.cache-hit != 'true'
         run: |
-          uv sync --locked --dev
+          uv sync --locked --group test --group benchmark
 
   code-quality:
     runs-on: "ubuntu-latest"
@@ -80,9 +73,14 @@ jobs:
         with:
           enable-cache: true
           python-version: ${{ env.DEFAULT_PYTHON }}
-      - name: 📦 Setup project
-        run: |
-          uv sync --locked --dev
+      - name: 🏗  Restore full Python ${{ matrix.python-version }} virtual environment
+        id: cache-venv
+        uses: actions/cache/restore@v4.2.0
+        with:
+          path: .venv
+          fail-on-cache-miss: true
+          key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
+
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
         run: uv run --frozen mypy deebot_client/
@@ -125,9 +123,6 @@ jobs:
           path: .venv
           fail-on-cache-miss: true
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
-
-      - name: 🏗 Install the project
-        run: uv sync --locked --group test
 
       - name: Run pytest
         run: |
@@ -229,6 +224,7 @@ jobs:
           path: dist
 
   release:
+    if: ${{ github.event_name == 'release' }}
     name: Releasing to PyPi
     runs-on: ubuntu-latest
     needs:
