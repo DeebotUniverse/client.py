@@ -40,10 +40,10 @@ def _get_topics(device_info: DeviceInfo) -> list[str]:
     device_path = f"{api['did']}/{api['class']}/{api['resource']}"
     data_type = device_info.static.data_type
     return [
-        # iot/atr/[command]]/[did]]/[class]]/[resource]/j
+        # iot/atr/[command]/[did]]/[class]]/[resource]/[data_type]
         f"iot/atr/+/{device_path}/{data_type}",
-        # iot/p2p/[command]]/[sender did]/[sender class]]/[sender resource]
-        # /[receiver did]/[receiver class]]/[receiver resource]/[q|p]/[request id]/j
+        # iot/p2p/[command]/[sender did]/[sender class]]/[sender resource]
+        # /[receiver did]/[receiver class]/[receiver resource]/[q|p]/[request id]/[data_type]
         # [q|p] q-> request p-> response
         f"iot/p2p/+/+/+/+/{device_path}/q/+/{data_type}",
         f"iot/p2p/+/{device_path}/+/+/+/p/+/{data_type}",
