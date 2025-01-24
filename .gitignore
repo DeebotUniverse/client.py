@@ -27,3 +27,5 @@ test.py
 
 # rust so
 *.cpython*.so
+
+.codspeed

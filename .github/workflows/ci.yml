@@ -80,12 +80,6 @@ jobs:
         with:
           enable-cache: true
           python-version: ${{ env.DEFAULT_PYTHON }}
-      - name: 🏗 Install additional OS dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install \
-            pkg-config \
-            liblzma-dev
       - name: 📦 Setup project
         run: |
           uv sync --locked --dev
@@ -106,6 +100,9 @@ jobs:
     strategy:
       matrix:
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
+    env:
+      # To enable backtrace in case of a crash
+      RUST_BACKTRACE: 1
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -129,6 +126,9 @@ jobs:
           fail-on-cache-miss: true
           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
+      - name: 🏗 Install the project
+        run: uv sync --locked --group test
+
       - name: Run pytest
         run: |
           . .venv/bin/activate
@@ -137,15 +137,39 @@ jobs:
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
 
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.cache-venv.conclusion == 'success' }}
         uses: codecov/test-results-action@v1
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
           fail_ci_if_error: true
+
+  benchmarks:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version-file: ".python-version"
+
+      - name: 🏗 Install the project
+        run: |
+          uv export --group benchmark > requirements.txt
+          uv pip install -e . --system -r requirements.txt
+
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          run: pytest tests/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}
 
   wheels:
     name: Build wheels

@@ -10,7 +10,6 @@ from datetime import UTC, datetime
 from decimal import Decimal
 from io import BytesIO
 import itertools
-import struct
 from typing import TYPE_CHECKING, Any, Final
 import zlib
 
@@ -35,9 +34,8 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs import (
-    decompress_7z_base64_data,
-)
+from .rs.map import TracePoint, extract_trace_points
+from .rs.util import decompress_7z_base64_data
 from .util import (
     OnChangedDict,
     OnChangedList,
@@ -148,13 +146,6 @@ class Point:
     def flatten(self) -> tuple[float, float]:
         """Flatten point."""
         return (self.x, self.y)
-
-
-@dataclasses.dataclass(frozen=True)
-class TracePoint(Point):
-    """Trace point."""
-
-    connected: bool
 
 
 @dataclasses.dataclass
@@ -393,23 +384,6 @@ class Map:
 
     # ---------------------------- METHODS ----------------------------
 
-    def _update_trace_points(self, data: str) -> None:
-        _LOGGER.debug("[_update_trace_points] Begin")
-        trace_points = decompress_7z_base64_data(data).encode()
-
-        for i in range(0, len(trace_points), 5):
-            position_x, position_y = struct.unpack("<hh", trace_points[i : i + 4])
-
-            point_data = trace_points[i + 4]
-
-            connected = point_data >> 7 & 1 == 0
-
-            self._map_data.trace_values.append(
-                TracePoint(position_x, position_y, connected)
-            )
-
-        _LOGGER.debug("[_update_trace_points] finish")
-
     def _draw_map_pieces(self, image: Image.Image) -> None:
         _LOGGER.debug("[_draw_map_pieces] Draw")
         image_x = 0
@@ -468,7 +442,18 @@ class Map:
 
         unsubscribers.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
 
-        self._event_bus.request_refresh(CachedMapInfoEvent)
+        async def on_cached_info(_: CachedMapInfoEvent) -> None:
+            # We need to subscribe to it, otherwise it could happen
+            # that the required MapSet Events are not get
+            pass
+
+        cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
+        unsubscribers.append(
+            self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
+        )
+        if cached_map_subscribers:
+            # Request update only if there was already a subscriber before
+            self._event_bus.request_refresh(CachedMapInfoEvent)
 
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.positions = event.positions
@@ -479,7 +464,7 @@ class Map:
             if event.start == 0:
                 self._map_data.trace_values.clear()
 
-            self._update_trace_points(event.data)
+            self._map_data.trace_values.extend(extract_trace_points(event.data))
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
@@ -622,7 +607,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = decompress_7z_base64_data(base64_data).encode()
+        decoded = decompress_7z_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 
