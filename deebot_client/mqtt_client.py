@@ -27,7 +27,7 @@ if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import CommandMqttP2P
     from .event_bus import EventBus
-    from .models import ApiDeviceInfo, Credentials
+    from .models import Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
 
@@ -35,18 +35,18 @@ _LOGGER = get_logger(__name__)
 _CLIENT_LOGGER = get_logger(f"{__name__}.client")
 
 
-def _get_topics(device_info: ApiDeviceInfo) -> list[str]:
-    device_path = (
-        f"{device_info['did']}/{device_info['class']}/{device_info['resource']}"
-    )
+def _get_topics(device_info: DeviceInfo) -> list[str]:
+    api = device_info.api
+    device_path = f"{api['did']}/{api['class']}/{api['resource']}"
+    data_type = device_info.static.data_type
     return [
         # iot/atr/[command]]/[did]]/[class]]/[resource]/j
-        f"iot/atr/+/{device_path}/j",
+        f"iot/atr/+/{device_path}/{data_type}",
         # iot/p2p/[command]]/[sender did]/[sender class]]/[sender resource]
         # /[receiver did]/[receiver class]]/[receiver resource]/[q|p]/[request id]/j
         # [q|p] q-> request p-> response
-        f"iot/p2p/+/+/+/+/{device_path}/q/+/j",
-        f"iot/p2p/+/{device_path}/+/+/+/p/+/j",
+        f"iot/p2p/+/+/+/+/{device_path}/q/+/{data_type}",
+        f"iot/p2p/+/{device_path}/+/+/+/p/+/{data_type}",
     ]
 
 
@@ -108,7 +108,7 @@ def create_mqtt_config(
 class SubscriberInfo:
     """Subscriber information."""
 
-    device_info: ApiDeviceInfo
+    device_info: DeviceInfo
     events: EventBus
     callback: Callable[[str, str | bytes | bytearray], None]
 
@@ -277,9 +277,9 @@ class MqttClient:
                     await client.unsubscribe(topic)
 
             if add:
-                self._subscriptions[device_info["did"]] = info
+                self._subscriptions[device_info.api["did"]] = info
             else:
-                self._subscriptions.pop(device_info["did"], None)
+                self._subscriptions.pop(device_info.api["did"], None)
 
             self._subscription_changes.task_done()
 
