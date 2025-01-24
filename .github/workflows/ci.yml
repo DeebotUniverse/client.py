@@ -16,8 +16,9 @@ jobs:
   info:
     name: Collect information & changes data
     outputs:
-      venv_cache_key_partly: ${{ steps.info.outputs.venv_key_partly }}
+      default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
+      venv_cache_key_partly: ${{ steps.info.outputs.venv_key_partly }}
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️  Check out code from GitHub
@@ -28,6 +29,14 @@ jobs:
           venv_key_partly=venv-${{ runner.os }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
           echo "venv cache key partly : ${venv_key_partly}"
           echo "venv_key_partly=${venv_key_partly}" >> $GITHUB_OUTPUT
+          default_python_version=$(cat .python-version)
+          echo "default python version: ${default_python_version}"
+          echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
+
+          # Check if ALL_PYTHON_VERSIONS contains default_python_version. If not add it
+          if [[ ! ${ALL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
+            ALL_PYTHON_VERSIONS="[${ALL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+          fi
           echo "python_versions: ${ALL_PYTHON_VERSIONS}"
           echo "python_versions=${ALL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
 
@@ -67,17 +76,17 @@ jobs:
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
-      - name: 🏗 Set up uv and Python
+      - name: 🏗 Set up uv and Python ${{ needs.info.outputs.default_python_version }}
         uses: astral-sh/setup-uv@v5
         with:
-          python-version-file: ".python-version"
-      - name: 🏗  Restore full Python virtual environment
+          python-version: ${{ needs.info.outputs.default_python_version }}
+      - name: 🏗  Restore full Python ${{ needs.info.outputs.default_python_version }} virtual environment
         id: cache-venv
         uses: actions/cache/restore@v4.2.0
         with:
           path: .venv
           fail-on-cache-miss: true
-          key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
+          key: ${{ needs.info.outputs.default_python_version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
@@ -151,10 +160,10 @@ jobs:
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
 
-      - name: 🏗 Setup Python
+      - name: 🏗 Setup Python ${{ needs.info.outputs.default_python_version }}
         uses: actions/setup-python@v5
         with:
-          python-version-file: ".python-version"
+          python-version: ${{ needs.info.outputs.default_python_version }}
 
       - name: 🏗  Restore full Python virtual environment
         id: cache-venv
@@ -162,7 +171,7 @@ jobs:
         with:
           path: .venv
           fail-on-cache-miss: true
-          key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
+          key: ${{ needs.info.outputs.default_python_version }}-${{ needs.info.outputs.venv_cache_key_partly }}
 
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
