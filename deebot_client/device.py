@@ -50,9 +50,9 @@ class Device:
         device_info: DeviceInfo,
         authenticator: Authenticator,
     ) -> None:
+        self._device_info = device_info
         self.device_info: Final = device_info.api
-        self._static_device_info = device_info.static
-        self.capabilities: Final = self._static_device_info.capabilities
+        self.capabilities: Final = device_info.static.capabilities
         self._authenticator = authenticator
 
         self._semaphore = asyncio.Semaphore(3)
@@ -124,7 +124,7 @@ class Device:
         """Initialize vacumm bot, which includes MQTT-subscription and starting the available check."""
         if self._unsubscribe is None:
             self._unsubscribe = await client.subscribe(
-                SubscriberInfo(self.device_info, self.events, self._handle_message)
+                SubscriberInfo(self._device_info, self.events, self._handle_message)
             )
 
         if self._available_task is None or self._available_task.done():
@@ -200,7 +200,7 @@ class Device:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            if message := get_message(message_name, self._static_device_info.data_type):
+            if message := get_message(message_name, self._device_info.static.data_type):
                 if isinstance(message_data, dict):
                     data = message_data
                 else:
