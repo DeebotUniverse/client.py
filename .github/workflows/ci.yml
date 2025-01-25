@@ -9,138 +9,61 @@ on:
     types: [published]
 
 env:
-  UV_CACHE_DIR: "/tmp/.uv-cache"
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
+  PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  UV_LINK_MODE: "copy"
 
 jobs:
-  info:
-    name: Collect information & changes data
-    outputs:
-      default_python_version: ${{ steps.info.outputs.default_python_version }}
-      python_versions: ${{ steps.info.outputs.python_versions }}
-      venv_cache_key_partly: ${{ steps.info.outputs.venv_key_partly }}
-    runs-on: ubuntu-latest
-    steps:
-      - name: ⤵️  Check out code from GitHub
-        uses: actions/checkout@v4.2.2
-      - name: Collect information
-        id: info
-        run: |
-          venv_key_partly=venv-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
-          echo "venv cache key partly : ${venv_key_partly}"
-          echo "venv_key_partly=${venv_key_partly}" >> $GITHUB_OUTPUT
-          default_python_version=$(cat .python-version)
-          echo "default python version: ${default_python_version}"
-          echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
-
-          # Check if ALL_PYTHON_VERSIONS contains default_python_version. If not add it
-          if [[ ! ${ALL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
-            ALL_PYTHON_VERSIONS="[${ALL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
-          fi
-          echo "python_versions: ${ALL_PYTHON_VERSIONS}"
-          echo "python_versions=${ALL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
-
-  base:
-    name: Prepare dependencies
-    runs-on: ubuntu-latest
-    needs: info
+  linux:
+    runs-on: ${{ matrix.platform.runner }}
     strategy:
-      matrix:
-        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-    steps:
-      - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.2.2
-      - name: 🏗 Set up Python ${{ matrix.python-version }}
-        id: python
-        uses: actions/setup-python@v5.3.0
-        with:
-          python-version: ${{ matrix.python-version }}
-          check-latest: true
-      - name: 🏗 Restore base Python virtual environment
-        id: cache-venv
-        uses: actions/cache@v4.2.0
-        with:
-          path: venv
-          key: ${{ matrix.python-version }}-${{ runner.os }}-${{ needs.info.outputs.venv_cache_key_partly }}
-          restore-keys: ${{ matrix.python-version }}-${{ runner.os }}-venv-
-      - name: 🏗 Setup uv
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-      - name: Create Python virtual environment
-        if: steps.cache-venv.outputs.cache-hit != 'true'
-        run: |
-          uv venv venv
-          . venv/bin/activate
-          python --version
-
-          uv export --frozen --no-emit-project --group dev > requirements-dev.txt
-          # maturin actions needs pip
-          uv pip install pip -r requirements-dev.txt
-
-  build_test_linux:
-    runs-on: ubuntu-latest
-    name: "Linux: ${{ matrix.platform.target }} ${{ matrix.manylinux }} ${{ matrix.python-version }}"
-    needs:
-      - info
-      - base
-    strategy:
-      fail-fast: false
       matrix:
         platform:
-          - target: x86_64
-          - target: x86
-          - target: aarch64
-          - target: armv7
-        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-        manylinux:
-          - "manylinux_2_34"
-          - "musllinux_1_2"
+          - runner: ubuntu-22.04
+            target: x86_64
+          - runner: ubuntu-22.04
+            target: x86
+          - runner: ubuntu-22.04
+            target: aarch64
+          - runner: ubuntu-22.04
+            target: armv7
+          - runner: ubuntu-22.04
+            target: s390x
+          - runner: ubuntu-22.04
+            target: ppc64le
     steps:
-      - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@v4.2.2
-
-      - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v5
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
         with:
-          enable-cache: true
-          python-version: ${{ matrix.python-version }}
-
-      - name: 🏗  Restore base Python virtual environment
-        id: cache-venv
-        uses: actions/cache@v4.2.0
-        with:
-          path: venv
-          fail-on-cache-miss: true
-          key: ${{ matrix.python-version }}-${{ runner.os }}-${{ needs.info.outputs.venv_cache_key_partly }}
-
-      - name: 📦 Build package
+          python-version: 3.x
+      - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist -i python${{ matrix.python-version }}
+          args: --release --out dist --find-interpreter
           sccache: "true"
-          manylinux: ${{ matrix.manylinux }}
-      - name: ⬆️ Upload wheels
+          manylinux: auto
+      - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-linux-${{ matrix.platform.target }}-${{ matrix.manylinux }}-${{ matrix.python-version }}
+          name: wheels-linux-${{ matrix.platform.target }}
           path: dist
       - name: pytest
         if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
         shell: bash
         run: |
           set -e
-          source venv/bin/activate
+          python3 -m venv .venv
+          source .venv/bin/activate
           pip install deebot-client --find-links dist --force-reinstall
+          pip install pytest
           pytest
       - name: pytest
-        if: ${{ !startsWith(matrix.platform.target, 'x86_64') }}
+        if: ${{ !startsWith(matrix.platform.target, 'x86') && matrix.platform.target != 'ppc64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform.target }}
-          distro: ubuntu_latest
+          distro: ubuntu22.04
           githubToken: ${{ github.token }}
           install: |
             apt-get update
@@ -151,277 +74,149 @@ jobs:
             pip3 install deebot-client --find-links dist --force-reinstall
             pytest
 
-# wheels:
-#     name: Build wheels
-#     runs-on: ubuntu-latest
-#     needs: base
-#     strategy:
-#       matrix:
-#         python-version:
-#           - "3.12"
-#           - "3.13"
-#         linux-compatibility:
-#           - "manylinux_2_34"
-#     steps:
-#       - name: ⤵️ Check out code from GitHub
-#         uses: actions/checkout@v4.2.2
-#       - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           enable-cache: true
-#           python-version: ${{ matrix.python-version }}
-#       - name: Install additional OS dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get -y install \
-#             pkg-config \
-#             liblzma-dev
-#       - name: 🏗 Set package version
-#         if: ${{ github.event_name == 'release' }}
-#         run: |
-#           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-#       - name: 📦 Build package
-#         run: uv build --wheel --config-settings build-args='--compatibility ${{ matrix.linux-compatibility }}'
-#       - name: ⬆️ Upload wheels
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: wheels-${{ matrix.python-version }}-${{ matrix.linux-compatibility }}
-#           path: dist
+  musllinux:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: ubuntu-22.04
+            target: x86_64
+          - runner: ubuntu-22.04
+            target: x86
+          - runner: ubuntu-22.04
+            target: aarch64
+          - runner: ubuntu-22.04
+            target: armv7
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+          manylinux: musllinux_1_2
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-musllinux-${{ matrix.platform.target }}
+          path: dist
+      - name: pytest
+        if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
+        uses: addnab/docker-run-action@v3
+        with:
+          image: alpine:latest
+          options: -v ${{ github.workspace }}:/io -w /io
+          run: |
+            set -e
+            apk add py3-pip py3-virtualenv
+            python3 -m virtualenv .venv
+            source .venv/bin/activate
+            pip install deebot-client --no-index --find-links dist --force-reinstall
+            pip install pytest
+            pytest
+      - name: pytest
+        if: ${{ !startsWith(matrix.platform.target, 'x86') }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: alpine_latest
+          githubToken: ${{ github.token }}
+          install: |
+            apk add py3-virtualenv
+          run: |
+            set -e
+            python3 -m virtualenv .venv
+            source .venv/bin/activate
+            pip install pytest
+            pip install deebot-client --find-links dist --force-reinstall
+            pytest
 
-#   base:
-#     name: Prepare dependencies
-#     runs-on: ubuntu-latest
-#     needs: info
-#     strategy:
-#       matrix:
-#         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-#     steps:
-#       - name: ⤵️ Check out code from GitHub
-#         uses: actions/checkout@v4.2.2
-#       - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-#         if: steps.cache-venv.outputs.cache-hit != 'true'
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           python-version: ${{ matrix.python-version }}
-#       - name: 🏗  Restore base Python virtual environment
-#         id: cache-venv
-#         uses: actions/cache@v4.2.0
-#         with:
-#           path: .venv
-#           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
-#           restore-keys: ${{ matrix.python-version }}-venv-${{ runner.os }}-
-#       - name: 📦 Setup project
-#         if: steps.cache-venv.outputs.cache-hit != 'true'
-#         run: |
-#           uv sync --locked --all-groups --no-editable
+  windows:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: windows-latest
+            target: x64
+          - runner: windows-latest
+            target: x86
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+          architecture: ${{ matrix.platform.target }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-windows-${{ matrix.platform.target }}
+          path: dist
+      - name: pytest
+        if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
+        shell: bash
+        run: |
+          set -e
+          python3 -m venv .venv
+          source .venv/Scripts/activate
+          pip install deebot-client --find-links dist --force-reinstall
+          pip install pytest
+          pytest
 
-#   code-quality:
-#     runs-on: "ubuntu-latest"
-#     name: Check code quality
-#     needs:
-#       - info
-#       - base
-#     steps:
-#       - name: ⤵️ Checkout repository
-#         uses: actions/checkout@v4
-#       - name: 🏗 Set up uv and Python ${{ needs.info.outputs.default_python_version }}
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           python-version: ${{ needs.info.outputs.default_python_version }}
-#       - name: 🏗  Restore full Python ${{ needs.info.outputs.default_python_version }} virtual environment
-#         id: cache-venv
-#         uses: actions/cache/restore@v4.2.0
-#         with:
-#           path: .venv
-#           fail-on-cache-miss: true
-#           key: ${{ needs.info.outputs.default_python_version }}-${{ needs.info.outputs.venv_cache_key_partly }}
+  macos:
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      matrix:
+        platform:
+          - runner: macos-13
+            target: x86_64
+          - runner: macos-14
+            target: aarch64
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: 3.x
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist --find-interpreter
+          sccache: "true"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.platform.target }}
+          path: dist
+      - name: pytest
+        run: |
+          set -e
+          python3 -m venv .venv
+          source .venv/bin/activate
+          pip install deebot-client --find-links dist --force-reinstall
+          pip install pytest
+          pytest
 
-#       # Following steps cannot run by pre-commit.ci as repo = local
-#       - name: Run mypy
-#         run: |
-#           . .venv/bin/activate
-#           mypy deebot_client/
-#       - name: Pylint review
-#         run: |
-#           . .venv/bin/activate
-#           pylint deebot_client/**/*.py
-#       - name: Verify no getLogger usages
-#         run: |
-#           . .venv/bin/activate
-#           scripts/check_getLogger.sh
-
-#   tests:
-#     runs-on: "ubuntu-latest"
-#     name: Run tests
-#     needs:
-#       - info
-#       - base
-#     strategy:
-#       matrix:
-#         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-#     env:
-#       # To enable backtrace in case of a crash
-#       RUST_BACKTRACE: 1
-#     steps:
-#       - name: ⤵️ Checkout repository
-#         uses: actions/checkout@v4
-#         with:
-#           # Root files and tests folder
-#           sparse-checkout: |
-#             tests
-
-#       - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-#         if: steps.cache-venv.outputs.cache-hit != 'true'
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           enable-cache: true
-#           python-version: ${{ matrix.python-version }}
-
-#       - name: 🏗  Restore full Python ${{ matrix.python-version }} virtual environment
-#         id: cache-venv
-#         uses: actions/cache/restore@v4.2.0
-#         with:
-#           path: .venv
-#           fail-on-cache-miss: true
-#           key: ${{ matrix.python-version }}-${{ needs.info.outputs.venv_cache_key_partly }}
-
-#       - name: Run pytest
-#         run: |
-#           . .venv/bin/activate
-#           pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy
-
-#       - name: Upload coverage to Codecov
-#         uses: codecov/codecov-action@v5
-#         with:
-#           fail_ci_if_error: true
-
-#       - name: Upload test results to Codecov
-#         if: ${{ !cancelled() && steps.cache-venv.conclusion == 'success' }}
-#         uses: codecov/test-results-action@v1
-#         with:
-#           fail_ci_if_error: true
-
-#   benchmarks:
-#     runs-on: "ubuntu-latest"
-#     name: Run benchmarks
-#     needs:
-#       - info
-#       - base
-#     steps:
-#       - name: ⤵️ Checkout repository
-#         uses: actions/checkout@v4
-
-#       - name: 🏗 Install uv
-#         uses: astral-sh/setup-uv@v5
-
-#       - name: 🏗 Setup Python ${{ needs.info.outputs.default_python_version }}
-#         uses: actions/setup-python@v5
-#         with:
-#           python-version: ${{ needs.info.outputs.default_python_version }}
-
-#       - name: 🏗  Restore full Python virtual environment
-#         id: cache-venv
-#         uses: actions/cache/restore@v4.2.0
-#         with:
-#           path: .venv
-#           fail-on-cache-miss: true
-#           key: ${{ needs.info.outputs.default_python_version }}-${{ needs.info.outputs.venv_cache_key_partly }}
-
-#       - name: Run benchmarks
-#         uses: CodSpeedHQ/action@main
-#         with:
-#           run: pytest tests/ --codspeed
-#           token: ${{ secrets.CODSPEED_TOKEN }}
-
-#   wheels:
-#     name: Build wheels
-#     runs-on: ubuntu-latest
-#     needs: base
-#     strategy:
-#       matrix:
-#         python-version:
-#           - "3.12"
-#           - "3.13"
-#         linux-compatibility:
-#           - "manylinux_2_34"
-#     steps:
-#       - name: ⤵️ Check out code from GitHub
-#         uses: actions/checkout@v4.2.2
-#       - name: 🏗 Set up uv and Python ${{ matrix.python-version }}
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           enable-cache: true
-#           python-version: ${{ matrix.python-version }}
-#       - name: Install additional OS dependencies
-#         run: |
-#           sudo apt-get update
-#           sudo apt-get -y install \
-#             pkg-config \
-#             liblzma-dev
-#       - name: 🏗 Set package version
-#         if: ${{ github.event_name == 'release' }}
-#         run: |
-#           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-#       - name: 📦 Build package
-#         run: uv build --wheel --config-settings build-args='--compatibility ${{ matrix.linux-compatibility }}'
-#       - name: ⬆️ Upload wheels
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: wheels-${{ matrix.python-version }}-${{ matrix.linux-compatibility }}
-#           path: dist
-
-#   sdist:
-#     if: ${{ github.event_name == 'release' }}
-#     runs-on: ubuntu-latest
-#     needs: base
-#     steps:
-#       - uses: actions/checkout@v4
-#       - name: 🏗 Set package version
-#         run: |
-#           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-#       - name: Build sdist
-#         uses: PyO3/maturin-action@v1
-#         with:
-#           command: sdist
-#           args: --out dist
-#       - name: Upload sdist
-#         uses: actions/upload-artifact@v4
-#         with:
-#           name: wheels-sdist
-#           path: dist
-
-#   release:
-#     if: ${{ github.event_name == 'release' }}
-#     name: Releasing to PyPi
-#     runs-on: ubuntu-latest
-#     needs:
-#       - "wheels"
-#       - "sdist"
-#       - "tests"
-#       - "code-quality"
-#     environment:
-#       name: release
-#       url: https://pypi.org/manage/project/deebot-client/releases/
-#     permissions:
-#       contents: write
-#       id-token: write
-#     steps:
-#       - name: ⤵️ Check out code from GitHub
-#         uses: actions/checkout@v4.2.2
-#       - name: 🏗 Set up uv
-#         uses: astral-sh/setup-uv@v5
-#         with:
-#           enable-cache: true
-#       - name: ⬇️ Download wheels
-#         uses: actions/download-artifact@v4
-#         with:
-#           pattern: wheels-*
-#           path: dist
-#           merge-multiple: true
-#       - name: 🚀 Publish to PyPi
-#         run: uv publish
-#       - name: ✍️ Sign published artifacts
-#         uses: sigstore/gh-action-sigstore-python@v3.0.0
-#         with:
-#           inputs: ./dist/*.tar.gz ./dist/*.whl
-#           release-signing-artifacts: true
+  sdist:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build sdist
+        uses: PyO3/maturin-action@v1
+        with:
+          command: sdist
+          args: --out dist
+      - name: Upload sdist
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-sdist
+          path: dist
