@@ -45,6 +45,7 @@ jobs:
     name: "Linux: ${{ matrix.platform.target }} ${{ matrix.manylinux }} ${{ matrix.python-version }}"
     needs: info
     strategy:
+      fail-fast: false
       matrix:
         platform:
           - target: x86_64
