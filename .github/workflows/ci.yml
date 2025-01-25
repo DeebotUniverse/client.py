@@ -53,6 +53,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          rm -rf deebot_client
           python3 -m venv .venv
           source .venv/bin/activate
           pip install deebot-client --find-links dist --force-reinstall
@@ -71,6 +72,7 @@ jobs:
             pip3 install -U pip pytest
           run: |
             set -e
+            rm -rf deebot_client
             pip3 install deebot-client --find-links dist --force-reinstall
             pytest
 
@@ -113,6 +115,7 @@ jobs:
           run: |
             set -e
             apk add py3-pip py3-virtualenv
+            rm -rf deebot_client
             python3 -m virtualenv .venv
             source .venv/bin/activate
             pip install deebot-client --no-index --find-links dist --force-reinstall
@@ -129,6 +132,7 @@ jobs:
             apk add py3-virtualenv
           run: |
             set -e
+            rm -rf deebot_client
             python3 -m virtualenv .venv
             source .venv/bin/activate
             pip install pytest
@@ -166,6 +170,7 @@ jobs:
         shell: bash
         run: |
           set -e
+          rm -rf deebot_client
           python3 -m venv .venv
           source .venv/Scripts/activate
           pip install deebot-client --find-links dist --force-reinstall
@@ -200,6 +205,7 @@ jobs:
       - name: pytest
         run: |
           set -e
+          rm -rf deebot_client
           python3 -m venv .venv
           source .venv/bin/activate
           pip install deebot-client --find-links dist --force-reinstall
