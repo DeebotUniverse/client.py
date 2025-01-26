@@ -34,7 +34,8 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs import TracePoint, decompress_7z_base64_data, extract_trace_points
+from .rs.map import TracePoint, extract_trace_points
+from .rs.util import decompress_7z_base64_data
 from .util import (
     OnChangedDict,
     OnChangedList,

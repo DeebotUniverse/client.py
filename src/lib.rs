@@ -1,84 +1,35 @@
-use std::error::Error;
-
-use base64::{engine::general_purpose, Engine as _};
-use byteorder::{LittleEndian, ReadBytesExt};
-use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use std::io::Cursor;
 
-fn _decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut bytes = general_purpose::STANDARD.decode(value)?;
-
-    if bytes.len() < 8 {
-        return Err("Invalid 7z compressed data".into());
-    }
-
-    for _ in 0..=3 {
-        bytes.insert(8, 0);
-    }
-
-    Ok(lzma::decompress(&bytes)?)
-}
-
-/// Decompress base64 decoded 7z compressed string.
-#[pyfunction]
-fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, PyErr> {
-    Ok(_decompress_7z_base64_data(value).map_err(|err| PyValueError::new_err(err.to_string()))?)
-}
-
-/// Trace point
-#[pyclass]
-struct TracePoint {
-    #[pyo3(get)]
-    x: i16,
-
-    #[pyo3(get)]
-    y: i16,
-
-    #[pyo3(get)]
-    connected: bool,
-}
-
-#[pymethods]
-impl TracePoint {
-    #[new]
-    fn new(x: i16, y: i16, connected: bool) -> Self {
-        TracePoint { x, y, connected }
-    }
-}
-
-fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn Error>> {
-    let mut trace_values = Vec::new();
-    for i in (0..trace_points.len()).step_by(5) {
-        if i + 4 >= trace_points.len() {
-            return Err("Invalid trace points length".into());
-        }
-
-        let mut cursor = Cursor::new(&trace_points[i..i + 4]);
-        let x = cursor.read_i16::<LittleEndian>()?;
-        let y = cursor.read_i16::<LittleEndian>()?;
-
-        // Determine connection status
-        let connected = (trace_points[i + 4] >> 7 & 1) == 0;
-
-        trace_values.push(TracePoint { x, y, connected });
-    }
-    Ok(trace_values)
-}
-
-#[pyfunction]
-/// Extract trace points from 7z compressed data string.
-fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
-    let decompressed_data = decompress_7z_base64_data(value)?;
-    Ok(process_trace_points(&decompressed_data)
-        .map_err(|err| PyValueError::new_err(err.to_string()))?)
-}
+mod map;
+mod util;
 
 /// Deebot client written in Rust
 #[pymodule]
-fn rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(decompress_7z_base64_data, m)?)?;
-    m.add_function(wrap_pyfunction!(extract_trace_points, m)?)?;
-    m.add_class::<TracePoint>()?;
+fn rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_submodule(py, m, map::init_module)?;
+    register_submodule(py, m, util::init_module)?;
     Ok(())
+}
+
+fn register_submodule<F>(
+    py: Python<'_>,
+    parent_module: &Bound<'_, PyModule>,
+    submodule: F,
+) -> PyResult<()>
+where
+    F: Fn(&Bound<'_, PyModule>) -> PyResult<()>,
+{
+    let parts: Vec<&str> = std::any::type_name::<F>().split("::").collect();
+    let module_name = parts[parts.len() - 2];
+
+    let child_module = PyModule::new(parent_module.py(), module_name)?;
+    submodule(&child_module)?;
+
+    // https://github.com/PyO3/pyo3/issues/1517#issuecomment-808664021
+    // https://github.com/PyO3/pyo3/issues/759
+    PyModule::import(py, "sys")?
+        .getattr("modules")?
+        .set_item(&format!("deebot_client.rs.{}", module_name), &child_module)?;
+
+    parent_module.add_submodule(&child_module)
 }

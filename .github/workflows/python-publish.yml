@@ -31,12 +31,6 @@ jobs:
         with:
           enable-cache: true
           python-version: ${{ matrix.python-version }}
-      - name: Install additional OS dependencies
-        run: |
-          sudo apt-get update
-          sudo apt-get -y install \
-            pkg-config \
-            liblzma-dev
       - name: 🏗 Set package version
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml

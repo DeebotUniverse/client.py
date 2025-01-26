@@ -148,7 +148,7 @@ required-imports = ["from __future__ import annotations"]
 "deebot_client/hardware/deebot/*" = [
     "N999", # Invalid module name
 ]
-"deebot_client/rs.pyi" = [
+"deebot_client/rs/*.pyi" = [
     "PYI021", #  docstring-in-stub
 ]
 
@@ -167,7 +167,11 @@ max-args = 7
 py-version = "3.13"
 ignore = ["tests"]
 fail-on = ["I"]
-extension-pkg-allow-list = ["deebot_client.rs"]
+extension-pkg-allow-list = [
+    "deebot_client.rs",
+    "deebot_client.rs.map",
+    "deebot_client.rs.util",
+]
 
 [tool.pylint.BASIC]
 good-names = ["i", "j", "k", "ex", "_", "T", "x", "y", "id", "tg"]
