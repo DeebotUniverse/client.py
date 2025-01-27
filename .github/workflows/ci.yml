@@ -32,7 +32,7 @@ jobs:
             native: false
         python-version: ["3.12", "3.13"]
         manylinux:
-          - manylinux_2_34
+          - auto #manylinux_2_34
           - musllinux_1_2
     steps:
       - uses: actions/checkout@v4
