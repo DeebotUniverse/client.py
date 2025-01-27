@@ -28,16 +28,17 @@ jobs:
             target: aarch64
           - runner: ubuntu-24.04
             target: armv7
+        python-version: ${{ env.ALL_PYTHON_VERSIONS }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: 3.x
+          python-version: ${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
           target: ${{ matrix.platform.target }}
-          args: --release --out dist --find-interpreter
+          args: --release --out dist -i python${{ matrix.python-version }}
           sccache: "true"
           manylinux: auto
       - name: Upload wheels
