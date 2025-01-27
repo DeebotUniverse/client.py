@@ -139,7 +139,7 @@ jobs:
   #           pytest -m "not docker"
 
   windows:
-    name: ${{ matrix.platform.runner }} ${{ matrix.python-version }}
+    name: Windows ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -178,13 +178,13 @@ jobs:
           uv venv -p ${{ matrix.python-version }}
           uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
           uv pip install -r test-requirements.txt
-          .venv\Scripts\activate
+          source .venv/Scripts/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
           # Disable tests, which require docker for now
           pytest
 
   # macos:
-  #   name: ${{ matrix.platform.runner }} ${{ matrix.python-version }}
+  #   name: Macos ${{ matrix.platform.target }} ${{ matrix.python-version }}
   #   runs-on: ${{ matrix.platform.runner }}
   #   strategy:
   #     fail-fast: false
