@@ -35,7 +35,7 @@ jobs:
           - manylinux: auto # manylinux_2_34
             install_commands: |
               apt-get update
-              apt-get install -y curl
+              apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
             distro: ubuntu-24.04
           - manylinux: musllinux_1_2
             install_commands: |
@@ -117,6 +117,8 @@ jobs:
             set -euxo pipefail
             apk add curl
             rm -rf deebot_client
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
             uv python install ${{ matrix.python-version }}
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
