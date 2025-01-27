@@ -124,6 +124,8 @@ jobs:
         with:
           base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
           githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${{ github.workspace }}:/io" -w /io
           install: |
             set -euxo pipefail
             apk add curl
