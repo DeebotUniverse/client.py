@@ -275,8 +275,6 @@ dev = [
     { name = "types-pillow" },
 ]
 lint = [
-    { name = "maturin", extra = ["patchelf"] },
-    { name = "maturin-import-hook" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pylint" },
@@ -326,8 +324,6 @@ dev = [
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
 ]
 lint = [
-    { name = "maturin", extras = ["patchelf"], specifier = ">=1.7.8" },
-    { name = "maturin-import-hook", specifier = ">=0.2.0" },
     { name = "mypy", specifier = "==1.14.1" },
     { name = "pre-commit", specifier = "==4.1.0" },
     { name = "pylint", specifier = "==3.3.3" },

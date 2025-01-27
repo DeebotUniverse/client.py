@@ -60,7 +60,7 @@ jobs:
   #       run: |
   #         rm -rf deebot_client
   #         uv venv -p ${{ matrix.python-version }}
-  #         uv export --group test --no-emit-project > test-requirements.txt
+  #         uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
   #         uv pip install -r test-requirements.txt
   #         source .venv/bin/activate
   #         uv pip install --force-reinstall dist/deebot_client-*.whl
@@ -79,7 +79,7 @@ jobs:
   #           curl -LsSf https://astral.sh/uv/install.sh | sh
   #           source $HOME/.local/bin/env
   #           uv venv -p ${{ matrix.python-version }}
-  #           uv export --group test --no-emit-project > test-requirements.txt
+  #           uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
   #           uv pip install -r test-requirements.txt
   #         run: |
   #           set -euxo pipefail
@@ -202,7 +202,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-macos-${{ matrix.platform.name }}-${{ matrix.python-version }}
+          name: wheels-macos-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
@@ -213,7 +213,7 @@ jobs:
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          uv export --group test --no-emit-project > test-requirements.txt
+          uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
           uv pip install -r test-requirements.txt
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
