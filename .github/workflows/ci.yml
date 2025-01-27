@@ -62,7 +62,6 @@ jobs:
         if: (matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64') && steps.cache-venv.outputs.cache-hit != 'true'
         run: |
           uv venv
-          source .venv/bin/activate
           uv export --group test --no-emit-project > test-requirements.txt
           uv pip install -r test-requirements.txt
       - name: pytest
@@ -71,7 +70,8 @@ jobs:
         run: |
           set -e
           rm -rf deebot_client
-          uv pip install deebot-client --find-links dist --force-reinstall
+          source .venv/bin/activate
+          uv pip install --force-reinstall dist/deebot_client-*.whl
           pytest
       - name: pytest
         if: ${{ matrix.platform.target != 'x86_64' && matrix.platform.target != 'aarch64' }}
