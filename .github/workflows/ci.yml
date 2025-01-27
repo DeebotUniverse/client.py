@@ -125,17 +125,20 @@ jobs:
           base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
           githubToken: ${{ github.token }}
           dockerRunArgs: |
-            --volume "${{ github.workspace }}:/io" -w /io
+            --volume "${{ github.workspace }}:/io"
           install: |
             set -euxo pipefail
             apk add curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
+            cd /io
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install --system --index-strategy unsafe-first-match -r test-requirements.txt
           run: |
             set -euxo pipefail
+            source $HOME/.local/bin/env
+            cd /io
             uv pip install --system --force-reinstall dist/deebot_client-*.whl
             pytest
 
