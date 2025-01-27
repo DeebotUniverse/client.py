@@ -19,18 +19,14 @@ jobs:
     strategy:
       matrix:
         platform:
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             target: x86_64
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             target: x86
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04-arm
             target: aarch64
-          - runner: ubuntu-22.04
+          - runner: ubuntu-24.04
             target: armv7
-          - runner: ubuntu-22.04
-            target: s390x
-          - runner: ubuntu-22.04
-            target: ppc64le
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -49,7 +45,7 @@ jobs:
           name: wheels-linux-${{ matrix.platform.target }}
           path: dist
       - name: pytest
-        if: ${{ startsWith(matrix.platform.target, 'x86_64') }}
+        if: ${{ matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64' }}
         shell: bash
         run: |
           set -e
@@ -60,7 +56,7 @@ jobs:
           pip install pytest
           pytest
       - name: pytest
-        if: ${{ !startsWith(matrix.platform.target, 'x86') && matrix.platform.target != 'ppc64' }}
+        if: ${{ matrix.platform.target != 'x86_64' && matrix.platform.target != 'aarch64' }}
         uses: uraimo/run-on-arch-action@v2
         with:
           arch: ${{ matrix.platform.target }}
