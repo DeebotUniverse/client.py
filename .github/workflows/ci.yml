@@ -28,7 +28,7 @@ jobs:
             target: aarch64
           - runner: ubuntu-24.04
             target: armv7
-        python-version: ${{ env.ALL_PYTHON_VERSIONS }}
+        python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
