@@ -178,10 +178,10 @@ jobs:
           uv venv -p ${{ matrix.python-version }}
           uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
           uv pip install -r test-requirements.txt
-          source .venv/bin/activate
+          .venv\Scripts\activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
           # Disable tests, which require docker for now
-          pytest -v -m "not docker"
+          pytest
 
   # macos:
   #   name: ${{ matrix.platform.runner }} ${{ matrix.python-version }}
