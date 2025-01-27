@@ -10,8 +10,8 @@ on:
 
 env:
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
-  PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  UV_LINK_MODE: "copy"
+  #PIP_DISABLE_PIP_VERSION_CHECK: "1"
+  #UV_LINK_MODE: "copy"
 
 jobs:
   linux:
@@ -32,7 +32,7 @@ jobs:
             native: false
         python-version: ["3.12", "3.13"]
         compatibility:
-          - manylinux: manylinux_2_28
+          - manylinux: manylinux_2_34
             distro: ubuntu_latest
           - manylinux: musllinux_1_2
             distro: alpine_latest
@@ -98,6 +98,7 @@ jobs:
             set -euxo pipefail
             apt-get update
             apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
+            update-ca-certificates
             curl -LsSf https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
             uv venv -p ${{ matrix.python-version }}
@@ -118,10 +119,9 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             set -euxo pipefail
-            apk add curl
+            apk add curl python${{ matrix.python-version }}
             curl -LsSf https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
-            uv python install ${{ matrix.python-version }}
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install -r test-requirements.txt
