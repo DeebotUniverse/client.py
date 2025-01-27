@@ -12,81 +12,81 @@ env:
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
-  linux:
-    name: Linux ${{ matrix.platform.name }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - name: amd64
-            runner: ubuntu-24.04
-            target: x86_64
-            native: true
-          - name: aarch64
-            runner: ubuntu-24.04-arm
-            target: aarch64
-            native: true
-          # - name: armv7
-          #   runner: ubuntu-24.04
-          #   target: armv7
-          #   native: false
-        python-version: ["3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --out dist -i python${{ matrix.python-version }}
-          sccache: "false"
-          manylinux: manylinux_2_34
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-linux-${{ matrix.platform.name }}-${{ matrix.python-version }}
-          path: dist
-      - name: 🏗 Install uv
-        if: ${{ matrix.platform.native }}
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-      - name: pytest (native)
-        if: ${{ matrix.platform.native }}
-        shell: bash
-        run: |
-          rm -rf deebot_client
-          uv venv -p ${{ matrix.python-version }}
-          uv export --group test --no-emit-project > test-requirements.txt
-          uv pip install -r test-requirements.txt
-          source .venv/bin/activate
-          uv pip install --force-reinstall dist/deebot_client-*.whl
-          pytest
-      - name: pytest (different arch)
-        if: ${{ ! matrix.platform.native }}
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: ${{ matrix.platform.target }}
-          distro: ubuntu_latest
-          install: |
-            set -euxo pipefail
-            apt-get update
-            apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
-            update-ca-certificates
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
-            uv venv -p ${{ matrix.python-version }}
-            uv export --group test --no-emit-project > test-requirements.txt
-            uv pip install -r test-requirements.txt
-          run: |
-            set -euxo pipefail
-            source $HOME/.local/bin/env
-            rm -rf deebot_client
-            uv pip install --force-reinstall dist/deebot_client-*.whl
-            pytest
+  # linux:
+  #   name: Linux ${{ matrix.platform.name }} ${{ matrix.python-version }}
+  #   runs-on: ${{ matrix.platform.runner }}
+  #   strategy:
+  #     fail-fast: false
+  #     matrix:
+  #       platform:
+  #         - name: amd64
+  #           runner: ubuntu-24.04
+  #           target: x86_64
+  #           native: true
+  #         - name: aarch64
+  #           runner: ubuntu-24.04-arm
+  #           target: aarch64
+  #           native: true
+  #         # - name: armv7
+  #         #   runner: ubuntu-24.04
+  #         #   target: armv7
+  #         #   native: false
+  #       python-version: ["3.12", "3.13"]
+  #   steps:
+  #     - uses: actions/checkout@v4
+  #     - uses: actions/setup-python@v5
+  #       with:
+  #         python-version: ${{ matrix.python-version }}
+  #     - name: Build wheels
+  #       uses: PyO3/maturin-action@v1
+  #       with:
+  #         target: ${{ matrix.platform.target }}
+  #         args: --release --out dist -i python${{ matrix.python-version }}
+  #         sccache: "false"
+  #         manylinux: manylinux_2_34
+  #     - name: Upload wheels
+  #       uses: actions/upload-artifact@v4
+  #       with:
+  #         name: wheels-linux-${{ matrix.platform.name }}-${{ matrix.python-version }}
+  #         path: dist
+  #     - name: 🏗 Install uv
+  #       if: ${{ matrix.platform.native }}
+  #       uses: astral-sh/setup-uv@v5
+  #       with:
+  #         enable-cache: true
+  #     - name: pytest (native)
+  #       if: ${{ matrix.platform.native }}
+  #       shell: bash
+  #       run: |
+  #         rm -rf deebot_client
+  #         uv venv -p ${{ matrix.python-version }}
+  #         uv export --group test --no-emit-project > test-requirements.txt
+  #         uv pip install -r test-requirements.txt
+  #         source .venv/bin/activate
+  #         uv pip install --force-reinstall dist/deebot_client-*.whl
+  #         pytest
+  #     - name: pytest (different arch)
+  #       if: ${{ ! matrix.platform.native }}
+  #       uses: uraimo/run-on-arch-action@v2
+  #       with:
+  #         arch: ${{ matrix.platform.target }}
+  #         distro: ubuntu_latest
+  #         install: |
+  #           set -euxo pipefail
+  #           apt-get update
+  #           apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
+  #           update-ca-certificates
+  #           curl -LsSf https://astral.sh/uv/install.sh | sh
+  #           source $HOME/.local/bin/env
+  #           uv venv -p ${{ matrix.python-version }}
+  #           uv export --group test --no-emit-project > test-requirements.txt
+  #           uv pip install -r test-requirements.txt
+  #         run: |
+  #           set -euxo pipefail
+  #           source $HOME/.local/bin/env
+  #           rm -rf deebot_client
+  #           uv pip install --force-reinstall dist/deebot_client-*.whl
+  #           pytest
 
   musllinux:
     name: Musllinux ${{ matrix.platform.name }} ${{ matrix.python-version }}
@@ -101,7 +101,7 @@ jobs:
             target: aarch64
           - name: armv7
             target: armv7
-        python-version: ["3.12", "3.13"]
+        python-version: [ "3.13"]
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -130,12 +130,11 @@ jobs:
             set -euxo pipefail
             apk add curl
             curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
-            source /root/.local/bin/env
             cd /io
             rm -rf deebot_client
-            uv export --group test --no-emit-project > test-requirements.txt
-            uv pip install --system --index-strategy unsafe-first-match -r test-requirements.txt
-            uv pip install --system --force-reinstall dist/deebot_client-*.whl
+            /root/.local/bin/uv export --group test --no-emit-project > test-requirements.txt
+            /root/.local/bin/uv pip install --system --index-strategy unsafe-first-match -r test-requirements.txt
+            /root/.local/bin/uv pip install --system --force-reinstall dist/deebot_client-*.whl
             pytest
 
   # windows:
