@@ -23,17 +23,14 @@ jobs:
             runner: ubuntu-24.04
             target: x86_64
             native: true
-            before_build: ""
           - name: aarch64
             runner: ubuntu-24.04-arm
             target: aarch64
             native: true
-            before_build: ""
-          - name: armv7
-            runner: ubuntu-24.04
-            target: armv7
-            native: false
-            before_build: yum install -y gcc-arm*
+          # - name: armv7
+          #   runner: ubuntu-24.04
+          #   target: armv7
+          #   native: false
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -47,7 +44,6 @@ jobs:
           args: --release --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: manylinux_2_34
-          before-script-linux: ${{ matrix.platform.before_build }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -133,9 +129,8 @@ jobs:
           run: |
             set -euxo pipefail
             apk add curl
-            env HOME=/root
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
+            curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
+            source /root/.local/bin/env
             cd /io
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
