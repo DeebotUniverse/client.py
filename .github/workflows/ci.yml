@@ -67,7 +67,7 @@ jobs:
         if: ${{ matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64' }}
         shell: bash
         run: |
-          set -e
+          set -euxo pipefail
           rm -rf deebot_client
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
@@ -80,12 +80,13 @@ jobs:
           distro: ubuntu22.04
           githubToken: ${{ github.token }}
           install: |
-            curl -LsSf https://astral.sh/uv/install.sh | sh
+            set -euxo pipefail
+            wget -qO- https://astral.sh/uv/install.sh | sh
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install -r test-requirements.txt
           run: |
-            set -e
+            set -euxo pipefail
             rm -rf deebot_client
             uv pip install --force-reinstall dist/deebot_client-*.whl
             pytest
@@ -127,7 +128,7 @@ jobs:
   #         image: alpine:latest
   #         options: -v ${{ github.workspace }}:/io -w /io
   #         run: |
-  #           set -e
+  #           set -euxo pipefail
   #           apk add py3-pip py3-virtualenv
   #           rm -rf deebot_client
   #           python3 -m virtualenv .venv
@@ -145,7 +146,7 @@ jobs:
   #         install: |
   #           apk add py3-virtualenv
   #         run: |
-  #           set -e
+  #           set -euxo pipefail
   #           rm -rf deebot_client
   #           python3 -m virtualenv .venv
   #           source .venv/bin/activate
@@ -183,7 +184,7 @@ jobs:
   #       if: ${{ !startsWith(matrix.platform.target, 'aarch64') }}
   #       shell: bash
   #       run: |
-  #         set -e
+  #         set -euxo pipefail
   #         rm -rf deebot_client
   #         python3 -m venv .venv
   #         source .venv/Scripts/activate
@@ -218,7 +219,7 @@ jobs:
   #         path: dist
   #     - name: pytest
   #       run: |
-  #         set -e
+  #         set -euxo pipefail
   #         rm -rf deebot_client
   #         python3 -m venv .venv
   #         source .venv/bin/activate

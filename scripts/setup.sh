@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euxo pipefail
 
 # Setup development environment
 
