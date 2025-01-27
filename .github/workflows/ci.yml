@@ -32,14 +32,9 @@ jobs:
             native: false
         python-version: ["3.12", "3.13"]
         compatibility:
-          - manylinux: auto # manylinux_2_34
-            install_commands: |
-              apt-get update
-              apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
-            distro: ubuntu-24.04
+          - manylinux: manylinux_2_28
+            distro: ubuntu_latest
           - manylinux: musllinux_1_2
-            install_commands: |
-              apk add curl
             distro: alpine_latest
     steps:
       - uses: actions/checkout@v4
@@ -62,51 +57,17 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: 🏗  Restore base Python virtual environment
-        id: cache-venv
-        uses: actions/cache@v4.2.0
-        with:
-          path: .venv
-          key: |
-            ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}-${{ matrix.python-version }}
-            -$(date -u '+%Y-%m-%dT%H:%M:%s')
-          restore-keys: ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}-${{ matrix.python-version }}
-      - name: Setup test env
-        if: ${{ matrix.platform.native && steps.cache-venv.outputs.cache-hit != 'true' }}
-        run: |
-          uv venv -p ${{ matrix.python-version }}
-          uv export --group test --no-emit-project > test-requirements.txt
-          uv pip install -r test-requirements.txt
       - name: pytest (native)
         if: ${{ matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'manylinux') }}
         shell: bash
         run: |
           rm -rf deebot_client
+          uv venv -p ${{ matrix.python-version }}
+          uv export --group test --no-emit-project > test-requirements.txt
+          uv pip install -r test-requirements.txt
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
           pytest
-      - name: pytest (different arch)
-        if: ${{ ! matrix.platform.native }}
-        uses: uraimo/run-on-arch-action@v2
-        with:
-          arch: ${{ matrix.platform.target }}
-          distro: ${{ matrix.compatibility.distro }}
-          githubToken: ${{ github.token }}
-          install: |
-            set -euxo pipefail
-            ${{ matrix.compatibility.install_commands }}
-            curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
-            uv python install ${{ matrix.python-version }}
-            uv venv -p ${{ matrix.python-version }}
-            uv export --group test --no-emit-project > test-requirements.txt
-            uv pip install -r test-requirements.txt
-          run: |
-            set -euxo pipefail
-            source $HOME/.local/bin/env
-            rm -rf deebot_client
-            uv pip install --force-reinstall dist/deebot_client-*.whl
-            pytest
       - name: pytest (alpine)
         if: ${{ matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'musllinux') }}
         uses: addnab/docker-run-action@v3
@@ -126,7 +87,50 @@ jobs:
             source .venv/bin/activate
             uv pip install --force-reinstall dist/deebot_client-*.whl
             pytest
-
+      - name: pytest (different arch)
+        if: ${{ ! matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'manylinux') }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: ${{ matrix.compatibility.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            set -euxo pipefail
+            apt-get update
+            apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv venv -p ${{ matrix.python-version }}
+            uv export --group test --no-emit-project > test-requirements.txt
+            uv pip install -r test-requirements.txt
+          run: |
+            set -euxo pipefail
+            source $HOME/.local/bin/env
+            rm -rf deebot_client
+            uv pip install --force-reinstall dist/deebot_client-*.whl
+            pytest
+      - name: pytest (different arch)
+        if: ${{ ! matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'musllinux') }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: ${{ matrix.compatibility.distro }}
+          githubToken: ${{ github.token }}
+          install: |
+            set -euxo pipefail
+            apk add curl
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv python install ${{ matrix.python-version }}
+            uv venv -p ${{ matrix.python-version }}
+            uv export --group test --no-emit-project > test-requirements.txt
+            uv pip install -r test-requirements.txt
+          run: |
+            set -euxo pipefail
+            source $HOME/.local/bin/env
+            rm -rf deebot_client
+            uv pip install --force-reinstall dist/deebot_client-*.whl
+            pytest
   # musllinux:
   #   runs-on: ${{ matrix.platform.runner }}
   #   strategy:
