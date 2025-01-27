@@ -47,7 +47,7 @@ jobs:
           args: --release --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: manylinux_2_34
-          before_script: ${{ matrix.platform.before_build }}
+          before-script-linux: ${{ matrix.platform.before_build }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -134,7 +134,7 @@ jobs:
             set -euxo pipefail
             apk add curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            source $HOME/.local/bin/env
+            source /root/.local/bin/env
             cd /io
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
