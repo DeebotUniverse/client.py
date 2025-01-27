@@ -126,7 +126,7 @@ jobs:
           githubToken: ${{ github.token }}
           dockerRunArgs: |
             --volume "${{ github.workspace }}:/io"
-          install: |
+          run: |
             set -euxo pipefail
             apk add curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
@@ -135,10 +135,6 @@ jobs:
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install --system --index-strategy unsafe-first-match -r test-requirements.txt
-          run: |
-            set -euxo pipefail
-            source $HOME/.local/bin/env
-            cd /io
             uv pip install --system --force-reinstall dist/deebot_client-*.whl
             pytest
 
