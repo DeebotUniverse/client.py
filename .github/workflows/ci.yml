@@ -132,7 +132,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
             cd /io
             rm -rf deebot_client
-            /root/.local/bin/uv export --no-dev --group test --no-emit-project > test-requirements.txt
+            /root/.local/bin/uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
             /root/.local/bin/uv pip install --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r test-requirements.txt
             /root/.local/bin/uv pip install --system --force-reinstall dist/deebot_client-*.whl
             pytest
