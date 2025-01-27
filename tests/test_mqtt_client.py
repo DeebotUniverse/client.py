@@ -25,6 +25,7 @@ if TYPE_CHECKING:
     from deebot_client.models import ApiDeviceInfo
 
 
+@pytest.mark.docker
 async def test_last_message_received_at(
     mqtt_config: MqttConfiguration, authenticator: Authenticator
 ) -> None:
@@ -177,6 +178,7 @@ async def test_p2p_not_supported(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_data_type_not_supported(
     mqtt_client: MqttClient, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -298,6 +300,7 @@ async def test_p2p_parse_error(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 @pytest.mark.parametrize(
     ("exception_to_raise", "expected_log_message"),
     [
