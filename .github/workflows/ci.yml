@@ -10,8 +10,6 @@ on:
 
 env:
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
-  #PIP_DISABLE_PIP_VERSION_CHECK: "1"
-  #UV_LINK_MODE: "copy"
 
 jobs:
   linux:
@@ -46,7 +44,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --out dist -i python${{ matrix.python-version }}
-          sccache: "true"
+          sccache: "false"
           manylinux: ${{ matrix.compatibility.manylinux }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
