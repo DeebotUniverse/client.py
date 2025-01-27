@@ -12,131 +12,131 @@ env:
   ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
 
 jobs:
-  # linux:
-  #   name: Linux ${{ matrix.platform.name }} ${{ matrix.python-version }}
-  #   runs-on: ${{ matrix.platform.runner }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform:
-  #         - name: amd64
-  #           runner: ubuntu-24.04
-  #           target: x86_64
-  #           native: true
-  #         - name: aarch64
-  #           runner: ubuntu-24.04-arm
-  #           target: aarch64
-  #           native: true
-  #         # - name: armv7
-  #         #   runner: ubuntu-24.04
-  #         #   target: armv7
-  #         #   native: false
-  #       python-version: ["3.12", "3.13"]
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build wheels
-  #       uses: PyO3/maturin-action@v1
-  #       with:
-  #         target: ${{ matrix.platform.target }}
-  #         args: --release --out dist -i python${{ matrix.python-version }}
-  #         sccache: "false"
-  #         manylinux: manylinux_2_34
-  #     - name: Upload wheels
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wheels-linux-${{ matrix.platform.name }}-${{ matrix.python-version }}
-  #         path: dist
-  #     - name: 🏗 Install uv
-  #       if: ${{ matrix.platform.native }}
-  #       uses: astral-sh/setup-uv@v5
-  #       with:
-  #         enable-cache: true
-  #     - name: pytest (native)
-  #       if: ${{ matrix.platform.native }}
-  #       shell: bash
-  #       run: |
-  #         rm -rf deebot_client
-  #         uv venv -p ${{ matrix.python-version }}
-  #         uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
-  #         uv pip install -r test-requirements.txt
-  #         source .venv/bin/activate
-  #         uv pip install --force-reinstall dist/deebot_client-*.whl
-  #         pytest
-  #     - name: pytest (different arch)
-  #       if: ${{ ! matrix.platform.native }}
-  #       uses: uraimo/run-on-arch-action@v2
-  #       with:
-  #         arch: ${{ matrix.platform.target }}
-  #         distro: ubuntu_latest
-  #         install: |
-  #           set -euxo pipefail
-  #           apt-get update
-  #           apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
-  #           update-ca-certificates
-  #           curl -LsSf https://astral.sh/uv/install.sh | sh
-  #           source $HOME/.local/bin/env
-  #           uv venv -p ${{ matrix.python-version }}
-  #           uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
-  #           uv pip install -r test-requirements.txt
-  #         run: |
-  #           set -euxo pipefail
-  #           source $HOME/.local/bin/env
-  #           rm -rf deebot_client
-  #           uv pip install --force-reinstall dist/deebot_client-*.whl
-  #           pytest
+  linux:
+    name: Linux ${{ matrix.platform.name }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: amd64
+            runner: ubuntu-24.04
+            target: x86_64
+            native: true
+          - name: aarch64
+            runner: ubuntu-24.04-arm
+            target: aarch64
+            native: true
+          # - name: armv7
+          #   runner: ubuntu-24.04
+          #   target: armv7
+          #   native: false
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist -i python${{ matrix.python-version }}
+          sccache: "false"
+          manylinux: manylinux_2_34
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-linux-${{ matrix.platform.name }}-${{ matrix.python-version }}
+          path: dist
+      - name: 🏗 Install uv
+        if: ${{ matrix.platform.native }}
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: pytest (native)
+        if: ${{ matrix.platform.native }}
+        shell: bash
+        run: |
+          rm -rf deebot_client
+          uv venv -p ${{ matrix.python-version }}
+          uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
+          uv pip install -r test-requirements.txt
+          source .venv/bin/activate
+          uv pip install --force-reinstall dist/deebot_client-*.whl
+          pytest
+      - name: pytest (different arch)
+        if: ${{ ! matrix.platform.native }}
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          arch: ${{ matrix.platform.target }}
+          distro: ubuntu_latest
+          install: |
+            set -euxo pipefail
+            apt-get update
+            apt-get install -y --no-install-recommends curl python${{ matrix.python-version }}
+            update-ca-certificates
+            curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
+            uv venv -p ${{ matrix.python-version }}
+            uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
+            uv pip install -r test-requirements.txt
+          run: |
+            set -euxo pipefail
+            source $HOME/.local/bin/env
+            rm -rf deebot_client
+            uv pip install --force-reinstall dist/deebot_client-*.whl
+            pytest
 
-  # musllinux:
-  #   name: Musllinux ${{ matrix.platform.name }} ${{ matrix.python-version }}
-  #   runs-on: ubuntu-24.04
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform:
-  #         - name: amd64
-  #           target: x86_64
-  #         - name: aarch64
-  #           target: aarch64
-  #         - name: armv7
-  #           target: armv7
-  #       python-version: ["3.12", "3.13"]
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build wheels
-  #       uses: PyO3/maturin-action@v1
-  #       with:
-  #         target: ${{ matrix.platform.target }}
-  #         args: --release --out dist -i python${{ matrix.python-version }}
-  #         sccache: "false"
-  #         manylinux: musllinux_1_2
-  #     - name: Upload wheels
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wheels-musllinux-${{ matrix.platform.name }}-${{ matrix.python-version }}
-  #         path: dist
-  #     - name: pytest
-  #       uses: uraimo/run-on-arch-action@v2
-  #       with:
-  #         base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
-  #         githubToken: ${{ github.token }}
-  #         dockerRunArgs: |
-  #           --volume "${{ github.workspace }}:/io"
-  #         run: |
-  #           set -euxo pipefail
-  #           apk add curl
-  #           curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
-  #           cd /io
-  #           rm -rf deebot_client
-  #           /root/.local/bin/uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
-  #           /root/.local/bin/uv pip install --no-progress --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r test-requirements.txt
-  #           /root/.local/bin/uv pip install --no-progress --system --force-reinstall dist/deebot_client-*.whl
-  #           # Disable tests, which require docker for now
-  #           pytest -m "not docker"
+  musllinux:
+    name: Musllinux ${{ matrix.platform.name }} ${{ matrix.python-version }}
+    runs-on: ubuntu-24.04
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - name: amd64
+            target: x86_64
+          # - name: aarch64
+          #   target: aarch64
+          # - name: armv7
+          #   target: armv7
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist -i python${{ matrix.python-version }}
+          sccache: "false"
+          manylinux: musllinux_1_2
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-musllinux-${{ matrix.platform.name }}-${{ matrix.python-version }}
+          path: dist
+      - name: pytest
+        uses: uraimo/run-on-arch-action@v2
+        with:
+          base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
+          githubToken: ${{ github.token }}
+          dockerRunArgs: |
+            --volume "${{ github.workspace }}:/io"
+          run: |
+            set -euxo pipefail
+            apk add curl
+            curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
+            cd /io
+            rm -rf deebot_client
+            /root/.local/bin/uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
+            /root/.local/bin/uv pip install --no-progress --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r test-requirements.txt
+            /root/.local/bin/uv pip install --no-progress --system --force-reinstall dist/deebot_client-*.whl
+            # Disable tests, which require docker for now
+            pytest -v -m "not docker"
 
   windows:
     name: Windows ${{ matrix.platform.target }} ${{ matrix.python-version }}
@@ -183,49 +183,49 @@ jobs:
           # Disable tests, which require docker for now
           pytest -v -m "not docker"
 
-  # macos:
-  #   name: Macos ${{ matrix.platform.target }} ${{ matrix.python-version }}
-  #   runs-on: ${{ matrix.platform.runner }}
-  #   strategy:
-  #     fail-fast: false
-  #     matrix:
-  #       platform:
-  #         - runner: macos-13
-  #           target: x86_64
-  #         - runner: macos-14
-  #           target: aarch64
-  #       python-version: ["3.12", "3.13"]
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-python@v5
-  #       with:
-  #         python-version: ${{ matrix.python-version }}
-  #     - name: Build wheels
-  #       uses: PyO3/maturin-action@v1
-  #       with:
-  #         target: ${{ matrix.platform.target }}
-  #         args: --release --out dist -i python${{ matrix.python-version }}
-  #         sccache: "false"
-  #     - name: Upload wheels
-  #       uses: actions/upload-artifact@v4
-  #       with:
-  #         name: wheels-macos-${{ matrix.platform.target }}-${{ matrix.python-version }}
-  #         path: dist
-  #     - name: 🏗 Install uv
-  #       uses: astral-sh/setup-uv@v5
-  #       with:
-  #         enable-cache: true
-  #     - name: pytest
-  #       shell: bash
-  #       run: |
-  #         rm -rf deebot_client
-  #         uv venv -p ${{ matrix.python-version }}
-  #         uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
-  #         uv pip install -r test-requirements.txt
-  #         source .venv/bin/activate
-  #         uv pip install --force-reinstall dist/deebot_client-*.whl
-  #         # Disable tests, which require docker for now
-  #         pytest -v -m "not docker"
+  macos:
+    name: Macos ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.platform.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - runner: macos-13
+            target: x86_64
+          - runner: macos-14
+            target: aarch64
+        python-version: ["3.12", "3.13"]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: Build wheels
+        uses: PyO3/maturin-action@v1
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --out dist -i python${{ matrix.python-version }}
+          sccache: "false"
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-macos-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          path: dist
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: pytest
+        shell: bash
+        run: |
+          rm -rf deebot_client
+          uv venv -p ${{ matrix.python-version }}
+          uv export --no-hashes --no-dev --group test --no-emit-project > test-requirements.txt
+          uv pip install -r test-requirements.txt
+          source .venv/bin/activate
+          uv pip install --force-reinstall dist/deebot_client-*.whl
+          # Disable tests, which require docker for now
+          pytest -v -m "not docker"
 
   # sdist:
   #   runs-on: ubuntu-latest
