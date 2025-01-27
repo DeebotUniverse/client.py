@@ -15,7 +15,7 @@ env:
 
 jobs:
   linux:
-    name: ${{ matrix.manylinux }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    name: ${{ matrix.compatibility.manylinux }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -31,9 +31,14 @@ jobs:
             target: armv7
             native: false
         python-version: ["3.12", "3.13"]
-        manylinux:
-          - auto #manylinux_2_34
-          - musllinux_1_2
+        compatibility:
+          - manylinux: auto # manylinux_2_34
+            install_commands: |
+              apt-get update
+              apt-get install -y curl
+          - manylinux: musllinux_1_2
+            install_commands: |
+              apk add curl
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -45,11 +50,11 @@ jobs:
           target: ${{ matrix.platform.target }}
           args: --release --out dist -i python${{ matrix.python-version }}
           sccache: "true"
-          manylinux: ${{ matrix.manylinux }}
+          manylinux: ${{ matrix.compatibility.manylinux }}
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-{{ matrix.manylinux }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          name: wheels-${{ matrix.compatibility.manylinux }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
@@ -87,8 +92,7 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             set -euxo pipefail
-            apt-get update
-            apt-get install -y curl
+            ${{ matrix.compatibility.install_commands }}
             curl -LsSf https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
             uv python install ${{ matrix.python-version }}
