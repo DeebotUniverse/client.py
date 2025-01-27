@@ -54,9 +54,9 @@ jobs:
         with:
           path: .venv
           key: |
-            ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+            ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}-${{ matrix.python-version }}
             -$(date -u '+%Y-%m-%dT%H:%M:%s')
-          restore-keys: ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}
+          restore-keys: ${{ runner.os }}-${{ matrix.platform.target }}-${{hashFiles('uv.lock', 'pyproject.toml', 'Cargo.lock', 'Cargo.toml') }}-${{ matrix.python-version }}
       - name: Setup test env
         if: (matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64') && steps.cache-venv.outputs.cache-hit != 'true'
         run: |
@@ -80,8 +80,8 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             set -euxo pipefail
-            sudo apt-get update
-            sudo apt-get install -y curl
+            apt-get update
+            apt-get install -y curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
