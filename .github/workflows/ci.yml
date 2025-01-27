@@ -122,7 +122,7 @@ jobs:
       - name: pytest
         uses: uraimo/run-on-arch-action@v2
         with:
-          base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
+          base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:${{ matrix.python-version }}-alpine3.21
           githubToken: ${{ github.token }}
           dockerRunArgs: |
             --volume "${{ github.workspace }}:/io"
