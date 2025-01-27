@@ -15,6 +15,7 @@ env:
 
 jobs:
   linux:
+    name: Manylinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
@@ -83,11 +84,13 @@ jobs:
             apt-get update
             apt-get install -y curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install -r test-requirements.txt
           run: |
             set -euxo pipefail
+            source $HOME/.local/bin/env
             rm -rf deebot_client
             uv pip install --force-reinstall dist/deebot_client-*.whl
             pytest
