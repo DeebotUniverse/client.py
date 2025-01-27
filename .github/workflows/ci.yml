@@ -13,19 +13,22 @@ env:
 
 jobs:
   linux:
-    name: ${{ matrix.compatibility.manylinux }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    name: ${{ matrix.compatibility.manylinux }} ${{ matrix.platform.name }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - runner: ubuntu-24.04
-            target: amd64
+          - name: amd64
+            runner: ubuntu-24.04
+            target: x86_64
             native: true
-          - runner: ubuntu-24.04-arm
+          - name: aarch64
+            runner: ubuntu-24.04-arm
             target: aarch64
             native: true
-          - runner: ubuntu-24.04
+          - name: armv7
+            runner: ubuntu-24.04
             target: armv7
             native: false
         python-version: ["3.12", "3.13"]
@@ -47,7 +50,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-${{ matrix.compatibility.manylinux }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          name: wheels-${{ matrix.compatibility.manylinux }}-${{ matrix.platform.name }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
@@ -90,9 +93,12 @@ jobs:
         if: ${{ ! matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'musllinux') }}
         uses: uraimo/run-on-arch-action@v2
         with:
-          base_image: ghcr.io/home-assistant/${{ matrix.platform.target }}-base-python:latest
+          base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
           githubToken: ${{ github.token }}
           install: |
+            set -euxo pipefail
+            apk add curl
+            curl -LsSf https://astral.sh/uv/install.sh | sh
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install --system -r test-requirements.txt
