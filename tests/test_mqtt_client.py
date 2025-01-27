@@ -45,6 +45,7 @@ async def test_last_message_received_at(
         assert mqtt_client.last_message_received_at == expected
 
 
+@pytest.mark.docker
 async def test_client_bot_subscription(
     mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
 ) -> None:
@@ -62,6 +63,7 @@ async def test_client_bot_subscription(
     )
 
 
+@pytest.mark.docker
 async def test_client_reconnect_manual(
     mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
 ) -> None:
@@ -104,6 +106,7 @@ async def _publish_p2p(
     await asyncio.sleep(0.1)
 
 
+@pytest.mark.docker
 async def test_p2p_success(
     mqtt_client: MqttClient,
     api_device_info: ApiDeviceInfo,
@@ -152,6 +155,7 @@ async def test_p2p_success(
         assert len(mqtt_client._received_p2p_commands) == 0
 
 
+@pytest.mark.docker
 async def test_p2p_not_supported(
     mqtt_client: MqttClient,
     api_device_info: ApiDeviceInfo,
@@ -201,6 +205,7 @@ async def test_p2p_data_type_not_supported(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_to_late(
     mqtt_client: MqttClient,
     api_device_info: ApiDeviceInfo,
@@ -257,6 +262,7 @@ async def test_p2p_to_late(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_parse_error(
     mqtt_client: MqttClient,
     api_device_info: ApiDeviceInfo,
