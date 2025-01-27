@@ -33,7 +33,7 @@ jobs:
             runner: ubuntu-24.04
             target: armv7
             native: false
-            before_build: apt install gcc-arm-linux-gnueabihf
+            before_build: yum install -y gcc-arm*
         python-version: ["3.12", "3.13"]
     steps:
       - uses: actions/checkout@v4
@@ -133,8 +133,9 @@ jobs:
           run: |
             set -euxo pipefail
             apk add curl
+            env HOME=/root
             curl -LsSf https://astral.sh/uv/install.sh | sh
-            source /root/.local/bin/env
+            source $HOME/.local/bin/env
             cd /io
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
