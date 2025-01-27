@@ -60,7 +60,7 @@ jobs:
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          maturin
+          uv export --no-dev --group test --no-emit-project > test-requirements.txt
           uv pip install -r test-requirements.txt
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
@@ -79,7 +79,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | sh
             source $HOME/.local/bin/env
             uv venv -p ${{ matrix.python-version }}
-            uv export --no-hashes --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
+            uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
             uv pip install -r test-requirements.txt
           run: |
             set -euxo pipefail
@@ -176,7 +176,7 @@ jobs:
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          uv export --no-hashes --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
+          uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
           uv pip install -r test-requirements.txt
           source .venv/Scripts/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
@@ -220,7 +220,7 @@ jobs:
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          uv export --no-hashes --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
+          uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
           uv pip install -r test-requirements.txt
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
