@@ -217,7 +217,8 @@ jobs:
           uv pip install -r test-requirements.txt
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
-          pytest
+          # Disable tests, which require docker for now
+          pytest -m "not docker"
 
   # sdist:
   #   runs-on: ubuntu-latest
