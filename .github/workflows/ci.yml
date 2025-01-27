@@ -53,6 +53,7 @@ jobs:
           name: wheels-${{ matrix.compatibility.manylinux }}-${{ matrix.platform.name }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
+        if: ${{ matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'manylinux') }}
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
@@ -90,7 +91,7 @@ jobs:
             uv pip install --force-reinstall dist/deebot_client-*.whl
             pytest
       - name: pytest (alpine)
-        if: ${{ ! matrix.platform.native && startsWith(matrix.compatibility.manylinux, 'musllinux') }}
+        if: ${{ startsWith(matrix.compatibility.manylinux, 'musllinux') }}
         uses: uraimo/run-on-arch-action@v2
         with:
           base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:latest
@@ -99,9 +100,10 @@ jobs:
             set -euxo pipefail
             apk add curl
             curl -LsSf https://astral.sh/uv/install.sh | sh
+            source $HOME/.local/bin/env
             rm -rf deebot_client
             uv export --group test --no-emit-project > test-requirements.txt
-            uv pip install --system -r test-requirements.txt
+            uv pip install --system --index-strategy unsafe-first-match -r test-requirements.txt
           run: |
             set -euxo pipefail
             uv pip install --system --force-reinstall dist/deebot_client-*.whl
