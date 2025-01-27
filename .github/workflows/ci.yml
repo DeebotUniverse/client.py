@@ -181,7 +181,7 @@ jobs:
           source .venv/Scripts/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
           # Disable tests, which require docker for now
-          pytest
+          pytest -v -m "not docker"
 
   # macos:
   #   name: Macos ${{ matrix.platform.target }} ${{ matrix.python-version }}
