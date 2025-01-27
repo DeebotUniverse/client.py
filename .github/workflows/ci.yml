@@ -67,7 +67,6 @@ jobs:
         if: ${{ matrix.platform.target == 'x86_64' || matrix.platform.target == 'aarch64' }}
         shell: bash
         run: |
-          set -euxo pipefail
           rm -rf deebot_client
           source .venv/bin/activate
           uv pip install --force-reinstall dist/deebot_client-*.whl
@@ -81,7 +80,9 @@ jobs:
           githubToken: ${{ github.token }}
           install: |
             set -euxo pipefail
-            wget -qO- https://astral.sh/uv/install.sh | sh
+            sudo apt-get update
+            sudo apt-get install -y curl
+            curl -LsSf https://astral.sh/uv/install.sh | sh
             uv venv -p ${{ matrix.python-version }}
             uv export --group test --no-emit-project > test-requirements.txt
             uv pip install -r test-requirements.txt
