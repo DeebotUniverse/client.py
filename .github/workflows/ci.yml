@@ -257,7 +257,7 @@ jobs:
         uses: docker/build-push-action@v6
         with:
           context: .
-          file: ci/Dockerfile
+          file: ci/Dockerfile.alpine
           platforms: linux/${{ matrix.platform.name }}
           push: false
           cache-from: type=gha
