@@ -48,7 +48,7 @@ jobs:
           path: requirements.txt
 
   build-test-native:
-    name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    # name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     needs: info
     strategy:
