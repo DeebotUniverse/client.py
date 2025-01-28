@@ -146,8 +146,6 @@ jobs:
             docker_arch: amd64
           - target: aarch64
             docker_arch: arm64
-          - target: armv7
-            docker_arch: arm/v7
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
