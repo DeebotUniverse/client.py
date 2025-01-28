@@ -255,7 +255,7 @@ jobs:
 
   release:
     name: Releasing to PyPi
-    #if: ${{ github.event_name == 'release' }}
+    if: ${{ github.event_name == 'release' }}
     runs-on: ubuntu-latest
     needs:
       - build-test-native
@@ -276,13 +276,13 @@ jobs:
           pattern: wheels-*
           path: dist
           merge-multiple: true
-      # - name: 🚀 Publish to PyPi
-      #   uses: pypa/gh-action-pypi-publish@v1.12.4
-      #   with:
-      #     verbose: true
-      #     print-hash: true
-      # - name: ✍️ Sign published artifacts
-      #   uses: sigstore/gh-action-sigstore-python@v3.0.0
-      #   with:
-      #     inputs: ./dist/*.tar.gz ./dist/*.whl
-      #     release-signing-artifacts: true
+      - name: 🚀 Publish to PyPi
+        uses: pypa/gh-action-pypi-publish@v1.12.4
+        with:
+          verbose: true
+          print-hash: true
+      - name: ✍️ Sign published artifacts
+        uses: sigstore/gh-action-sigstore-python@v3.0.0
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          release-signing-artifacts: true
