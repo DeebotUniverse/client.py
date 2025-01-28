@@ -144,8 +144,8 @@ jobs:
         platform:
           - target: x86_64
             docker_arch: amd64
-          - target: aarch64
-            docker_arch: arm64
+            # - target: aarch64
+            #   docker_arch: arm64
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
