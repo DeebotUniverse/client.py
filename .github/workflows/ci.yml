@@ -48,12 +48,23 @@ jobs:
           path: requirements.txt
 
   build-test-native:
-    # name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     needs: info
     strategy:
       fail-fast: false
       matrix:
+        include:
+          - name: Linux
+            activate_venv: .venv/bin/activate
+            manylinux: manylinux_2_34
+            pytest_args: ""
+          - name: Macos
+            activate_venv: .venv/bin/activate
+            pytest_args: -m "not docker"
+          - name: Windows
+            activate_venv: .venv/Scripts/activate
+            pytest_args: -m "not docker"
         platform:
           - name: Linux
             runner: ubuntu-24.04
@@ -71,17 +82,6 @@ jobs:
             runner: macos-14
             target: aarch64
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-        include:
-          - name: Linux
-            activate_venv: .venv/bin/activate
-            manylinux: manylinux_2_34
-            pytest_args: ""
-          - name: Macos
-            activate_venv: .venv/bin/activate
-            pytest_args: -m "not docker"
-          - name: Windows
-            activate_venv: .venv/Scripts/activate
-            pytest_args: -m "not docker"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
