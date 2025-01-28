@@ -220,10 +220,13 @@ jobs:
         platform:
           - name: amd64
             target: x86_64
-          # - name: aarch64
-          #   target: aarch64
-          # - name: armv7
-          #   target: armv7
+            docker_arch: amd64
+          - name: aarch64
+            target: aarch64
+            docker_arch: arm64
+          - name: armv7
+            target: armv7
+            docker_arch: arm/v7
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
@@ -239,7 +242,7 @@ jobs:
         with:
           target: ${{ matrix.platform.target }}
           args: --release --strip --out dist -i python${{ matrix.python-version }}
-          sccache: "false"
+          sccache: "true"
           manylinux: musllinux_1_2
       - name: Upload wheels
         uses: actions/upload-artifact@v4
@@ -259,18 +262,18 @@ jobs:
         with:
           context: .
           file: ci/Dockerfile.alpine
-          platforms: linux/${{ matrix.platform.name }}
+          platforms: linux/${{ matrix.platform.docker_arch }}
           push: false
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             PYTHON_VERSION=${{ matrix.python-version }}
-          tags: deebot_client:${{ matrix.platform.name }}-${{ matrix.python-version }}
+          tags: deebot_client:${{ matrix.platform.docker_arch }}-${{ matrix.python-version }}
       - name: Pytest in docker
         id: pytest
         run: |
-          docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.platform.name }} deebot_client:${{ matrix.platform.name }}-${{ matrix.python-version }}
+          docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.platform.docker_arch }} deebot_client:${{ matrix.platform.docker_arch }}-${{ matrix.python-version }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
