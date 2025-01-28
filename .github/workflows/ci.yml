@@ -51,10 +51,39 @@ jobs:
           name: requirements.txt
           path: requirements.txt
 
+  code-quality:
+    runs-on: "ubuntu-latest"
+    name: Check code quality
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+          cache-dependency-glob: "uv.lock"
+          cache-local-path: ${{ env.UV_CACHE_DIR }}
+
+      - name: 🏗 Install the project
+        run: uv sync --locked --group lint
+
+      # Following steps cannot run by pre-commit.ci as repo = local
+      - name: Run mypy
+        run: uv run --frozen mypy deebot_client/
+
+      - name: Pylint review
+        run: uv run --frozen pylint deebot_client/**/*.py
+
+      - name: Verify no getLogger usages
+        run: scripts/check_getLogger.sh
+
   build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
-    needs: info
+    needs:
+      - info
+      - code-quality
     strategy:
       fail-fast: false
       matrix:
@@ -141,7 +170,9 @@ jobs:
   build-test-musl:
     name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ubuntu-latest
-    needs: info
+    needs:
+      - info
+      - code-quality
     strategy:
       fail-fast: false
       matrix:
@@ -238,6 +269,7 @@ jobs:
   sdist:
     name: Create source distribution
     runs-on: ubuntu-latest
+    needs: code-quality
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
