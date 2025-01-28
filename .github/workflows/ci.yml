@@ -242,8 +242,9 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Run benchmarks
     needs:
-      - info
       - build-test-native
+      - build-test-musl
+      - sdist
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
