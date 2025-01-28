@@ -13,7 +13,7 @@ env:
 
 jobs:
   info:
-    name: Collect information & changes data
+    name: Collect information & prepare
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
@@ -40,14 +40,14 @@ jobs:
           enable-cache: true
       - name: Generate requirements.txt
         run: |
-          uv export --no-dev --group test --no-emit-project > requirements.txt
+          uv export --no-hashes --no-dev --group test --no-emit-project > requirements.txt
       - name: Upload requirements.txt
         uses: actions/upload-artifact@v4
         with:
           name: requirements.txt
           path: requirements.txt
 
-  build-native:
+  build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     needs: info
@@ -76,13 +76,12 @@ jobs:
             activate_venv: .venv/bin/activate
             manylinux: manylinux_2_34
             pytest_args: ""
-
           # Disable docker tests on Windows and MacOS
-          - name: Windows
-            activate_venv: .venv/Scripts/activate
-            pytest_args: -m "not docker"
           - name: Macos
             activate_venv: .venv/bin/activate
+            pytest_args: -m "not docker"
+          - name: Windows
+            activate_venv: .venv/Scripts/activate
             pytest_args: -m "not docker"
     steps:
       - uses: actions/checkout@v4
@@ -198,7 +197,7 @@ jobs:
   #           uv pip install --force-reinstall dist/deebot_client-*.whl
   #           pytest
 
-  musllinux:
+  build-test-qemu:
     name: Musllinux ${{ matrix.platform.name }} ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
     needs: info
