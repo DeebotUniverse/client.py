@@ -155,9 +155,9 @@ jobs:
         id: pytest
         run: |
           ${{ matrix.platform.activate_venv || 'source .venv/bin/activate' }}
-          site-packages=$(python -c "import site; print(site.getsitepackages()[0])")
-          echo "site-packages: ${site-packages}"
-          pytest tests --cov=${site-packages}/deebot_client --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args }}
+          site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
+          echo "site-packages: ${site_packages}"
+          pytest tests --cov=${site_packages}/deebot_client --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args }}
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
