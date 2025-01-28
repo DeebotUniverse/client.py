@@ -76,7 +76,6 @@ jobs:
             activate_venv: .venv/bin/activate
             manylinux: manylinux_2_34
             pytest_args: ""
-          # Disable docker tests on Windows and MacOS
           - name: Macos
             activate_venv: .venv/bin/activate
             pytest_args: -m "not docker"
