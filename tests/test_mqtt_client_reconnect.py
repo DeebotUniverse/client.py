@@ -13,7 +13,7 @@ from .mqtt_util import subscribe, verify_subscribe
 if TYPE_CHECKING:
     from collections.abc import Generator
 
-    from deebot_client.models import ApiDeviceInfo
+    from deebot_client.models import DeviceInfo
     from deebot_client.mqtt_client import MqttClient, MqttConfiguration
 
 _WAITING_AFTER_RESTART = 30
@@ -33,11 +33,11 @@ def mqtt_server() -> Generator[MqttServer]:
 async def test_client_reconnect_on_broker_error(
     mqtt_client: MqttClient,
     mqtt_server: MqttServer,
-    api_device_info: ApiDeviceInfo,
+    device_info: DeviceInfo,
     mqtt_config: MqttConfiguration,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    (_, callback, _) = await subscribe(mqtt_client, api_device_info)
+    (_, callback, _) = await subscribe(mqtt_client, device_info)
     async with Client(
         hostname=mqtt_config.hostname,
         port=mqtt_config.port,
@@ -45,7 +45,7 @@ async def test_client_reconnect_on_broker_error(
         tls_context=mqtt_config.ssl_context,
     ) as client:
         # test client cannot be used as we restart the broker in this test
-        await verify_subscribe(client, api_device_info, callback, expected_called=True)
+        await verify_subscribe(client, device_info, callback, expected_called=True)
 
     caplog.clear()
     mqtt_server.stop()
@@ -76,7 +76,7 @@ async def test_client_reconnect_on_broker_error(
             ) as client:
                 # test client cannot be used as we restart the broker in this test
                 await verify_subscribe(
-                    client, api_device_info, callback, expected_called=True
+                    client, device_info, callback, expected_called=True
                 )
             return
 
