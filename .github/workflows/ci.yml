@@ -11,6 +11,10 @@ on:
 env:
   ADDITIONAL_PYTHON_VERSIONS: "['3.12']"
 
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
 jobs:
   info:
     name: Collect information & prepare
