@@ -9,12 +9,48 @@ on:
     types: [published]
 
 env:
-  ALL_PYTHON_VERSIONS: "['3.12', '3.13']"
+  ADDITIONAL_PYTHON_VERSIONS: "['3.12']"
 
 jobs:
+  info:
+    name: Collect information & changes data
+    outputs:
+      default_python_version: ${{ steps.info.outputs.default_python_version }}
+      python_versions: ${{ steps.info.outputs.python_versions }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️  Check out code from GitHub
+        uses: actions/checkout@v4.2.2
+      - name: Collect information
+        id: info
+        run: |
+          default_python_version=$(cat .python-version)
+          echo "default python version: ${default_python_version}"
+          echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
+
+          # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version. If not add it
+          if [[ ! ${ADDITIONAL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
+            ADDITIONAL_PYTHON_VERSIONS="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+          fi
+          echo "python_versions: ${ADDITIONAL_PYTHON_VERSIONS}"
+          echo "python_versions=${ADDITIONAL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - name: Generate requirements.txt
+        run: |
+          uv export --no-dev --group test --no-emit-project > requirements.txt
+      - name: Upload requirements.txt
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements.txt
+          path: requirements.txt
+
   build-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
+    needs: info
     strategy:
       fail-fast: false
       matrix:
@@ -28,13 +64,13 @@ jobs:
           - name: Windows
             runner: windows-latest
             target: x64
-          - name: MacOs
+          - name: Macos
             runner: macos-13
             target: x86_64
-          - name: MacOs
+          - name: Macos
             runner: macos-14
             target: aarch64
-        python-version: ["3.12", "3.13"]
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
         include:
           - name: Linux
             activate_venv: .venv/bin/activate
@@ -45,7 +81,7 @@ jobs:
           - name: Windows
             activate_venv: .venv/Scripts/activate
             pytest_args: -m "not docker"
-          - name: MacOs
+          - name: Macos
             activate_venv: .venv/bin/activate
             pytest_args: -m "not docker"
     steps:
@@ -71,13 +107,16 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
+      - name: Download requirements.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: requirements.txt
       - name: pytest
         shell: bash
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
-          uv pip install -r test-requirements.txt
+          uv pip install -r requirements.txt
           source ${{ matrix.activate_venv }}
           uv pip install --force-reinstall dist/deebot_client-*.whl
           # Disable tests, which require docker for now
@@ -162,6 +201,7 @@ jobs:
   musllinux:
     name: Musllinux ${{ matrix.platform.name }} ${{ matrix.python-version }}
     runs-on: ubuntu-24.04
+    needs: info
     strategy:
       fail-fast: false
       matrix:
@@ -172,7 +212,7 @@ jobs:
           #   target: aarch64
           # - name: armv7
           #   target: armv7
-        python-version: ["3.12", "3.13"]
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -190,6 +230,10 @@ jobs:
         with:
           name: wheels-musllinux-${{ matrix.platform.name }}-${{ matrix.python-version }}
           path: dist
+      - name: Download requirements.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: requirements.txt
       - name: pytest
         uses: uraimo/run-on-arch-action@v2
         with:
@@ -203,8 +247,7 @@ jobs:
             curl -LsSf https://astral.sh/uv/install.sh | HOME=/root sh
             cd /io
             rm -rf deebot_client
-            /root/.local/bin/uv export --no-hashes --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
-            /root/.local/bin/uv pip install --no-progress --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r test-requirements.txt
+            /root/.local/bin/uv pip install --no-progress --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r requirements.txt
             /root/.local/bin/uv pip install --no-progress --system --force-reinstall dist/deebot_client-*.whl
             # Disable tests, which require docker for now
             pytest -v -m "not docker"
