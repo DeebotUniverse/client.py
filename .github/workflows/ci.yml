@@ -168,7 +168,7 @@ jobs:
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
-          architecture: ${{ matrix.platform.target }}
+          architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
