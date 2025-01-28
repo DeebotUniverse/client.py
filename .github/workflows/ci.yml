@@ -90,7 +90,6 @@ jobs:
         include:
           - name: Linux
             manylinux: manylinux_2_34
-            pytest_args: ""
           - name: Macos
             pytest_args: -m "not docker"
         platform:
@@ -103,8 +102,6 @@ jobs:
           - name: Windows
             runner: windows-latest
             target: x64
-            activate_venv: .venv/Scripts/activate
-            pytest_args: -m "not docker"
           - name: Macos
             runner: macos-13
             target: x86_64
@@ -152,18 +149,27 @@ jobs:
           uv pip install -r requirements.txt
           uv pip install --force-reinstall dist/deebot_client-*.whl
       - name: Run pytest
+        if: ${{ matrix.platform.name != 'Windows' }}
         id: pytest
         run: |
-          ${{ matrix.platform.activate_venv || 'source .venv/bin/activate' }}
+          .venv/Scripts/activate
           site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
           echo "site-packages: ${site_packages}"
-          pytest tests --cov=${site_packages}/deebot_client --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args }}
+          pytest tests --cov=${site_packages}/deebot_client --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args || ''}}
+      - name: Run pytest (windows)
+        if: ${{ matrix.platform.name == 'Windows' }}
+        id: pytest_windows
+        run: |
+          .venv/Scripts/activate
+          $sitePackages = python -c "import site; print(site.getsitepackages()[0])"
+          Write-Output "site-packages: $sitePackages"
+          pytest tests --cov="$sitePackages/deebot_client" --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v -m "not docker"
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
       - name: Upload test results to Codecov
-        if: ${{ !cancelled() && steps.pytest.outcome == 'success' }}
+        if: ${{ !cancelled() && ((matrix.platform.name == 'Windows' && steps.pytest_windows.outcome) || steps.pytest.outcome) == 'success' }}
         uses: codecov/test-results-action@v1
         with:
           # fail_ci_if_error: true
