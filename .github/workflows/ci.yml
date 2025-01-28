@@ -110,16 +110,27 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: requirements.txt
-      - name: pytest
+      - name: Prepare env and install wheel
         shell: bash
         run: |
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
           uv pip install -r requirements.txt
-          source ${{ matrix.activate_venv }}
           uv pip install --force-reinstall dist/deebot_client-*.whl
-          # Disable tests, which require docker for now
-          pytest -v ${{ matrix.pytest_args }}
+      - name: Run pytest
+        id: pytest
+        run: |
+          source ${{ matrix.activate_venv }}
+          pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args }}
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && steps.pytest.outcome == 'success' }}
+        uses: codecov/test-results-action@v1
+        with:
+          fail_ci_if_error: true
 
   # linux:
   #   name: Linux ${{ matrix.platform.name }} ${{ matrix.python-version }}
@@ -233,7 +244,8 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: requirements.txt
-      - name: pytest
+      - name: Pytest in docker
+        id: pytest
         uses: uraimo/run-on-arch-action@v2
         with:
           base_image: ghcr.io/home-assistant/${{ matrix.platform.name }}-base-python:${{ matrix.python-version }}-alpine3.21
@@ -249,7 +261,44 @@ jobs:
             /root/.local/bin/uv pip install --no-progress --system --extra-index-url https://wheels.home-assistant.io/musllinux-index/ --index-strategy unsafe-first-match -r requirements.txt
             /root/.local/bin/uv pip install --no-progress --system --force-reinstall dist/deebot_client-*.whl
             # Disable tests, which require docker for now
-            pytest -v -m "not docker"
+            pytest tests --cov=./ --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v -m "not docker"
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && steps.pytest.outcome == 'success' }}
+        uses: codecov/test-results-action@v1
+        with:
+          fail_ci_if_error: true
+
+  benchmarks:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    needs:
+      - info
+      - build-test-native
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@v5
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: ${{ needs.info.outputs.default_python_version }}
+      - name: Download requirements.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: requirements.txt
+      - name: 🏗 Install the project
+        run: |
+          uv pip install -e . --system -r requirements.txt
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@main
+        with:
+          run: pytest tests/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}
 
   # sdist:
   #   runs-on: ubuntu-latest
