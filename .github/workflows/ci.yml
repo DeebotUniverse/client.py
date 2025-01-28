@@ -62,9 +62,6 @@ jobs:
           - name: Macos
             activate_venv: .venv/bin/activate
             pytest_args: -m "not docker"
-          - name: Windows
-            activate_venv: .venv/Scripts/activate
-            pytest_args: -m "not docker"
         platform:
           - name: Linux
             runner: ubuntu-24.04
@@ -75,6 +72,8 @@ jobs:
           - name: Windows
             runner: windows-latest
             target: x64
+            activate_venv: .venv/Scripts/activate
+            pytest_args: -m "not docker"
           - name: Macos
             runner: macos-13
             target: x86_64
