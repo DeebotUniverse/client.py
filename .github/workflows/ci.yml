@@ -260,8 +260,9 @@ jobs:
           file: ci/Dockerfile.alpine
           platforms: linux/${{ matrix.platform.name }}
           push: false
-          # cache-from: type=gha
-          # cache-to: type=gha,mode=max
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
           build-args: |
             PYTHON_VERSION=${{ matrix.python-version }}
           tags: deebot_client:${{ matrix.platform.name }}-${{ matrix.python-version }}
