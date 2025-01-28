@@ -138,18 +138,31 @@ jobs:
             # Disable tests, which require docker for now
             pytest -v -m "not docker"
 
-  windows:
-    name: Windows ${{ matrix.platform.target }} ${{ matrix.python-version }}
+  build-others:
+    name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     strategy:
       fail-fast: false
       matrix:
         platform:
-          - runner: windows-latest
+          - name: Windows
+            runner: windows-latest
             target: x64
-          - runner: windows-latest
+          - name: Windows
+            runner: windows-latest
             target: x86
+          - name: MacOs
+            runner: macos-13
+            target: x86_64
+          - name: MacOs
+            runner: macos-14
+            target: aarch64
         python-version: ["3.12", "3.13"]
+        include:
+          - name: Windows
+            activate_venv: .venv/Scripts/activate
+          - name: MacOs
+            activate_venv: .venv/bin/activate
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
@@ -165,7 +178,7 @@ jobs:
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
-          name: wheels-windows-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
@@ -178,51 +191,7 @@ jobs:
           uv venv -p ${{ matrix.python-version }}
           uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
           uv pip install -r test-requirements.txt
-          source .venv/Scripts/activate
-          uv pip install --force-reinstall dist/deebot_client-*.whl
-          # Disable tests, which require docker for now
-          pytest -v -m "not docker"
-
-  macos:
-    name: Macos ${{ matrix.platform.target }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.platform.runner }}
-    strategy:
-      fail-fast: false
-      matrix:
-        platform:
-          - runner: macos-13
-            target: x86_64
-          - runner: macos-14
-            target: aarch64
-        python-version: ["3.12", "3.13"]
-    steps:
-      - uses: actions/checkout@v4
-      - uses: actions/setup-python@v5
-        with:
-          python-version: ${{ matrix.python-version }}
-      - name: Build wheels
-        uses: PyO3/maturin-action@v1
-        with:
-          target: ${{ matrix.platform.target }}
-          args: --release --strip --out dist -i python${{ matrix.python-version }}
-          sccache: "false"
-      - name: Upload wheels
-        uses: actions/upload-artifact@v4
-        with:
-          name: wheels-macos-${{ matrix.platform.target }}-${{ matrix.python-version }}
-          path: dist
-      - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-      - name: pytest
-        shell: bash
-        run: |
-          rm -rf deebot_client
-          uv venv -p ${{ matrix.python-version }}
-          uv export --no-dev --group test --no-emit-project -p ${{ matrix.python-version }} > test-requirements.txt
-          uv pip install -r test-requirements.txt
-          source .venv/bin/activate
+          source ${{ matrix.activate_venv }}
           uv pip install --force-reinstall dist/deebot_client-*.whl
           # Disable tests, which require docker for now
           pytest -v -m "not docker"
