@@ -40,14 +40,18 @@ jobs:
             target: aarch64
         python-version: ["3.12", "3.13"]
         include:
-          - name: Windows
-            activate_venv: .venv/Scripts/activate
-          - activate_venv: .venv/bin/activate
-          # Disable docker tests on Windows and MacOS
-          - pytest_args: -m "not docker"
           - name: Linux
+            activate_venv: .venv/bin/activate
             manylinux: manylinux_2_34
             pytest_args: ""
+
+          # Disable docker tests on Windows and MacOS
+          - name: Windows
+            activate_venv: .venv/Scripts/activate
+            pytest_args: -m "not docker"
+          - name: MacOs
+            activate_venv: .venv/bin/activate
+            pytest_args: -m "not docker"
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-python@v5
