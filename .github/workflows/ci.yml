@@ -113,6 +113,7 @@ jobs:
       - name: Prepare env and install wheel
         shell: bash
         run: |
+          # Remove sources otherwise pytest will complain about missing rust files
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
           uv pip install -r requirements.txt
