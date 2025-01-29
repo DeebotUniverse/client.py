@@ -102,6 +102,8 @@ jobs:
           - name: Windows
             runner: windows-latest
             target: x64
+            set_version: |
+              (Get-Content pyproject.toml).replace('version = ".*"', 'version = "${{ github.event.release.tag_name }}"') | Set-Content pyproject.toml
           - name: Macos
             runner: macos-13
             target: x86_64
@@ -118,7 +120,7 @@ jobs:
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |
-          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+          ${{ matrix.platform.set_version || 'sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak' }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
