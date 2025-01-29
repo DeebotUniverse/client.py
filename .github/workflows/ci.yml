@@ -120,7 +120,7 @@ jobs:
       - name: 🏗 Set package version
         if: ${{ matrix.platform.name != 'Windows' }} # && github.event_name == 'release' }}
         run: |
-          'sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak'
+          sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak
       - name: 🏗 Set package version (Windows)
         if: ${{ matrix.platform.name == 'Windows' }} # && github.event_name == 'release' }}
         run: |
