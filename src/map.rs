@@ -48,13 +48,13 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
 
 fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
     let decompressed_data = decompress_7z_base64_data(value)?;
-    Ok(process_trace_points(&decompressed_data)?)
+    process_trace_points(&decompressed_data)
 }
 
 #[pyfunction(name = "extract_trace_points")]
 /// Extract trace points from 7z compressed data string.
 fn python_extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
-    Ok(extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))?)
+    extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

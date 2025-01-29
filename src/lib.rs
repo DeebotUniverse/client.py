@@ -29,7 +29,7 @@ where
     // https://github.com/PyO3/pyo3/issues/759
     PyModule::import(py, "sys")?
         .getattr("modules")?
-        .set_item(&format!("deebot_client.rs.{}", module_name), &child_module)?;
+        .set_item(format!("deebot_client.rs.{}", module_name), &child_module)?;
 
     parent_module.add_submodule(&child_module)
 }
