@@ -30,7 +30,7 @@ pub fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error
 /// Decompress base64 decoded 7z compressed string.
 #[pyfunction(name = "decompress_7z_base64_data")]
 fn python_decompress_7z_base64_data(value: String) -> Result<Vec<u8>, PyErr> {
-    Ok(decompress_7z_base64_data(value).map_err(|err| PyValueError::new_err(err.to_string()))?)
+    decompress_7z_base64_data(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
