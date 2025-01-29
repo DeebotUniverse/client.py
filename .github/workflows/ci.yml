@@ -168,6 +168,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
+          name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && ((matrix.platform.name == 'Windows' && steps.pytest_windows.outcome) || steps.pytest.outcome) == 'success' }}
         uses: codecov/test-results-action@v1
@@ -240,6 +241,7 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
+          name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.pytest.outcome == 'success' }}
         uses: codecov/test-results-action@v1
