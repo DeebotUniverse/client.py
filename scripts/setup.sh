@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euxo pipefail
 
 # Setup development environment
 
@@ -11,6 +11,9 @@ sudo apt update
 
 # Install project dependencies
 uv sync --frozen --group dev
+
+# Setup maturin development hook
+python -m maturin_import_hook site install --uv
 
 # Setup pre-commit
 pre-commit install

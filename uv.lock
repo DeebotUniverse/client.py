@@ -256,15 +256,6 @@ dependencies = [
 ]
 
 [package.dev-dependencies]
-benchmark = [
-    { name = "pytest" },
-    { name = "pytest-asyncio" },
-    { name = "pytest-codspeed" },
-    { name = "pytest-cov" },
-    { name = "pytest-docker-fixtures" },
-    { name = "pytest-timeout" },
-    { name = "testfixtures" },
-]
 dev = [
     { name = "maturin", extra = ["patchelf"] },
     { name = "maturin-import-hook" },
@@ -284,8 +275,6 @@ dev = [
     { name = "types-pillow" },
 ]
 lint = [
-    { name = "maturin", extra = ["patchelf"] },
-    { name = "maturin-import-hook" },
     { name = "mypy" },
     { name = "pre-commit" },
     { name = "pylint" },
@@ -294,8 +283,10 @@ lint = [
     { name = "types-pillow" },
 ]
 test = [
+    { name = "pycountry" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
+    { name = "pytest-codspeed" },
     { name = "pytest-cov" },
     { name = "pytest-docker-fixtures" },
     { name = "pytest-timeout" },
@@ -314,15 +305,6 @@ requires-dist = [
 ]
 
 [package.metadata.requires-dev]
-benchmark = [
-    { name = "pytest", specifier = "==8.3.4" },
-    { name = "pytest-asyncio", specifier = "==0.25.3" },
-    { name = "pytest-codspeed", specifier = ">=3.1.2" },
-    { name = "pytest-cov", specifier = "==6.0.0" },
-    { name = "pytest-docker-fixtures", specifier = "==1.3.19" },
-    { name = "pytest-timeout", specifier = "==2.3.1" },
-    { name = "testfixtures", specifier = "==8.3.0" },
-]
 dev = [
     { name = "maturin", extras = ["patchelf"], specifier = ">=1.7.8" },
     { name = "maturin-import-hook", specifier = ">=0.2.0" },
@@ -342,8 +324,6 @@ dev = [
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
 ]
 lint = [
-    { name = "maturin", extras = ["patchelf"], specifier = ">=1.7.8" },
-    { name = "maturin-import-hook", specifier = ">=0.2.0" },
     { name = "mypy", specifier = "==1.14.1" },
     { name = "pre-commit", specifier = "==4.1.0" },
     { name = "pylint", specifier = "==3.3.4" },
@@ -352,8 +332,10 @@ lint = [
     { name = "types-pillow", specifier = ">=10.2.0.20240822" },
 ]
 test = [
+    { name = "pycountry", specifier = "==24.6.1" },
     { name = "pytest", specifier = "==8.3.4" },
     { name = "pytest-asyncio", specifier = "==0.25.3" },
+    { name = "pytest-codspeed", specifier = ">=3.1.2" },
     { name = "pytest-cov", specifier = "==6.0.0" },
     { name = "pytest-docker-fixtures", specifier = "==1.3.19" },
     { name = "pytest-timeout", specifier = "==2.3.1" },
