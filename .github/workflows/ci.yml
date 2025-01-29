@@ -118,7 +118,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
       - name: 🏗 Set package version
-        if: ${{ github.event_name == 'release' }}
+        # if: ${{ github.event_name == 'release' }}
         run: |
           ${{ matrix.platform.set_version || 'sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak' }}
       - name: Build wheels
