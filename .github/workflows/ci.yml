@@ -116,9 +116,13 @@ jobs:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
       - name: 🏗 Set package version
-        if: ${{ github.event_name == 'release' }}
+        if: ${{ matrix.platform.name != 'Windows' && github.event_name == 'release' }}
         run: |
-          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+          sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak
+      - name: 🏗 Set package version (Windows)
+        if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
+        run: |
+          (Get-Content pyproject.toml).replace('version = ".*"', 'version = "${{ github.event.release.tag_name }}"') | Set-Content pyproject.toml
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
