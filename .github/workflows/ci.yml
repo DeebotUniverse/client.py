@@ -120,10 +120,9 @@ jobs:
         run: |
           sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak
       - name: 🏗 Set package version (Windows)
-        if: ${{ matrix.platform.name == 'Windows' }} # && github.event_name == 'release' }}
+        if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
         run: |
-          (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "11.1.0b1"'
-          (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "11.1.0b1"' | Set-Content pyproject.toml
+          (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
