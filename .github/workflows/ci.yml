@@ -102,8 +102,6 @@ jobs:
           - name: Windows
             runner: windows-latest
             target: x64
-            set_version: |
-
           - name: Macos
             runner: macos-13
             target: x86_64
