@@ -265,6 +265,7 @@ jobs:
   benchmarks:
     runs-on: "ubuntu-latest"
     name: Run benchmarks
+    if: ${{ github.event_name != 'release' }}
     needs:
       - build-test-native
       - build-test-musl
