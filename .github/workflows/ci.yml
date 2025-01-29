@@ -122,7 +122,7 @@ jobs:
       - name: 🏗 Set package version (Windows)
         if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
         run: |
-          (Get-Content pyproject.toml).replace('version = ".*"', 'version = "${{ github.event.release.tag_name }}"') | Set-Content pyproject.toml
+          (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
