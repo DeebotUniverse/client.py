@@ -32,12 +32,24 @@ jobs:
           echo "default python version: ${default_python_version}"
           echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
 
-          # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version. If not add it
+          # Ensure ADDITIONAL_PYTHON_VERSIONS is properly initialized
+          ADDITIONAL_PYTHON_VERSIONS=${ADDITIONAL_PYTHON_VERSIONS:-"[]"}
+
+          # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version
           if [[ ! ${ADDITIONAL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
-            ADDITIONAL_PYTHON_VERSIONS="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+            # Handle empty or "[]" case properly
+            if [[ ${ADDITIONAL_PYTHON_VERSIONS} == "[]" ]]; then
+              all_python_versions="['${default_python_version}']"
+            elif [[ -z ${ADDITIONAL_PYTHON_VERSIONS} ]]; then
+              all_python_versions="['${default_python_version}']"
+            else
+              all_python_versions="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+            fi
+          else
+            all_python_versions="${ADDITIONAL_PYTHON_VERSIONS}"
           fi
-          echo "python_versions: ${ADDITIONAL_PYTHON_VERSIONS}"
-          echo "python_versions=${ADDITIONAL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
+          echo "python_versions: ${all_python_versions}"
+          echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
         with:
