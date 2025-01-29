@@ -1,29 +1,35 @@
-use std::error::Error;
-
-use base64::{engine::general_purpose, Engine as _};
-use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-fn _decompress_7z_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error>> {
-    let mut bytes = general_purpose::STANDARD.decode(value)?;
-
-    // Insert required 0 bytes
-    for _ in 0..=3 {
-        bytes.insert(8, 0);
-    }
-
-    Ok(lzma::decompress(&bytes)?)
-}
-
-/// Decompress base64 decoded 7z compressed string.
-#[pyfunction]
-fn decompress_7z_base64_data(value: String) -> Result<Vec<u8>, PyErr> {
-    Ok(_decompress_7z_base64_data(value).map_err(|err| PyValueError::new_err(err.to_string()))?)
-}
+mod map;
+mod util;
 
 /// Deebot client written in Rust
 #[pymodule]
-fn rs(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(decompress_7z_base64_data, m)?)?;
+fn rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    register_submodule(py, m, map::init_module)?;
+    register_submodule(py, m, util::init_module)?;
     Ok(())
+}
+
+fn register_submodule<F>(
+    py: Python<'_>,
+    parent_module: &Bound<'_, PyModule>,
+    submodule: F,
+) -> PyResult<()>
+where
+    F: Fn(&Bound<'_, PyModule>) -> PyResult<()>,
+{
+    let parts: Vec<&str> = std::any::type_name::<F>().split("::").collect();
+    let module_name = parts[parts.len() - 2];
+
+    let child_module = PyModule::new(parent_module.py(), module_name)?;
+    submodule(&child_module)?;
+
+    // https://github.com/PyO3/pyo3/issues/1517#issuecomment-808664021
+    // https://github.com/PyO3/pyo3/issues/759
+    PyModule::import(py, "sys")?
+        .getattr("modules")?
+        .set_item(&format!("deebot_client.rs.{}", module_name), &child_module)?;
+
+    parent_module.add_submodule(&child_module)
 }
