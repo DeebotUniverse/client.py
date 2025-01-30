@@ -1,4 +1,5 @@
 name: CI
+run-name: "${{ github.event_name == 'workflow_dispatch' && format('CI: {0}', github.ref_name) || '' }}"
 
 on:
   push:
@@ -7,6 +8,7 @@ on:
   pull_request:
   release:
     types: [published]
+  workflow_dispatch:
 
 env:
   ADDITIONAL_PYTHON_VERSIONS: "['3.12']"
