@@ -5,6 +5,9 @@ ci:
     - mypy
     - pylint
     - verifyNoGetLogger
+    - rust-fmt
+    - rust-check
+    - rust-clippy
 
 default_language_version:
   python: python3.13
@@ -74,10 +77,10 @@ repos:
       - id: yamllint
   - repo: local
     hooks:
-      - id: cargo-fmt
+      - id: rust-fmt
         name: Rust format
         entry: cargo fmt --all -- --check
-        language: rust
+        language: system
         types:
           - rust
         pass_filenames: false
@@ -85,14 +88,14 @@ repos:
         name: Rust check
         entry: cargo check --lib --all-features --all-targets
         args: ["--"]
-        language: rust
+        language: system
         types:
           - rust
         pass_filenames: false
-      - id: clippy
+      - id: rust-clippy
         name: Rust clippy
         entry: cargo clippy --all --all-features --all-targets -- -D warnings
-        language: rust
+        language: system
         types:
           - rust
         pass_filenames: false
