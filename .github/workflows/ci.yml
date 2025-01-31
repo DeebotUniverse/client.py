@@ -42,8 +42,6 @@ jobs:
           echo "python_versions=${ADDITIONAL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
       - name: Generate requirements.txt
         run: |
           uv export --no-hashes --no-dev --group test --no-emit-project > requirements.txt
@@ -62,10 +60,6 @@ jobs:
 
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@v5
-        with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
 
       - name: 🏗 Install the project
         run: uv sync --locked --group lint
@@ -97,13 +91,66 @@ jobs:
         with:
           args: --all-features
 
+  tests:
+    name: Execute tests
+    runs-on: ubuntu-latest
+    needs:
+      - info
+      - code-quality
+      - rust-code-quality
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: actions-rs/toolchain@v1
+        with:
+          components: llvm-tools
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov
+      - name: Download requirements.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: requirements.txt
+      - name: Prepare env and install requirements
+        shell: bash
+        run: |
+          uv venv -p ${{ needs.info.outputs.default_python_version }}
+          uv pip install -r requirements.txt
+      - name: Execute tests
+        id: tests
+        run: |
+          source venv/bin/activate
+          source <(cargo llvm-cov show-env --export-prefix)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          export CARGO_INCREMENTAL=1
+          cargo llvm-cov clean --workspace
+          cargo test
+          maturin develop --uv
+          pytest tests --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
+          cargo llvm-cov --no-run --lcov --output-path coverage.lcov
+      - uses: codecov/codecov-action@v3
+        with:
+          files: coverage.lcov,coverage.xml
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@v5
+        with:
+          fail_ci_if_error: true
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        uses: codecov/test-results-action@v1
+        with:
+          # fail_ci_if_error: true
+          verbose: true
+
   build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     needs:
       - info
-      - code-quality
-      - rust-code-quality
+      - tests
     strategy:
       fail-fast: false
       matrix:
@@ -210,8 +257,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - info
-      - code-quality
-      - rust-code-quality
+      - tests
     strategy:
       fail-fast: false
       matrix:
