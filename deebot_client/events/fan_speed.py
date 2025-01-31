@@ -14,8 +14,10 @@ class FanSpeedLevel(IntEnum):
 
     # Values should be sort from low to high on their meanings
     QUIET = 1000
+    STANDARD = -1
     NORMAL = 0
     MAX = 1
+    STRONG = -2
     MAX_PLUS = 2
 
 
