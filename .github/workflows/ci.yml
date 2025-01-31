@@ -80,12 +80,30 @@ jobs:
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
+  rust-code-quality:
+    runs-on: "ubuntu-latest"
+    name: Rust code quality
+    env:
+      RUSTFLAGS: "-Dwarnings"
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@v4
+      - uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          components: rustfmt,clippy
+      - name: Rust format
+        uses: actions-rust-lang/rustfmt@v1
+      - uses: clechasseur/rs-clippy-check@v4
+        with:
+          args: --all-features
+
   build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
     runs-on: ${{ matrix.platform.runner }}
     needs:
       - info
       - code-quality
+      - rust-code-quality
     strategy:
       fail-fast: false
       matrix:
@@ -193,6 +211,7 @@ jobs:
     needs:
       - info
       - code-quality
+      - rust-code-quality
     strategy:
       fail-fast: false
       matrix:
