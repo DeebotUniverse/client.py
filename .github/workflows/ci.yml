@@ -108,14 +108,13 @@ jobs:
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           override: true
-          profile: minimal
           components: llvm-tools
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Prepare env and install requirements
         shell: bash
         run: |
-          uv export --no-hashes --no-dev --group dev --no-emit-project > requirements.txt
+          uv export --no-hashes --group dev --no-emit-project > requirements.txt
           uv pip install --system -r requirements.txt
       - name: Execute tests
         id: tests
