@@ -58,7 +58,8 @@ fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>
 }
 
 #[pyfunction(name = "extract_trace_points")]
-fn python_extract_trace_points(value: String) -> PyResult<Vec<TracePoint>> {
+/// Extract trace points from 7z compressed data string.
+fn python_extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
     extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
