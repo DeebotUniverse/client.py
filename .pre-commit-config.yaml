@@ -80,6 +80,22 @@ repos:
         language: rust
         types:
           - rust
+        pass_filenames: false
+      - id: rust-check
+        name: Rust check
+        entry: cargo check --lib --all-features --all-targets
+        args: ["--"]
+        language: rust
+        types:
+          - rust
+        pass_filenames: false
+      - id: clippy
+        name: Rust clippy
+        entry: cargo clippy --all --all-features --all-targets -- -D warnings
+        language: rust
+        types:
+          - rust
+        pass_filenames: false
       # Run mypy through our wrapper script in order to get the possible
       # pyenv and/or virtualenv activated; it may not have been e.g. if
       # committing from a GUI tool that was not launched from an activated

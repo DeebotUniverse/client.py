@@ -486,8 +486,8 @@ mod tests {
     fn get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
         let viewbox = (-500.0, -500.0, 1000.0, 1000.0);
         let svg = Svg {
-            viewbox: viewbox,
-            positions: positions,
+            viewbox,
+            positions,
 
             // not relevant for this test
             image: Vec::new(),
