@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-set -eu
+set -euxo pipefail
 
 # Activate pyenv and virtualenv if present, then run the specified command
 

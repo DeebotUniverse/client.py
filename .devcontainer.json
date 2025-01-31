@@ -47,7 +47,7 @@
     "ghcr.io/devcontainers/features/docker-in-docker:2": {},
     "ghcr.io/devcontainers/features/rust:1": {}
   },
-  "image": "mcr.microsoft.com/devcontainers/base:debian",
+  "image": "mcr.microsoft.com/devcontainers/python:3",
   "name": "Deebot client",
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],

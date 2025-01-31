@@ -28,6 +28,7 @@ def mqtt_server() -> Generator[MqttServer]:
     server.stop()
 
 
+@pytest.mark.docker
 @pytest.mark.timeout(_WAITING_AFTER_RESTART + 10)
 async def test_client_reconnect_on_broker_error(
     mqtt_client: MqttClient,
