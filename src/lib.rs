@@ -6,6 +6,8 @@ mod util;
 /// Deebot client written in Rust
 #[pymodule]
 fn rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
+    pyo3_log::init();
+
     register_submodule(py, m, map::init_module)?;
     register_submodule(py, m, util::init_module)?;
     Ok(())
