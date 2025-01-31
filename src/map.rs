@@ -133,7 +133,7 @@ fn points_to_svg_path(points: &[Point]) -> String {
     svg_path
 }
 
-fn add_trace_points(trace_points: &[TracePoint]) -> Option<Path> {
+fn get_trace_path(trace_points: &[TracePoint]) -> Option<Path> {
     if trace_points.is_empty() {
         return None;
     }
@@ -181,7 +181,7 @@ fn get_color(set_type: &str) -> &'static str {
     match set_type {
         "vw" => "#f00000",
         "mw" => "#ffa500",
-        _ => "#000",
+        _ => "#000000",
     }
 }
 
@@ -355,17 +355,19 @@ impl Svg {
         for subset in self.subsets.iter() {
             add_svg_subset(&mut document, subset);
         }
-        if let Some(trace) = add_trace_points(self.trace_points.as_slice()) {
+        if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
             document.append(trace);
         }
-        self.add_poistions(&mut document);
+        for position in self.get_svg_positions() {
+            document.append(position);
+        }
 
         Ok(document.to_string().replace("\n", ""))
     }
 }
 
 impl Svg {
-    fn add_poistions(&self, document: &mut Document) {
+    fn get_svg_positions(&self) -> Vec<Use> {
         let mut positions: Vec<&Position> = self.positions.iter().to_owned().collect();
         positions.sort_by_key(|d| -> i32 {
             match d.position_type.as_str() {
@@ -376,6 +378,8 @@ impl Svg {
         });
         debug!("Adding positions: {:?}", positions);
 
+        let mut svg_positions = Vec::new();
+
         for position in positions {
             let pos = calc_point_in_viewbox(position.x, position.y, self.viewbox);
             let use_id = match position.position_type.as_str() {
@@ -384,7 +388,7 @@ impl Svg {
                 _ => "",
             };
             if !use_id.is_empty() {
-                document.append(
+                svg_positions.push(
                     Use::new()
                         .set("href", format!("#{}", use_id))
                         .set("x", pos.x)
@@ -392,6 +396,7 @@ impl Svg {
                 );
             }
         }
+        svg_positions
     }
 }
 
@@ -432,8 +437,8 @@ mod tests {
     }
 
     #[test]
-    fn test_add_trace_points_empty() {
-        assert!(add_trace_points(&[]).is_none());
+    fn test_get_trace_points_path() {
+        assert!(get_trace_path(&[]).is_none());
     }
 
     #[rstest]
@@ -449,8 +454,33 @@ mod tests {
         TracePoint{x:-256, y:-69, connected:false},
         TracePoint{x:-260, y:-80, connected:true},
     ], "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
-    fn test_add_trace_points(#[case] points: Vec<TracePoint>, #[case] expected: String) {
-        let trace = add_trace_points(&points);
+    fn test_get_trace_path(#[case] points: Vec<TracePoint>, #[case] expected: String) {
+        let trace = get_trace_path(&points);
         assert_eq!(trace.unwrap().to_string(), expected);
+    }
+
+    #[rstest]
+    #[case(vec![Position{position_type:"deebotPos".to_string(), x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case( vec![Position{position_type:"deebotPos".to_string(), x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(vec![Position{position_type:"chargePos".to_string(), x:25000, y:55000}, Position{position_type:"deebotPos".to_string(), x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(vec![Position{position_type:"deebotPos".to_string(), x:-10000, y:10000}, Position{position_type:"chargePos".to_string(), x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    fn get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
+        let viewbox = (-500.0, -500.0, 1000.0, 1000.0);
+        let svg = Svg {
+            viewbox: viewbox,
+            positions: positions,
+
+            // not relevant for this test
+            image: Vec::new(),
+            trace_points: Vec::new(),
+            subsets: Vec::new(),
+        };
+        let result = svg
+            .get_svg_positions()
+            .iter()
+            .map(|u| u.to_string())
+            .collect::<Vec<String>>()
+            .join("");
+        assert_eq!(result, expected);
     }
 }

@@ -190,48 +190,6 @@ async def test_Map_subscriptions(
 #     assert _get_svg_subset(subset) == expected
 
 
-# _test_get_svg_positions_data = [
-#     (
-#         [Position(PositionType.CHARGER, 5000, -55000, 0)],
-#         ViewBoxSpec(-500, -500, 1000, 1000),
-#         [Use(href="#c", x=100, y=500)],
-#     ),
-#     (
-#         [Position(PositionType.DEEBOT, 15000, 15000, 0)],
-#         ViewBoxSpec(-500, -500, 1000, 1000),
-#         [Use(href="#d", x=300, y=-300)],
-#     ),
-#     (
-#         [
-#             Position(PositionType.CHARGER, 25000, 55000, 0),
-#             Position(PositionType.DEEBOT, -5000, -50000, 0),
-#         ],
-#         ViewBoxSpec(-500, -500, 1000, 1000),
-#         [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
-#     ),
-#     (
-#         [
-#             Position(PositionType.DEEBOT, -10000, 10000, 0),
-#             Position(PositionType.CHARGER, 50000, 5000, 0),
-#         ],
-#         ViewBoxSpec(-500, -500, 1000, 1000),
-#         [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
-#     ),
-# ]
-
-
-# @pytest.mark.parametrize(
-#     ("positions", "view_box", "expected"), _test_get_svg_positions_data
-# )
-# def test_get_svg_positions(
-#     positions: list[Position],
-#     view_box: ViewBoxSpec,
-#     expected: list[Use],
-# ) -> None:
-#     result = _get_svg_positions(positions, ViewBoxFloat(view_box))
-#     assert result == expected
-
-
 def test_get_svg_map(
     event_loop: asyncio.AbstractEventLoop,
     benchmark: BenchmarkFixture,
