@@ -185,7 +185,7 @@ fn get_color(set_type: &str) -> &'static str {
     }
 }
 
-fn add_svg_subset(document: &mut Document, subset: &MapSubset) {
+fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
     debug!("Adding subset: {:?}", subset);
     let points: Vec<Point> = subset
         .coordinates
@@ -202,7 +202,7 @@ fn add_svg_subset(document: &mut Document, subset: &MapSubset) {
 
     if points.len() == 2 {
         // Only 2 points: use a Path
-        document.append(
+        Box::new(
             Path::new()
                 .set("stroke", get_color(&subset.set_type))
                 .set("stroke-width", 1.5)
@@ -212,7 +212,7 @@ fn add_svg_subset(document: &mut Document, subset: &MapSubset) {
         )
     } else {
         // More than 2 points: use a Polygon
-        document.append(
+        Box::new(
             Polygon::new()
                 .set("fill", format!("{}30", get_color(&subset.set_type)))
                 .set("stroke", get_color(&subset.set_type))
@@ -353,7 +353,7 @@ impl Svg {
             .add(image);
 
         for subset in self.subsets.iter() {
-            add_svg_subset(&mut document, subset);
+            document.append(get_svg_subset(subset));
         }
         if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
             document.append(trace);
@@ -460,6 +460,25 @@ mod tests {
     }
 
     #[rstest]
+    #[case(vec![Point{x:16.0, y:256.0, connected:true}], "M16 256")]
+    #[case(vec![
+        Point{x:-215.0, y:-70.0, connected:false},
+        Point{x:-215.0, y:-70.0, connected:true},
+        Point{x:-212.0, y:-73.0, connected:true},
+        Point{x:-213.0, y:-73.0, connected:true},
+        Point{x:-227.0, y:-72.0, connected:true},
+        Point{x:-227.0, y:-70.0, connected:true},
+        Point{x:-227.0, y:-70.0, connected:true},
+        Point{x:-256.0, y:-69.0, connected:false},
+        Point{x:-260.0, y:-80.0, connected:true},
+    ], "M-215-70l3-3h-1l-14 1v2m-29 1l-4-11")]
+    #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], "M45.58 176.12l-26.8-0.18")]
+    fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: String) {
+        let trace = points_to_svg_path(&points);
+        assert_eq!(trace, expected);
+    }
+
+    #[rstest]
     #[case(vec![Position{position_type:"deebotPos".to_string(), x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
     #[case( vec![Position{position_type:"deebotPos".to_string(), x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
     #[case(vec![Position{position_type:"chargePos".to_string(), x:25000, y:55000}, Position{position_type:"deebotPos".to_string(), x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
@@ -481,6 +500,15 @@ mod tests {
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
             .join("");
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path d=\"M-78-13.36h35.34\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon fill=\"#ffa50030\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\" stroke=\"#ffa500\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
+        let result = get_svg_subset(&subset).to_string();
         assert_eq!(result, expected);
     }
 }
