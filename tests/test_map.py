@@ -36,43 +36,6 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.events.base import Event
 
-# _test_calc_point_data = [
-#     (5000, 0, Point(100.0, 0.0)),
-#     (20010, -29900, Point(400.2, 598.0)),
-#     (None, 29900, Point(0, -598.0)),
-# ]
-
-
-# @pytest.mark.parametrize(("x", "y", "expected"), _test_calc_point_data)
-# def test_calc_point(
-#     x: int,
-#     y: int,
-#     expected: Point,
-# ) -> None:
-#     result = _calc_point(x, y)
-#     assert result == expected
-
-
-# _test_calc_point_in_viewbox_data = [
-#     (100, 100, ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
-#     (-64000, -64000, ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
-#     (64000, 64000, ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
-#     (None, 1000, ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
-# ]
-
-
-# @pytest.mark.parametrize(
-#     ("x", "y", "view_box", "expected"), _test_calc_point_in_viewbox_data
-# )
-# def test_calc_point_in_viewbox(
-#     x: int,
-#     y: int,
-#     view_box: ViewBoxSpec,
-#     expected: Point,
-# ) -> None:
-#     result = _calc_point_in_viewbox(x, y, ViewBoxFloat(view_box))
-#     assert result == expected
-
 
 async def test_MapData(event_bus: EventBus) -> None:
     mock = AsyncMock()
@@ -162,80 +125,12 @@ async def test_Map_subscriptions(
     assert not map._unsubscribers
 
 
-# async def test_Map_svg_traces_path(
-#     execute_mock: AsyncMock, event_bus_mock: Mock
-# ) -> None:
-#     map = Map(execute_mock, event_bus_mock)
-
-#     path = map._get_svg_traces_path()
-#     assert path is None
-
-#     # Normally trace points would be added by MapTraceEvent
-#     map._map_data.trace_values.append(TracePoint(x=16, y=256, connected=True))
-#     path = map._get_svg_traces_path()
-
-#     assert path == Path(
-#         fill="none",
-#         stroke="#fff",
-#         stroke_width=1.5,
-#         stroke_linejoin="round",
-#         vector_effect="non-scaling-stroke",
-#         transform=[
-#             Scale(0.2, -0.2),
-#         ],
-#         d=[MoveTo(x=16, y=256)],
-#     )
-
-
-# def test_compact_path() -> None:
-#     """Test that the path is compacted correctly."""
-#     path = Path(
-#         fill="#ffe605",
-#         d=[
-#             MoveTo(4, -6.4),
-#             CubicBezier(4, -4.2, 0, 0, 0, 0),
-#             SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
-#             LineToRel(0, -3.2),
-#             LineToRel(4, 0),
-#             ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
-#             ClosePath(),
-#         ],
-#     )
-
-#     assert (
-#         str(path)
-#         == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0a1 2 3 1 0 4 5Z" fill="#ffe605"/>'
-#     )
-
-
 # @pytest.mark.parametrize(
 #     ("points", "expected"),
 #     [
 #         (
 #             [Point(x=45.58, y=176.12), Point(x=18.78, y=175.94)],
 #             [MoveTo(45.58, 176.12), LineToRel(-26.8, -0.18)],
-#         ),
-#         (
-#             [
-#                 TracePoint(x=-215, y=-70, connected=False),
-#                 TracePoint(x=-215, y=-70, connected=True),
-#                 TracePoint(x=-212, y=-73, connected=True),
-#                 TracePoint(x=-213, y=-73, connected=True),
-#                 TracePoint(x=-227, y=-72, connected=True),
-#                 TracePoint(x=-227, y=-70, connected=True),
-#                 TracePoint(x=-227, y=-70, connected=True),
-#                 TracePoint(x=-256, y=-69, connected=False),
-#                 TracePoint(x=-260, y=-80, connected=True),
-#             ],
-#             [
-#                 MoveTo(x=-215, y=-70),
-#                 LineToRel(dx=3, dy=-3),
-#                 HorizontalLineToRel(dx=-1),
-#                 LineToRel(dx=-14, dy=1),
-#                 VerticalLineToRel(dy=2),
-#                 MoveToRel(dx=-29, dy=1),
-#                 LineToRel(dx=-4, dy=-11),
-#             ],
 #         ),
 #     ],
 # )

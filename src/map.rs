@@ -132,9 +132,9 @@ fn points_to_svg_path(points: &[Point]) -> String {
     svg_path
 }
 
-fn add_trace_points(document: &mut Document, trace_points: &[TracePoint]) {
+fn add_trace_points(trace_points: &[TracePoint]) -> Option<Path> {
     if trace_points.is_empty() {
-        return;
+        return None;
     }
 
     let path_data =
@@ -148,10 +148,10 @@ fn add_trace_points(document: &mut Document, trace_points: &[TracePoint]) {
         .set("transform", "scale(0.2-0.2)")
         .set("d", path_data);
 
-    document.append(trace)
+    Some(trace)
 }
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq)]
 struct Point {
     x: f32,
     y: f32,
@@ -354,7 +354,9 @@ impl Svg {
         for subset in self.subsets.iter() {
             add_svg_subset(&mut document, subset);
         }
-        add_trace_points(&mut document, self.trace_points.as_slice());
+        if let Some(trace) = add_trace_points(self.trace_points.as_slice()) {
+            document.append(trace);
+        }
         self.add_poistions(&mut document);
 
         Ok(document.to_string().replace("\n", ""))
@@ -397,4 +399,57 @@ pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<TracePoint>()?;
     m.add_class::<Svg>()?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case(5000.0, 0.0, Point { x:100.0, y:0.0, connected:true })]
+    #[case(20010.0, -29900.0, Point { x: 400.2, y: 598.0, connected:true  })]
+    #[case(0.0, 29900.0, Point { x: 0.0, y: -598.0, connected:true  })]
+    fn test_calc_point(#[case] x: f32, #[case] y: f32, #[case] expected: Point) {
+        let result = calc_point(x, y);
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(100, 100, (-100.0, -100.0, 200.0, 150.0), Point { x: 2.0, y: -2.0, connected: false })]
+    #[case(-64000, -64000, (0.0, 0.0, 1000.0, 1000.0), Point { x: 0.0, y: 1000.0, connected: false })]
+    #[case(64000, 64000, (0.0, 0.0, 1000.0, 1000.0), Point { x: 1000.0, y: 0.0, connected: false })]
+    #[case(0, 1000, (-500.0, -500.0, 1000.0, 1000.0), Point { x: 0.0, y: -20.0, connected: false })]
+    fn test_calc_point_in_viewbox(
+        #[case] x: i32,
+        #[case] y: i32,
+        #[case] viewbox: (f32, f32, f32, f32),
+        #[case] expected: Point,
+    ) {
+        let result = calc_point_in_viewbox(x, y, viewbox);
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_add_trace_points_empty() {
+        assert!(add_trace_points(&[]).is_none());
+    }
+
+    #[rstest]
+    #[case(vec![TracePoint{x:16, y:256, connected:true}], "<path d=\"M16 256\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(vec![
+        TracePoint{x:-215, y:-70, connected:false},
+        TracePoint{x:-215, y:-70, connected:true},
+        TracePoint{x:-212, y:-73, connected:true},
+        TracePoint{x:-213, y:-73, connected:true},
+        TracePoint{x:-227, y:-72, connected:true},
+        TracePoint{x:-227, y:-70, connected:true},
+        TracePoint{x:-227, y:-70, connected:true},
+        TracePoint{x:-256, y:-69, connected:false},
+        TracePoint{x:-260, y:-80, connected:true},
+    ], "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    fn test_add_trace_points(#[case] points: Vec<TracePoint>, #[case] expected: String) {
+        let trace = add_trace_points(&points);
+        assert_eq!(trace.unwrap().to_string(), expected);
+    }
 }
