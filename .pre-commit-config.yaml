@@ -46,6 +46,15 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main, --branch, dev]
       - id: requirements-txt-fixer
+  - repo: https://github.com/doublify/pre-commit-rust
+    rev: v1.0
+    hooks:
+      - id: fmt
+        name: Rust format
+      - id: cargo-check
+        name: Rust check
+      - id: clippy
+        name: Rust clippy
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
