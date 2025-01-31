@@ -107,6 +107,7 @@ jobs:
           enable-cache: true
       - uses: actions-rs/toolchain@v1
         with:
+          toolchain: stable
           components: llvm-tools
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
@@ -362,7 +363,7 @@ jobs:
   sdist:
     name: Create source distribution
     runs-on: ubuntu-latest
-    needs: code-quality
+    needs: tests
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@v4.2.2
