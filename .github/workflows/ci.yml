@@ -258,7 +258,7 @@ jobs:
 
   build-test-musl:
     name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
-    runs-on: ubuntu-latest
+    runs-on: ${{ matrix.os }}
     needs:
       - info
       - tests
@@ -268,8 +268,12 @@ jobs:
         platform:
           - target: x86_64
             docker_arch: amd64
-            # - target: aarch64
-            #   docker_arch: arm64
+          - target: aarch64
+            docker_arch: arm64
+        include:
+          - target: aarch64
+            os: ubuntu-24.04-arm
+          - os: ubuntu-latest
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
