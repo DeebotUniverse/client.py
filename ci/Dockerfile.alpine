@@ -8,11 +8,6 @@ ENV \
 ENTRYPOINT [ "/entrypoint.sh" ]
 SHELL ["/bin/sh", "-o", "pipefail", "-c"]
 
-RUN \
-    apk add --no-cache \
-    curl \
-    gcc
-
 COPY ci/entrypoint.sh /entrypoint.sh
 
 # Install uv
