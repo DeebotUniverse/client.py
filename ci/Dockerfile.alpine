@@ -10,7 +10,8 @@ SHELL ["/bin/sh", "-o", "pipefail", "-c"]
 COPY ci/entrypoint.sh /entrypoint.sh
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN sh /uv-installer.sh && rm /uv-installer.sh
 
 COPY requirements-test.txt /requirements-test.txt
 
