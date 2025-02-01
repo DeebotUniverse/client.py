@@ -156,9 +156,7 @@ jobs:
         with:
           fail_ci_if_error: true
           disable_telem: true
-          files:
-            - coverage.lcov
-            - coverage.xml
+          files: coverage.lcov,coverage.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         uses: codecov/test-results-action@v1
