@@ -23,9 +23,8 @@ jobs:
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
-      changed:
-        type: object
-        value: ${{ steps.changed.outputs }}
+      changed_python: ${{ steps.changed.outputs.python }}
+      changed_rust: ${{ steps.changed.outputs.rust }}
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️  Check out code from GitHub
@@ -74,7 +73,7 @@ jobs:
   python-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Python code quality
-    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed.python == 'true' }}
+    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed_python == 'true' }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -98,7 +97,7 @@ jobs:
   rust-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Rust code quality
-    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed.rust == 'true' }}
+    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed_rust == 'true' }}
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
