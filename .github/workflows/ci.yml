@@ -98,12 +98,16 @@ jobs:
       - info
       - python-code-quality
       - rust-code-quality
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ needs.info.outputs.default_python_version }}
+          python-version: ${{ matrix.python-version }}
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
@@ -115,7 +119,7 @@ jobs:
       - name: Prepare env and install requirements
         shell: bash
         run: |
-          uv venv -p ${{ needs.info.outputs.default_python_version }}
+          uv venv -p ${{ matrix.python-version }}
           uv export --no-hashes --group dev --no-emit-project > requirements.txt
           uv pip install --system -r requirements.txt
       - name: Execute tests
