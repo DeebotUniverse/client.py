@@ -261,7 +261,7 @@ jobs:
     runs-on: ${{ matrix.platform.os || 'ubuntu-latest' }}
     needs:
       - info
-      # - tests
+      - tests
     strategy:
       fail-fast: false
       matrix:
@@ -276,9 +276,6 @@ jobs:
             qemu: true
           - target: x86
             docker_arch: 386
-            qemu: true
-          - target: arm
-            docker_arch: arm/v6
             qemu: true
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
