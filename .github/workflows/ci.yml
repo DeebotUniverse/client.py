@@ -273,6 +273,7 @@ jobs:
             os: ubuntu-24.04-arm
           - target: armv7
             docker_arch: arm/v7
+            os: ubuntu-24.04-arm
             qemu: true
           - target: x86
             docker_arch: 386
