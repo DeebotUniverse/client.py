@@ -23,8 +23,6 @@ jobs:
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
-      changed_python: ${{ steps.changed.outputs.python }}
-      changed_rust: ${{ steps.changed.outputs.rust }}
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️  Check out code from GitHub
@@ -52,28 +50,10 @@ jobs:
         with:
           name: requirements.txt
           path: requirements.txt
-      - uses: tj-actions/changed-files@v45
-        id: changed
-        with:
-          files_yaml: |
-            rust:
-              - Cargo.toml
-              - Cargo.lock
-              - src/**
-              - .github/workflows/ci.yaml
-
-            python:
-              - pyproject.toml
-              - uv.lock
-              - tests/**
-              - deebot_client/**
-              - scripts/**
-              - .github/workflows/ci.yaml
 
   python-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Python code quality
-    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed_python == 'true' }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -97,7 +77,6 @@ jobs:
   rust-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Rust code quality
-    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed_rust == 'true' }}
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
@@ -117,7 +96,7 @@ jobs:
     runs-on: ubuntu-latest
     needs:
       - info
-      - code-quality
+      - python-code-quality
       - rust-code-quality
     steps:
       - name: ⤵️ Checkout repository
