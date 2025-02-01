@@ -42,14 +42,20 @@ jobs:
           echo "python_versions=${ADDITIONAL_PYTHON_VERSIONS}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@v5
-      - name: Generate requirements.txt
+      - name: Generate requirements files
         run: |
-          uv export --no-hashes --no-dev --group test --no-emit-project > requirements.txt
-      - name: Upload requirements.txt
+          uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
+          uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
+      - name: Upload requirements-test.txt
         uses: actions/upload-artifact@v4
         with:
-          name: requirements.txt
-          path: requirements.txt
+          name: requirements-test.txt
+          path: requirements-test.txt
+      - name: Upload requirements-dev.txt
+        uses: actions/upload-artifact@v4
+        with:
+          name: requirements-dev.txt
+          path: requirements-dev.txt
 
   python-code-quality:
     runs-on: "ubuntu-latest"
@@ -98,26 +104,34 @@ jobs:
       - info
       - python-code-quality
       - rust-code-quality
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
       - uses: actions/setup-python@v5
         with:
-          python-version: ${{ needs.info.outputs.default_python_version }}
+          python-version: ${{ matrix.python-version }}
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@v5
       - uses: actions-rust-lang/setup-rust-toolchain@v1
         with:
           override: true
           components: llvm-tools
+          cache-key: ${{ matrix.python-version }}
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
+      - name: Download requirements-dev.txt
+        uses: actions/download-artifact@v4
+        with:
+          name: requirements-dev.txt
       - name: Prepare env and install requirements
         shell: bash
         run: |
-          uv venv -p ${{ needs.info.outputs.default_python_version }}
-          uv export --no-hashes --group dev --no-emit-project > requirements.txt
-          uv pip install --system -r requirements.txt
+          uv venv -p ${{ matrix.python-version }}
+          uv pip install --system -r requirements-dev.txt
       - name: Execute tests
         id: tests
         run: |
@@ -205,17 +219,17 @@ jobs:
         uses: astral-sh/setup-uv@v5
         with:
           enable-cache: true
-      - name: Download requirements.txt
+      - name: Download requirements-test.txt
         uses: actions/download-artifact@v4
         with:
-          name: requirements.txt
+          name: requirements-test.txt
       - name: Prepare env and install wheel
         shell: bash
         run: |
           # Remove sources otherwise pytest will complain about missing rust files
           rm -rf deebot_client
           uv venv -p ${{ matrix.python-version }}
-          uv pip install -r requirements.txt
+          uv pip install -r requirements-test.txt
           uv pip install --force-reinstall dist/deebot_client-*.whl
       - name: Run pytest
         if: ${{ matrix.platform.name != 'Windows' }}
@@ -266,10 +280,10 @@ jobs:
         with:
           name: wheels-musllinux-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
-      - name: Download requirements.txt
+      - name: Download requirements-test.txt
         uses: actions/download-artifact@v4
         with:
-          name: requirements.txt
+          name: requirements-test.txt
       - name: Install Qemu
         uses: docker/setup-qemu-action@v3
       - name: Install Docker Buildx
@@ -309,13 +323,13 @@ jobs:
         uses: actions/setup-python@v5
         with:
           python-version: ${{ needs.info.outputs.default_python_version }}
-      - name: Download requirements.txt
+      - name: Download requirements-test.txt
         uses: actions/download-artifact@v4
         with:
-          name: requirements.txt
+          name: requirements-test.txt
       - name: 🏗 Install the project
         run: |
-          uv pip install -e . --system -r requirements.txt
+          uv pip install -e . --system -r requirements-test.txt
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
