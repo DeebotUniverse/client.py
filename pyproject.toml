@@ -86,6 +86,7 @@ exclude = [
     { path = "*.ini", format = "sdist" },
     { path = "tests/**", format = "sdist" },
     { path = "scripts/**", format = "sdist" },
+    { path = "ci/**", format = "sdist" },
 ]
 
 [tool.ruff.lint]

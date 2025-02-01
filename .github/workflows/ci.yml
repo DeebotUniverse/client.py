@@ -130,9 +130,6 @@ jobs:
           maturin develop --uv
           pytest tests --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov --no-run --lcov --output-path coverage.lcov
-      - uses: codecov/codecov-action@v3
-        with:
-          files: coverage.lcov,coverage.xml
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@v5
         with:
@@ -141,7 +138,7 @@ jobs:
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         uses: codecov/test-results-action@v1
         with:
-          # fail_ci_if_error: true
+          fail_ci_if_error: true
           verbose: true
 
   build-test-native:
@@ -223,33 +220,13 @@ jobs:
         id: pytest
         run: |
           source .venv/bin/activate
-          site_packages=$(python -c "import site; print(site.getsitepackages()[0])")
-          echo "site-packages: ${site_packages}"
-          pytest tests --cov=${site_packages}/deebot_client --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v ${{ matrix.pytest_args || ''}}
+          pytest tests -v ${{ matrix.pytest_args || ''}}
       - name: Run pytest (windows)
         if: ${{ matrix.platform.name == 'Windows' }}
         id: pytest_windows
         run: |
           .venv/Scripts/activate
-          $sitePackages = python -c "import site; print(site.getsitepackages()[0])"
-          Write-Output "site-packages: $sitePackages"
-          pytest tests --cov="$sitePackages/deebot_client" --cov-report=xml --junitxml=junit.xml -o junit_family=legacy -v -m "not docker"
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        env:
-          PYTHON: ${{ matrix.python-version }}
-          TARGET: ${{ matrix.platform.target }}
-          PLATFORM: ${{ matrix.platform.name }}
-        with:
-          fail_ci_if_error: true
-          name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
-          env_vars: PLATFORM,TARGET,PYTHON
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() && ((matrix.platform.name == 'Windows' && steps.pytest_windows.outcome) || steps.pytest.outcome) == 'success' }}
-        uses: codecov/test-results-action@v1
-        with:
-          # fail_ci_if_error: true
-          verbose: true
+          pytest tests -v -m "not docker"
 
   build-test-musl:
     name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
@@ -312,21 +289,6 @@ jobs:
         id: pytest
         run: |
           docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.platform.docker_arch }} deebot_client:${{ matrix.platform.target }}-${{ matrix.python-version }}
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
-        env:
-          PYTHON: ${{ matrix.python-version }}
-          TARGET: ${{ matrix.platform.target }}
-          PLATFORM: Musllinux
-        with:
-          fail_ci_if_error: true
-          name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
-          env_vars: PLATFORM,TARGET,PYTHON
-      - name: Upload test results to Codecov
-        if: ${{ !cancelled() && steps.pytest.outcome == 'success' }}
-        uses: codecov/test-results-action@v1
-        with:
-          fail_ci_if_error: true
 
   benchmarks:
     runs-on: "ubuntu-latest"
