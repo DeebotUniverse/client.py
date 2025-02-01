@@ -74,7 +74,7 @@ jobs:
   python-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Python code quality
-    if: ${{ needs.info.outputs.changed.python == 'true' || github.ref == 'refs/heads/dev' }}
+    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed.python == 'true' }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -98,7 +98,7 @@ jobs:
   rust-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Rust code quality
-    if: ${{ needs.info.outputs.changed.rust == 'true' || github.ref == 'refs/heads/dev' }}
+    if: ${{ github.event_name != 'pull_request' || needs.info.outputs.changed.rust == 'true' }}
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
