@@ -120,6 +120,7 @@ jobs:
         with:
           override: true
           components: llvm-tools
+          cache-key: ${{ matrix.python-version }}
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
