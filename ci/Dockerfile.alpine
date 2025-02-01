@@ -25,4 +25,4 @@ RUN \
 COPY requirements-test.txt /requirements-test.txt
 
 RUN \
-    uv pip install -r /requirements-test.txt
+    uv pip install --index-strategy unsafe-best-match -r /requirements-test.txt
