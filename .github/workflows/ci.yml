@@ -274,6 +274,12 @@ jobs:
           - target: armv7
             docker_arch: arm/v7
             qemu: true
+          - target: x86
+            docker_arch: 386
+            qemu: true
+          - target: armv6
+            docker_arch: arm/v6
+            qemu: true
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@v4
