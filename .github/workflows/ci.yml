@@ -23,6 +23,9 @@ jobs:
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
+      changed:
+        type: object
+        value: ${{ steps.changed.outputs }}
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️  Check out code from GitHub
@@ -50,10 +53,28 @@ jobs:
         with:
           name: requirements.txt
           path: requirements.txt
+      - uses: tj-actions/changed-files@v45
+        id: changed
+        with:
+          files_yaml: |
+            rust:
+              - Cargo.toml
+              - Cargo.lock
+              - src/**
+              - .github/workflows/ci.yaml
 
-  code-quality:
+            python:
+              - pyproject.toml
+              - uv.lock
+              - tests/**
+              - deebot_client/**
+              - scripts/**
+              - .github/workflows/ci.yaml
+
+  python-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Python code quality
+    if: ${{ needs.info.outputs.changed.python == 'true' || github.ref == 'refs/heads/dev' }}
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -77,6 +98,7 @@ jobs:
   rust-code-quality:
     runs-on: "ubuntu-latest"
     name: Check Rust code quality
+    if: ${{ needs.info.outputs.changed.rust == 'true' || github.ref == 'refs/heads/dev' }}
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
@@ -134,6 +156,10 @@ jobs:
         uses: codecov/codecov-action@v5
         with:
           fail_ci_if_error: true
+          disable_telem: true
+          files:
+            - coverage.lcov
+            - coverage.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         uses: codecov/test-results-action@v1
