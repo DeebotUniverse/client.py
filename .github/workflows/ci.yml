@@ -53,7 +53,7 @@ jobs:
 
   code-quality:
     runs-on: "ubuntu-latest"
-    name: Check code quality
+    name: Check Python code quality
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@v4
@@ -76,7 +76,7 @@ jobs:
 
   rust-code-quality:
     runs-on: "ubuntu-latest"
-    name: Rust code quality
+    name: Check Rust code quality
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
