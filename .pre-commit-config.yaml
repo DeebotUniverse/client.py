@@ -5,6 +5,9 @@ ci:
     - mypy
     - pylint
     - verifyNoGetLogger
+    - rust-fmt
+    - rust-check
+    - rust-clippy
 
 default_language_version:
   python: python3.13
@@ -46,6 +49,18 @@ repos:
       - id: no-commit-to-branch
         args: [--branch, main, --branch, dev]
       - id: requirements-txt-fixer
+  # - repo: https://github.com/doublify/pre-commit-rust
+  #   rev: v1.0
+  #   hooks:
+  #     - id: fmt
+  #       name: Rust format
+  #       language: rust
+  #     - id: cargo-check
+  #       name: Rust check
+  #       language: rust
+  #     - id: clippy
+  #       name: Rust clippy
+  #       language: rust
   - repo: https://github.com/pre-commit/mirrors-prettier
     rev: v4.0.0-alpha.8
     hooks:
@@ -62,6 +77,28 @@ repos:
       - id: yamllint
   - repo: local
     hooks:
+      - id: rust-fmt
+        name: Rust format
+        entry: cargo fmt --all -- --check
+        language: system
+        types:
+          - rust
+        pass_filenames: false
+      - id: rust-check
+        name: Rust check
+        entry: cargo check --lib --all-features --all-targets
+        args: ["--"]
+        language: system
+        types:
+          - rust
+        pass_filenames: false
+      - id: rust-clippy
+        name: Rust clippy
+        entry: cargo clippy --all --all-features --all-targets -- -D warnings
+        language: system
+        types:
+          - rust
+        pass_filenames: false
       # Run mypy through our wrapper script in order to get the possible
       # pyenv and/or virtualenv activated; it may not have been e.g. if
       # committing from a GUI tool that was not launched from an activated
