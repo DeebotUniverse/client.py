@@ -2,7 +2,8 @@ ARG PYTHON_VERSION=3
 FROM python:${PYTHON_VERSION}-alpine
 
 ENV \
-    UV_SYSTEM_PYTHON=true
+    UV_SYSTEM_PYTHON=true \
+    UV_EXTRA_INDEX_URL="https://wheels.home-assistant.io/musllinux-index/"
 
 ENTRYPOINT [ "/entrypoint.sh" ]
 SHELL ["/bin/sh", "-o", "pipefail", "-c"]
@@ -10,9 +11,13 @@ SHELL ["/bin/sh", "-o", "pipefail", "-c"]
 COPY ci/entrypoint.sh /entrypoint.sh
 
 # Install uv
-COPY --from=ghcr.io/astral-sh/uv:latest /uv /bin/uv
+ADD https://astral.sh/uv/install.sh /uv-installer.sh
+RUN \
+    sh /uv-installer.sh \
+    && rm /uv-installer.sh \
+    && mv /root/.local/bin/uv /bin/uv
 
 COPY requirements-test.txt /requirements-test.txt
 
 RUN \
-    uv pip install -r /requirements-test.txt
+    uv pip install --index-strategy unsafe-best-match -r /requirements-test.txt

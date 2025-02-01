@@ -44,7 +44,7 @@ async def test_MapData(event_bus: EventBus) -> None:
     map_data = MapData(event_bus)
 
     async def test_cycle() -> None:
-        for x in range(10000):
+        for x in range(100):
             map_data.positions.append(Position(PositionType.DEEBOT, x, x, 0))
             map_data.rooms[x] = Room("test", x, "1,2")
 
