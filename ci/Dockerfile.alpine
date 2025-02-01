@@ -11,7 +11,10 @@ COPY ci/entrypoint.sh /entrypoint.sh
 
 # Install uv
 ADD https://astral.sh/uv/install.sh /uv-installer.sh
-RUN sh /uv-installer.sh && rm /uv-installer.sh
+RUN \
+    sh /uv-installer.sh \
+    && rm /uv-installer.sh \
+    && mv /root/.local/bin/uv /bin/uv
 
 COPY requirements-test.txt /requirements-test.txt
 
