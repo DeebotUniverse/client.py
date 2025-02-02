@@ -215,9 +215,9 @@ fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
 #[derive(PartialEq, Debug, Clone)]
 enum PositionType {
     #[pyo3(name = "DEEBOT")]
-    Deebot, // python str value "deebotPos"
+    Deebot,
     #[pyo3(name = "CHARGER")]
-    Charger, // python str value "chargePos"
+    Charger,
 }
 
 impl TryFrom<&str> for PositionType {
@@ -237,13 +237,6 @@ impl PositionType {
     #[staticmethod]
     fn from_str(value: &str) -> PyResult<Self> {
         PositionType::try_from(value).map_err(PyErr::new::<PyValueError, _>)
-    }
-
-    fn value(&self) -> &'static str {
-        match self {
-            PositionType::Deebot => "deebotPos",
-            PositionType::Charger => "chargePos",
-        }
     }
 }
 
@@ -518,5 +511,19 @@ mod tests {
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
         let result = get_svg_subset(&subset).to_string();
         assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case("deebotPos", PositionType::Deebot)]
+    #[case("chargePos", PositionType::Charger)]
+    fn test_position_type_from_str(#[case] value: &str, #[case] expected: PositionType) {
+        let result = PositionType::from_str(value).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_position_type_from_str_invalid() {
+        let result = PositionType::from_str("invalid");
+        assert!(result.is_err());
     }
 }
