@@ -214,6 +214,10 @@ jobs:
         if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
         run: |
           (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -222,6 +226,7 @@ jobs:
           sccache: "false"
           manylinux: ${{ matrix.manylinux }}
           before-script-linux: python3 -m ensurepip
+          docker-options: -v ${{ runner.home }}/.cargo:/root/.cargo
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
@@ -288,6 +293,10 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@v2
+        with:
+          key: ${{ runner.os }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@v1
         with:
@@ -295,6 +304,7 @@ jobs:
           args: --release --strip --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: musllinux_1_2
+          docker-options: -v ${{ runner.home }}/.cargo:/root/.cargo
       - name: Upload wheels
         uses: actions/upload-artifact@v4
         with:
