@@ -2,39 +2,23 @@ from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
 
-class TracePoint:
-    """Trace point."""
+class MapData:
+    """Map data in rust."""
 
-    def __new__(cls, x: float, y: float, connected: bool) -> Self:
-        """Create a new trace point."""
+    def __new__(cls) -> Self:
+        """Create a new map data object."""
 
-    @property
-    def x(self) -> float:
-        """X coordinate."""
+    def add_trace_points(self, value: str) -> None:
+        """Add trace points to the map data."""
 
-    @property
-    def y(self) -> float:
-        """Y coordinate."""
+    def clear_trace_points(self) -> None:
+        """Clear trace points."""
 
-    @property
-    def connected(self) -> float:
-        """If the point is connected."""
-
-def extract_trace_points(value: str) -> list[TracePoint]:
-    """Extract trace points from 7z compressed data string."""
-
-class Svg:
-    """SVG in rust."""
-
-    def __new__(
-        cls,
+    def generate_svg(
+        self,
         viewbox: tuple[float, float, float, float],
         image: bytes,
-        trace_points: list[TracePoint],
         subsets: list[MapSubsetEvent],
         position: list[Position],
-    ) -> Self:
-        """Create a new Svg object."""
-
-    def generate(self) -> str:
+    ) -> str:
         """Generate SVG image."""
