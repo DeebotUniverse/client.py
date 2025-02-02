@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import InitParam
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult
 
-from .common import XmlCommandWithMessageHandling
+from .common import XmlGetCommand, XmlSetCommand
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -15,10 +17,21 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetFanSpeed(XmlCommandWithMessageHandling):
-    """GetFanSpeed command."""
+class GetCleanSpeed(XmlGetCommand):
+    """GetCleanSpeed command."""
 
     NAME = "GetCleanSpeed"
+
+    @classmethod
+    def handle_set_args(
+        cls, event_bus: EventBus, args: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(args["speed"]))))
+        return HandlingResult.success()
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
@@ -33,12 +46,25 @@ class GetFanSpeed(XmlCommandWithMessageHandling):
 
         match speed.lower():
             case "standard":
-                event = FanSpeedEvent(FanSpeedLevel.NORMAL)
+                event = FanSpeedEvent(FanSpeedLevel.STANDARD)
             case "strong":
-                event = FanSpeedEvent(FanSpeedLevel.MAX)
+                event = FanSpeedEvent(FanSpeedLevel.STRONG)
 
         if event:
             event_bus.notify(event)
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class SetCleanSpeed(XmlSetCommand):
+    """Set clean speed command."""
+
+    NAME = "SetCleanSpeed"
+    get_command = GetCleanSpeed
+    _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
+
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
+        if isinstance(speed, FanSpeedLevel):
+            speed = speed.name.lower()
+        super().__init__({"speed": speed})

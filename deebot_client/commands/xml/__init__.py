@@ -8,7 +8,7 @@ from deebot_client.command import Command, CommandMqttP2P
 
 from .charge_state import GetChargeState
 from .error import GetError
-from .fan_speed import GetFanSpeed
+from .fan_speed import GetCleanSpeed, SetCleanSpeed
 from .life_span import GetLifeSpan
 from .play_sound import PlaySound
 from .pos import GetPos
@@ -19,17 +19,20 @@ if TYPE_CHECKING:
 
 __all__ = [
     "GetChargeState",
+    "GetCleanSpeed",
     "GetCleanSum",
     "GetError",
-    "GetFanSpeed",
     "GetLifeSpan",
     "GetPos",
     "PlaySound",
+    "SetCleanSpeed",
 ]
 
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
+    GetCleanSpeed,
+    SetCleanSpeed,
     GetError,
     GetLifeSpan,
     PlaySound,
