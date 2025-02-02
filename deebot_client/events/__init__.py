@@ -6,10 +6,9 @@ from dataclasses import dataclass
 from enum import IntEnum, StrEnum, unique
 from typing import TYPE_CHECKING, Any, Self
 
-from deebot_client.events.base import Event
-
 from . import auto_empty, station
 from .auto_empty import AutoEmptyEvent
+from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -23,7 +22,6 @@ from .map import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from .network import NetworkInfoEvent
 from .station import StationEvent
@@ -53,7 +51,6 @@ __all__ = [
     "MinorMapEvent",
     "NetworkInfoEvent",
     "Position",
-    "PositionType",
     "PositionsEvent",
     "StationEvent",
     "SweepModeEvent",

@@ -17,23 +17,10 @@ const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 
 /// Trace point
-#[pyclass]
-#[derive(FromPyObject)]
 struct TracePoint {
-    #[pyo3(get)]
     x: i16,
-    #[pyo3(get)]
     y: i16,
-    #[pyo3(get)]
     connected: bool,
-}
-
-#[pymethods]
-impl TracePoint {
-    #[new]
-    fn new(x: i16, y: i16, connected: bool) -> Self {
-        TracePoint { x, y, connected }
-    }
 }
 
 fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn Error>> {
@@ -55,12 +42,6 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
 fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
     let decompressed_data = decompress_7z_base64_data(value)?;
     process_trace_points(&decompressed_data)
-}
-
-#[pyfunction(name = "extract_trace_points")]
-/// Extract trace points from 7z compressed data string.
-fn python_extract_trace_points(value: String) -> Result<Vec<TracePoint>, PyErr> {
-    extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))
 }
 
 fn round(value: f32, digits: usize) -> f32 {
@@ -230,11 +211,56 @@ fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
     }
 }
 
+#[pyclass(eq, eq_int)]
+#[derive(PartialEq, Debug, Clone)]
+enum PositionType {
+    #[pyo3(name = "DEEBOT")]
+    Deebot,
+    #[pyo3(name = "CHARGER")]
+    Charger,
+}
+
+impl TryFrom<&str> for PositionType {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "deebotPos" => Ok(PositionType::Deebot),
+            "chargePos" => Ok(PositionType::Charger),
+            _ => Err("Invalid position type"),
+        }
+    }
+}
+
+#[pymethods]
+impl PositionType {
+    #[staticmethod]
+    fn from_str(value: &str) -> PyResult<Self> {
+        PositionType::try_from(value).map_err(PyErr::new::<PyValueError, _>)
+    }
+}
+
+impl PositionType {
+    fn order(&self) -> i32 {
+        match self {
+            PositionType::Deebot => 0,
+            PositionType::Charger => 1,
+        }
+    }
+
+    fn svg_use_id(&self) -> &'static str {
+        match self {
+            PositionType::Deebot => "d",
+            PositionType::Charger => "c",
+        }
+    }
+}
+
 /// Position type
 #[derive(FromPyObject, Debug)]
 struct Position {
     #[pyo3(attribute("type"))]
-    position_type: String,
+    position_type: PositionType,
     x: i32,
     y: i32,
 }
@@ -257,34 +283,37 @@ struct MapSubset {
 }
 
 #[pyclass]
-struct Svg {
-    viewbox: (f32, f32, f32, f32),
-    image: Vec<u8>,
+struct MapData {
     trace_points: Vec<TracePoint>,
-    subsets: Vec<MapSubset>,
-    positions: Vec<Position>,
 }
 
 #[pymethods]
-impl Svg {
+impl MapData {
     #[new]
-    fn new(
-        viewbox: (f32, f32, f32, f32),
-        image: Vec<u8>,
-        trace_points: Vec<TracePoint>,
-        subsets: Vec<MapSubset>,
-        positions: Vec<Position>,
-    ) -> Self {
-        Svg {
-            viewbox,
-            image,
-            trace_points,
-            subsets,
-            positions,
+    fn new() -> Self {
+        MapData {
+            trace_points: Vec::new(),
         }
     }
 
-    fn generate(&self) -> PyResult<String> {
+    fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
+        self.trace_points.extend(
+            extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))?,
+        );
+        Ok(())
+    }
+
+    fn clear_trace_points(&mut self) {
+        self.trace_points.clear();
+    }
+
+    fn generate_svg(
+        &self,
+        viewbox: (f32, f32, f32, f32),
+        image: Vec<u8>,
+        subsets: Vec<MapSubset>,
+        positions: Vec<Position>,
+    ) -> PyResult<String> {
         let defs = Definitions::new()
             .add(
                 // Gradient used by Bot icon
@@ -309,7 +338,7 @@ impl Svg {
             .add(
                 // Bot circular icon
                 Group::new()
-                    .set("id", "d")
+                    .set("id", PositionType::Deebot.svg_use_id())
                     .add(Circle::new().set("r", 5).set("fill", "url(#dbg)"))
                     .add(
                         Circle::new()
@@ -322,7 +351,7 @@ impl Svg {
             .add(
                 // Charger pin icon (pre-flipped vertically)
                 Group::new()
-                    .set("id", "c")
+                    .set("id", PositionType::Charger.svg_use_id())
                     .add(Path::new().set("fill", "#ffe605").set(
                         "d",
                         // Path data cannot be used as it's adds a , after each parameter
@@ -338,27 +367,24 @@ impl Svg {
             );
 
         // Add image
-        let base64_image = general_purpose::STANDARD.encode(&self.image);
+        let base64_image = general_purpose::STANDARD.encode(&image);
         let image = Image::new()
-            .set("x", self.viewbox.0)
-            .set("y", self.viewbox.1)
-            .set("width", self.viewbox.2)
-            .set("height", self.viewbox.3)
+            .set("x", viewbox.0)
+            .set("y", viewbox.1)
+            .set("width", viewbox.2)
+            .set("height", viewbox.3)
             .set("style", "image-rendering: pixelated")
             .set("href", format!("data:image/png;base64,{}", base64_image));
 
-        let mut document = Document::new()
-            .set("viewBox", self.viewbox)
-            .add(defs)
-            .add(image);
+        let mut document = Document::new().set("viewBox", viewbox).add(defs).add(image);
 
-        for subset in self.subsets.iter() {
+        for subset in subsets.iter() {
             document.append(get_svg_subset(subset));
         }
         if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
             document.append(trace);
         }
-        for position in self.get_svg_positions() {
+        for position in get_svg_positions(positions, viewbox) {
             document.append(position);
         }
 
@@ -366,44 +392,29 @@ impl Svg {
     }
 }
 
-impl Svg {
-    fn get_svg_positions(&self) -> Vec<Use> {
-        let mut positions: Vec<&Position> = self.positions.iter().to_owned().collect();
-        positions.sort_by_key(|d| -> i32 {
-            match d.position_type.as_str() {
-                "deebotPos" => 0,
-                "chargePos" => 1,
-                _ => 2,
-            }
-        });
-        debug!("Adding positions: {:?}", positions);
+fn get_svg_positions(positions: Vec<Position>, viewbox: (f32, f32, f32, f32)) -> Vec<Use> {
+    let mut positions: Vec<&Position> = positions.iter().to_owned().collect();
+    positions.sort_by_key(|d| -> i32 { d.position_type.order() });
+    debug!("Adding positions: {:?}", positions);
 
-        let mut svg_positions = Vec::new();
+    let mut svg_positions = Vec::new();
 
-        for position in positions {
-            let pos = calc_point_in_viewbox(position.x, position.y, self.viewbox);
-            let use_id = match position.position_type.as_str() {
-                "deebotPos" => "d",
-                "chargePos" => "c",
-                _ => "",
-            };
-            if !use_id.is_empty() {
-                svg_positions.push(
-                    Use::new()
-                        .set("href", format!("#{}", use_id))
-                        .set("x", pos.x)
-                        .set("y", pos.y),
-                );
-            }
-        }
-        svg_positions
+    for position in positions {
+        let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
+
+        svg_positions.push(
+            Use::new()
+                .set("href", format!("#{}", position.position_type.svg_use_id()))
+                .set("x", pos.x)
+                .set("y", pos.y),
+        );
     }
+    svg_positions
 }
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
-    m.add_function(wrap_pyfunction!(python_extract_trace_points, m)?)?;
-    m.add_class::<TracePoint>()?;
-    m.add_class::<Svg>()?;
+    m.add_class::<MapData>()?;
+    m.add_class::<PositionType>()?;
     Ok(())
 }
 
@@ -479,23 +490,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![Position{position_type:"deebotPos".to_string(), x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case( vec![Position{position_type:"deebotPos".to_string(), x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(vec![Position{position_type:"chargePos".to_string(), x:25000, y:55000}, Position{position_type:"deebotPos".to_string(), x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(vec![Position{position_type:"deebotPos".to_string(), x:-10000, y:10000}, Position{position_type:"chargePos".to_string(), x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    fn get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
+    #[case(vec![Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case( vec![Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(vec![Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(vec![Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    fn test_get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
         let viewbox = (-500.0, -500.0, 1000.0, 1000.0);
-        let svg = Svg {
-            viewbox,
-            positions,
-
-            // not relevant for this test
-            image: Vec::new(),
-            trace_points: Vec::new(),
-            subsets: Vec::new(),
-        };
-        let result = svg
-            .get_svg_positions()
+        let result = get_svg_positions(positions, viewbox)
             .iter()
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
@@ -510,5 +511,19 @@ mod tests {
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
         let result = get_svg_subset(&subset).to_string();
         assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case("deebotPos", PositionType::Deebot)]
+    #[case("chargePos", PositionType::Charger)]
+    fn test_position_type_from_str(#[case] value: &str, #[case] expected: PositionType) {
+        let result = PositionType::from_str(value).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_position_type_from_str_invalid() {
+        let result = PositionType::from_str("invalid");
+        assert!(result.is_err());
     }
 }
