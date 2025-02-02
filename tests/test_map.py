@@ -18,13 +18,13 @@ from deebot_client.events.map import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from deebot_client.map import (
     Map,
     MapData,
 )
 from deebot_client.models import Room
+from deebot_client.rs.map import PositionType
 
 from .common import block_till_done
 

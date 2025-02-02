@@ -7,6 +7,7 @@ from enum import IntEnum, StrEnum, unique
 from typing import TYPE_CHECKING, Any, Self
 
 from deebot_client.events.base import Event
+from deebot_client.rs.map import PositionType
 
 from . import auto_empty, station
 from .auto_empty import AutoEmptyEvent
@@ -23,7 +24,6 @@ from .map import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from .network import NetworkInfoEvent
 from .station import StationEvent

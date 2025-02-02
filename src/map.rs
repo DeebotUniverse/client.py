@@ -211,11 +211,63 @@ fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
     }
 }
 
+#[pyclass(eq, eq_int)]
+#[derive(PartialEq, Debug, Clone)]
+enum PositionType {
+    #[pyo3(name = "DEEBOT")]
+    Deebot, // python str value "deebotPos"
+    #[pyo3(name = "CHARGER")]
+    Charger, // python str value "chargePos"
+}
+
+impl TryFrom<&str> for PositionType {
+    type Error = &'static str;
+
+    fn try_from(value: &str) -> Result<Self, Self::Error> {
+        match value {
+            "deebotPos" => Ok(PositionType::Deebot),
+            "chargePos" => Ok(PositionType::Charger),
+            _ => Err("Invalid position type"),
+        }
+    }
+}
+
+#[pymethods]
+impl PositionType {
+    #[staticmethod]
+    fn from_str(value: &str) -> PyResult<Self> {
+        PositionType::try_from(value).map_err(PyErr::new::<PyValueError, _>)
+    }
+
+    fn value(&self) -> &'static str {
+        match self {
+            PositionType::Deebot => "deebotPos",
+            PositionType::Charger => "chargePos",
+        }
+    }
+}
+
+impl PositionType {
+    fn order(&self) -> i32 {
+        match self {
+            PositionType::Deebot => 0,
+            PositionType::Charger => 1,
+        }
+    }
+
+    fn svg_use_id(&self) -> &'static str {
+        match self {
+            PositionType::Deebot => "d",
+            PositionType::Charger => "c",
+        }
+    }
+}
+
 /// Position type
 #[derive(FromPyObject, Debug)]
 struct Position {
     #[pyo3(attribute("type"))]
-    position_type: String,
+    position_type: PositionType,
     x: i32,
     y: i32,
 }
@@ -293,7 +345,7 @@ impl MapData {
             .add(
                 // Bot circular icon
                 Group::new()
-                    .set("id", "d")
+                    .set("id", PositionType::Deebot.svg_use_id())
                     .add(Circle::new().set("r", 5).set("fill", "url(#dbg)"))
                     .add(
                         Circle::new()
@@ -306,7 +358,7 @@ impl MapData {
             .add(
                 // Charger pin icon (pre-flipped vertically)
                 Group::new()
-                    .set("id", "c")
+                    .set("id", PositionType::Charger.svg_use_id())
                     .add(Path::new().set("fill", "#ffe605").set(
                         "d",
                         // Path data cannot be used as it's adds a , after each parameter
@@ -349,38 +401,27 @@ impl MapData {
 
 fn get_svg_positions(positions: Vec<Position>, viewbox: (f32, f32, f32, f32)) -> Vec<Use> {
     let mut positions: Vec<&Position> = positions.iter().to_owned().collect();
-    positions.sort_by_key(|d| -> i32 {
-        match d.position_type.as_str() {
-            "deebotPos" => 0,
-            "chargePos" => 1,
-            _ => 2,
-        }
-    });
+    positions.sort_by_key(|d| -> i32 { d.position_type.order() });
     debug!("Adding positions: {:?}", positions);
 
     let mut svg_positions = Vec::new();
 
     for position in positions {
         let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
-        let use_id = match position.position_type.as_str() {
-            "deebotPos" => "d",
-            "chargePos" => "c",
-            _ => "",
-        };
-        if !use_id.is_empty() {
-            svg_positions.push(
-                Use::new()
-                    .set("href", format!("#{}", use_id))
-                    .set("x", pos.x)
-                    .set("y", pos.y),
-            );
-        }
+
+        svg_positions.push(
+            Use::new()
+                .set("href", format!("#{}", position.position_type.svg_use_id()))
+                .set("x", pos.x)
+                .set("y", pos.y),
+        );
     }
     svg_positions
 }
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MapData>()?;
+    m.add_class::<PositionType>()?;
     Ok(())
 }
 
@@ -456,10 +497,10 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![Position{position_type:"deebotPos".to_string(), x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case( vec![Position{position_type:"deebotPos".to_string(), x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(vec![Position{position_type:"chargePos".to_string(), x:25000, y:55000}, Position{position_type:"deebotPos".to_string(), x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(vec![Position{position_type:"deebotPos".to_string(), x:-10000, y:10000}, Position{position_type:"chargePos".to_string(), x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    #[case(vec![Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case( vec![Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(vec![Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(vec![Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
     fn test_get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
         let viewbox = (-500.0, -500.0, 1000.0, 1000.0);
         let result = get_svg_positions(positions, viewbox)

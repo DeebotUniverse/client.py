@@ -1,3 +1,4 @@
+from enum import Enum, auto
 from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
@@ -22,3 +23,13 @@ class MapData:
         position: list[Position],
     ) -> str:
         """Generate SVG image."""
+
+class PositionType(Enum):
+    """Position type enum."""
+
+    DEEBOT = auto()
+    CHARGER = auto()
+
+    @staticmethod
+    def from_str(value: str) -> PositionType:
+        """Create a position type from string."""

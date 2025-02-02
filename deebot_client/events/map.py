@@ -11,13 +11,7 @@ from deebot_client.events import Event
 if TYPE_CHECKING:
     from datetime import datetime
 
-
-@unique
-class PositionType(str, Enum):
-    """Position type enum."""
-
-    DEEBOT = "deebotPos"
-    CHARGER = "chargePos"
+    from deebot_client.rs.map import PositionType
 
 
 @dataclass(frozen=True)

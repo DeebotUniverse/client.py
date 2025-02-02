@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from deebot_client.commands.json import GetPos
-from deebot_client.events import Position, PositionsEvent, PositionType
+from deebot_client.events import Position, PositionsEvent
+from deebot_client.rs.map import PositionType
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
