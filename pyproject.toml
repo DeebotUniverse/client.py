@@ -56,7 +56,7 @@ dev = [
     "maturin-import-hook>=0.2.0",
 ]
 lint = [
-    "mypy==1.14.1",
+    "mypy==1.15.0",
     "pre-commit==4.1.0",
     "pylint==3.3.4",
     "types-cachetools>=5.5.0.20240820",
