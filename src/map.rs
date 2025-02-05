@@ -60,16 +60,20 @@ enum SvgPathCommand {
     VerticalLineBy,
 }
 
-fn points_to_svg_path(points: &[Point]) -> String {
+fn points_to_svg_path(points: &[Point]) -> Option<String> {
     // Until https://github.com/bodoni/svg/issues/68 is not implemented
     // we need to generate the path manually to avoid the extra spaces/characters which can be omitted
+    if points.len() < 2 {
+        // Not enough points to generate a path
+        return None;
+    }
+
     let mut svg_path = String::new();
     let mut last_command = SvgPathCommand::MoveTo;
 
-    if let Some(first_p) = points.first() {
-        let space = if 0.0 < first_p.y { " " } else { "" };
-        svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
-    }
+    let first_p = points.first().unwrap();
+    let space = if 0.0 < first_p.y { " " } else { "" };
+    svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
 
     for pair in points.windows(2) {
         if let [prev_p, p] = pair {
@@ -112,7 +116,7 @@ fn points_to_svg_path(points: &[Point]) -> String {
         }
     }
 
-    svg_path
+    Some(svg_path)
 }
 
 fn get_trace_path(trace_points: &[TracePoint]) -> Option<Path> {
@@ -121,7 +125,7 @@ fn get_trace_path(trace_points: &[TracePoint]) -> Option<Path> {
     }
 
     let path_data =
-        points_to_svg_path(&trace_points.iter().map(Into::into).collect::<Vec<Point>>());
+        points_to_svg_path(&trace_points.iter().map(Into::into).collect::<Vec<Point>>())?;
     let trace = Path::new()
         .set("fill", "none")
         .set("stroke", "#fff")
@@ -190,7 +194,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
-                .set("d", points_to_svg_path(&points)),
+                .set("d", points_to_svg_path(&points).unwrap()),
         ))
     } else {
         // More than 2 points: use a Polygon
@@ -455,9 +459,9 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![TracePoint{x:16, y:256, connected:true}], "<path d=\"M16 256\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(vec![
-        TracePoint{x:-215, y:-70, connected:false},
+        TracePoint{x:-215, y:-70, connected:true},
         TracePoint{x:-215, y:-70, connected:true},
         TracePoint{x:-212, y:-73, connected:true},
         TracePoint{x:-213, y:-73, connected:true},
@@ -473,7 +477,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![Point{x:16.0, y:256.0, connected:true}], "M16 256")]
+    #[case(vec![Point{x:16.0, y:256.0, connected:true}], None)]
     #[case(vec![
         Point{x:-215.0, y:-70.0, connected:false},
         Point{x:-215.0, y:-70.0, connected:true},
@@ -484,9 +488,10 @@ mod tests {
         Point{x:-227.0, y:-70.0, connected:true},
         Point{x:-256.0, y:-69.0, connected:false},
         Point{x:-260.0, y:-80.0, connected:true},
-    ], "M-215-70l3-3h-1l-14 1v2m-29 1l-4-11")]
-    #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], "M45.58 176.12l-26.8-0.18")]
-    fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: String) {
+    ], Some("M-215-70l3-3h-1l-14 1v2m-29 1l-4-11".to_string()))]
+    #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], Some("M45.58 176.12l-26.8-0.18".to_string()))]
+    #[case(vec![], None)]
+    fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: Option<String>) {
         let trace = points_to_svg_path(&points);
         assert_eq!(trace, expected);
     }
