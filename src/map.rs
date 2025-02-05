@@ -76,43 +76,43 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
     svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
 
     for pair in points.windows(2) {
-        if let [prev_p, p] = pair {
-            let x = round(p.x - prev_p.x, ROUND_TO_DIGITS);
-            let y = round(p.y - prev_p.y, ROUND_TO_DIGITS);
-            if x == 0.0 && y == 0.0 {
-                continue;
-            }
+        let prev_p = &pair[0];
+        let p = &pair[1];
+        let x = round(p.x - prev_p.x, ROUND_TO_DIGITS);
+        let y = round(p.y - prev_p.y, ROUND_TO_DIGITS);
+        if x == 0.0 && y == 0.0 {
+            continue;
+        }
 
-            if !p.connected {
-                let space = if 0.0 < y { " " } else { "" };
-                svg_path.push_str(&format!("m{}{}{}", x, space, y));
-                last_command = SvgPathCommand::MoveBy;
-            } else if x == 0.0 {
-                if last_command != SvgPathCommand::VerticalLineBy {
-                    svg_path.push('v');
-                    last_command = SvgPathCommand::VerticalLineBy;
-                } else if y >= 0.0 {
-                    svg_path.push(' ');
-                }
-                svg_path.push_str(&format!("{}", y));
-            } else if y == 0.0 {
-                if last_command != SvgPathCommand::HorizontalLineBy {
-                    svg_path.push('h');
-                    last_command = SvgPathCommand::HorizontalLineBy;
-                } else if x >= 0.0 {
-                    svg_path.push(' ');
-                }
-                svg_path.push_str(&format!("{}", x));
-            } else {
-                if last_command != SvgPathCommand::LineBy {
-                    svg_path.push('l');
-                    last_command = SvgPathCommand::LineBy;
-                } else if x >= 0.0 {
-                    svg_path.push(' ');
-                }
-                let space = if 0.0 < y { " " } else { "" };
-                svg_path.push_str(&format!("{}{}{}", x, space, y));
+        if !p.connected {
+            let space = if 0.0 < y { " " } else { "" };
+            svg_path.push_str(&format!("m{}{}{}", x, space, y));
+            last_command = SvgPathCommand::MoveBy;
+        } else if x == 0.0 {
+            if last_command != SvgPathCommand::VerticalLineBy {
+                svg_path.push('v');
+                last_command = SvgPathCommand::VerticalLineBy;
+            } else if y >= 0.0 {
+                svg_path.push(' ');
             }
+            svg_path.push_str(&format!("{}", y));
+        } else if y == 0.0 {
+            if last_command != SvgPathCommand::HorizontalLineBy {
+                svg_path.push('h');
+                last_command = SvgPathCommand::HorizontalLineBy;
+            } else if x >= 0.0 {
+                svg_path.push(' ');
+            }
+            svg_path.push_str(&format!("{}", x));
+        } else {
+            if last_command != SvgPathCommand::LineBy {
+                svg_path.push('l');
+                last_command = SvgPathCommand::LineBy;
+            } else if x >= 0.0 {
+                svg_path.push(' ');
+            }
+            let space = if 0.0 < y { " " } else { "" };
+            svg_path.push_str(&format!("{}{}{}", x, space, y));
         }
     }
 
