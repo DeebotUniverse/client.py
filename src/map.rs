@@ -17,6 +17,7 @@ const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 
 /// Trace point
+#[derive(Debug, PartialEq)]
 struct TracePoint {
     x: i16,
     y: i16,
@@ -533,5 +534,196 @@ mod tests {
         assert_eq!(get_color("vw").unwrap(), "#f00000");
         assert_eq!(get_color("mw").unwrap(), "#ffa500");
         assert!(get_color("invalid").is_err());
+    }
+
+    #[test]
+    fn test_extract_trace_points_success() {
+        let input = "XQAABACvAAAAAAAAAEINQkt4BfqEvt9Pow7YU9KWRVBcSBosIDAOtACCicHy+vmfexxcutQUhqkAPQlBawOeXo/VSrOqF7yhdJ1JPICUs3IhIebU62Qego0vdk8oObiLh3VY/PVkqQyvR4dHxUDzMhX7HAguZVn3yC17+cQ18N4kaydN3LfSUtV/zejrBM4=";
+        let result = extract_trace_points(input.to_string()).unwrap();
+        let expected = vec![
+            TracePoint {
+                x: 0,
+                y: 1,
+                connected: false,
+            },
+            TracePoint {
+                x: -10,
+                y: 1,
+                connected: true,
+            },
+            TracePoint {
+                x: -7,
+                y: -8,
+                connected: true,
+            },
+            TracePoint {
+                x: 0,
+                y: -15,
+                connected: true,
+            },
+            TracePoint {
+                x: 6,
+                y: -23,
+                connected: true,
+            },
+            TracePoint {
+                x: 11,
+                y: -32,
+                connected: true,
+            },
+            TracePoint {
+                x: 21,
+                y: -30,
+                connected: true,
+            },
+            TracePoint {
+                x: 31,
+                y: -30,
+                connected: true,
+            },
+            TracePoint {
+                x: 40,
+                y: -34,
+                connected: true,
+            },
+            TracePoint {
+                x: 46,
+                y: -42,
+                connected: true,
+            },
+            TracePoint {
+                x: 53,
+                y: -51,
+                connected: true,
+            },
+            TracePoint {
+                x: 52,
+                y: -61,
+                connected: true,
+            },
+            TracePoint {
+                x: 48,
+                y: -70,
+                connected: true,
+            },
+            TracePoint {
+                x: 44,
+                y: -79,
+                connected: true,
+            },
+            TracePoint {
+                x: 34,
+                y: -83,
+                connected: true,
+            },
+            TracePoint {
+                x: 24,
+                y: -83,
+                connected: true,
+            },
+            TracePoint {
+                x: 14,
+                y: -82,
+                connected: true,
+            },
+            TracePoint {
+                x: 6,
+                y: -76,
+                connected: true,
+            },
+            TracePoint {
+                x: 0,
+                y: -68,
+                connected: true,
+            },
+            TracePoint {
+                x: -2,
+                y: -59,
+                connected: true,
+            },
+            TracePoint {
+                x: 0,
+                y: -48,
+                connected: true,
+            },
+            TracePoint {
+                x: 3,
+                y: -38,
+                connected: true,
+            },
+            TracePoint {
+                x: 11,
+                y: -32,
+                connected: true,
+            },
+            TracePoint {
+                x: 21,
+                y: -29,
+                connected: true,
+            },
+            TracePoint {
+                x: 21,
+                y: -19,
+                connected: true,
+            },
+            TracePoint {
+                x: 14,
+                y: -12,
+                connected: true,
+            },
+            TracePoint {
+                x: 5,
+                y: -7,
+                connected: true,
+            },
+            TracePoint {
+                x: 12,
+                y: -14,
+                connected: true,
+            },
+            TracePoint {
+                x: 21,
+                y: -18,
+                connected: true,
+            },
+            TracePoint {
+                x: 31,
+                y: -20,
+                connected: true,
+            },
+            TracePoint {
+                x: 41,
+                y: -20,
+                connected: true,
+            },
+            TracePoint {
+                x: 51,
+                y: -24,
+                connected: true,
+            },
+            TracePoint {
+                x: 58,
+                y: -31,
+                connected: true,
+            },
+            TracePoint {
+                x: 64,
+                y: -39,
+                connected: true,
+            },
+            TracePoint {
+                x: 70,
+                y: -47,
+                connected: true,
+            },
+        ];
+        assert_eq!(result, expected);
+    }
+
+    #[test]
+    fn test_process_trace_points_to_short() {
+        let input: Vec<u8> = vec![0x0, 0x0, 0x0, 0x0];
+        let result = process_trace_points(&input);
+        assert!(matches!(result, Err(e) if e.to_string() == "Invalid trace points length"));
     }
 }
