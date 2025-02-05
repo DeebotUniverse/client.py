@@ -4,15 +4,13 @@ from __future__ import annotations
 
 import base64
 import lzma
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
 from deebot_client.rs.util import decompress_7z_base64_data
 
 if TYPE_CHECKING:
-    from contextlib import AbstractContextManager
-
     from pytest_codspeed import BenchmarkFixture
 
 
@@ -51,23 +49,25 @@ def test_decompress_7z_base64_data(
 
 
 @pytest.mark.parametrize(
-    ("input", "error"),
+    ("input", "expected_error"),
     [
         (
             "XQAABADHAAAAAC2WwEHwYhHX3vWwDK80QCnaQU0mwUd9Vk34ub6OxzOk6kdFfbFvpVp4iIlKisAvp0MznQNYEZ8koxFHnO,+iM44GUKgujGQKgzl0bScbQgaon1jI3eyCRikWlkmrbwA=",
-            pytest.raises(ValueError, match="Invalid symbol 44, offset 94."),
+            "Invalid symbol 44, offset 94.",
         ),
         (
             "XQAABABBAAAAAC2WwEIwUhHX3vfFDfs1H1PUqtdWgakwVnMBz3Bb3yaoE5OYkd",
-            pytest.raises(ValueError, match="Invalid padding"),
+            "Invalid padding",
+        ),
+        (
+            "AAABAA==",
+            "Invalid 7z compressed data",
         ),
     ],
 )
-def test_decompress_7z_base64_data_errors(
-    input: str, error: AbstractContextManager[Any]
-) -> None:
+def test_decompress_7z_base64_data_errors(input: str, expected_error: str) -> None:
     """Test decompress_7z_base64_data function."""
-    with error:
+    with pytest.raises(ValueError, match=expected_error):
         assert decompress_7z_base64_data(input)
 
 
