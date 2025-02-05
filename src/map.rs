@@ -158,15 +158,15 @@ fn calc_point(x: f32, y: f32) -> Point {
     }
 }
 
-fn get_color(set_type: &str) -> &'static str {
+fn get_color(set_type: &str) -> PyResult<&'static str> {
     match set_type {
-        "vw" => "#f00000",
-        "mw" => "#ffa500",
-        _ => "#000000",
+        "vw" => Ok("#f00000"),
+        "mw" => Ok("#ffa500"),
+        _ => Err(PyValueError::new_err("Invalid set type")),
     }
 }
 
-fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
+fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
     debug!("Adding subset: {:?}", subset);
     let points: Vec<Point> = subset
         .coordinates
@@ -183,20 +183,21 @@ fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
 
     if points.len() == 2 {
         // Only 2 points: use a Path
-        Box::new(
+        Ok(Box::new(
             Path::new()
-                .set("stroke", get_color(&subset.set_type))
+                .set("stroke", get_color(&subset.set_type)?)
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
                 .set("d", points_to_svg_path(&points)),
-        )
+        ))
     } else {
         // More than 2 points: use a Polygon
-        Box::new(
+        let color = get_color(&subset.set_type)?;
+        Ok(Box::new(
             Polygon::new()
-                .set("fill", format!("{}30", get_color(&subset.set_type)))
-                .set("stroke", get_color(&subset.set_type))
+                .set("fill", format!("{}30", color))
+                .set("stroke", color)
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
@@ -207,7 +208,7 @@ fn get_svg_subset(subset: &MapSubset) -> Box<dyn Node> {
                         .flat_map(|p| vec![p.x, p.y])
                         .collect::<Vec<f32>>(),
                 ),
-        )
+        ))
     }
 }
 
@@ -379,7 +380,7 @@ impl MapData {
         let mut document = Document::new().set("viewBox", viewbox).add(defs).add(image);
 
         for subset in subsets.iter() {
-            document.append(get_svg_subset(subset));
+            document.append(get_svg_subset(subset)?);
         }
         if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
             document.append(trace);
@@ -509,7 +510,7 @@ mod tests {
     #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon fill=\"#ffa50030\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\" stroke=\"#ffa500\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
-        let result = get_svg_subset(&subset).to_string();
+        let result = get_svg_subset(&subset).unwrap().to_string();
         assert_eq!(result, expected);
     }
 
@@ -525,5 +526,12 @@ mod tests {
     fn test_position_type_from_str_invalid() {
         let result = PositionType::from_str("invalid");
         assert!(result.is_err());
+    }
+
+    #[test]
+    fn test_get_color() {
+        assert_eq!(get_color("vw").unwrap(), "#f00000");
+        assert_eq!(get_color("mw").unwrap(), "#ffa500");
+        assert!(get_color("invalid").is_err());
     }
 }
