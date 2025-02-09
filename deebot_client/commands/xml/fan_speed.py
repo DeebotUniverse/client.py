@@ -30,7 +30,7 @@ class GetCleanSpeed(XmlGetCommand):
 
         :return: A message response
         """
-        event_bus.notify(FanSpeedEvent(FanSpeedLevel(int(args["speed"]))))
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel.from_xml(str(args["speed"]))))
         return HandlingResult.success()
 
     @classmethod
@@ -42,19 +42,8 @@ class GetCleanSpeed(XmlGetCommand):
         if xml.attrib.get("ret") != "ok" or not (speed := xml.attrib.get("speed")):
             return HandlingResult.analyse()
 
-        event: FanSpeedEvent | None = None
-
-        match speed.lower():
-            case "standard":
-                event = FanSpeedEvent(FanSpeedLevel.STANDARD)
-            case "strong":
-                event = FanSpeedEvent(FanSpeedLevel.STRONG)
-
-        if event:
-            event_bus.notify(event)
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel.from_xml(speed)))
+        return HandlingResult.success()
 
 
 class SetCleanSpeed(XmlSetCommand):
@@ -64,7 +53,5 @@ class SetCleanSpeed(XmlSetCommand):
     get_command = GetCleanSpeed
     _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
 
-    def __init__(self, speed: FanSpeedLevel | str) -> None:
-        if isinstance(speed, FanSpeedLevel):
-            speed = speed.name.lower()
-        super().__init__({"speed": speed})
+    def __init__(self, speed: FanSpeedLevel) -> None:
+        super().__init__({"speed": speed.xml_value})

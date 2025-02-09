@@ -19,8 +19,8 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("speed", "expected_event"),
     [
-        ("standard", FanSpeedEvent(FanSpeedLevel.STANDARD)),
-        ("strong", FanSpeedEvent(FanSpeedLevel.STRONG)),
+        ("standard", FanSpeedEvent(FanSpeedLevel.NORMAL)),
+        ("strong", FanSpeedEvent(FanSpeedLevel.MAX)),
     ],
     ids=["standard", "strong"],
 )
@@ -31,8 +31,8 @@ async def test_get_clean_speed(speed: str, expected_event: Event) -> None:
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>", "<ctl ret='ok' speed='invalid'/>"],
-    ids=["error", "no_state"],
+    ["<ctl ret='error'/>"],
+    ids=["error"],
 )
 async def test_get_clean_speed_error(xml: str) -> None:
     json = get_request_xml(xml)
@@ -48,11 +48,10 @@ async def test_get_clean_speed_error(xml: str) -> None:
     ("command", "xml", "result"),
     [
         (
-            SetCleanSpeed(FanSpeedLevel.STRONG),
+            SetCleanSpeed(FanSpeedLevel.MAX),
             "<ctl ret='ok' />",
             HandlingState.SUCCESS,
         ),
-        (SetCleanSpeed("invalid"), "<ctl ret='error' />", HandlingState.FAILED),
     ],
 )
 async def test_set_clean_speed(
