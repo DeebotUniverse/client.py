@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.rs.util import decompress_7z_base64_data
+from deebot_client.rs.util import decompress_base64_data
 
 if TYPE_CHECKING:
     from pytest_codspeed import BenchmarkFixture
@@ -36,16 +36,35 @@ if TYPE_CHECKING:
     ],
     ids=["1", "2", "3", "4"],
 )
-def test_decompress_7z_base64_data(
+def test_decompress_base64_data_lzma(
     benchmark: BenchmarkFixture, input: str, expected: bytes
 ) -> None:
-    """Test decompress_7z_base64_data function."""
+    """Test decompress_base64_data function with lzma base64 values."""
     # Benchmark only the production function
-    result = benchmark(decompress_7z_base64_data, input)
+    result = benchmark(decompress_base64_data, input)
     assert result == expected
 
     # Verify that the old python function is producing the same result
     assert _decompress_7z_base64_data_python(input) == result
+
+
+@pytest.mark.parametrize(
+    ("input", "expected"),
+    [
+        (
+            "KLUv/SB//QEAMgQKDKClbQC+WNsvI/5vYPMSO6jz8h7OwN2BYlTHRR2DYgSeurlRRyp2UAgALXwANbAWWqAuACQBKiDgFiUJ",
+            b"-624,-774;-524,-774;-474,-724;-424,-724;-374,-674;-124,-674;-24,-774;-74,-824;2325,-824;2375,-774;2425,-774;2425,1225;-624,1225",
+        ),
+    ],
+    ids=["1"],
+)
+def test_decompress_base64_data_zstd(
+    benchmark: BenchmarkFixture, input: str, expected: bytes
+) -> None:
+    """Test decompress_base64_data function with zstd base64 values."""
+    # Benchmark only the production function
+    result = benchmark(decompress_base64_data, input)
+    assert result == expected
 
 
 @pytest.mark.parametrize(
@@ -65,10 +84,10 @@ def test_decompress_7z_base64_data(
         ),
     ],
 )
-def test_decompress_7z_base64_data_errors(input: str, expected_error: str) -> None:
-    """Test decompress_7z_base64_data function."""
+def test_decompress_base64_data_errors(input: str, expected_error: str) -> None:
+    """Test decompress_base64_data function."""
     with pytest.raises(ValueError, match=expected_error):
-        assert decompress_7z_base64_data(input)
+        assert decompress_base64_data(input)
 
 
 def _decompress_7z_base64_data_python(data: str) -> bytes:

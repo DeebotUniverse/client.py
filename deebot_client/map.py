@@ -29,7 +29,7 @@ from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
 from .rs.map import MapData as MapDataRs
-from .rs.util import decompress_7z_base64_data
+from .rs.util import decompress_base64_data
 from .util import (
     OnChangedDict,
     OnChangedList,
@@ -311,7 +311,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = decompress_7z_base64_data(base64_data)
+        decoded = decompress_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 

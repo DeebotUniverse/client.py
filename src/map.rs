@@ -1,7 +1,7 @@
 use std::error::Error;
 use std::io::Cursor;
 
-use super::util::decompress_7z_base64_data;
+use super::util::decompress_base64_data;
 use base64::engine::general_purpose;
 use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
@@ -41,7 +41,7 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
 }
 
 fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
-    let decompressed_data = decompress_7z_base64_data(value)?;
+    let decompressed_data = decompress_base64_data(value)?;
     process_trace_points(&decompressed_data)
 }
 
