@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
+from .charge import Charge
 from .charge_state import GetChargeState
 from .error import GetError
 from .fan_speed import GetFanSpeed
@@ -18,6 +19,7 @@ if TYPE_CHECKING:
     from .common import XmlCommand
 
 __all__ = [
+    "Charge",
     "GetChargeState",
     "GetCleanSum",
     "GetError",
