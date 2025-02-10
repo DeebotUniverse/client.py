@@ -157,12 +157,11 @@ class Map:
         unsubscribers = []
 
         async def on_major_map(event: MajorMapEvent) -> None:
+            if not event.requested:
+                return
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
-                    if (
-                        self._map_data.map_pieces[idx].crc32_indicates_update(value)
-                        and event.requested
-                    ):
+                    if self._map_data.map_pieces[idx].crc32_indicates_update(value):
                         tg.create_task(
                             self._execute_command(
                                 GetMinorMap(map_id=event.map_id, piece_index=idx)
@@ -287,15 +286,14 @@ class MapPiece:
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
         self._image: Image.Image | None = None
 
-    def crc32_indicates_update(self, crc32: str) -> bool:
+    def crc32_indicates_update(self, crc32: int) -> bool:
         """Return True if update is required."""
-        crc32_int = int(crc32)
-        if crc32_int == MapPiece._NOT_INUSE_CRC32:
-            self._crc32 = crc32_int
+        if crc32 == MapPiece._NOT_INUSE_CRC32:
+            self._crc32 = crc32
             self._image = None
             return False
 
-        return self._crc32 != crc32_int
+        return self._crc32 != crc32
 
     @property
     def in_use(self) -> bool:

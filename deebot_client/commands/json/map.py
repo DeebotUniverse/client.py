@@ -104,7 +104,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        values = data["value"].split(",")
+        values = [int(value) for value in data["value"].split(",")]
         map_id = data["mid"]
 
         return HandlingResult(

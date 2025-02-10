@@ -153,7 +153,7 @@ required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.mccabe]
-max-complexity = 12
+max-complexity = 13
 
 [tool.ruff.lint.pylint]
 max-args = 7

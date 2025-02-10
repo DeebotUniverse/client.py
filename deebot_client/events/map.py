@@ -45,7 +45,7 @@ class MajorMapEvent(Event):
     """Major map event."""
 
     map_id: str
-    values: list[str]
+    values: list[int]
     requested: bool = field(kw_only=True)
 
 
