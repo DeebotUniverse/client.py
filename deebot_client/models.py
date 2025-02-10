@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum, unique
+from enum import IntEnum, unique
 from pathlib import Path
-from typing import TYPE_CHECKING, Required, Self, TypedDict
+from typing import TYPE_CHECKING, Required, TypedDict
+
+from deebot_client.util.enum import StrEnumWithXml
 
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
@@ -64,27 +66,8 @@ class State(IntEnum):
 
 
 @unique
-class CleanAction(StrEnum):
+class CleanAction(StrEnumWithXml):
     """Enum class for all possible clean actions."""
-
-    xml_value: str
-
-    def __new__(cls, value: str, xml_value: str = "") -> Self:
-        """New CleanAction."""
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.xml_value = xml_value
-        return obj
-
-    @classmethod
-    def from_xml(cls, value: str) -> CleanAction:
-        """Get CleanAction from xml value."""
-        for clean_action in CleanAction:
-            if clean_action.xml_value == value:
-                return clean_action
-
-        msg = f"{value} is not a valid {cls.__name__}"
-        raise ValueError(msg)
 
     START = "start", "s"
     PAUSE = "pause", "p"
@@ -93,27 +76,8 @@ class CleanAction(StrEnum):
 
 
 @unique
-class CleanMode(StrEnum):
+class CleanMode(StrEnumWithXml):
     """Enum class for all possible clean modes."""
-
-    xml_value: str
-
-    def __new__(cls, value: str, xml_value: str = "") -> Self:
-        """New CleanMode."""
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.xml_value = xml_value
-        return obj
-
-    @classmethod
-    def from_xml(cls, value: str) -> CleanMode:
-        """Get CleanMode from xml value."""
-        for clean_mode in CleanMode:
-            if clean_mode.xml_value == value:
-                return clean_mode
-
-        msg = f"{value} is not a valid {cls.__name__}"
-        raise ValueError(msg)
 
     AUTO = "auto", "auto"
     SPOT_AREA = "spotArea", "SpotArea"

@@ -1,0 +1,29 @@
+"""Enum util."""
+
+from __future__ import annotations
+
+from enum import StrEnum
+from typing import Self
+
+
+class StrEnumWithXml(StrEnum):
+    """String enum with xml value."""
+
+    xml_value: str
+
+    def __new__(cls, value: str, xml_value: str = "") -> Self:
+        """Create new StrEnumWithXml."""
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.xml_value = xml_value
+        return obj
+
+    @classmethod
+    def from_xml(cls, value: str) -> Self:
+        """Get CleanAction from xml value."""
+        for member in cls:
+            if member.xml_value == value:
+                return member
+
+        msg = f"{value} is not a valid {cls.__name__}"
+        raise ValueError(msg)
