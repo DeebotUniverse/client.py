@@ -53,5 +53,7 @@ class SetCleanSpeed(XmlSetCommand):
     get_command = GetCleanSpeed
     _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
 
-    def __init__(self, speed: FanSpeedLevel) -> None:
-        super().__init__({"speed": speed.xml_value})
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
+        if isinstance(speed, FanSpeedLevel):
+            speed = speed.xml_value
+        super().__init__({"speed": speed})
