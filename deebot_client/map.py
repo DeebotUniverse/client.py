@@ -157,11 +157,12 @@ class Map:
         unsubscribers = []
 
         async def on_major_map(event: MajorMapEvent) -> None:
-            if not event.requested:
-                return
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
-                    if self._map_data.map_pieces[idx].crc32_indicates_update(value):
+                    if (
+                        self._map_data.map_pieces[idx].crc32_indicates_update(value)
+                        and event.requested
+                    ):
                         tg.create_task(
                             self._execute_command(
                                 GetMinorMap(map_id=event.map_id, piece_index=idx)
