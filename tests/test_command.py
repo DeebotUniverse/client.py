@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -7,8 +8,8 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import ClientTimeout
 import pytest
 
-from deebot_client.command import Command, CommandMqttP2P, CommandResult, InitParam
-from deebot_client.const import DataType
+from deebot_client.command import Command, CommandResult, InitParam
+from deebot_client.commands.json.common import JsonCommandMqttP2P
 from deebot_client.exceptions import ApiTimeoutError, DeebotError
 
 if TYPE_CHECKING:
@@ -18,18 +19,19 @@ if TYPE_CHECKING:
     from deebot_client.models import ApiDeviceInfo
 
 
-class _TestCommand(CommandMqttP2P):
+class _TestCommand(JsonCommandMqttP2P):
     NAME = "TestCommand"
-    DATA_TYPE = DataType.JSON
     _mqtt_params = MappingProxyType({"field": InitParam(int), "remove": None})
 
     def __init__(self, field: int) -> None:
         pass
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def _handle_mqtt_p2p(
+        self, event_bus: EventBus, response: dict[str, Any] | str
+    ) -> None:
         pass
 
-    def _get_payload(self) -> dict[str, Any] | list[Any] | str:
+    def _get_payload(self) -> dict[str, Any] | list[Any]:
         return {}
 
     def _handle_response(
@@ -41,12 +43,11 @@ class _TestCommand(CommandMqttP2P):
 
 
 def test_CommandMqttP2P_no_mqtt_params() -> None:
-    class TestCommandNoParams(CommandMqttP2P):
+    class TestCommandNoParams(JsonCommandMqttP2P):
         NAME = "TestCommand"
-        DATA_TYPE = DataType.JSON
 
     with pytest.raises(DeebotError, match=r"_mqtt_params not set"):
-        TestCommandNoParams.create_from_mqtt({})
+        TestCommandNoParams.create_from_mqtt(b'{"body": {"data": {}}}')
 
 
 def test_Command_no_NAME() -> None:
@@ -75,16 +76,18 @@ def test_Command_no_DATA_TYPE() -> None:
     ],
 )
 def test_CommandMqttP2P_create_from_mqtt_error(
-    data: dict[str, Any], expected: str
+    data: dict[str, str], expected: str
 ) -> None:
     with pytest.raises(DeebotError, match=expected):
-        _TestCommand.create_from_mqtt(data)
+        _TestCommand.create_from_mqtt(json.dumps({"body": {"data": data}}))
 
 
 def test_CommandMqttP2P_create_from_mqtt_additional_fields(
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    _TestCommand.create_from_mqtt({"field": 0, "remove": "bla", "additional": 1})
+    _TestCommand.create_from_mqtt(
+        b'{"body":{"data":{"field": 0, "remove": "bla", "additional": 1}}}'
+    )
     assert (
         "deebot_client.command",
         logging.DEBUG,

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
@@ -64,20 +65,21 @@ async def assert_set_command(
     event_bus = Mock(spec_set=EventBus)
 
     # Failed to set
-    json = get_message_json(
+    json_data = get_message_json(
         {
             "code": 500,
             "msg": "fail",
         }
     )
-    command.handle_mqtt_p2p(event_bus, json)
+    command.handle_mqtt_p2p(event_bus, json.dumps(json_data))
     event_bus.notify.assert_not_called()
 
     # Success
-    command.handle_mqtt_p2p(event_bus, get_message_json(get_success_body()))
+    command.handle_mqtt_p2p(event_bus, json.dumps(get_message_json(get_success_body())))
     event_bus.notify.assert_called_once_with(expected_get_command_event)
 
-    mqtt_command = command.create_from_mqtt(args)
+    payload = json.dumps({"body": {"data": args}})
+    mqtt_command = command.create_from_mqtt(payload)
     assert mqtt_command == command
 
 

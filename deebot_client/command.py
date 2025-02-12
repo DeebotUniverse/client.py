@@ -284,11 +284,18 @@ class CommandMqttP2P(Command, ABC):
     _mqtt_params: MappingProxyType[str, InitParam | None]
 
     @abstractmethod
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def handle_mqtt_p2p(
+        self, event_bus: EventBus, response_payload: str | bytes | bytearray
+    ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
 
     @classmethod
-    def create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
+    @abstractmethod
+    def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
+        """Create a command from the mqtt data."""
+
+    @classmethod
+    def _create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
         """Create a command from the mqtt data."""
         values: dict[str, Any] = {}
         if not hasattr(cls, "_mqtt_params"):
@@ -344,7 +351,9 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
         """Return the corresponding "get" command."""
         raise NotImplementedError  # pragma: no cover
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def _handle_mqtt_p2p(
+        self, event_bus: EventBus, response: dict[str, Any] | str
+    ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):

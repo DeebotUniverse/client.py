@@ -182,7 +182,7 @@ async def test_GetLifeSpan(
     [
         (ResetLifeSpan(LifeSpan.FILTER), {"type": LifeSpan.FILTER.value}),
         (
-            ResetLifeSpan.create_from_mqtt({"type": "brush"}),
+            ResetLifeSpan.create_from_mqtt(b'{"body":{"data":{"type": "brush"}}}'),
             {"type": LifeSpan.BRUSH.value},
         ),
     ],

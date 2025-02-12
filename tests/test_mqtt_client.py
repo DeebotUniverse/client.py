@@ -96,7 +96,7 @@ async def _publish_p2p(
     data_type: str = "j",
     *,
     is_request: bool,
-) -> None:
+) -> bytes:
     data_bytes = json.dumps(data).encode("utf-8")
     if is_request:
         topic = f"iot/p2p/{command_name}/test/test/test/{device_info['did']}/{device_info['class']}/{device_info['resource']}/q/{request_id}/{data_type}"
@@ -105,6 +105,7 @@ async def _publish_p2p(
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)
+    return data_bytes
 
 
 @pytest.mark.docker
@@ -127,31 +128,29 @@ async def test_p2p_success(
         {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
             device_info.api,
-            data,
+            {"body": {"data": {"volume": 1}}},
             request_id,
             test_mqtt_client,
             is_request=True,
         )
 
-        create_from_mqtt.assert_called_with(data["body"]["data"])
+        create_from_mqtt.assert_called_with(payload)
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 
-        data = {"body": {"data": {"ret": "ok"}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
             device_info.api,
-            data,
+            {"body": {"data": {"ret": "ok"}}},
             request_id,
             test_mqtt_client,
             is_request=False,
         )
 
-        command_object.handle_mqtt_p2p.assert_called_with(events, data)
+        command_object.handle_mqtt_p2p.assert_called_with(events, payload)
         assert request_id not in mqtt_client._received_p2p_commands
         assert len(mqtt_client._received_p2p_commands) == 0
 
@@ -230,17 +229,16 @@ async def test_p2p_to_late(
         {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
             device_info.api,
-            data,
+            {"body": {"data": {"volume": 1}}},
             request_id,
             test_mqtt_client,
             is_request=True,
         )
 
-        create_from_mqtt.assert_called_with(data["body"]["data"])
+        create_from_mqtt.assert_called_with(payload)
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 
@@ -282,12 +280,11 @@ async def test_p2p_parse_error(
         {command_name: command_type},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"volume": 1}
 
-    await _publish_p2p(
+    payload = await _publish_p2p(
         command_name,
         device_info.api,
-        data,
+        {"volume": 1},
         request_id,
         test_mqtt_client,
         is_request=True,
@@ -295,8 +292,8 @@ async def test_p2p_parse_error(
 
     assert (
         "deebot_client.mqtt_client",
-        logging.WARNING,
-        f"Could not parse p2p payload: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={data}",
+        logging.ERROR,
+        f"An exception occurred during handling p2p message: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={payload!r}",
     ) in caplog.record_tuples
 
 

@@ -6,7 +6,6 @@ import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
 from datetime import datetime
-import json
 import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -314,24 +313,12 @@ class MqttClient:
             request_id = topic_split[10]
 
             if is_request:
-                payload_json = json.loads(payload)
-                try:
-                    data = payload_json["body"]["data"]
-                except KeyError:
-                    _LOGGER.warning(
-                        "Could not parse p2p payload: topic=%s; payload=%s",
-                        "/".join(topic_split),
-                        payload_json,
-                    )
-                    return
-
                 self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
-                    data
+                    payload
                 )
             elif command := self._received_p2p_commands.pop(request_id, None):
                 if sub_info := self._subscriptions.get(topic_split[3]):
-                    data = json.loads(payload)
-                    command.handle_mqtt_p2p(sub_info.events, data)
+                    command.handle_mqtt_p2p(sub_info.events, payload)
             else:
                 _LOGGER.debug(
                     "Response to command came in probably to late. requestId=%s, commandName=%s",
@@ -339,4 +326,8 @@ class MqttClient:
                     command_name,
                 )
         except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("An exception occurred during handling p2p message")
+            _LOGGER.exception(
+                "An exception occurred during handling p2p message: topic=%s; payload=%s",
+                "/".join(topic_split),
+                payload,
+            )
