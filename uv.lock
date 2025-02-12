@@ -218,6 +218,7 @@ dev = [
     { name = "pytest-codspeed" },
     { name = "pytest-cov" },
     { name = "pytest-docker-fixtures" },
+    { name = "pytest-github-actions-annotate-failures" },
     { name = "pytest-timeout" },
     { name = "testfixtures" },
     { name = "types-cachetools" },
@@ -239,6 +240,7 @@ test = [
     { name = "pytest-codspeed" },
     { name = "pytest-cov" },
     { name = "pytest-docker-fixtures" },
+    { name = "pytest-github-actions-annotate-failures" },
     { name = "pytest-timeout" },
     { name = "testfixtures" },
 ]
@@ -255,8 +257,8 @@ requires-dist = [
 
 [package.metadata.requires-dev]
 dev = [
-    { name = "maturin", extras = ["patchelf"], specifier = ">=1.7.8" },
-    { name = "maturin-import-hook", specifier = ">=0.2.0" },
+    { name = "maturin", extras = ["patchelf"], specifier = "==1.8.1" },
+    { name = "maturin-import-hook", specifier = "==0.2.0" },
     { name = "mypy", specifier = "==1.15.0" },
     { name = "pre-commit", specifier = "==4.1.0" },
     { name = "pycountry", specifier = "==24.6.1" },
@@ -266,6 +268,7 @@ dev = [
     { name = "pytest-codspeed", specifier = ">=3.1.2" },
     { name = "pytest-cov", specifier = "==6.0.0" },
     { name = "pytest-docker-fixtures", specifier = "==1.3.19" },
+    { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.3.1" },
     { name = "testfixtures", specifier = "==8.3.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
@@ -287,6 +290,7 @@ test = [
     { name = "pytest-codspeed", specifier = ">=3.1.2" },
     { name = "pytest-cov", specifier = "==6.0.0" },
     { name = "pytest-docker-fixtures", specifier = "==1.3.19" },
+    { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.3.1" },
     { name = "testfixtures", specifier = "==8.3.0" },
 ]
@@ -786,6 +790,18 @@ dependencies = [
     { name = "requests" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/66/6e/cc5395a86f5ef3b71f5bcfcc35cfce734d6010bcc7ea57fcfa704ee94df5/pytest-docker-fixtures-1.3.19.tar.gz", hash = "sha256:016578a1b6a4dfc81e5a09286230cb56e323bdfe3f4dda20a1e7bc2c74492f4a", size = 10518 }
+
+[[package]]
+name = "pytest-github-actions-annotate-failures"
+version = "0.3.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "pytest" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/39/d4/c54ee6a871eee4a7468e3a8c0dead28e634c0bc2110c694309dcb7563a66/pytest_github_actions_annotate_failures-0.3.0.tar.gz", hash = "sha256:d4c3177c98046c3900a7f8ddebb22ea54b9f6822201b5d3ab8fcdea51e010db7", size = 11248 }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6d/73/7b0b15cb8605ee967b34aa1d949737ab664f94e6b0f1534e8339d9e64ab2/pytest_github_actions_annotate_failures-0.3.0-py3-none-any.whl", hash = "sha256:41ea558ba10c332c0bfc053daeee0c85187507b2034e990f21e4f7e5fef044cf", size = 6030 },
+]
 
 [[package]]
 name = "pytest-timeout"
