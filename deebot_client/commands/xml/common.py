@@ -10,6 +10,7 @@ from defusedxml import ElementTree  # type: ignore[import-untyped]
 
 from deebot_client.command import (
     Command,
+    CommandMqttP2P,
     CommandWithMessageHandling,
     GetCommand,
     SetCommand,
@@ -90,7 +91,27 @@ class ExecuteCommand(XmlCommandWithMessageHandling, ABC):
         return HandlingResult(HandlingState.FAILED)
 
 
-class XmlSetCommand(ExecuteCommand, SetCommand, ABC):
+class XmlCommandMqttP2P(XmlCommand, CommandMqttP2P, ABC):
+    """Json base command for mqtt p2p channel."""
+
+    @classmethod
+    def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
+        """Create a command from the mqtt data."""
+        xml = ElementTree.fromstring(payload)
+        return cls._create_from_mqtt(xml.attrib)
+
+    def handle_mqtt_p2p(
+        self, event_bus: EventBus, response_payload: str | bytes | bytearray
+    ) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        self._handle_mqtt_p2p(event_bus, response_payload)
+
+    @abstractmethod
+    def _handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+
+
+class XmlSetCommand(ExecuteCommand, SetCommand, XmlCommandMqttP2P, ABC):
     """Xml base set command.
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
