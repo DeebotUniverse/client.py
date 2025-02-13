@@ -28,8 +28,8 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs.map import Svg, TracePoint, extract_trace_points
-from .rs.util import decompress_7z_base64_data
+from .rs.map import MapData as MapDataRs
+from .rs.util import decompress_base64_data
 from .util import (
     OnChangedDict,
     OnChangedList,
@@ -196,9 +196,9 @@ class Map:
 
         async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
-                self._map_data.trace_values.clear()
+                self._map_data.clear_trace_points()
 
-            self._map_data.trace_values.extend(extract_trace_points(event.data))
+            self._map_data.add_trace_points(event.data)
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
@@ -257,7 +257,7 @@ class Map:
             self._last_image = None
             return None
 
-        svg_rs = Svg(
+        self._last_image = self._map_data.generate_svg(
             (
                 background.bounding_box[0] - _OFFSET,
                 _OFFSET - background.bounding_box[3],
@@ -265,11 +265,7 @@ class Map:
                 (background.bounding_box[3] - background.bounding_box[1]),
             ),
             background.image,
-            self._map_data.trace_values,
-            list(self._map_data.map_subsets.values()),
-            self._map_data.positions,
         )
-        self._last_image = svg_rs.generate()
         _LOGGER.debug("[get_svg_map] Finish")
         return self._last_image
 
@@ -291,15 +287,14 @@ class MapPiece:
         self._crc32: int = MapPiece._NOT_INUSE_CRC32
         self._image: Image.Image | None = None
 
-    def crc32_indicates_update(self, crc32: str) -> bool:
+    def crc32_indicates_update(self, crc32: int) -> bool:
         """Return True if update is required."""
-        crc32_int = int(crc32)
-        if crc32_int == MapPiece._NOT_INUSE_CRC32:
-            self._crc32 = crc32_int
+        if crc32 == MapPiece._NOT_INUSE_CRC32:
+            self._crc32 = crc32
             self._image = None
             return False
 
-        return self._crc32 != crc32_int
+        return self._crc32 != crc32
 
     @property
     def in_use(self) -> bool:
@@ -315,7 +310,7 @@ class MapPiece:
 
     def update_points(self, base64_data: str) -> None:
         """Add map piece points."""
-        decoded = decompress_7z_base64_data(base64_data)
+        decoded = decompress_base64_data(base64_data)
         old_crc32 = self._crc32
         self._crc32 = zlib.crc32(decoded)
 
@@ -356,7 +351,7 @@ class MapData:
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: OnChangedList[Position] = OnChangedList(on_change)
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._trace_values: OnChangedList[TracePoint] = OnChangedList(on_change)
+        self._data = MapDataRs()
 
     @property
     def changed(self) -> bool:
@@ -390,11 +385,26 @@ class MapData:
         """Return rooms."""
         return self._rooms
 
-    @property
-    def trace_values(self) -> OnChangedList[TracePoint]:
-        """Return trace values."""
-        return self._trace_values
-
     def reset_changed(self) -> None:
         """Reset changed value."""
         self._changed = False
+
+    def add_trace_points(self, value: str) -> None:
+        """Add trace points to the map data."""
+        self._data.add_trace_points(value)
+        self._on_change()
+
+    def clear_trace_points(self) -> None:
+        """Clear trace points."""
+        self._data.clear_trace_points()
+        self._on_change()
+
+    def generate_svg(
+        self,
+        viewbox: tuple[float, float, float, float],
+        image: bytes,
+    ) -> str:
+        """Generate SVG image."""
+        return self._data.generate_svg(
+            viewbox, image, list(self._map_subsets.values()), self._positions
+        )

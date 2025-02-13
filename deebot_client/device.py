@@ -21,7 +21,6 @@ from .events import (
     CustomCommandEvent,
     LifeSpanEvent,
     PositionsEvent,
-    PositionType,
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
@@ -30,6 +29,7 @@ from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
+from .rs.map import PositionType
 
 if TYPE_CHECKING:
     from .authentication import Authenticator

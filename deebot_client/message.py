@@ -49,16 +49,17 @@ class HandlingResult:
 
 
 _MessageT = TypeVar("_MessageT", bound="Message")
+_DataT = TypeVar("_DataT")
 
 
 def _handle_error_or_analyse(
-    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult],
-) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
+    func: Callable[[type[_MessageT], EventBus, _DataT], HandlingResult],
+) -> Callable[[type[_MessageT], EventBus, _DataT], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
     def wrapper(
-        cls: type[_MessageT], event_bus: EventBus, data: dict[str, Any]
+        cls: type[_MessageT], event_bus: EventBus, data: _DataT
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)

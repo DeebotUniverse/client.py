@@ -11,13 +11,7 @@ from deebot_client.events import Event
 if TYPE_CHECKING:
     from datetime import datetime
 
-
-@unique
-class PositionType(str, Enum):
-    """Position type enum."""
-
-    DEEBOT = "deebotPos"
-    CHARGER = "chargePos"
+    from deebot_client.rs.map import PositionType
 
 
 @dataclass(frozen=True)
@@ -51,7 +45,7 @@ class MajorMapEvent(Event):
     """Major map event."""
 
     map_id: str
-    values: list[str]
+    values: list[int]
     requested: bool = field(kw_only=True)
 
 

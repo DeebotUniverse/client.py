@@ -1,5 +1,26 @@
 coverage:
   status:
+    project:
+      default:
+        target: auto
+      python:
+        target: auto
+        paths:
+          - deebot_client/*
+      rust:
+        target: 100%
+        threshold: 0
+        paths:
+          - src/*
     patch:
       default:
-        target: 80%
+        target: auto
+      python:
+        target: auto
+        paths:
+          - deebot_client/*
+      rust:
+        target: 100%
+        threshold: 0
+        paths:
+          - src/*

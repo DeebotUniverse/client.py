@@ -4,8 +4,9 @@ import pytest
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetPos
-from deebot_client.events import Position, PositionsEvent, PositionType
+from deebot_client.events import Position, PositionsEvent
 from deebot_client.message import HandlingState
+from deebot_client.rs.map import PositionType
 from tests.commands import assert_command
 
 from . import get_request_xml

@@ -5,11 +5,11 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandMqttP2P, InitParam
+from deebot_client.command import InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 
-from .common import ExecuteCommand, JsonCommandWithMessageHandling
+from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -47,7 +47,7 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
         return HandlingResult.success()
 
 
-class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
+class ResetLifeSpan(ExecuteCommand, JsonCommandMqttP2P):
     """Reset life span command."""
 
     NAME = "resetLifeSpan"
@@ -56,7 +56,7 @@ class ResetLifeSpan(ExecuteCommand, CommandMqttP2P):
     def __init__(self, life_span: LifeSpan) -> None:
         super().__init__({"type": life_span.value})
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def _handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS:

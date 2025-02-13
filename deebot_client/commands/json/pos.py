@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import Position, PositionsEvent, PositionType
+from deebot_client.events import Position, PositionsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.rs.map import PositionType
 
 from .common import JsonCommandWithMessageHandling
 
@@ -37,7 +38,7 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
             if isinstance(data_positions, dict):
                 positions.append(
                     Position(
-                        type=PositionType(type_str),
+                        type=PositionType.from_str(type_str),
                         x=data_positions["x"],
                         y=data_positions["y"],
                         a=data_positions.get("a", 0),
@@ -47,7 +48,7 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 positions.extend(
                     [
                         Position(
-                            type=PositionType(type_str),
+                            type=PositionType.from_str(type_str),
                             x=entry["x"],
                             y=entry["y"],
                             a=entry.get("a", 0),
