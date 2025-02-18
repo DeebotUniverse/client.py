@@ -350,7 +350,7 @@ jobs:
           name: requirements-test.txt
       - name: 🏗 Install the project
         run: |
-          uv pip install -e . --system -r requirements-test.txt
+          uv pip install -v -e . --system -r requirements-test.txt
       - name: Run benchmarks
         uses: CodSpeedHQ/action@main
         with:
