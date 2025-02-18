@@ -21,3 +21,7 @@ zstd = "0.13.2"
 
 [dev-dependencies]
 rstest = "0.24.0"
+
+[profile.release]
+lto = true
+codegen-units = 1
