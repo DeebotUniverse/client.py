@@ -34,7 +34,7 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
             let mut cursor = Cursor::new(&chunk[0..4]);
             let x = cursor.read_i16::<LittleEndian>()?;
             let y = cursor.read_i16::<LittleEndian>()?;
-            let connected = (chunk[4] >> 7 & 1) == 0;
+            let connected = ((chunk[4] >> 7) & 1) == 0;
             Ok(TracePoint { x, y, connected })
         })
         .collect()
