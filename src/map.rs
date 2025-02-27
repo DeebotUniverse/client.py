@@ -478,6 +478,7 @@ impl MapData {
                     let pixel = IMAGE_PALETTE
                         .get(pixel_idx)
                         .unwrap_or(&DEFAULT_MAP_BACKGROUND);
+
                     // Check if the pixel is not fully transparent (alpha > 0)
                     if pixel.0[3] != 0 {
                         let pixel_x = j as u32 % MAP_PIECE_SIZE;
@@ -488,10 +489,10 @@ impl MapData {
                         let new_y = y + MAP_PIECE_SIZE - 1 - pixel_x;
 
                         image.put_pixel(new_x, new_y, *pixel);
-                        min_x = min_x.min(pixel_x);
-                        min_y = min_y.min(pixel_y);
-                        max_x = max_x.max(pixel_x);
-                        max_y = max_y.max(pixel_y);
+                        min_x = min_x.min(new_x);
+                        min_y = min_y.min(new_y);
+                        max_x = max_x.max(new_x);
+                        max_y = max_y.max(new_y);
                     }
                 });
             }
