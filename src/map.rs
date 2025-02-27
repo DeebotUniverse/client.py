@@ -7,7 +7,7 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crc32fast::Hasher;
-use image::{GenericImageView, ImageBuffer, ImageFormat, Rgba, RgbaImage};
+use image::{GenericImageView, ImageFormat, Rgba, RgbaImage};
 use log::debug;
 use once_cell::sync::Lazy;
 use pyo3::exceptions::PyValueError;
@@ -20,19 +20,19 @@ use svg::{Document, Node};
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const NOT_INUSE_CRC32: u32 = 1295764014;
-const MAP_UNKNOWN: [u8; 4] = [0x00; 4];
-const DEFAULT_MAP_BACKGROUND: [u8; 4] = [0xba, 0xda, 0xff, 0xff];
-static IMAGE_PALETTE: Lazy<HashMap<u8, [u8; 4]>> = Lazy::new(|| {
+const DEFAULT_MAP_BACKGROUND: Rgba<u8> = Rgba([0xba, 0xda, 0xff, 0xff]);
+static IMAGE_PALETTE: Lazy<HashMap<u8, Rgba<u8>>> = Lazy::new(|| {
     HashMap::from([
-        (0, MAP_UNKNOWN),              // Unknown (transparent)
-        (1, DEFAULT_MAP_BACKGROUND),   // Floor
-        (2, [0x4e, 0x96, 0xe2, 0xff]), // Wall
-        (3, [0x1a, 0x81, 0xed, 0xff]), // Carpet
-        (4, [0xde, 0xe9, 0xfb, 0xff]), // Not scanned space
-        (5, [0xed, 0xf3, 0xfb, 0xff]), // Possible obstacle
+        (0, Rgba([0x00, 0x00, 0x00, 0x00])), // Unknown (transparent)
+        (1, DEFAULT_MAP_BACKGROUND),         // Floor
+        (2, Rgba([0x4e, 0x96, 0xe2, 0xff])), // Wall
+        (3, Rgba([0x1a, 0x81, 0xed, 0xff])), // Carpet
+        (4, Rgba([0xde, 0xe9, 0xfb, 0xff])), // Not scanned space
+        (5, Rgba([0xed, 0xf3, 0xfb, 0xff])), // Possible obstacle
     ])
 });
-const MAP_PIECE_SIZE: usize = 100 * 100;
+const MAP_PIECE_SIZE: u32 = 100;
+const MAP_MAX_SIZE: u32 = 6400;
 const MAP_OFFSET: i32 = 400;
 
 /// Trace point
@@ -354,7 +354,11 @@ impl MapData {
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))
     }
 
-    fn generate_svg(&self, subsets: Vec<MapSubset>, positions: Vec<Position>) -> PyResult<String> {
+    fn generate_svg(
+        &self,
+        subsets: Vec<MapSubset>,
+        positions: Vec<Position>,
+    ) -> PyResult<Option<String>> {
         let defs = Definitions::new()
             .add(
                 // Gradient used by Bot icon
@@ -408,9 +412,13 @@ impl MapData {
             );
 
         // Add image
-        let (base64_image, viewbox) = self
+        let (base64_image, viewbox) = match self
             .generate_background_image()
-            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+            .map_err(|err| PyValueError::new_err(err.to_string()))?
+        {
+            Some(data) => data,
+            None => return Ok(None),
+        };
         let image = Image::new()
             .set("x", viewbox.0)
             .set("y", viewbox.1)
@@ -439,86 +447,78 @@ impl MapData {
             document.append(position);
         }
 
-        Ok(document.to_string().replace("\n", ""))
+        Ok(Some(document.to_string().replace("\n", "")))
     }
 }
 
-fn get_bounding_box(image: &RgbaImage) -> Option<(u32, u32, u32, u32)> {
-    let mut min_x = u32::MAX;
-    let mut min_y = u32::MAX;
-    let mut max_x = 0;
-    let mut max_y = 0;
-
-    image.enumerate_pixels().for_each(|(x, y, pixel)| {
-        // Check if the pixel is not fully transparent (alpha > 0)
-        if pixel.0[3] > 0 {
-            min_x = min_x.min(x);
-            min_y = min_y.min(y);
-            max_x = max_x.max(x);
-            max_y = max_y.max(y);
-        }
-    });
-
-    // If no non-transparent pixels are found, return None
-    if min_x == u32::MAX || min_y == u32::MAX || max_x == 0 || max_y == 0 {
-        None
-    } else {
-        Some((min_x, min_y, max_x, max_y))
-    }
-}
-
-type ImageGenrationType = (String, (i32, i32, u32, u32));
+type ImageGenrationType = Option<(String, (i32, i32, u32, u32))>;
 
 impl MapData {
     fn generate_background_image(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
-        let mut image = RgbaImage::new(6400, 6400);
+        let mut image = RgbaImage::new(MAP_MAX_SIZE, MAP_MAX_SIZE);
         let mut x: u32 = 0;
         let mut y: u32 = 0;
+        let mut min_x = u32::MAX;
+        let mut min_y = u32::MAX;
+        let mut max_x = 0;
+        let mut max_y = 0;
 
         self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
             if i > 0 {
                 if i % 8 != 0 {
-                    y += 100;
+                    y += MAP_PIECE_SIZE;
                 } else {
-                    x += 100;
+                    x += MAP_PIECE_SIZE;
                     y = 0;
                 }
             }
 
-            if let Some(piece_image) = piece.image() {
-                piece_image.enumerate_pixels().for_each(|(px, py, pixel)| {
-                    let pixel_x = x + px;
-                    let pixel_y = y + py;
-                    if image.in_bounds(pixel_x, pixel_y) {
-                        image.put_pixel(pixel_x, pixel_y, *pixel);
+            if let Some(pixels) = piece.pixels_indexed() {
+                pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
+                    let pixel = IMAGE_PALETTE
+                        .get(pixel_idx)
+                        .unwrap_or(&DEFAULT_MAP_BACKGROUND);
+                    // Check if the pixel is not fully transparent (alpha > 0)
+                    if pixel.0[3] != 0 {
+                        let pixel_x = j as u32 % MAP_PIECE_SIZE;
+                        let pixel_y = j as u32 / MAP_PIECE_SIZE;
+
+                        // We need to rotate the image 90 degrees counterclockwise
+                        let new_x = x + pixel_y;
+                        let new_y = y + MAP_PIECE_SIZE - 1 - pixel_x;
+
+                        image.put_pixel(new_x, new_y, *pixel);
+                        min_x = min_x.min(pixel_x);
+                        min_y = min_y.min(pixel_y);
+                        max_x = max_x.max(pixel_x);
+                        max_y = max_y.max(pixel_y);
                     }
                 });
             }
         });
 
-        let svg_pos = if let Some((min_x, min_y, max_x, max_y)) = get_bounding_box(&image) {
-            let width = max_x - min_x;
-            let height = max_y - min_y;
-            image = image.view(x, y, width, height).to_image();
-            (
-                x as i32 - MAP_OFFSET,
-                MAP_OFFSET - max_y as i32,
-                width,
-                height,
-            )
-        } else {
-            (
-                0_i32 - MAP_OFFSET,
-                MAP_OFFSET,
-                image.width(),
-                image.height(),
-            )
-        };
+        if min_x == u32::MAX || min_y == u32::MAX || max_x == 0 || max_y == 0 {
+            return Ok(None);
+        }
+
+        // Crop the image to the actual size
+        let width = max_x - min_x + 1;
+        let height = max_y - min_y + 1;
+        image = image.view(min_x, min_y, width, height).to_image();
 
         // Convert the image to PNG format in memory and encode it as base64
         let mut png_data = Vec::new();
         image.write_to(&mut Cursor::new(&mut png_data), ImageFormat::Png)?;
-        Ok((general_purpose::STANDARD.encode(&png_data), svg_pos))
+
+        Ok(Some((
+            general_purpose::STANDARD.encode(&png_data),
+            (
+                min_x as i32 - MAP_OFFSET,
+                MAP_OFFSET - max_y as i32,
+                width,
+                height,
+            ),
+        )))
     }
 }
 
@@ -544,21 +544,21 @@ fn get_svg_positions(positions: Vec<Position>, viewbox: (f32, f32, f32, f32)) ->
 
 struct MapPiece {
     crc32: u32,
-    image: Option<ImageBuffer<Rgba<u8>, Vec<u8>>>,
+    pixels_indexed: Option<Vec<u8>>,
 }
 
 impl MapPiece {
     fn new() -> Self {
         MapPiece {
             crc32: NOT_INUSE_CRC32,
-            image: None,
+            pixels_indexed: None,
         }
     }
 
     fn crc32_indicates_update(&mut self, crc32: u32) -> bool {
         if crc32 == NOT_INUSE_CRC32 {
             self.crc32 = crc32;
-            self.image = None;
+            self.pixels_indexed = None;
             return false;
         }
         self.crc32 != crc32
@@ -568,8 +568,8 @@ impl MapPiece {
         self.crc32 != NOT_INUSE_CRC32
     }
 
-    fn image(&self) -> Option<&ImageBuffer<Rgba<u8>, Vec<u8>>> {
-        self.image.as_ref()
+    fn pixels_indexed(&self) -> Option<&Vec<u8>> {
+        self.pixels_indexed.as_ref()
     }
 
     fn update_points(&mut self, base64_data: String) -> Result<bool, Box<dyn std::error::Error>> {
@@ -581,18 +581,9 @@ impl MapPiece {
         self.crc32 = hasher.finalize();
 
         if self.in_use() {
-            // Convert indexed color data to RGBA
-            let mut rgba_data = Vec::with_capacity(MAP_PIECE_SIZE);
-            for index in decoded {
-                let color = IMAGE_PALETTE.get(&index).unwrap_or(&DEFAULT_MAP_BACKGROUND);
-                rgba_data.extend_from_slice(color);
-            }
-
-            let img = RgbaImage::from_vec(100, 100, rgba_data).expect("Invalid image data");
-            // Rotate the image 90 degrees counterclockwise
-            self.image = Some(image::imageops::rotate270(&img));
+            self.pixels_indexed = Some(decoded);
         } else {
-            self.image = None;
+            self.pixels_indexed = None;
         }
 
         Ok(self.crc32 != old_crc32)
