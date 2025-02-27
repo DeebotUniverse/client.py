@@ -190,7 +190,7 @@ class Map:
             self._event_bus.request_refresh(CachedMapInfoEvent)
 
         async def on_position(event: PositionsEvent) -> None:
-            self._map_data.positions = event.positions
+            self._map_data.update_positions(event.positions)
 
         unsubscribers.append(self._event_bus.subscribe(PositionsEvent, on_position))
 
@@ -349,7 +349,7 @@ class MapData:
             on_change, [MapPiece(on_change, i) for i in range(64)]
         )
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
-        self._positions: OnChangedList[Position] = OnChangedList(on_change)
+        self._positions: list[Position] = []
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
         self._data = MapDataRs()
 
@@ -369,18 +369,6 @@ class MapData:
         return self._map_subsets
 
     @property
-    def positions(self) -> list[Position]:
-        """Return positions."""
-        return self._positions
-
-    @positions.setter
-    def positions(self, value: list[Position]) -> None:
-        if not isinstance(value, OnChangedList):
-            value = OnChangedList(self._on_change, value)
-        self._positions = value
-        self._changed = True
-
-    @property
     def rooms(self) -> dict[int, Room]:
         """Return rooms."""
         return self._rooms
@@ -397,6 +385,11 @@ class MapData:
     def clear_trace_points(self) -> None:
         """Clear trace points."""
         self._data.clear_trace_points()
+        self._on_change()
+
+    def update_positions(self, value: list[Position]) -> None:
+        """Update positions."""
+        self._positions = value
         self._on_change()
 
     def generate_svg(
