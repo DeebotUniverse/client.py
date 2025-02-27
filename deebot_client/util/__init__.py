@@ -69,33 +69,6 @@ def get_enum(enum: type[_S], value: str) -> _S:
     raise ValueError(msg)
 
 
-class OnChangedList(list[_T]):
-    """List, which will call passed on_change if a change happens."""
-
-    _MODIFYING_FUNCTIONS = (
-        "append",
-        "clear",
-        "extend",
-        "insert",
-        "pop",
-        "remove",
-        "__setitem__",
-        "__delitem__",
-        "__add__",
-    )
-
-    def __init__(
-        self, on_change: Callable[[], None], iterable: Iterable[_T] = ()
-    ) -> None:
-        super().__init__(iterable)
-        self._on_change = on_change
-
-    def __getattribute__(self, name: str, /) -> Any:
-        if name in OnChangedList._MODIFYING_FUNCTIONS:
-            self._on_change()
-        return super().__getattribute__(name)
-
-
 _KT = TypeVar("_KT")
 _VT = TypeVar("_VT")
 

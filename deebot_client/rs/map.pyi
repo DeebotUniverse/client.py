@@ -15,10 +15,14 @@ class MapData:
     def clear_trace_points(self) -> None:
         """Clear trace points."""
 
+    def update_map_piece(self, index: int, base64_data: str) -> bool:
+        """Update map piece."""
+
+    def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
+        """Return True if update is required."""
+
     def generate_svg(
         self,
-        viewbox: tuple[float, float, float, float],
-        image: bytes,
         subsets: list[MapSubsetEvent],
         position: list[Position],
     ) -> str:
