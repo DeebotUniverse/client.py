@@ -290,11 +290,11 @@ struct Position {
     y: i32,
 }
 
-fn calc_point_in_viewbox(x: i32, y: i32, viewbox: (f32, f32, f32, f32)) -> Point {
+fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox) -> Point {
     let point = calc_point(x as f32, y as f32);
     Point {
-        x: point.x.max(viewbox.0).min(viewbox.0 + viewbox.2),
-        y: point.y.max(viewbox.1).min(viewbox.1 + viewbox.3),
+        x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
+        y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
         connected: false,
     }
 }
@@ -420,14 +420,17 @@ impl MapData {
             None => return Ok(None),
         };
         let image = Image::new()
-            .set("x", viewbox.0)
-            .set("y", viewbox.1)
-            .set("width", viewbox.2)
-            .set("height", viewbox.3)
+            .set("x", viewbox.min_x)
+            .set("y", viewbox.min_y)
+            .set("width", viewbox.width)
+            .set("height", viewbox.height)
             .set("style", "image-rendering: pixelated")
             .set("href", format!("data:image/png;base64,{}", base64_image));
 
-        let mut document = Document::new().set("viewBox", viewbox).add(defs).add(image);
+        let mut document = Document::new()
+            .set("viewBox", viewbox.to_svg_viewbox())
+            .add(defs)
+            .add(image);
 
         for subset in subsets.iter() {
             document.append(get_svg_subset(subset)?);
@@ -435,15 +438,7 @@ impl MapData {
         if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
             document.append(trace);
         }
-        for position in get_svg_positions(
-            positions,
-            (
-                viewbox.0 as f32,
-                viewbox.1 as f32,
-                viewbox.2 as f32,
-                viewbox.3 as f32,
-            ),
-        ) {
+        for position in get_svg_positions(positions, &viewbox) {
             document.append(position);
         }
 
@@ -451,7 +446,41 @@ impl MapData {
     }
 }
 
-type ImageGenrationType = Option<(String, (i32, i32, u32, u32))>;
+#[derive(Debug)]
+struct ViewBox {
+    min_x: i32,
+    min_y: i32,
+    max_x: i32,
+    max_y: i32,
+    width: u32,
+    height: u32,
+}
+
+impl ViewBox {
+    fn new(min_x: u32, min_y: u32, max_x: u32, max_y: u32) -> Self {
+        let new_min_x = min_x as i32 - MAP_OFFSET;
+        let new_min_y = MAP_OFFSET - min_y as i32;
+        let width = max_x - min_x + 1;
+        let height = max_y - min_y + 1;
+        ViewBox {
+            min_x: new_min_x,
+            min_y: new_min_y,
+            max_x: new_min_x + width as i32,
+            max_y: new_min_y + height as i32,
+            width,
+            height,
+        }
+    }
+
+    fn to_svg_viewbox(&self) -> String {
+        format!(
+            "{} {} {} {}",
+            self.min_x, self.min_y, self.width, self.height
+        )
+    }
+}
+
+type ImageGenrationType = Option<(String, ViewBox)>;
 
 impl MapData {
     fn generate_background_image(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
@@ -496,12 +525,14 @@ impl MapData {
             return Ok(None);
         }
 
-        debug!("Image bounding box: {:?}", (min_x, min_y, max_x, max_y));
+        let view_box = ViewBox::new(min_x, min_y, max_x, max_y);
+
+        debug!("Image bounding box: {:?}", view_box);
 
         // Crop the image to the actual size
-        let width = max_x - min_x + 1;
-        let height = max_y - min_y + 1;
-        image = image.view(min_x, min_y, width, height).to_image();
+        image = image
+            .view(min_x, min_y, view_box.width, view_box.height)
+            .to_image();
 
         // Convert the image to PNG format in memory and encode it as base64
         let mut png_data = Vec::new();
@@ -509,17 +540,12 @@ impl MapData {
 
         Ok(Some((
             general_purpose::STANDARD.encode(&png_data),
-            (
-                min_x as i32 - MAP_OFFSET,
-                MAP_OFFSET - max_y as i32,
-                width,
-                height,
-            ),
+            view_box,
         )))
     }
 }
 
-fn get_svg_positions(positions: Vec<Position>, viewbox: (f32, f32, f32, f32)) -> Vec<Use> {
+fn get_svg_positions(positions: Vec<Position>, viewbox: &ViewBox) -> Vec<Use> {
     let mut positions: Vec<&Position> = positions.iter().to_owned().collect();
     positions.sort_by_key(|d| -> i32 { d.position_type.order() });
     debug!("Adding positions: {:?}", positions);
@@ -598,6 +624,35 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
+    fn tuple_2_view_box(tuple: (i32, i32, i32, i32)) -> ViewBox {
+        ViewBox {
+            min_x: tuple.0,
+            min_y: tuple.1,
+            max_x: tuple.0 + tuple.2,
+            max_y: tuple.1 + tuple.3,
+            width: tuple.2 as u32,
+            height: tuple.3 as u32,
+        }
+    }
+
+    #[rstest]
+    #[case((-100, -100, 200, 150))]
+    #[case((0, 0, 1000, 1000))]
+    #[case( (0, 0, 1000, 1000))]
+    #[case( (-500, -500, 1000, 1000))]
+    fn test_tuple_2_view_box(#[case] input: (i32, i32, i32, i32)) {
+        let result = tuple_2_view_box(input);
+        assert_eq!(
+            input,
+            (
+                result.min_x as i32,
+                result.min_y as i32,
+                result.width as i32,
+                result.height as i32
+            )
+        );
+    }
+
     #[rstest]
     #[case(5000.0, 0.0, Point { x:100.0, y:0.0, connected:true })]
     #[case(20010.0, -29900.0, Point { x: 400.2, y: 598.0, connected:true  })]
@@ -608,17 +663,17 @@ mod tests {
     }
 
     #[rstest]
-    #[case(100, 100, (-100.0, -100.0, 200.0, 150.0), Point { x: 2.0, y: -2.0, connected: false })]
-    #[case(-64000, -64000, (0.0, 0.0, 1000.0, 1000.0), Point { x: 0.0, y: 1000.0, connected: false })]
-    #[case(64000, 64000, (0.0, 0.0, 1000.0, 1000.0), Point { x: 1000.0, y: 0.0, connected: false })]
-    #[case(0, 1000, (-500.0, -500.0, 1000.0, 1000.0), Point { x: 0.0, y: -20.0, connected: false })]
+    #[case(100, 100, (-100, -100, 200, 150), Point { x: 2.0, y: -2.0, connected: false })]
+    #[case(-64000, -64000, (0, 0, 1000, 1000), Point { x: 0.0, y: 1000.0, connected: false })]
+    #[case(64000, 64000, (0, 0, 1000, 1000), Point { x: 1000.0, y: 0.0, connected: false })]
+    #[case(0, 1000, (-500, -500, 1000, 1000), Point { x: 0.0, y: -20.0, connected: false })]
     fn test_calc_point_in_viewbox(
         #[case] x: i32,
         #[case] y: i32,
-        #[case] viewbox: (f32, f32, f32, f32),
+        #[case] viewbox: (i32, i32, i32, i32),
         #[case] expected: Point,
     ) {
-        let result = calc_point_in_viewbox(x, y, viewbox);
+        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox));
         assert_eq!(result, expected);
     }
 
@@ -671,8 +726,8 @@ mod tests {
     #[case(vec![Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
     #[case(vec![Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
     fn test_get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
-        let viewbox = (-500.0, -500.0, 1000.0, 1000.0);
-        let result = get_svg_positions(positions, viewbox)
+        let viewbox = (-500, -500, 1000, 1000);
+        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
             .iter()
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
