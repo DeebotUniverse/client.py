@@ -32,8 +32,8 @@ static IMAGE_PALETTE: Lazy<HashMap<u8, Rgba<u8>>> = Lazy::new(|| {
     ])
 });
 const MAP_PIECE_SIZE: u32 = 100;
-const MAP_MAX_SIZE: u32 = 6400;
-const MAP_OFFSET: i32 = 400;
+const MAP_MAX_SIZE: u32 = 8 * MAP_PIECE_SIZE;
+const MAP_OFFSET: i32 = MAP_MAX_SIZE as i32 / 2;
 
 /// Trace point
 #[derive(Debug, PartialEq)]
@@ -456,25 +456,19 @@ type ImageGenrationType = Option<(String, (i32, i32, u32, u32))>;
 impl MapData {
     fn generate_background_image(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let mut image = RgbaImage::new(MAP_MAX_SIZE, MAP_MAX_SIZE);
-        let mut x: u32 = 0;
-        let mut y: u32 = 0;
         let mut min_x = u32::MAX;
         let mut min_y = u32::MAX;
         let mut max_x = 0;
         let mut max_y = 0;
 
         self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
-            if i > 0 {
-                if i % 8 != 0 {
-                    y += MAP_PIECE_SIZE;
-                } else {
-                    x += MAP_PIECE_SIZE;
-                    y = 0;
-                }
-            }
+            // Order of the pieces is from bottom-left to top-right (column by column)
+            let piece_x = (i as u32 / 8) * MAP_PIECE_SIZE;
+            let piece_y = MAP_MAX_SIZE - ((i as u32 % 8) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
                 pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
+                    // Order of the pixels is from top-left to bottom-right (row by row)
                     let pixel = IMAGE_PALETTE
                         .get(pixel_idx)
                         .unwrap_or(&DEFAULT_MAP_BACKGROUND);
@@ -485,8 +479,8 @@ impl MapData {
                         let pixel_y = j as u32 / MAP_PIECE_SIZE;
 
                         // We need to rotate the image 90 degrees counterclockwise
-                        let new_x = x + pixel_y;
-                        let new_y = y + MAP_PIECE_SIZE - 1 - pixel_x;
+                        let new_x = piece_x + pixel_y;
+                        let new_y = piece_y + MAP_PIECE_SIZE - 1 - pixel_x;
 
                         image.put_pixel(new_x, new_y, *pixel);
                         min_x = min_x.min(new_x);
@@ -501,6 +495,8 @@ impl MapData {
         if min_x == u32::MAX || min_y == u32::MAX || max_x == 0 || max_y == 0 {
             return Ok(None);
         }
+
+        debug!("Image bounding box: {:?}", (min_x, min_y, max_x, max_y));
 
         // Crop the image to the actual size
         let width = max_x - min_x + 1;
