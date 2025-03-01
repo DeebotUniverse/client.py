@@ -31,9 +31,9 @@ static IMAGE_PALETTE: Lazy<HashMap<u8, Rgba<u8>>> = Lazy::new(|| {
         (5, Rgba([0xed, 0xf3, 0xfb, 0xff])), // Possible obstacle
     ])
 });
-const MAP_PIECE_SIZE: u32 = 100;
-const MAP_MAX_SIZE: u32 = 8 * MAP_PIECE_SIZE;
-const MAP_OFFSET: i32 = MAP_MAX_SIZE as i32 / 2;
+const MAP_PIECE_SIZE: u16 = 100;
+const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
+const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
 
 /// Trace point
 #[derive(Debug, PartialEq)]
@@ -448,25 +448,25 @@ impl MapData {
 
 #[derive(Debug)]
 struct ViewBox {
-    min_x: i32,
-    min_y: i32,
-    max_x: i32,
-    max_y: i32,
-    width: u32,
-    height: u32,
+    min_x: i16,
+    min_y: i16,
+    max_x: i16,
+    max_y: i16,
+    width: u16,
+    height: u16,
 }
 
 impl ViewBox {
-    fn new(min_x: u32, min_y: u32, max_x: u32, max_y: u32) -> Self {
-        let new_min_x = min_x as i32 - MAP_OFFSET;
-        let new_min_y = MAP_OFFSET - min_y as i32;
+    fn new(min_x: u16, min_y: u16, max_x: u16, max_y: u16) -> Self {
+        let new_min_x = min_x as i16 - MAP_OFFSET;
+        let new_min_y = min_y as i16 - MAP_OFFSET;
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         ViewBox {
             min_x: new_min_x,
             min_y: new_min_y,
-            max_x: new_min_x + width as i32,
-            max_y: new_min_y + height as i32,
+            max_x: new_min_x + width as i16,
+            max_y: new_min_y + height as i16,
             width,
             height,
         }
@@ -484,18 +484,20 @@ type ImageGenrationType = Option<(String, ViewBox)>;
 
 impl MapData {
     fn generate_background_image(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
-        let mut image = RgbaImage::new(MAP_MAX_SIZE, MAP_MAX_SIZE);
-        let mut min_x = u32::MAX;
-        let mut min_y = u32::MAX;
-        let mut max_x = 0;
-        let mut max_y = 0;
+        let mut image = RgbaImage::new(MAP_MAX_SIZE.into(), MAP_MAX_SIZE.into());
+        let mut min_x = u16::MAX;
+        let mut min_y = u16::MAX;
+        let mut max_x = 0u16;
+        let mut max_y = 0u16;
 
         self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
             // Order of the pieces is from bottom-left to top-right (column by column)
-            let piece_x = (i as u32 / 8) * MAP_PIECE_SIZE;
-            let piece_y = MAP_MAX_SIZE - ((i as u32 % 8) * MAP_PIECE_SIZE);
+            let piece_x = (i as u16 / 8) * MAP_PIECE_SIZE;
+            let piece_y = MAP_MAX_SIZE - ((i as u16 % 8) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
+                debug!("Adding piece at {} ({}, {})", i, piece_x, piece_y);
+
                 pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
                     // Order of the pixels is from top-left to bottom-right (row by row)
                     let pixel = IMAGE_PALETTE
@@ -504,14 +506,14 @@ impl MapData {
 
                     // Check if the pixel is not fully transparent (alpha > 0)
                     if pixel.0[3] != 0 {
-                        let pixel_x = j as u32 % MAP_PIECE_SIZE;
-                        let pixel_y = j as u32 / MAP_PIECE_SIZE;
+                        let pixel_x = j as u16 % MAP_PIECE_SIZE;
+                        let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
                         // We need to rotate the image 90 degrees counterclockwise
                         let new_x = piece_x + pixel_y;
                         let new_y = piece_y + MAP_PIECE_SIZE - 1 - pixel_x;
 
-                        image.put_pixel(new_x, new_y, *pixel);
+                        image.put_pixel(new_x.into(), new_y.into(), *pixel);
                         min_x = min_x.min(new_x);
                         min_y = min_y.min(new_y);
                         max_x = max_x.max(new_x);
@@ -521,7 +523,7 @@ impl MapData {
             }
         });
 
-        if min_x == u32::MAX || min_y == u32::MAX || max_x == 0 || max_y == 0 {
+        if min_x == u16::MAX || min_y == u16::MAX || max_x == 0 || max_y == 0 {
             return Ok(None);
         }
 
@@ -531,7 +533,12 @@ impl MapData {
 
         // Crop the image to the actual size
         image = image
-            .view(min_x, min_y, view_box.width, view_box.height)
+            .view(
+                min_x.into(),
+                min_y.into(),
+                view_box.width.into(),
+                view_box.height.into(),
+            )
             .to_image();
 
         // Convert the image to PNG format in memory and encode it as base64
@@ -624,14 +631,14 @@ mod tests {
     use super::*;
     use rstest::rstest;
 
-    fn tuple_2_view_box(tuple: (i32, i32, i32, i32)) -> ViewBox {
+    fn tuple_2_view_box(tuple: (i16, i16, u16, u16)) -> ViewBox {
         ViewBox {
             min_x: tuple.0,
             min_y: tuple.1,
-            max_x: tuple.0 + tuple.2,
-            max_y: tuple.1 + tuple.3,
-            width: tuple.2 as u32,
-            height: tuple.3 as u32,
+            max_x: tuple.0 + tuple.2 as i16,
+            max_y: tuple.1 + tuple.3 as i16,
+            width: tuple.2,
+            height: tuple.3,
         }
     }
 
@@ -640,16 +647,11 @@ mod tests {
     #[case((0, 0, 1000, 1000))]
     #[case( (0, 0, 1000, 1000))]
     #[case( (-500, -500, 1000, 1000))]
-    fn test_tuple_2_view_box(#[case] input: (i32, i32, i32, i32)) {
+    fn test_tuple_2_view_box(#[case] input: (i16, i16, u16, u16)) {
         let result = tuple_2_view_box(input);
         assert_eq!(
             input,
-            (
-                result.min_x as i32,
-                result.min_y as i32,
-                result.width as i32,
-                result.height as i32
-            )
+            (result.min_x, result.min_y, result.width, result.height,)
         );
     }
 
@@ -670,7 +672,7 @@ mod tests {
     fn test_calc_point_in_viewbox(
         #[case] x: i32,
         #[case] y: i32,
-        #[case] viewbox: (i32, i32, i32, i32),
+        #[case] viewbox: (i16, i16, u16, u16),
         #[case] expected: Point,
     ) {
         let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox));
