@@ -126,6 +126,59 @@ async def test_Map_subscriptions(
     assert not map._unsubscribers
 
 
+async def setup_map(execute_mock: AsyncMock, event_bus: EventBus) -> Map:
+    async def on_change(_: MapChangedEvent) -> None:
+        pass
+
+    map = Map(execute_mock, event_bus)
+    event_bus.subscribe(MapChangedEvent, on_change)
+    await block_till_done(event_bus)
+    return map
+
+
+@pytest.mark.parametrize(
+    ("event", "exception_class"),
+    [
+        (MinorMapEvent(65, "data"), ValueError),
+        (
+            MajorMapEvent(
+                map_id="1132127808",
+                values=[1295764014 for _ in range(100)],
+                requested=True,
+            ),
+            ExceptionGroup,
+        ),
+    ],
+    ids=["MinorMapEvent", "MajorMapEvent"],
+)
+async def test_invalid_map_piece_index(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    event: Event,
+    exception_class: type[Exception],
+) -> None:
+    """Test invalid map piece index."""
+    await setup_map(execute_mock, event_bus)
+
+    event_bus.notify(event)
+    with pytest.raises(exception_class) as ex:
+        await block_till_done(event_bus)
+
+    exceptions = ex.value.exceptions if isinstance(ex.value, ExceptionGroup) else [ex]
+
+    for ex in exceptions:
+        assert "Index out of bounds" in str(ex)
+
+
+async def test_get_svg_map_empty(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+) -> None:
+    """Test getting svg map without data returns None."""
+    map = await setup_map(execute_mock, event_bus)
+    assert map.get_svg_map() is None
+
+
 def test_get_svg_map(
     event_loop: asyncio.AbstractEventLoop,
     benchmark: BenchmarkFixture,
@@ -134,13 +187,8 @@ def test_get_svg_map(
 ) -> None:
     """Test getting svg map."""
 
-    async def on_change(_: MapChangedEvent) -> None:
-        pass
-
     async def test_fn() -> str | None:
-        map = Map(execute_mock, event_bus)
-        event_bus.subscribe(MapChangedEvent, on_change)
-        await block_till_done(event_bus)
+        map = await setup_map(execute_mock, event_bus)
 
         for event in _events_for_map_test():
             event_bus.notify(event)

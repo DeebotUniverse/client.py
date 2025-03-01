@@ -241,7 +241,7 @@ class MapData:
         """Return True if update is required."""
         return self._data.map_piece_crc32_indicates_update(index, crc32)
 
-    def generate_svg(self) -> str:
+    def generate_svg(self) -> str | None:
         """Generate SVG image."""
         return self._data.generate_svg(
             list(self._map_subsets.values()), self._positions

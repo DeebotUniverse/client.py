@@ -25,7 +25,7 @@ class MapData:
         self,
         subsets: list[MapSubsetEvent],
         position: list[Position],
-    ) -> str:
+    ) -> str | None:
         """Generate SVG image."""
 
 class PositionType(Enum):
