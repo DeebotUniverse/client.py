@@ -96,6 +96,7 @@ dependencies = [
  "liblzma",
  "log",
  "once_cell",
+ "png",
  "pyo3",
  "pyo3-log",
  "rstest",
@@ -198,7 +199,6 @@ dependencies = [
  "bytemuck",
  "byteorder-lite",
  "num-traits",
- "png",
 ]
 
 [[package]]

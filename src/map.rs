@@ -1,4 +1,3 @@
-use std::collections::HashMap;
 use std::error::Error;
 use std::io::Cursor;
 
@@ -7,9 +6,10 @@ use base64::engine::general_purpose;
 use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crc32fast::Hasher;
-use image::{GenericImageView, ImageFormat, Rgba, RgbaImage};
+use image::{GenericImageView, GrayImage, Luma};
 use log::debug;
 use once_cell::sync::Lazy;
+use png::{BitDepth, ColorType, Compression, Encoder};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
@@ -20,16 +20,25 @@ use svg::{Document, Node};
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const NOT_INUSE_CRC32: u32 = 1295764014;
-const DEFAULT_MAP_BACKGROUND: Rgba<u8> = Rgba([0xba, 0xda, 0xff, 0xff]);
-static IMAGE_PALETTE: Lazy<HashMap<u8, Rgba<u8>>> = Lazy::new(|| {
-    HashMap::from([
-        (0, Rgba([0x00, 0x00, 0x00, 0x00])), // Unknown (transparent)
-        (1, DEFAULT_MAP_BACKGROUND),         // Floor
-        (2, Rgba([0x4e, 0x96, 0xe2, 0xff])), // Wall
-        (3, Rgba([0x1a, 0x81, 0xed, 0xff])), // Carpet
-        (4, Rgba([0xde, 0xe9, 0xfb, 0xff])), // Not scanned space
-        (5, Rgba([0xed, 0xf3, 0xfb, 0xff])), // Possible obstacle
-    ])
+const DEFAULT_MAP_BACKGROUND: &[u8; 3] = &[0xba, 0xda, 0xff];
+const MAP_TRANSPARENT_INDEX: u8 = 0;
+const MAP_FLOOR_INDEX: u8 = 1;
+static MAP_IMAGE_PALETTE: Lazy<Vec<u8>> = Lazy::new(|| {
+    let mut palette = Vec::new();
+    palette.extend_from_slice(&[0x00, 0x00, 0x00]); // Transparent
+    palette.extend_from_slice(DEFAULT_MAP_BACKGROUND); // Floor
+    palette.extend_from_slice(&[0x4e, 0x96, 0xe2]); // Wall
+    palette.extend_from_slice(&[0x1a, 0x81, 0xed]); // Carpet
+    palette.extend_from_slice(&[0xde, 0xe9, 0xfb]); // Not scanned space
+    palette.extend_from_slice(&[0xed, 0xf3, 0xfb]); // Possible obstacle
+    palette
+});
+static MAP_IMAGE_PALETTE_LEN: Lazy<usize> = Lazy::new(|| MAP_IMAGE_PALETTE.len() / 3);
+static MAP_IMAGE_PALETTE_TRANSPARENCY: Lazy<Vec<u8>> = Lazy::new(|| {
+    // 0 -> Transparent, 255 -> Fully opaque
+    let mut transparency = vec![0u8];
+    transparency.resize(*MAP_IMAGE_PALETTE_LEN, 255);
+    transparency
 });
 const MAP_PIECE_SIZE: u16 = 100;
 const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
@@ -484,7 +493,7 @@ type ImageGenrationType = Option<(String, ViewBox)>;
 
 impl MapData {
     fn generate_background_image(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
-        let mut image = RgbaImage::new(MAP_MAX_SIZE.into(), MAP_MAX_SIZE.into());
+        let mut image = GrayImage::new(MAP_MAX_SIZE.into(), MAP_MAX_SIZE.into());
         let mut min_x = u16::MAX;
         let mut min_y = u16::MAX;
         let mut max_x = 0u16;
@@ -500,12 +509,9 @@ impl MapData {
 
                 pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
                     // Order of the pixels is from top-left to bottom-right (row by row)
-                    let pixel = IMAGE_PALETTE
-                        .get(pixel_idx)
-                        .unwrap_or(&DEFAULT_MAP_BACKGROUND);
 
                     // Check if the pixel is not fully transparent (alpha > 0)
-                    if pixel.0[3] != 0 {
+                    if pixel_idx != &MAP_TRANSPARENT_INDEX {
                         let pixel_x = j as u16 % MAP_PIECE_SIZE;
                         let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
@@ -513,7 +519,15 @@ impl MapData {
                         let new_x = piece_x + pixel_y;
                         let new_y = piece_y + MAP_PIECE_SIZE - 1 - pixel_x;
 
-                        image.put_pixel(new_x.into(), new_y.into(), *pixel);
+                        // Newer bots will return a different pixel index per room
+                        // mapping all to the floor color
+                        let pixel = if *pixel_idx > *MAP_IMAGE_PALETTE_LEN as u8 {
+                            MAP_FLOOR_INDEX
+                        } else {
+                            *pixel_idx
+                        };
+
+                        image.put_pixel(new_x.into(), new_y.into(), Luma([pixel]));
                         min_x = min_x.min(new_x);
                         min_y = min_y.min(new_y);
                         max_x = max_x.max(new_x);
@@ -543,7 +557,18 @@ impl MapData {
 
         // Convert the image to PNG format in memory and encode it as base64
         let mut png_data = Vec::new();
-        image.write_to(&mut Cursor::new(&mut png_data), ImageFormat::Png)?;
+        {
+            let mut encoder = Encoder::new(&mut png_data, image.width(), image.height());
+
+            encoder.set_compression(Compression::Best);
+            encoder.set_color(ColorType::Indexed);
+            encoder.set_depth(BitDepth::Eight);
+            encoder.set_palette(MAP_IMAGE_PALETTE.clone());
+            encoder.set_trns(MAP_IMAGE_PALETTE_TRANSPARENCY.clone()); // Add transparency chunk
+
+            let mut writer = encoder.write_header().unwrap();
+            writer.write_image_data(image.as_ref()).unwrap();
+        }
 
         Ok(Some((
             general_purpose::STANDARD.encode(&png_data),
