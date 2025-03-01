@@ -493,7 +493,7 @@ impl MapData {
         self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
             // Order of the pieces is from bottom-left to top-right (column by column)
             let piece_x = (i as u16 / 8) * MAP_PIECE_SIZE;
-            let piece_y = MAP_MAX_SIZE - ((i as u16 % 8) * MAP_PIECE_SIZE);
+            let piece_y = MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
                 debug!("Adding piece at {} ({}, {})", i, piece_x, piece_y);
