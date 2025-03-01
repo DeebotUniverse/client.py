@@ -982,4 +982,19 @@ mod tests {
         let result = process_trace_points(&input);
         assert!(matches!(result, Err(e) if e.to_string() == "Invalid trace points length"));
     }
+
+    #[test]
+    fn test_update_map_piece_of_empty_piece() {
+        let data = String::from(
+            "XQAABAAQJwAAAABv/f//o7f/Rz5IFXI5YVG4kijmo4YH+e7kHoLTL8U6PAFLsX7Jhrz0KgA=",
+        );
+        let mut map_piece = MapPiece {
+            crc32: 0,
+            pixels_indexed: None,
+        };
+        let update = map_piece.update_points(data).unwrap();
+        assert!(update);
+        assert_eq!(map_piece.crc32, NOT_INUSE_CRC32);
+        assert!(map_piece.pixels_indexed.is_none());
+    }
 }
