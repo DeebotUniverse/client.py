@@ -24,4 +24,4 @@ svg = "0.18.0"
 zstd = "0.13.3"
 
 [dev-dependencies]
-rstest = "0.24.0"
+rstest = "0.25.0"
