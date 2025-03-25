@@ -36,7 +36,7 @@ class XmlCommand(Command, ABC):
                 for key, value in self._args.items():
                     element.set(key, value)
 
-        return cast(str, ElementTree.tostring(ctl_element, "unicode"))
+        return cast("str", ElementTree.tostring(ctl_element, "unicode"))
 
 
 class XmlCommandWithMessageHandling(
