@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
 
@@ -259,8 +258,8 @@ def test_all_models_loaded() -> None:
     folder = Path(hardware_deebot.__file__).parent
     assert list(hardware_deebot.DEVICES) == sorted(
         [
-            name.removesuffix(".py")
-            for name in os.listdir(folder)
-            if (folder / name).is_file() and name != "__init__.py"
+            file.name.removesuffix(".py")
+            for file in folder.iterdir()
+            if file.is_file() and file.name != "__init__.py"
         ]
     )
