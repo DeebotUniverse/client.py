@@ -66,8 +66,8 @@ repos:
     hooks:
       - id: prettier
         additional_dependencies:
-          - prettier@3.2.4
-          - prettier-plugin-sort-json@3.1.0
+          - prettier@3.5.3
+          - prettier-plugin-sort-json@4.1.1
         exclude_types:
           - python
         exclude: ^uv.lock$
