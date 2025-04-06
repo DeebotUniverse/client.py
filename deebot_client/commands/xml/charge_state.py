@@ -38,7 +38,7 @@ class GetChargeState(XmlCommandWithMessageHandling):
                 case "slotcharging" | "slot_charging" | "wirecharging":
                     status = State.DOCKED
                 case "idle":
-                    status = State.IDLE
+                    pass
                 case "going":
                     status = State.RETURNING
                 case _:
