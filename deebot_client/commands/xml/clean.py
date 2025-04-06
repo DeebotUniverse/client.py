@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
 from deebot_client.message import HandlingResult
-from deebot_client.models import CleanAction, CleanMode, State
+from deebot_client.models import CleanAction, CleanMode
 
 from .common import ExecuteCommand, XmlCommandWithMessageHandling
 
@@ -23,7 +23,7 @@ class Clean(ExecuteCommand):
     HAS_SUB_ELEMENT = True
 
     def __init__(
-        self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
+            self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
     ) -> None:
         # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
 
@@ -43,11 +43,11 @@ class CleanArea(ExecuteCommand):
     HAS_SUB_ELEMENT = True
 
     def __init__(
-        self,
-        mode: CleanMode,
-        area: str,
-        cleanings: int = 1,
-        speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
+            self,
+            mode: CleanMode,
+            area: str,
+            cleanings: int = 1,
+            speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
     ) -> None:
         # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
 
@@ -83,7 +83,5 @@ class GetCleanState(XmlCommandWithMessageHandling):
 
         clean_attrib = clean.attrib.get("st")
         if clean_attrib is not None:
-            clean_action = CleanAction.from_xml(clean_attrib)
-            if clean_action == CleanAction.START:
-                event_bus.notify(StateEvent(State.CLEANING))
+            event_bus.notify(StateEvent(CleanAction.from_xml(clean_attrib)))
         return HandlingResult.success()

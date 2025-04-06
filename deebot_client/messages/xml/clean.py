@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
+from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult
 from deebot_client.messages.xml.common import XmlMessage
-from deebot_client.models import CleanAction, State
+from deebot_client.models import CleanAction
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -52,7 +52,5 @@ class CleanReport(XmlMessage):
 
         clean_attrib = clean.attrib.get("st")
         if clean_attrib is not None:
-            clean_action = CleanAction.from_xml(clean_attrib)
-            if clean_action == CleanAction.START:
-                event_bus.notify(StateEvent(State.CLEANING))
+            event_bus.notify(CleanAction.from_xml(clean_attrib))
         return HandlingResult.success()
