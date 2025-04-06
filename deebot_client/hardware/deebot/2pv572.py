@@ -19,15 +19,16 @@ from deebot_client.capabilities import (
 from deebot_client.commands.json import SetVolume
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.xml import (
+    Charge,
     Clean,
     CleanArea,
     GetBatteryInfo,
     GetCleanSpeed,
     GetCleanState,
+    PlaySound,
     SetCleanSpeed,
 )
 from deebot_client.commands.xml.charge_state import GetChargeState
-from deebot_client.commands.xml.common import XmlCommand
 from deebot_client.commands.xml.error import GetError
 from deebot_client.commands.xml.stats import GetCleanSum
 from deebot_client.const import DataType
@@ -56,7 +57,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
     Capabilities(
         availability=CapabilityEvent(AvailabilityEvent, []),
         battery=CapabilityEvent(BatteryEvent, [GetBatteryInfo()]),
-        charge=CapabilityExecute(XmlCommand),
+        charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
         ),
@@ -81,7 +82,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=CustomCommand,
         ),
         network=CapabilityEvent(NetworkInfoEvent, []),
-        play_sound=CapabilityExecute(XmlCommand),
+        play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
             volume=CapabilitySet(
                 event=VolumeEvent,
