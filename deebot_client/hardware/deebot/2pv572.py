@@ -23,6 +23,7 @@ from deebot_client.commands.xml import (
     Clean,
     CleanArea,
     GetBatteryInfo,
+    GetCleanLogs,
     GetCleanSpeed,
     GetCleanState,
     PlaySound,
@@ -35,6 +36,7 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
+    CleanLogEvent,
     CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
@@ -60,6 +62,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
+            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
         ),
         custom=CapabilityCustomCommand(
             event=CustomCommandEvent, get=[], set=CustomCommand

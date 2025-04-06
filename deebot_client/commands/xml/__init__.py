@@ -10,6 +10,7 @@ from .battery import GetBatteryInfo
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanState
+from .clean_logs import GetCleanLogs
 from .error import GetError
 from .fan_speed import GetCleanSpeed, SetCleanSpeed
 from .life_span import GetLifeSpan
@@ -27,6 +28,7 @@ __all__ = [
     "CleanArea",
     "GetBatteryInfo",
     "GetChargeState",
+    "GetCleanLogs",
     "GetCleanSpeed",
     "GetCleanState",
     "GetCleanSum",
@@ -47,6 +49,7 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetBatteryInfo,
     GetError,
     GetBatteryInfo,
+    GetCleanLogs,
     GetCleanSpeed,
     GetCleanState,
     GetLifeSpan,
