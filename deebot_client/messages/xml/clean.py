@@ -4,16 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import FanSpeedEvent, FanSpeedLevel
+from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 from deebot_client.messages.xml.common import XmlMessage
-from deebot_client.models import CleanAction
+from deebot_client.models import CleanAction, State
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
     from deebot_client.event_bus import EventBus
 
+_LOGGER = get_logger(__name__)
 
 class CleanSt(XmlMessage):
     """CleanSt message."""
@@ -52,5 +54,12 @@ class CleanReport(XmlMessage):
 
         clean_attrib = clean.attrib.get("st")
         if clean_attrib is not None:
-            event_bus.notify(CleanAction.from_xml(clean_attrib))
+            clean_action = CleanAction.from_xml(clean_attrib)
+            if clean_action == CleanAction.START:
+                event_bus.notify(StateEvent(State.CLEANING))
+            elif clean_action == CleanAction.PAUSE:
+                event_bus.notify(StateEvent(State.PAUSED))
+            else:
+                _LOGGER.debug("Ignored CleanState %s", clean_action)
+
         return HandlingResult.success()
