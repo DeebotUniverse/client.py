@@ -1,4 +1,4 @@
-"""ls1ok3 Capabilities."""
+"""2pv572 Capabilities."""
 
 from __future__ import annotations
 

@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class GetWaterPermeability(XmlGetCommand):
-    """GetWaterBoxInfo command."""
+    """GetWaterPermeability command."""
 
     NAME = "GetWaterPermeability"
 
