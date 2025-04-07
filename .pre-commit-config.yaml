@@ -32,7 +32,7 @@ repos:
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=deebot
+          - --ignore-words-list=deebot,MapP
           - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
           - --exclude-file=deebot_client/util/continents.py
