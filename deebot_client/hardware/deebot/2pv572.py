@@ -10,13 +10,10 @@ from deebot_client.capabilities import (
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
-    CapabilitySet,
-    CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
     DeviceType,
 )
-from deebot_client.commands.json import SetVolume
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.xml import (
     Charge,
@@ -47,7 +44,6 @@ from deebot_client.events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
-    VolumeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -86,13 +82,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         ),
         network=CapabilityEvent(NetworkInfoEvent, []),
         play_sound=CapabilityExecute(PlaySound),
-        settings=CapabilitySettings(
-            volume=CapabilitySet(
-                event=VolumeEvent,
-                get=[],
-                set=SetVolume,
-            ),
-        ),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanState()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetCleanSum()]),
