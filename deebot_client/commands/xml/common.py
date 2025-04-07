@@ -100,7 +100,18 @@ class XmlCommandMqttP2P(XmlCommand, CommandMqttP2P, ABC):
         self, event_bus: EventBus, response_payload: str | bytes | bytearray
     ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
-        self._handle_mqtt_p2p(event_bus, str(response_payload))
+        if isinstance(response_payload, bytearray):
+            data = bytes(response_payload).decode()
+        elif isinstance(response_payload, bytes):
+            data = response_payload.decode()
+        elif isinstance(response_payload, str):
+            data = response_payload
+        else:
+            msg = "Unsupported message data type {message_type}"
+            raise TypeError(
+                msg.format(essage_type=type(response_payload))
+            )
+        self._handle_mqtt_p2p(event_bus, data)
 
     @abstractmethod
     def _handle_mqtt_p2p(
