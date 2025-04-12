@@ -26,12 +26,14 @@ from deebot_client.commands.xml import (
     GetCleanSpeed,
     GetCleanState,
     GetLifeSpan,
+    GetWaterPermeability,
     PlaySound,
     SetCleanSpeed,
 )
 from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.xml.error import GetError
 from deebot_client.commands.xml.stats import GetCleanSum
+from deebot_client.commands.xml.water_info import GetWaterBoxInfo, SetWaterPermeability
 from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
@@ -48,6 +50,8 @@ from deebot_client.events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
+    WaterAmount,
+    WaterInfoEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -97,5 +101,15 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             total=CapabilityEvent(TotalStatsEvent, [GetCleanSum()]),
         ),
         settings=CapabilitySettings(),
+        water=CapabilitySetTypes(
+            event=WaterInfoEvent,
+            get=[GetWaterPermeability(), GetWaterBoxInfo()],
+            set=SetWaterPermeability,
+            types=(
+                WaterAmount.LOW,
+                WaterAmount.MEDIUM,
+                WaterAmount.HIGH,
+            ),
+        ),
     ),
 )

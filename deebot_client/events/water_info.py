@@ -30,7 +30,7 @@ class SweepType(IntEnum):
 class WaterInfoEvent(Event):
     """Water info event representation."""
 
-    amount: WaterAmount
     # None means no data available
+    amount: WaterAmount | None = None
     sweep_type: SweepType | None = None
     mop_attached: bool | None = field(kw_only=True, default=None)
