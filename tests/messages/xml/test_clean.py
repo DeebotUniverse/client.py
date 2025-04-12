@@ -43,7 +43,7 @@ def test_CleanSt() -> None:
         ),
         (
             "st='r'",
-            [StateEvent(State.IDLE)],
+            [StateEvent(State.CLEANING)],
         ),
         (
             "st='h'",
@@ -58,7 +58,7 @@ def test_CleanSt() -> None:
         "standard_cleaning",
         "strong_cleaning",
         "paused",
-        "resume/idle",
+        "resume/cleaning",
         "stop/idle",
         "fanspeed_only",
     ],

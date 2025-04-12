@@ -61,7 +61,7 @@ async def test_CleanArea(command: CleanArea) -> None:
         ),
         (
             "st='r'",
-            [StateEvent(State.IDLE)],
+            [StateEvent(State.CLEANING)],
         ),
         (
             "st='h'",
@@ -76,7 +76,7 @@ async def test_CleanArea(command: CleanArea) -> None:
         "standard_cleaning",
         "strong_cleaning",
         "paused",
-        "resume/idle",
+        "resume/cleaning",
         "stop/idle",
         "fanspeed_only",
     ],

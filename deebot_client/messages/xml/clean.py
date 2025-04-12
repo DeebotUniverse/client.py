@@ -73,15 +73,16 @@ class CleanReport(XmlMessage):
         clean_attrib = clean.attrib.get("st")
         if clean_attrib is not None:
             clean_action = CleanAction.from_xml(clean_attrib)
-            if clean_action == CleanAction.START:
-                event_bus.notify(StateEvent(State.CLEANING))
-                event_reported = True
-            elif clean_action == CleanAction.PAUSE:
-                event_bus.notify(StateEvent(State.PAUSED))
-                event_reported = True
-            elif clean_action in (CleanAction.RESUME, CleanAction.STOP):
-                event_bus.notify(StateEvent(State.IDLE))
-                event_reported = True
+            match clean_action:
+                case CleanAction.START | CleanAction.RESUME:
+                    event_bus.notify(StateEvent(State.CLEANING))
+                    event_reported = True
+                case CleanAction.PAUSE:
+                    event_bus.notify(StateEvent(State.PAUSED))
+                    event_reported = True
+                case CleanAction.STOP:
+                    event_bus.notify(StateEvent(State.IDLE))
+                    event_reported = True
 
         if event_reported:
             return HandlingResult.success()
