@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
+    CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
     DeviceType,
@@ -88,5 +89,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetCleanSum()]),
         ),
+        settings=CapabilitySettings(),
     ),
 )
