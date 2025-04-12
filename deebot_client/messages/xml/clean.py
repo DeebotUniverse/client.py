@@ -5,11 +5,14 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deebot_client.events import (
+    CleanJobStatus,
     FanSpeedEvent,
     FanSpeedLevel,
     Position,
     PositionsEvent,
+    ReportStatsEvent,
     StateEvent,
+    StatsEvent,
 )
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
@@ -81,7 +84,7 @@ class CleanReportServer(XmlMessage):
     NAME = "CleanReportServer"
 
     @classmethod
-    def _handle_xml(cls, _event_bus: EventBus, _xml: Element) -> HandlingResult:
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
         b"<ctl ts='1744467262312' td='CleanReportServer' act='s' type='auto' cs='1134230540'/>"
@@ -89,6 +92,38 @@ class CleanReportServer(XmlMessage):
 
         :return: A message response
         """
+        event_reported = False
+        if act := xml.attrib.get("act"):
+            clean_session = xml.attrib.get("cs")
+            last = xml.attrib.get("last")
+            area = xml.attrib.get("area")
+            type = xml.attrib.get("type")
+            clean_action = CleanAction.from_xml(act)
+            if clean_action == CleanAction.STOP:
+                event_bus.notify(StatsEvent(area=area, time=last, type=type))
+                event_reported = True
+            if clean_session:
+                if clean_action == CleanAction.STOP:
+                    job_status = CleanJobStatus.FINISHED
+                elif clean_action == CleanAction.START:
+                    job_status = CleanJobStatus.CLEANING
+                elif clean_action == CleanAction.PAUSE:
+                    job_status = CleanJobStatus.PAUSED
+                else:
+                    job_status = CleanJobStatus.NO_STATUS
+                event_bus.notify(
+                    ReportStatsEvent(
+                        area=area,
+                        time=last,
+                        type=type,
+                        cleaning_id=clean_session,
+                        status=job_status,
+                        content=[],
+                    )
+                )
+                event_reported = True
+        if event_reported:
+            return HandlingResult.success()
         return HandlingResult.analyse()
 
 

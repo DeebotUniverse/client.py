@@ -92,7 +92,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         play_sound=CapabilityExecute(PlaySound),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanState()]),
         stats=CapabilityStats(
-            clean=CapabilityEvent(StatsEvent, [GetCleanSum()]),
+            clean=CapabilityEvent(StatsEvent, []),
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetCleanSum()]),
         ),
