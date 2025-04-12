@@ -15,6 +15,7 @@ from deebot_client.capabilities import (
     CapabilityStats,
     DeviceType,
 )
+from deebot_client.commands.json import GetNetInfoLegacy
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.xml import (
     Charge,
@@ -87,7 +88,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ],
             reset=CustomCommand,
         ),
-        network=CapabilityEvent(NetworkInfoEvent, []),
+        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
         play_sound=CapabilityExecute(PlaySound),
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanState()]),
         stats=CapabilityStats(
