@@ -202,6 +202,7 @@ class Device:
 
             message_data_type = self._device_info.static.data_type
             if message := get_message(message_name, message_data_type):
+                data: dict[str, Any] | str
                 if isinstance(message_data, dict):
                     data = message_data
                 elif message_data_type == DataType.JSON:
