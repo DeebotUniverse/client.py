@@ -45,7 +45,7 @@ async def test_CleanArea(command: CleanArea, command_result: HandlingState) -> N
             "standard",
             "p",
             FanSpeedEvent(FanSpeedLevel.NORMAL),
-            None,
+            StateEvent(State.PAUSED),
         ),
     ],
     ids=["standard_cleaning", "strong_cleaning", "paused"],
