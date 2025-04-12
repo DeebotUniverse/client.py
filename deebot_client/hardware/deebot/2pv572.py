@@ -24,6 +24,7 @@ from deebot_client.commands.xml import (
     GetCleanLogs,
     GetCleanSpeed,
     GetCleanState,
+    GetLifeSpan,
     PlaySound,
     SetCleanSpeed,
 )
@@ -39,6 +40,7 @@ from deebot_client.events import (
     ErrorEvent,
     FanSpeedEvent,
     FanSpeedLevel,
+    LifeSpan,
     LifeSpanEvent,
     NetworkInfoEvent,
     ReportStatsEvent,
@@ -76,9 +78,13 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
         ),
         life_span=CapabilityLifeSpan(
-            types=(),
+            types=(LifeSpan.BRUSH, LifeSpan.SIDE_BRUSH, LifeSpan.DUST_CASE_HEAP),
             event=LifeSpanEvent,
-            get=[],
+            get=[
+                GetLifeSpan(LifeSpan.BRUSH),
+                GetLifeSpan(LifeSpan.SIDE_BRUSH),
+                GetLifeSpan(LifeSpan.DUST_CASE_HEAP),
+            ],
             reset=CustomCommand,
         ),
         network=CapabilityEvent(NetworkInfoEvent, []),
