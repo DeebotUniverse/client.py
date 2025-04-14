@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events.map import MapTraceEvent
+from deebot_client.events.map import MapTraceEvent, MinorMapEvent
 from deebot_client.message import HandlingResult
 from deebot_client.messages.xml.common import XmlMessage
 
@@ -23,15 +23,17 @@ class MapP(XmlMessage):
     NAME = "MapP"
 
     @classmethod
-    def _handle_xml(cls, _event_bus: EventBus, _xml: Element) -> HandlingResult:
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
         b"<ctl td='MapP' i='1245233875' pid='27' p='XQAABAAQJwAAAABv/f//o7f/Rz5IFXI5YVG4kYRDU5g6Z4W8UflplyVyfWyHmYdt2YVgA/k3ENxVye1lEM...fqEp3pept9Re5qT0lZFDWpoFg4D51VXQopPSDLSo2ZpM/zQ4IAhvgWIKnp7zlwcd6Ekj7U2FnOTTAQeWq3DPT+MTrAVO2wL/6mmGODzk4hBtA/wjZzOujPgEA=='/>"
 
-        This is currently ignored as we prefer to pull map pieces
         :return: A message response
         """
-        return HandlingResult.success()
+        if (pid := xml.attrib.get("pid")) and (piece := xml.attrib.get("p")):
+            event_bus.notify(MinorMapEvent(index=int(pid), value=piece))
+            return HandlingResult.success()
+        return HandlingResult.analyse()
 
 
 class Trace(XmlMessage):
