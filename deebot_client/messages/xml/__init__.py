@@ -12,7 +12,7 @@ from deebot_client.messages.xml.clean import (
     CleanReportServer,
     CleanSt,
 )
-from deebot_client.messages.xml.map import MapP
+from deebot_client.messages.xml.map import MapP, Trace
 from deebot_client.messages.xml.pos import Pos
 from deebot_client.messages.xml.sleep import SleepStatus
 from deebot_client.messages.xml.water_info import WaterBoxInfo
@@ -30,6 +30,7 @@ __all__ = [
     "MapP",
     "Pos",
     "SleepStatus",
+    "Trace",
     "WaterBoxInfo",
 ]
 # fmt: off
@@ -44,6 +45,7 @@ _MESSAGES: list[type[Message]] = [
     MapP,
     Pos,
     SleepStatus,
+    Trace,
     WaterBoxInfo,
 ]
 # fmt: on

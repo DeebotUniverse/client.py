@@ -24,6 +24,8 @@ class SleepStatus(XmlMessage):
 
         b"<ctl ts='1744467249545' td='SleepStatus' st='0'/>"
 
+        We currently ignore this message
+
         :return: A message response
         """
-        return HandlingResult.analyse()
+        return HandlingResult.success()

@@ -39,9 +39,10 @@ class CleanSt(XmlMessage):
 
         b"<ctl td='CleanSt' a='21' s='1743945874' l='1595' t='' type='auto'/>"
 
+        We currently ignore this message as we prefer to use CleanReport
         :return: A message response
         """
-        return HandlingResult.analyse()
+        return HandlingResult.success()
 
 
 class CleanReport(XmlMessage):
@@ -93,14 +94,19 @@ class CleanReportServer(XmlMessage):
         :return: A message response
         """
         event_reported = False
-        if act := xml.attrib.get("act"):
+        if (
+            (act := xml.attrib.get("act")) is not None
+            and (last := xml.attrib.get("last")) is not None
+            and (area := xml.attrib.get("area")) is not None
+        ):
             clean_session = xml.attrib.get("cs")
-            last = xml.attrib.get("last")
-            area = xml.attrib.get("area")
-            type = xml.attrib.get("type")
+            clean_type = xml.attrib.get("type")
+
             clean_action = CleanAction.from_xml(act)
             if clean_action == CleanAction.STOP:
-                event_bus.notify(StatsEvent(area=area, time=last, type=type))
+                event_bus.notify(
+                    StatsEvent(area=int(area), time=int(last), type=clean_type)
+                )
                 event_reported = True
             if clean_session:
                 if clean_action == CleanAction.STOP:
@@ -108,14 +114,14 @@ class CleanReportServer(XmlMessage):
                 elif clean_action == CleanAction.START:
                     job_status = CleanJobStatus.CLEANING
                 elif clean_action == CleanAction.PAUSE:
-                    job_status = CleanJobStatus.PAUSED
+                    job_status = CleanJobStatus.MANUALLY_STOPPED
                 else:
                     job_status = CleanJobStatus.NO_STATUS
                 event_bus.notify(
                     ReportStatsEvent(
-                        area=area,
-                        time=last,
-                        type=type,
+                        area=int(area),
+                        time=int(last),
+                        type=clean_type,
                         cleaning_id=clean_session,
                         status=job_status,
                         content=[],
