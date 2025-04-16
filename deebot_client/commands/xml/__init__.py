@@ -14,7 +14,7 @@ from .clean_logs import GetCleanLogs
 from .error import GetError
 from .fan_speed import GetCleanSpeed, SetCleanSpeed
 from .life_span import GetLifeSpan
-from .map import GetMapM, GetMapSet, GetMapSt, PullM, PullMP
+from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
 from .pos import GetPos
 from .stats import GetCleanSum
@@ -39,6 +39,7 @@ __all__ = [
     "GetMapSet",
     "GetMapSt",
     "GetPos",
+    "GetTrM",
     "GetWaterBoxInfo",
     "GetWaterPermeability",
     "PlaySound",
@@ -66,6 +67,7 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetMapSet,
     GetMapSt,
     GetPos,
+    GetTrM,
     GetWaterBoxInfo,
     GetWaterPermeability,
     PlaySound,

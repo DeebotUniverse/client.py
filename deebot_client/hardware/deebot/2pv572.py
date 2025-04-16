@@ -33,7 +33,7 @@ from deebot_client.commands.xml import (
 )
 from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.xml.error import GetError
-from deebot_client.commands.xml.map import GetMapM, GetMapSt
+from deebot_client.commands.xml.map import GetMapM, GetMapSt, GetTrM
 from deebot_client.commands.xml.pos import GetPos
 from deebot_client.commands.xml.stats import GetCleanSum
 from deebot_client.commands.xml.water_info import GetWaterBoxInfo, SetWaterPermeability
@@ -109,7 +109,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             major=CapabilityEvent(MajorMapEvent, [GetMapM()]),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             rooms=CapabilityEvent(RoomsEvent, [GetMapSt()]),
-            trace=CapabilityEvent(MapTraceEvent, []),
+            trace=CapabilityEvent(MapTraceEvent, [GetTrM()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
         play_sound=CapabilityExecute(PlaySound),

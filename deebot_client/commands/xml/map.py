@@ -260,3 +260,22 @@ class PullMP(XmlCommandWithMessageHandling):
             return CommandResult(result.state, result.args)
 
         return result
+
+
+class GetTrM(XmlCommandWithMessageHandling):
+    """GetTrM command.
+
+    Enables trace reporting from the bot.
+    """
+
+    NAME = "GetTrM"
+
+    @classmethod
+    def _handle_xml(cls, _event_bus: EventBus, xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if xml.attrib.get("ret") != "ok":
+            return HandlingResult.analyse()
+        return HandlingResult(HandlingState.SUCCESS)
