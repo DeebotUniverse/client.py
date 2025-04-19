@@ -30,7 +30,15 @@ class SweepType(IntEnum):
 class WaterInfoEvent(Event):
     """Water info event representation."""
 
-    amount: WaterAmount
     # None means no data available
+    amount: WaterAmount | None = None
     sweep_type: SweepType | None = None
     mop_attached: bool | None = field(kw_only=True, default=None)
+
+    def __post_init__(self) -> None:
+        if (
+            self.amount is None
+            and self.sweep_type is None
+            and self.mop_attached is None
+        ):
+            raise ValueError("A WaterInfoEvent must contain at least one value")
