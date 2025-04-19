@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
+    CapabilityMap,
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
@@ -32,6 +33,8 @@ from deebot_client.commands.xml import (
 )
 from deebot_client.commands.xml.charge_state import GetChargeState
 from deebot_client.commands.xml.error import GetError
+from deebot_client.commands.xml.map import GetMapM, GetMapSt
+from deebot_client.commands.xml.pos import GetPos
 from deebot_client.commands.xml.stats import GetCleanSum
 from deebot_client.commands.xml.water_info import GetWaterBoxInfo, SetWaterPermeability
 from deebot_client.const import DataType
@@ -47,11 +50,19 @@ from deebot_client.events import (
     LifeSpanEvent,
     NetworkInfoEvent,
     ReportStatsEvent,
+    RoomsEvent,
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
     WaterAmount,
     WaterInfoEvent,
+)
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MajorMapEvent,
+    MapChangedEvent,
+    MapTraceEvent,
+    PositionsEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
@@ -91,6 +102,14 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 GetLifeSpan(LifeSpan.DUST_CASE_HEAP),
             ],
             reset=CustomCommand,
+        ),
+        map=CapabilityMap(
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetMapSt()]),
+            changed=CapabilityEvent(MapChangedEvent, []),
+            major=CapabilityEvent(MajorMapEvent, [GetMapM()]),
+            position=CapabilityEvent(PositionsEvent, [GetPos()]),
+            rooms=CapabilityEvent(RoomsEvent, [GetMapSt()]),
+            trace=CapabilityEvent(MapTraceEvent, []),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
         play_sound=CapabilityExecute(PlaySound),

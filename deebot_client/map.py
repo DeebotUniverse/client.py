@@ -6,9 +6,9 @@ import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
+from deebot_client.const import DataType
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
-from .commands.json import GetMinorMap
 from .events import (
     MajorMapEvent,
     MapSetEvent,
@@ -30,6 +30,8 @@ from .util import (
 
 if TYPE_CHECKING:
     from collections.abc import Callable
+
+    from deebot_client.command import Command
 
     from .device import DeviceCommandExecute
     from .event_bus import EventBus
@@ -102,11 +104,16 @@ class Map:
                         self._map_data.map_piece_crc32_indicates_update(idx, value)
                         and event.requested
                     ):
-                        tg.create_task(
-                            self._execute_command(
-                                GetMinorMap(map_id=event.map_id, piece_index=idx)
-                            )
-                        )
+                        command: Command
+                        if event.type == DataType.JSON:
+                            from deebot_client.commands.json.map import GetMinorMap
+
+                            command = GetMinorMap(map_id=event.map_id, piece_index=idx)
+                        else:
+                            from deebot_client.commands.xml.map import PullMP
+
+                            command = PullMP(piece_index=idx)
+                        tg.create_task(self._execute_command(command))
 
         unsubscribers.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
 

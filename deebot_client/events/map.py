@@ -6,6 +6,7 @@ from dataclasses import dataclass, field
 from enum import Enum, unique
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.const import DataType
 from deebot_client.events import Event
 
 if TYPE_CHECKING:
@@ -47,6 +48,7 @@ class MajorMapEvent(Event):
     map_id: str
     values: list[int]
     requested: bool = field(kw_only=True)
+    type: DataType = DataType.JSON
 
 
 @dataclass(frozen=True)
