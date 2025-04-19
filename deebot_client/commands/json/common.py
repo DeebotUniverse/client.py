@@ -23,6 +23,7 @@ from deebot_client.message import (
     HandlingState,
     MessageBody,
     MessageBodyDataDict,
+    MessageDict,
 )
 from deebot_client.util import verify_required_class_variables_exists
 
@@ -60,6 +61,12 @@ class JsonCommandWithMessageHandling(
     JsonCommand, CommandWithMessageHandling, MessageBody, ABC
 ):
     """Command, which handle response by itself."""
+
+
+class JsonCommandWithRawMessageHandling(
+    JsonCommand, CommandWithMessageHandling, MessageDict, ABC
+):
+    """Command, which handle raw response by itself."""
 
 
 class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
