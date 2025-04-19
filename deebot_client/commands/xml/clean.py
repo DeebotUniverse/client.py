@@ -91,7 +91,7 @@ class GetCleanState(XmlCommandWithMessageHandling):
                 event_bus.notify(StateEvent(State.CLEANING))
             elif clean_action == CleanAction.PAUSE:
                 event_bus.notify(StateEvent(State.PAUSED))
-            else:
-                _LOGGER.debug("Ignored CleanState %s", clean_action)
+            elif clean_action in (CleanAction.RESUME, CleanAction.STOP):
+                event_bus.notify(StateEvent(State.IDLE))
 
         return HandlingResult.success()
