@@ -178,7 +178,7 @@ class CapabilityMap:
     major: CapabilityEvent[MajorMapEvent]
     multi_state: CapabilitySetEnable[MultimapStateEvent]
     position: CapabilityEvent[PositionsEvent]
-    relocation: CapabilityExecute[[]]
+    relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
     trace: CapabilityEvent[MapTraceEvent]
 
