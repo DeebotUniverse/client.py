@@ -9,11 +9,13 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
 
 from .json import MESSAGES as JSON_MESSAGES
+from .xml import MESSAGES as XML_MESSAGES
 
 _LOGGER = get_logger(__name__)
 
 MESSAGES = {
     DataType.JSON: JSON_MESSAGES,
+    DataType.XML: XML_MESSAGES,
 }
 
 _LEGACY_USE_GET_COMMAND = [

@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 
 
 def assert_message(
-    message: type[Message], data: dict[str, Any], expected_event: Event
+    message: type[Message], data: dict[str, Any] | str, expected_event: Event
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
@@ -19,3 +19,12 @@ def assert_message(
 
     assert result.state == HandlingState.SUCCESS
     event_bus.notify.assert_called_once_with(expected_event)
+
+
+def assert_message_failure(message: type[Message], data: dict[str, Any] | str) -> None:
+    event_bus = Mock(spec_set=EventBus)
+
+    result = message.handle(event_bus, data)
+
+    assert result.state != HandlingState.SUCCESS
+    event_bus.notify.assert_not_called()
