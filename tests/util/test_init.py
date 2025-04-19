@@ -38,40 +38,36 @@ async def test_create_task_and_cancel() -> None:
 
 
 def test_on_changed_dict() -> None:
-    class OnChangedListener:
-        def __init__(self) -> None:
-            self.__counter = 0
+    callback_count = 0
 
-        def on_changed_dict(self) -> None:
-            self.__counter += 1
+    def increase_counter() -> None:
+        nonlocal callback_count
+        callback_count += 1
 
-        def counter(self) -> int:
-            return self.__counter
+    sut: OnChangedDict[str, int] = OnChangedDict(increase_counter)
 
-    listener = OnChangedListener()
-
-    sut: OnChangedDict[str, int] = OnChangedDict(listener.on_changed_dict)
-
-    sut["test"] = 1001  # Should be triggered by __setitem__
-
+    sut["test"] = 1001
+    assert callback_count == 1
     assert sut["test"] == 1001
 
-    sut.update(
-        {"test": 1002, "test2": 2001, "test3": 3001, "test4": 4001}
-    )  # Should trigger update()
-
+    sut.update({"test": 1002, "test2": 2001, "test3": 3001, "test4": 4001})
     assert sut["test"] == 1002
+    assert callback_count == 2
 
-    del sut["test"]  # Should trigger __delitem__
-
+    del sut["test"]
     assert "test" not in sut
+    assert callback_count == 3
 
-    assert sut.pop("test2") == 2001  # Should trigger pop()
+    assert sut.pop("test2") == 2001
+    assert "test2" not in sut
+    assert callback_count == 4
 
-    (popped_key, popped_value) = sut.popitem()  # Should trigger popitem()
+    (popped_key, popped_value) = sut.popitem()
     assert popped_key == "test4"
     assert popped_value == 4001
+    assert "test4" not in sut
+    assert callback_count == 5
 
-    sut.clear()  # Should trigger clear
-
-    assert listener.counter() == 6
+    sut.clear()
+    assert sut == {}
+    assert callback_count == 6
