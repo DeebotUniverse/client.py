@@ -214,7 +214,7 @@ class CapabilitySettings:
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, [int]]
+    volume: CapabilitySet[VolumeEvent, [int]] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
