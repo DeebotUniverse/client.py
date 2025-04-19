@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TypeVar
+
 import pytest
 
 from deebot_client.util.enum import IntEnumWithXml, StrEnumWithXml
@@ -11,49 +13,50 @@ class _TestStrEnumWithXml(StrEnumWithXml):
     ENUM1 = "value1", "xmlvalue1"
     ENUM2 = "value2", "xmlvalue2"
 
+    def assert_self_conversion(self) -> None:
+        assert self == _TestStrEnumWithXml(self.value)
+        assert self == _TestStrEnumWithXml.from_xml(self.xml_value)
+
 
 class _TestIntEnumWithXml(IntEnumWithXml):
     ENUM1 = 1, "xmlvalue1"
     ENUM2 = 2, "xmlvalue2"
 
-
-@pytest.mark.parametrize(
-    ("test_enum", "test_value", "test_xml_value"),
-    [
-        (_TestStrEnumWithXml.ENUM1, "value1", "xmlvalue1"),
-        (_TestStrEnumWithXml.ENUM2, "value2", "xmlvalue2"),
-    ],
-)
-def test_StrEnumWithXml_values(
-    test_enum: _TestStrEnumWithXml, test_value: str, test_xml_value: str
-) -> None:
-    assert test_enum.value == test_value
-    assert test_enum.xml_value == test_xml_value
-    assert test_value == _TestStrEnumWithXml.from_xml(test_xml_value).value
-    assert test_xml_value == _TestStrEnumWithXml(test_value).xml_value
+    def assert_self_conversion(self) -> None:
+        assert self == _TestIntEnumWithXml(self.value)
+        assert self == _TestIntEnumWithXml.from_xml(self.xml_value)
 
 
-def test_StrEnumWithXml_invalid_value() -> None:
-    with pytest.raises(ValueError, match="this_is_invalid"):
-        _TestStrEnumWithXml.from_xml("this_is_invalid")
+T = TypeVar("T", _TestStrEnumWithXml, _TestIntEnumWithXml)
+V = TypeVar("V", str, int)
 
 
 @pytest.mark.parametrize(
-    ("test_enum", "test_value", "test_xml_value"),
+    "test_enum",
     [
-        (_TestIntEnumWithXml.ENUM1, 1, "xmlvalue1"),
-        (_TestIntEnumWithXml.ENUM2, 2, "xmlvalue2"),
+        _TestStrEnumWithXml.ENUM1,
+        _TestStrEnumWithXml.ENUM2,
+        _TestIntEnumWithXml.ENUM1,
+        _TestIntEnumWithXml.ENUM2,
     ],
 )
-def test_IntEnumWithXml_values(
-    test_enum: _TestIntEnumWithXml, test_value: int, test_xml_value: str
+def test_EnumWithXml_conversion(
+    test_enum: T,
 ) -> None:
-    assert test_enum.value == test_value
-    assert test_enum.xml_value == test_xml_value
-    assert test_value == _TestIntEnumWithXml.from_xml(test_xml_value).value
-    assert test_xml_value == _TestIntEnumWithXml(test_value).xml_value
+    test_enum.assert_self_conversion()
 
 
-def test_IntEnumWithXml_invalid_value() -> None:
-    with pytest.raises(ValueError, match="this_is_invalid"):
-        _TestIntEnumWithXml.from_xml("this_is_invalid")
+@pytest.mark.parametrize(
+    ("test_enum_cls", "invalid_value"),
+    [
+        (_TestStrEnumWithXml, "this_is_invalid"),
+        (_TestStrEnumWithXml, None),
+        (_TestIntEnumWithXml, "this_is_invalid"),
+        (_TestIntEnumWithXml, None),
+    ],
+)
+def test_EnumWithXml_invalid_value(
+    test_enum_cls: type[T], invalid_value: str | None
+) -> None:
+    with pytest.raises(ValueError, match=str(invalid_value)):
+        test_enum_cls.from_xml(invalid_value)
