@@ -60,9 +60,8 @@ if TYPE_CHECKING:
 
     from _typeshed import DataclassInstance
 
-    from deebot_client.command import Command
+    from deebot_client.command import Command, CommandWithMessageHandling
     from deebot_client.commands import StationAction
-    from deebot_client.commands.json.common import ExecuteCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
 
@@ -100,7 +99,7 @@ class CapabilityEvent(Generic[_EVENT]):
 class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _P]):
     """Capability setCommand with event."""
 
-    set: Callable[_P, ExecuteCommand]
+    set: Callable[_P, CommandWithMessageHandling]
 
 
 @dataclass(frozen=True)
