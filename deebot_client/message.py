@@ -140,7 +140,42 @@ class MessageStr(Message, ABC):
         return super()._handle(event_bus, message)
 
 
-class MessageBody(Message, ABC):
+class MessageDict(Message, ABC):
+    """Dict message."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def __handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
+    ) -> HandlingResult:
+        return cls._handle_dict(event_bus, message)
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: dict[str, Any] | str
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if isinstance(message, dict):
+            return cls.__handle_dict(event_bus, message)
+
+        return super()._handle(event_bus, message)
+
+
+class MessageBody(MessageDict, ABC):
     """Dict message with body attribute."""
 
     @classmethod
@@ -158,17 +193,17 @@ class MessageBody(Message, ABC):
         return cls._handle_body(event_bus, body)
 
     @classmethod
-    def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+    def _handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
         """
-        if isinstance(message, dict):
+        if "body" in message:
             return cls.__handle_body(event_bus, message["body"])
 
-        return super()._handle(event_bus, message)
+        return super()._handle_dict(event_bus, message)
 
 
 class MessageBodyData(MessageBody, ABC):

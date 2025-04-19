@@ -4,10 +4,15 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import CommandWithMessageHandling
 from deebot_client.events import NetworkInfoEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import (
+    HandlingResult,
+    MessageBodyDataDict,
+    MessageDict,
+)
 
-from .common import JsonCommandWithMessageHandling
+from .common import JsonCommand, JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -32,6 +37,30 @@ class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 ssid=data["ssid"],
                 rssi=int(data["rssi"]),
                 mac=data["mac"],
+            )
+        )
+        return HandlingResult.success()
+
+
+class GetNetInfoLegacy(JsonCommand, CommandWithMessageHandling, MessageDict):
+    """Get network info command."""
+
+    NAME = "GetNetInfo"
+
+    @classmethod
+    def _handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        event_bus.notify(
+            NetworkInfoEvent(
+                ip=message.get("wi", ""),
+                ssid=message.get("s", ""),
+                rssi=int(message.get("st", "0")),
+                mac=message.get("wm", ""),
             )
         )
         return HandlingResult.success()

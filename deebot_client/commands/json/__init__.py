@@ -37,7 +37,7 @@ from .map import (
 )
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
-from .network import GetNetInfo
+from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
@@ -88,6 +88,7 @@ __all__ = [
     "GetMoveUpWarning",
     "GetMultimapState",
     "GetNetInfo",
+    "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
     "GetSafeProtect",
@@ -198,6 +199,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetMultimapState,
 
     GetNetInfo,
+    GetNetInfoLegacy,
 
     GetOta,
     SetOta,
