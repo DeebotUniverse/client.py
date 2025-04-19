@@ -13,7 +13,7 @@ from .clean import Clean, CleanArea, GetCleanState
 from .clean_logs import GetCleanLogs
 from .clean_speed import GetCleanSpeed, SetCleanSpeed
 from .error import GetError
-from .life_span import GetLifeSpan
+from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
 from .pos import GetChargerPos, GetPos
@@ -43,6 +43,7 @@ __all__ = [
     "PlaySound",
     "PullM",
     "PullMP",
+    "ResetLifeSpan",
     "SetCleanSpeed",
 ]
 
@@ -67,6 +68,7 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetError,
 
     GetLifeSpan,
+    ResetLifeSpan,
 
     GetMapM,
     GetMapSet,

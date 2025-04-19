@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from types import MappingProxyType
+from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
-from deebot_client.message import HandlingResult
+from deebot_client.message import HandlingResult, HandlingState
 
-from .common import XmlCommandWithMessageHandling
+from .common import ExecuteCommand, XmlCommandMqttP2P, XmlCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -20,8 +22,11 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
 
     NAME = "GetLifeSpan"
 
-    def __init__(self, life_span: LifeSpan) -> None:
-        super().__init__({"type": life_span.xml_value})
+    def __init__(self, life_span: LifeSpan | str) -> None:
+        xml_value = (
+            life_span.xml_value if isinstance(life_span, LifeSpan) else life_span
+        )
+        super().__init__({"type": xml_value})
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
@@ -47,3 +52,24 @@ class GetLifeSpan(XmlCommandWithMessageHandling):
             LifeSpanEvent(LifeSpan.from_xml(component_type), percent, left)
         )
         return HandlingResult.success()
+
+
+class ResetLifeSpan(ExecuteCommand, XmlCommandMqttP2P):
+    """ResetLifeSpan command."""
+
+    NAME = "ResetLifeSpan"
+    _mqtt_params = MappingProxyType({"type": InitParam(LifeSpan, "life_span")})
+
+    def __init__(self, life_span: LifeSpan | str) -> None:
+        xml_value = (
+            life_span.xml_value if isinstance(life_span, LifeSpan) else life_span
+        )
+        super().__init__({"type": xml_value})
+
+    def _handle_mqtt_p2p(
+        self, event_bus: EventBus, response: dict[str, Any] | str
+    ) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        result = self.handle(event_bus, response)
+        if result.state == HandlingState.SUCCESS:
+            event_bus.request_refresh(LifeSpanEvent)
