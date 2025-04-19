@@ -81,8 +81,6 @@ class OnChangedDict(dict[_KT, _VT]):
         "pop",
         "popitem",
         "update",
-        "__setitem__",
-        "__delitem__",
     )
 
     def __init__(
@@ -90,6 +88,16 @@ class OnChangedDict(dict[_KT, _VT]):
     ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
+
+    # This is needed as __getattribute__ won't be invoked for implicit special method lookup
+    def __setitem__(self, key: _KT, value: _VT) -> None:
+        self._on_change()
+        super().__setitem__(key, value)
+
+    # This is needed as __getattribute__ won't be invoked for implicit special method lookup
+    def __delitem__(self, key: _KT) -> None:
+        self._on_change()
+        return super().__delitem__(key)
 
     def __getattribute__(self, name: str, /) -> Any:
         if name in OnChangedDict._MODIFYING_FUNCTIONS:
