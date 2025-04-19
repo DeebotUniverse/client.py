@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandMqttP2P
 
+from .battery import GetBatteryInfo
 from .charge import Charge
 from .charge_state import GetChargeState
 from .error import GetError
@@ -20,6 +21,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Charge",
+    "GetBatteryInfo",
     "GetChargeState",
     "GetCleanSum",
     "GetError",
@@ -32,6 +34,7 @@ __all__ = [
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
+    GetBatteryInfo,
     GetError,
     GetLifeSpan,
     PlaySound,
