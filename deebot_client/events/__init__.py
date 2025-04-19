@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum, unique
-from typing import TYPE_CHECKING, Any, Self
+from enum import IntEnum, unique
+from typing import TYPE_CHECKING, Any
+
+from deebot_client.util.enum import StrEnumWithXml
 
 from . import auto_empty, station
 from .auto_empty import AutoEmptyEvent
@@ -126,26 +128,8 @@ class ErrorEvent(Event):
 
 
 @unique
-class LifeSpan(StrEnum):
+class LifeSpan(StrEnumWithXml):
     """Enum class for all possible life span components."""
-
-    xml_value: str
-
-    def __new__(cls, value: str, xml_value: str = "") -> Self:
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.xml_value = xml_value
-        return obj
-
-    @classmethod
-    def from_xml(cls, value: str) -> LifeSpan:
-        """Get LifeSpan from xml value."""
-        for life_span in LifeSpan:
-            if life_span.xml_value == value:
-                return life_span
-
-        msg = f"{value} is not a valid {cls.__name__}"
-        raise ValueError(msg)
 
     BRUSH = "brush", "Brush"
     FILTER = "heap", "Heap"

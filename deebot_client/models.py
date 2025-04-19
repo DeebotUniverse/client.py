@@ -3,9 +3,11 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum, unique
+from enum import IntEnum, unique
 from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
+
+from deebot_client.util.enum import StrEnumWithXml
 
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
@@ -64,22 +66,22 @@ class State(IntEnum):
 
 
 @unique
-class CleanAction(StrEnum):
+class CleanAction(StrEnumWithXml):
     """Enum class for all possible clean actions."""
 
-    START = "start"
-    PAUSE = "pause"
-    RESUME = "resume"
-    STOP = "stop"
+    START = "start", "s"
+    PAUSE = "pause", "p"
+    RESUME = "resume", "r"
+    STOP = "stop", "h"
 
 
 @unique
-class CleanMode(StrEnum):
+class CleanMode(StrEnumWithXml):
     """Enum class for all possible clean modes."""
 
-    AUTO = "auto"
-    SPOT_AREA = "spotArea"
-    CUSTOM_AREA = "customArea"
+    AUTO = "auto", "auto"
+    SPOT_AREA = "spotArea", "SpotArea"
+    CUSTOM_AREA = "customArea", "spot"
 
 
 @dataclass(frozen=True)
