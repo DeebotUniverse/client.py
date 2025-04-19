@@ -43,7 +43,12 @@ from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapTrace,
+    GetMinorMap,
+)
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -156,6 +161,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
+            minor=CapabilityExecute(GetMinorMap),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),

@@ -38,7 +38,6 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
 
-
 DeviceCommandExecute = Callable[[Command], Coroutine[Any, Any, dict[str, Any]]]
 
 
@@ -67,7 +66,13 @@ class Device:
             self.execute_command, self.capabilities.get_refresh_commands
         )
 
-        self.map: Final[Map] = Map(self.execute_command, self.events)
+        self.map: Final[Map] = Map(
+            self.execute_command,
+            self.events,
+            self.capabilities.map.minor.execute
+            if self.capabilities and self.capabilities.map
+            else None,
+        )
 
         async def on_pos(event: PositionsEvent) -> None:
             if self._state == StateEvent(State.DOCKED):
