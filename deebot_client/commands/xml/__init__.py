@@ -13,6 +13,7 @@ from .clean_logs import GetCleanLogs
 from .error import GetError
 from .fan_speed import GetFanSpeed
 from .life_span import GetLifeSpan
+from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
 from .pos import GetPos
 from .stats import GetCleanSum
@@ -29,8 +30,14 @@ __all__ = [
     "GetError",
     "GetFanSpeed",
     "GetLifeSpan",
+    "GetMapM",
+    "GetMapSet",
+    "GetMapSt",
     "GetPos",
+    "GetTrM",
     "PlaySound",
+    "PullM",
+    "PullMP",
 ]
 
 # fmt: off
@@ -40,7 +47,13 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetCleanLogs,
     GetError,
     GetLifeSpan,
+    GetMapM,
+    GetMapSet,
+    GetMapSt,
+    GetTrM,
     PlaySound,
+    PullM,
+    PullMP
 ]
 # fmt: on
 
