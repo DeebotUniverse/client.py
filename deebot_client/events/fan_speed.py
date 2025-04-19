@@ -15,10 +15,10 @@ class FanSpeedLevel(IntEnumWithXml):
     """Enum class for all possible fan speed levels."""
 
     # Values should be sort from low to high on their meanings
-    QUIET = 1000, ""
+    QUIET = 1000
     NORMAL = 0, "standard"
     MAX = 1, "strong"
-    MAX_PLUS = 2, ""
+    MAX_PLUS = 2
 
 
 @dataclass(frozen=True)
