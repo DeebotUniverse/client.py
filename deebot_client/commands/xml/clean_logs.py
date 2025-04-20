@@ -38,12 +38,10 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
 
         :return: A message response
         """
-        if (
-            xml.attrib.get("ret") != "ok"
-            or (resp_logs := xml.findall("CleanSt")) is None
-        ):
+        if xml.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
+        resp_logs = xml.findall("CleanSt")
         if len(resp_logs) >= 0:
             logs: list[CleanLogEntry] = []
             for log in resp_logs:
