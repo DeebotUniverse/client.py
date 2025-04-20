@@ -21,10 +21,14 @@ def assert_message(
     event_bus.notify.assert_called_once_with(expected_event)
 
 
-def assert_message_failure(message: type[Message], data: dict[str, Any] | str) -> None:
+def assert_message_failure(
+    message: type[Message],
+    data: dict[str, Any] | str,
+    expected_result_state: HandlingState,
+) -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)
 
-    assert result.state != HandlingState.SUCCESS
+    assert result.state == expected_result_state
     event_bus.notify.assert_not_called()

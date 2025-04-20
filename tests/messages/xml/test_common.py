@@ -4,7 +4,7 @@ from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
 from deebot_client.events import Event
-from deebot_client.message import HandlingResult
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.xml.common import XmlMessage
 from tests.messages import assert_message, assert_message_failure
 
@@ -37,4 +37,6 @@ def test_XmlMessageDecoding() -> None:
 
 
 def test_XmlMessageFailure() -> None:
-    assert_message_failure(_TestXmlMessage, '<ctl ret="ok" />')
+    assert_message_failure(
+        _TestXmlMessage, '<ctl ret="ok" />', HandlingState.ANALYSE_LOGGED
+    )

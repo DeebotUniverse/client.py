@@ -3,6 +3,7 @@ from __future__ import annotations
 import pytest
 
 from deebot_client.events import BatteryEvent
+from deebot_client.message import HandlingState
 from deebot_client.messages.xml import BatteryInfo
 from tests.messages import assert_message, assert_message_failure
 
@@ -24,4 +25,4 @@ def test_BatteryInfo(percentage: int) -> None:
     ],
 )
 def test_BatteryInfo_error(xml_message: str) -> None:
-    assert_message_failure(BatteryInfo, xml_message)
+    assert_message_failure(BatteryInfo, xml_message, HandlingState.ANALYSE_LOGGED)

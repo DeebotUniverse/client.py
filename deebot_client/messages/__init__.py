@@ -55,7 +55,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     If there exists no exact match, some conversations are performed on the name to get message object similar to the name.
     """
     messages = MESSAGES.get(data_type)
-    if messages is None:  # pragma: no cover
+    if messages is None:
         _LOGGER.warning("Datatype %s is not supported.", data_type)
         return None
 
