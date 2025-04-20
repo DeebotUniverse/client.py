@@ -8,8 +8,6 @@ from deebot_client.util.enum import IntEnumWithXml, StrEnumWithXml
 
 
 class _TestStrEnumWithXml(StrEnumWithXml):
-    """Simple Enum for testing."""
-
     ENUM1 = "value1", "xmlvalue1"
     ENUM2 = "value2", "xmlvalue2"
 
@@ -28,17 +26,10 @@ class _TestIntEnumWithXml(IntEnumWithXml):
 
 
 T = TypeVar("T", _TestStrEnumWithXml, _TestIntEnumWithXml)
-V = TypeVar("V", str, int)
 
 
 @pytest.mark.parametrize(
-    "test_enum",
-    [
-        _TestStrEnumWithXml.ENUM1,
-        _TestStrEnumWithXml.ENUM2,
-        _TestIntEnumWithXml.ENUM1,
-        _TestIntEnumWithXml.ENUM2,
-    ],
+    "test_enum", list(_TestStrEnumWithXml) + list(_TestIntEnumWithXml)
 )
 def test_EnumWithXml_conversion(
     test_enum: T,
