@@ -2,34 +2,33 @@
 
 from __future__ import annotations
 
-from enum import StrEnum
+from enum import StrEnum, unique
+from typing import Self
 
 from deebot_client.events import CleanJobStatus
 
 
+@unique
 class XmlStopReason(StrEnum):
-    """Reasons why cleaning has been stopped."""
+    """XML Reasons why cleaning has been stopped."""
 
-    FINISHED = "s"
-    BATTERY_LOW = "r"
-    STOPPED_BY_APP = "a"
-    STOPPED_BY_REMOTE_CONTROL = "i"
-    STOPPED_BY_BUTTON = "b"
-    STOPPED_BY_WARNING = "w"
-    STOPPED_BY_NO_DISTURB = "f"
-    STOPPED_BY_CLEARMAP = "m"
-    STOPPED_BY_NO_PATH = "n"
-    STOPPED_BY_NOT_IN_MAP = "u"
-    STOPPED_BY_VIRTUAL_WALL = "v"
+    clean_job_status: CleanJobStatus
 
-    def to_clean_job_status(self) -> CleanJobStatus:
-        """Convert this value to a CleanJobStatus for compatibility proposes."""
-        if self == XmlStopReason.FINISHED:
-            return CleanJobStatus.FINISHED
-        if self in (
-            XmlStopReason.STOPPED_BY_APP,
-            XmlStopReason.STOPPED_BY_REMOTE_CONTROL,
-            XmlStopReason.STOPPED_BY_BUTTON,
-        ):
-            return CleanJobStatus.MANUALLY_STOPPED
-        return CleanJobStatus.FINISHED_WITH_WARNINGS
+    def __new__(cls, value: str, clean_job_status: CleanJobStatus) -> Self:
+        """Create new XmlStopReason."""
+        obj = str.__new__(cls, value)
+        obj._value_ = value
+        obj.clean_job_status = clean_job_status
+        return obj
+
+    FINISHED = "s", CleanJobStatus.FINISHED
+    BATTERY_LOW = "r", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_APP = "a", CleanJobStatus.MANUALLY_STOPPED
+    STOPPED_BY_REMOTE_CONTROL = "i", CleanJobStatus.MANUALLY_STOPPED
+    STOPPED_BY_BUTTON = "b", CleanJobStatus.MANUALLY_STOPPED
+    STOPPED_BY_WARNING = "w", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_NO_DISTURB = "f", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_CLEARMAP = "m", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_NO_PATH = "n", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_NOT_IN_MAP = "u", CleanJobStatus.FINISHED_WITH_WARNINGS
+    STOPPED_BY_VIRTUAL_WALL = "v", CleanJobStatus.FINISHED_WITH_WARNINGS

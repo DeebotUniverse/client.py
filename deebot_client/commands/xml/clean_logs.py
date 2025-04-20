@@ -64,7 +64,7 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
                             image_url="",  # Not available
                             type=log.attrib["t"],
                             area=int(log.attrib["a"]),
-                            stop_reason=stop_reason.to_clean_job_status(),
+                            stop_reason=stop_reason.clean_job_status,
                             duration=int(log.attrib["l"]),
                         )
                     )
