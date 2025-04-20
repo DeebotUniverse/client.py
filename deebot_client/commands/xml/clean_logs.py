@@ -42,32 +42,30 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
             return HandlingResult.analyse()
 
         resp_logs = xml.findall("CleanSt")
-        if len(resp_logs) >= 0:
-            logs: list[CleanLogEntry] = []
-            for log in resp_logs:
-                xml_stop_reason_attrib = str(log.attrib["f"])
-                stop_reason = XmlStopReason.FINISHED
-                try:
-                    stop_reason = get_enum(XmlStopReason, xml_stop_reason_attrib)
-                except ValueError as e:
-                    _LOGGER.error(
-                        "Could not decode stop reason: %s",
-                        xml_stop_reason_attrib,
-                        exc_info=e,
+        logs: list[CleanLogEntry] = []
+        for log in resp_logs:
+            xml_stop_reason_attrib = str(log.attrib["f"])
+            stop_reason = XmlStopReason.FINISHED
+            try:
+                stop_reason = get_enum(XmlStopReason, xml_stop_reason_attrib)
+            except ValueError as e:
+                _LOGGER.error(
+                    "Could not decode stop reason: %s",
+                    xml_stop_reason_attrib,
+                    exc_info=e,
+                )
+            try:
+                logs.append(
+                    CleanLogEntry(
+                        timestamp=int(log.attrib["s"]),
+                        image_url="",  # Not available
+                        type=log.attrib["t"],
+                        area=int(log.attrib["a"]),
+                        stop_reason=stop_reason.clean_job_status,
+                        duration=int(log.attrib["l"]),
                     )
-                try:
-                    logs.append(
-                        CleanLogEntry(
-                            timestamp=int(log.attrib["s"]),
-                            image_url="",  # Not available
-                            type=log.attrib["t"],
-                            area=int(log.attrib["a"]),
-                            stop_reason=stop_reason.clean_job_status,
-                            duration=int(log.attrib["l"]),
-                        )
-                    )
-                except Exception:  # pylint: disable = broad-exception-caught
-                    _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
-            event_bus.notify(CleanLogEvent(logs))
-            return CommandResult.success()
-        return HandlingResult.analyse()
+                )
+            except Exception:  # pylint: disable = broad-exception-caught
+                _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
+        event_bus.notify(CleanLogEvent(logs))
+        return CommandResult.success()
