@@ -88,10 +88,12 @@ class GetMapSet(XmlCommandWithMessageHandling):
             xml.attrib.get("ret") != "ok"
             or not (msid := xml.attrib.get("msid"))
             or not (area_type := xml.attrib.get("tp"))
-            or not (m := xml.findall("m"))
+            or not MapSetType.has_value(area_type)
         ):
             return HandlingResult.analyse()
-        subsets = cls._find_subsets(m)
+
+        xml_subsets = xml.findall("m")
+        subsets = cls._find_subsets(xml_subsets)
         event_bus.notify(MapSetEvent(MapSetType(area_type), subsets=subsets))
         args = {
             cls._ARGS_MSID: msid,
