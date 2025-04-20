@@ -17,6 +17,16 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
+    "speed", list(FanSpeedLevel) + [level.name for level in FanSpeedLevel]
+)
+def test_GetCleanSpeed_should_build_with_string_and_enums(
+    speed: str | FanSpeedLevel,
+) -> None:
+    """Test case for the way HA invokes the constructor."""
+    assert SetCleanSpeed(speed) is not None
+
+
+@pytest.mark.parametrize(
     ("speed", "expected_event"),
     [
         ("standard", FanSpeedEvent(FanSpeedLevel.NORMAL)),
