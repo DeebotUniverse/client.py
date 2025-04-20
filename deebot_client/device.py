@@ -67,11 +67,7 @@ class Device:
         )
 
         self.map: Final[Map] = Map(
-            self.execute_command,
-            self.events,
-            self.capabilities.map.minor.execute
-            if self.capabilities and self.capabilities.map
-            else None,
+            self.execute_command, self.events, self.capabilities.map
         )
 
         async def on_pos(event: PositionsEvent) -> None:

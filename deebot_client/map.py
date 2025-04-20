@@ -30,7 +30,7 @@ from .util import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
-    from .command import Command
+    from .capabilities import CapabilityMap
     from .device import DeviceCommandExecute
     from .event_bus import EventBus
 
@@ -44,14 +44,12 @@ class Map:
         self,
         execute_command: DeviceCommandExecute,
         event_bus: EventBus,
-        minor_map_command: Callable[[str, int], Command] | None,
+        capabilities: CapabilityMap | None,
     ) -> None:
         self._execute_command = execute_command
         self._event_bus = event_bus
 
-        self._minor_map_command: Callable[[str, int], Command] | None = (
-            minor_map_command
-        )
+        self._capabilities = capabilities
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
         self._last_image: str | None = None
@@ -104,11 +102,11 @@ class Map:
                     if (
                         self._map_data.map_piece_crc32_indicates_update(idx, value)
                         and event.requested
-                        and self._minor_map_command is not None
+                        and self._capabilities is not None
                     ):
                         tg.create_task(
                             self._execute_command(
-                                self._minor_map_command(event.map_id, idx)
+                                self._capabilities.minor.execute(event.map_id, idx)
                             )
                         )
 

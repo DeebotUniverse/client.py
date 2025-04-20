@@ -27,11 +27,7 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
-from deebot_client.commands.json.map import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapTrace,
-)
+from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo

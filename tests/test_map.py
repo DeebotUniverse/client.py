@@ -6,7 +6,6 @@ from unittest.mock import ANY, AsyncMock, Mock, call
 
 import pytest
 
-from deebot_client.commands.json import GetMinorMap
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
@@ -86,7 +85,7 @@ async def test_Map_subscriptions(
     events_with_subscriber: list[type[Event]],
 ) -> None:
     prepare_fn(event_bus_mock)
-    map = Map(execute_mock, event_bus_mock, GetMinorMap)
+    map = Map(execute_mock, event_bus_mock, None)
 
     calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
     event_bus_mock.subscribe.assert_has_calls(calls)
@@ -131,7 +130,7 @@ async def setup_map(execute_mock: AsyncMock, event_bus: EventBus) -> Map:
     async def on_change(_: MapChangedEvent) -> None:
         pass
 
-    map = Map(execute_mock, event_bus, GetMinorMap)
+    map = Map(execute_mock, event_bus, None)
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
     return map
