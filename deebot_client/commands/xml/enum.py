@@ -32,3 +32,11 @@ class XmlStopReason(StrEnum):
     STOPPED_BY_NO_PATH = "n", CleanJobStatus.FINISHED_WITH_WARNINGS
     STOPPED_BY_NOT_IN_MAP = "u", CleanJobStatus.FINISHED_WITH_WARNINGS
     STOPPED_BY_VIRTUAL_WALL = "v", CleanJobStatus.FINISHED_WITH_WARNINGS
+
+    @classmethod
+    def from_value(cls, value: str) -> XmlStopReason:
+        """Fetch the right enum member given its string value."""
+        for elem in cls.__members__.values():
+            if elem.value == value:
+                return elem
+        raise ValueError(value)

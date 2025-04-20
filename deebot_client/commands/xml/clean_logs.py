@@ -11,7 +11,6 @@ from deebot_client.events import (
 )
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
-from deebot_client.util import get_enum
 
 from .common import XmlCommandWithMessageHandling
 from .enum import XmlStopReason
@@ -47,7 +46,7 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
             xml_stop_reason_attrib = str(log.attrib["f"])
             stop_reason = XmlStopReason.FINISHED
             try:
-                stop_reason = get_enum(XmlStopReason, xml_stop_reason_attrib)
+                stop_reason = XmlStopReason.from_value(xml_stop_reason_attrib)
             except ValueError as e:
                 _LOGGER.error(
                     "Could not decode stop reason: %s",

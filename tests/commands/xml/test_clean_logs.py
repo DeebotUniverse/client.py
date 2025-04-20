@@ -20,7 +20,7 @@ if TYPE_CHECKING:
     ("payload", "expected_event"),
     [
         (
-            "<CleanSt a='0' s='1710433763' l='14' t='' f='a'/><CleanSt a='1' s='1710433269' l='22' t='' f='a'/>",
+            "<CleanSt a='0' s='1710433763' l='14' t='' f='s'/><CleanSt a='1' s='1710433269' l='22' t='' f='s'/>",
             CleanLogEvent(
                 [
                     CleanLogEntry(1710433763, "", "", 0, CleanJobStatus.FINISHED, 14),
@@ -28,9 +28,24 @@ if TYPE_CHECKING:
                 ]
             ),
         ),
+        (
+            "<CleanSt a='20' s='1710244976' l='1392' t='a' f='a'/>"
+            "<CleanSt a='wrong' s='1710083567' l='894' t='a' f='a'/>"
+            "<CleanSt a='21' s='1710244999' l='2392' t='a' f='????'/>",
+            CleanLogEvent(
+                [
+                    CleanLogEntry(
+                        1710244976, "", "a", 20, CleanJobStatus.MANUALLY_STOPPED, 1392
+                    ),
+                    CleanLogEntry(
+                        1710244999, "", "a", 21, CleanJobStatus.FINISHED, 2392
+                    ),
+                ]
+            ),
+        ),
         ("", CleanLogEvent([])),
     ],
-    ids=["finished_two_areas", "no_data"],
+    ids=["finished_two_areas", "skipping_invalid_data", "no_data"],
 )
 async def test_get_clean_logs(payload: str, expected_event: Event | None) -> None:
     json = get_request_xml(f"<ctl ret='ok'>{payload}</ctl>")
