@@ -18,6 +18,7 @@ from deebot_client.capabilities import (
     CapabilitySetTypes,
     CapabilityStation,
     CapabilityStats,
+    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands import StationAction
@@ -84,9 +85,8 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
     auto_empty,
+    water_info,
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.models import StaticDeviceInfo
@@ -198,15 +198,18 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySetTypes(
-            event=WaterInfoEvent,
-            get=[GetWaterInfo()],
-            set=SetWaterInfo,
-            types=(
-                WaterAmount.LOW,
-                WaterAmount.MEDIUM,
-                WaterAmount.HIGH,
+        water=CapabilityWater(
+            amount=CapabilitySetTypes(
+                event=water_info.WaterAmountEvent,
+                get=[GetWaterInfo()],
+                set=SetWaterInfo,
+                types=(
+                    water_info.WaterAmount.LOW,
+                    water_info.WaterAmount.MEDIUM,
+                    water_info.WaterAmount.HIGH,
+                ),
             ),
+            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),
     ),
 )

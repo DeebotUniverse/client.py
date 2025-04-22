@@ -48,11 +48,10 @@ from deebot_client.events import (
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
     WorkMode,
     WorkModeEvent,
     auto_empty,
+    water_info,
 )
 
 if TYPE_CHECKING:
@@ -230,6 +229,18 @@ class CapabilityStation:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityWater:
+    """Capabilities for water."""
+
+    amount: CapabilitySetTypes[
+        water_info.WaterAmountEvent,
+        [water_info.WaterAmount | str],
+        water_info.WaterAmount,
+    ]
+    mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
+
+
+@dataclass(frozen=True, kw_only=True)
 class Capabilities(ABC):
     """Capabilities."""
 
@@ -252,9 +263,7 @@ class Capabilities(ABC):
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None
     stats: CapabilityStats
-    water: (
-        CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None
-    ) = None
+    water: CapabilityWater | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

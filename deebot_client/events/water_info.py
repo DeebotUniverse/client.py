@@ -2,10 +2,17 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass, field
 from enum import IntEnum, unique
 
-from .base import Event
+from .base import ValueEvent
+
+__all__ = [
+    "MopAttachedEvent",
+    "SweepType",
+    "WaterAmount",
+    "WaterAmountEvent",
+    "WaterSweepTypeEvent",
+]
 
 
 @unique
@@ -26,11 +33,6 @@ class SweepType(IntEnum):
     DEEP = 2
 
 
-@dataclass(frozen=True)
-class WaterInfoEvent(Event):
-    """Water info event representation."""
-
-    amount: WaterAmount
-    # None means no data available
-    sweep_type: SweepType | None = None
-    mop_attached: bool | None = field(kw_only=True, default=None)
+WaterAmountEvent = ValueEvent[WaterAmount]
+WaterSweepTypeEvent = ValueEvent[SweepType]
+MopAttachedEvent = ValueEvent[bool]

@@ -82,7 +82,7 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.events.water_info import WaterInfoEvent
+from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware import deebot as hardware_deebot, get_static_device_info
 
 if TYPE_CHECKING:
@@ -178,6 +178,7 @@ async def test_get_static_device_info(
                 MapChangedEvent: [],
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
                 OtaEvent: [GetOta()],
@@ -188,7 +189,7 @@ async def test_get_static_device_info(
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
                 VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
+                WaterAmountEvent: [GetWaterInfo()],
             },
         ),
         (
@@ -221,6 +222,7 @@ async def test_get_static_device_info(
                 MajorMapEvent: [GetMajorMap()],
                 MapChangedEvent: [],
                 MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
                 OtaEvent: [GetOta()],
@@ -233,7 +235,7 @@ async def test_get_static_device_info(
                 TrueDetectEvent: [GetTrueDetect()],
                 VoiceAssistantStateEvent: [GetVoiceAssistantState()],
                 VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
+                WaterAmountEvent: [GetWaterInfo()],
             },
         ),
     ],
