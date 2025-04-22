@@ -5,17 +5,19 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deebot_client.messages.xml.battery import BatteryInfo
+from deebot_client.messages.xml.pos import Pos
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
     from deebot_client.message import Message
 
-__all__: Sequence[str] = ["BatteryInfo"]
+__all__: Sequence[str] = ["BatteryInfo", "Pos"]
 # fmt: off
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
-    BatteryInfo
+    BatteryInfo,
+    Pos
 ]
 # fmt: on
 
