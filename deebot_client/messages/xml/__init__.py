@@ -6,9 +6,15 @@ from typing import TYPE_CHECKING
 
 from deebot_client.messages.xml.battery import BatteryInfo
 from deebot_client.messages.xml.charge import ChargeState
-from deebot_client.messages.xml.clean import CleanReport, CleanSt
+from deebot_client.messages.xml.clean import (
+    CleanedPos,
+    CleanReport,
+    CleanReportServer,
+    CleanSt,
+)
 from deebot_client.messages.xml.map import MapP
 from deebot_client.messages.xml.pos import Pos
+from deebot_client.messages.xml.sleep import SleepStatus
 from deebot_client.messages.xml.water_info import WaterBoxInfo
 
 if TYPE_CHECKING:
@@ -18,9 +24,12 @@ __all__ = [
     "BatteryInfo",
     "ChargeState",
     "CleanReport",
+    "CleanReportServer",
     "CleanSt",
+    "CleanedPos",
     "MapP",
     "Pos",
+    "SleepStatus",
     "WaterBoxInfo",
 ]
 # fmt: off
@@ -29,10 +38,13 @@ _MESSAGES: list[type[Message]] = [
     BatteryInfo,
     ChargeState,
     CleanReport,
-    WaterBoxInfo,
-    Pos,
+    CleanReportServer,
+    CleanSt,
+    CleanedPos,
     MapP,
-    CleanSt
+    Pos,
+    SleepStatus,
+    WaterBoxInfo,
 ]
 # fmt: on
 

@@ -4,11 +4,18 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
+from deebot_client.events import (
+    FanSpeedEvent,
+    FanSpeedLevel,
+    Position,
+    PositionsEvent,
+    StateEvent,
+)
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 from deebot_client.messages.xml.common import XmlMessage
 from deebot_client.models import CleanAction, State
+from deebot_client.rs.map import PositionType
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -43,6 +50,8 @@ class CleanReport(XmlMessage):
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
+        b"<ctl ts='1744467249311' td='CleanReport'><clean type='auto' speed='standard' st='s' rsn='a' a='' l='' sts=''/></ctl>"
+
         :return: A message response
         """
         if (clean := xml.find("clean")) is None:
@@ -64,3 +73,45 @@ class CleanReport(XmlMessage):
                 _LOGGER.debug("Ignored CleanState %s", clean_action)
 
         return HandlingResult.success()
+
+
+class CleanReportServer(XmlMessage):
+    """CleanReportServer message."""
+
+    NAME = "CleanReportServer"
+
+    @classmethod
+    def _handle_xml(cls, _event_bus: EventBus, _xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
+
+        b"<ctl ts='1744467262312' td='CleanReportServer' act='s' type='auto' cs='1134230540'/>"
+        b"<ctl ts='1744467393682' td='CleanReportServer' act='h' type='auto' sts='1744467262' cs='1134230540' area='1' last='76' mapCount='6'/>"
+
+        :return: A message response
+        """
+        return HandlingResult.analyse()
+
+
+class CleanedPos(XmlMessage):
+    """CleanedPos message."""
+
+    NAME = "CleanedPos"
+
+    @classmethod
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
+
+        b"<ctl ts='1744467393682' td='CleanedPos' t='p' p='-2450,-996' a='-88' csid='1134230540'/>"
+
+        :return: A message response
+        """
+        if p := xml.attrib.get("p"):
+            p_x, p_y = p.split(",", 2)
+            p_a = xml.attrib.get("a", 0)
+            position = Position(
+                type=PositionType.DEEBOT, x=int(p_x), y=int(p_y), a=int(p_a)
+            )
+            event_bus.notify(PositionsEvent(positions=[position]))
+            return HandlingResult.success()
+
+        return HandlingResult.analyse()

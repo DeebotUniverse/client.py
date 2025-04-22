@@ -6,14 +6,15 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import CommandResult
 from deebot_client.events import (
-    CleanJobStatus,
     CleanLogEntry,
     CleanLogEvent,
 )
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
+from deebot_client.util import get_enum
 
 from .common import XmlCommandWithMessageHandling
+from .enum import XmlStopReason
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -46,6 +47,16 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
         if len(resp_logs) >= 0:
             logs: list[CleanLogEntry] = []
             for log in resp_logs:
+                xml_stop_reason_attrib = str(log.attrib["f"])
+                stop_reason = XmlStopReason.FINISHED
+                try:
+                    stop_reason = get_enum(XmlStopReason, xml_stop_reason_attrib)
+                except Exception as e:
+                    _LOGGER.error(
+                        "Could not decode stop reason: %s",
+                        xml_stop_reason_attrib,
+                        exc_info=e,
+                    )
                 try:
                     logs.append(
                         CleanLogEntry(
@@ -53,7 +64,7 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
                             image_url="",  # Missing
                             type=log.attrib["t"],
                             area=int(log.attrib["a"]),
-                            stop_reason=CleanJobStatus.FINISHED,  # To be extracted
+                            stop_reason=stop_reason.to_clean_job_status(),  # To be extracted
                             duration=int(log.attrib["l"]),
                         )
                     )
