@@ -108,9 +108,7 @@ class XmlCommandMqttP2P(XmlCommand, CommandMqttP2P, ABC):
             data = response_payload
         else:
             msg = "Unsupported message data type {message_type}"
-            raise TypeError(
-                msg.format(essage_type=type(response_payload))
-            )
+            raise TypeError(msg.format(essage_type=type(response_payload)))
         self._handle_mqtt_p2p(event_bus, data)
 
     @abstractmethod

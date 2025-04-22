@@ -26,7 +26,7 @@ class Clean(ExecuteCommand):
     HAS_SUB_ELEMENT = True
 
     def __init__(
-            self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
+        self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
     ) -> None:
         # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
 
@@ -46,11 +46,11 @@ class CleanArea(ExecuteCommand):
     HAS_SUB_ELEMENT = True
 
     def __init__(
-            self,
-            mode: CleanMode,
-            area: str,
-            cleanings: int = 1,
-            speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
+        self,
+        mode: CleanMode,
+        area: str,
+        cleanings: int = 1,
+        speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
     ) -> None:
         # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
 

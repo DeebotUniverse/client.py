@@ -5,7 +5,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING
 
-from defusedxml import ElementTree  # type: ignore[import-untyped]
+from defusedxml import ElementTree as ET # type: ignore[import-untyped]
 
 from deebot_client.message import MessageStr
 

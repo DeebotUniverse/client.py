@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 _LOGGER = get_logger(__name__)
 
+
 class CleanSt(XmlMessage):
     """CleanSt message."""
 
