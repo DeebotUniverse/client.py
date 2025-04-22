@@ -25,7 +25,7 @@ class XmlMessage(MessageStr, ABC):
 
         :return: A message response
         """
-        xml = ElementTree.fromstring(message)
+        xml = ET.fromstring(message)
         return cls._handle_xml(event_bus, xml)
 
     @classmethod
