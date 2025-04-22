@@ -33,7 +33,7 @@ class GetChargeState(XmlCommandWithMessageHandling):
         if (charge := xml.find("charge")) is not None and (
             charge_type := charge.attrib["type"]
         ) is not None:
-            match charge_type:
+            match charge_type.lower():
                 case "slotcharging" | "slot_charging" | "wirecharging":
                     status = State.DOCKED
                 case "idle":
