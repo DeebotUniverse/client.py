@@ -14,6 +14,7 @@ from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
 from .command import Command
+from .const import DataType
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
@@ -37,7 +38,6 @@ if TYPE_CHECKING:
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
-
 
 DeviceCommandExecute = Callable[[Command], Coroutine[Any, Any, dict[str, Any]]]
 
@@ -200,15 +200,30 @@ class Device:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            if message := get_message(message_name, self._device_info.static.data_type):
+            message_data_type = self._device_info.static.data_type
+            if message := get_message(message_name, message_data_type):
                 if isinstance(message_data, dict):
                     data = message_data
-                else:
+                elif message_data_type == DataType.JSON:
                     data = json.loads(message_data)
+                elif isinstance(message_data, bytes):
+                    data = message_data.decode()
+                elif isinstance(message_data, bytearray):
+                    data = bytes(message_data).decode()
+                elif isinstance(message_data, str):
+                    data = message_data
+                else:
+                    msg = "Unsupported message data type {message_name}: {message_type}"
+                    raise TypeError(
+                        msg.format(
+                            message_name=message_name, message_type=type(message_data)
+                        )
+                    )
 
-                fw_version = data.get("header", {}).get("fwVer", None)
-                if fw_version:
-                    self.fw_version = fw_version
+                if isinstance(data, dict):
+                    fw_version = data.get("header", {}).get("fwVer", None)
+                    if fw_version:
+                        self.fw_version = fw_version
 
                 message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except

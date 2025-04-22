@@ -16,6 +16,7 @@ from .life_span import GetLifeSpan
 from .play_sound import PlaySound
 from .pos import GetPos
 from .stats import GetCleanSum
+from .water_info import GetWaterBoxInfo, GetWaterPermeability
 
 if TYPE_CHECKING:
     from .common import XmlCommand
@@ -32,6 +33,8 @@ __all__ = [
     "GetError",
     "GetLifeSpan",
     "GetPos",
+    "GetWaterBoxInfo",
+    "GetWaterPermeability",
     "PlaySound",
     "SetCleanSpeed",
 ]
@@ -47,6 +50,8 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetCleanSpeed,
     GetCleanState,
     GetLifeSpan,
+    GetWaterBoxInfo,
+    GetWaterPermeability,
     SetCleanSpeed,
     PlaySound,
 ]
