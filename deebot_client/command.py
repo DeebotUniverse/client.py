@@ -324,8 +324,15 @@ def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
     try:
         return type_(value)
     except ValueError as err:
-        msg = f'Could not convert "{value}" of {name} into {type_}'
-        raise DeebotError(msg) from err
+        if hasattr(type_, "from_xml"):
+            try:
+                return type_.from_xml(value)
+            except ValueError as err2:
+                msg = f'Could not convert "{value}" of {name} into {type_}'
+                raise DeebotError(msg) from err2
+        else:
+            msg = f'Could not convert "{value}" of {name} into {type_}'
+            raise DeebotError(msg) from err
 
 
 class GetCommand(CommandWithMessageHandling, ABC):
