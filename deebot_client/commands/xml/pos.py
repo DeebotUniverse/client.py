@@ -20,11 +20,11 @@ class PosParser:
     """Support class for producing Pos events."""
 
     @classmethod
-    def __parse_xml(
+    def _parse_xml(
         cls, position_type: PositionType, event_bus: EventBus, xml: Element
     ) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers."""
-        if (p := xml.attrib.get("p")) and (xml.attrib.get("valid", "1")) != "1":
+        if (p := xml.attrib.get("p")) and (xml.attrib.get("valid", "1")) == "1":
             p_x, p_y = p.split(",", 2)
             p_a = xml.attrib.get("a", 0)
             position = Position(type=position_type, x=int(p_x), y=int(p_y), a=int(p_a))
@@ -48,7 +48,7 @@ class GetPos(XmlCommandWithMessageHandling, PosParser):
         if xml.attrib.get("ret") != "ok" or xml.attrib.get("t") != "p":
             return HandlingResult.analyse()
 
-        return cls.__parse_xml(PositionType.DEEBOT, event_bus, xml)
+        return cls._parse_xml(PositionType.DEEBOT, event_bus, xml)
 
 
 class GetChargerPos(XmlCommandWithMessageHandling, PosParser):
@@ -65,4 +65,4 @@ class GetChargerPos(XmlCommandWithMessageHandling, PosParser):
         if xml.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        return cls.__parse_xml(PositionType.CHARGER, event_bus, xml)
+        return cls._parse_xml(PositionType.CHARGER, event_bus, xml)
