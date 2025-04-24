@@ -45,6 +45,23 @@ class GetMapSt(XmlCommandWithMessageHandling):
         event_bus.notify(CachedMapInfoEvent(name="", active=built))
         return HandlingResult.success()
 
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> CommandResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if result.state == HandlingState.SUCCESS:
+            return CommandResult(
+                result.state,
+                result.args,
+                [GetMapSet(entry) for entry in MapSetType],
+            )
+
+        return result
+
 
 class GetMapSet(XmlCommandWithMessageHandling):
     """GetMapSet command.
@@ -61,15 +78,12 @@ class GetMapSet(XmlCommandWithMessageHandling):
 
     def __init__(
         self,
-        # pylint: disable=unused-argument
-        mid: str,  # noqa: ARG002
-        # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.VIRTUAL_WALLS,
+        map_set_type: (MapSetType | str) = MapSetType.VIRTUAL_WALLS,
     ) -> None:
-        if isinstance(type, MapSetType):
-            type = type.value
+        if isinstance(map_set_type, MapSetType):
+            map_set_type = map_set_type.value
 
-        super().__init__({"tp": type})
+        super().__init__({"tp": map_set_type})
 
     @classmethod
     def _find_subsets(cls, maps: list[Element]) -> list[int]:

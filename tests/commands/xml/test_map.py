@@ -32,7 +32,12 @@ from tests.commands.xml import get_request_xml
 async def test_GetMapSt(built_flag: str, expected_result: bool) -> None:
     json = get_request_xml(f"<ctl ret='ok' st='{built_flag}' method='auto'/>")
     await assert_command(
-        GetMapSt(), json, CachedMapInfoEvent(name="", active=expected_result)
+        GetMapSt(),
+        json,
+        CachedMapInfoEvent(name="", active=expected_result),
+        command_result=CommandResult(
+            HandlingState.SUCCESS, None, [GetMapSet(t) for t in MapSetType]
+        ),
     )
 
 
@@ -85,7 +90,7 @@ async def test_GetMapSet(
         PullM(mid=subset, msid="1", type=type_as_enum) for subset in subsets
     ]
     await assert_command(
-        GetMapSet("unused", type=map_type),
+        GetMapSet(map_type),
         json,
         MapSetEvent(
             map_type if isinstance(map_type, MapSetType) else MapSetType(map_type),
