@@ -14,7 +14,7 @@ from .error import GetError
 from .fan_speed import GetFanSpeed
 from .life_span import GetLifeSpan
 from .play_sound import PlaySound
-from .pos import GetPos
+from .pos import GetChargerPos, GetPos
 from .stats import GetCleanSum
 
 if TYPE_CHECKING:
@@ -24,6 +24,7 @@ __all__ = [
     "Charge",
     "GetBatteryInfo",
     "GetChargeState",
+    "GetChargerPos",
     "GetCleanLogs",
     "GetCleanSum",
     "GetError",
@@ -37,9 +38,11 @@ __all__ = [
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
     GetBatteryInfo,
+    GetChargerPos,
     GetCleanLogs,
     GetError,
     GetLifeSpan,
+    GetPos,
     PlaySound,
 ]
 # fmt: on

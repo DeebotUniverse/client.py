@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import Position, PositionsEvent
-from deebot_client.message import HandlingResult
+from deebot_client.commands.xml.pos import PosParser
 from deebot_client.messages.xml.common import XmlMessage
 from deebot_client.rs.map import PositionType
 
@@ -13,22 +12,14 @@ if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
     from deebot_client.event_bus import EventBus
+    from deebot_client.message import HandlingResult
 
 
-class Pos(XmlMessage):
+class Pos(XmlMessage, PosParser):
     """Pos message."""
 
     NAME = "Pos"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
-        if p := xml.attrib.get("p"):
-            p_x, p_y = p.split(",", 2)
-            p_a = xml.attrib.get("a", 0)
-            position = Position(
-                type=PositionType.DEEBOT, x=int(p_x), y=int(p_y), a=int(p_a)
-            )
-            event_bus.notify(PositionsEvent(positions=[position]))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        return cls.__parse_xml(PositionType.DEEBOT, event_bus, xml)
