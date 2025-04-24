@@ -21,15 +21,12 @@ def test_Pos(position: tuple[int, int, int]) -> None:
 
 
 @pytest.mark.parametrize(
-    ("xml_message", "expected_result_state"),
-    [
-        ('<ctl td="Pos" t="p" a="89" valid="1" />', HandlingState.ANALYSE_LOGGED),
-        ('<ctl td="Pos" t="??" p="0,0" a="89" valid="1" />', HandlingState.ERROR),
-        (
-            '<ctl td="Pos" t="p" p="0,0" a="89" valid="0" />',
-            HandlingState.ANALYSE_LOGGED,
-        ),
-    ],
+    "xml_message",
+    {
+        '<ctl td="Pos" t="p" a="89" valid="1" />',
+        '<ctl td="Pos" t="??" p="0,0" a="89" valid="1" />',
+        '<ctl td="Pos" t="p" p="0,0" a="89" valid="0" />',
+    },
 )
-def test_Pos_error(xml_message: str, expected_result_state: HandlingState) -> None:
-    assert_message_failure(Pos, xml_message, expected_result_state)
+def test_Pos_error(xml_message: str) -> None:
+    assert_message_failure(Pos, xml_message, HandlingState.ANALYSE_LOGGED)

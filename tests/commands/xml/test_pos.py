@@ -46,7 +46,7 @@ async def test_get_charger_pos() -> None:
     expected_event = PositionsEvent(
         positions=[Position(type=PositionType.CHARGER, x=77, y=-5, a=-3)]
     )
-    await assert_command(GetPos(), json, expected_event)
+    await assert_command(GetChargerPos(), json, expected_event)
 
 
 @pytest.mark.parametrize(
