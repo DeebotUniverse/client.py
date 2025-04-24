@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import Position, PositionsEvent
 from deebot_client.message import HandlingResult
+from deebot_client.messages.xml import Pos
 from deebot_client.rs.map import PositionType
 
 from .common import XmlCommandWithMessageHandling
@@ -16,25 +16,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class PosParser:
-    """Support class for producing Pos events."""
-
-    @classmethod
-    def _parse_xml(
-        cls, position_type: PositionType, event_bus: EventBus, xml: Element
-    ) -> HandlingResult:
-        """Handle xml message and notify the correct event subscribers."""
-        if (p := xml.attrib.get("p")) and (xml.attrib.get("valid", "1")) == "1":
-            p_x, p_y = p.split(",", 2)
-            p_a = xml.attrib.get("a", 0)
-            position = Position(type=position_type, x=int(p_x), y=int(p_y), a=int(p_a))
-            event_bus.notify(PositionsEvent(positions=[position]))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
-
-
-class GetPos(XmlCommandWithMessageHandling, PosParser):
+class GetPos(XmlCommandWithMessageHandling, Pos):
     """GetPos command."""
 
     NAME = "GetPos"
@@ -51,7 +33,7 @@ class GetPos(XmlCommandWithMessageHandling, PosParser):
         return cls._parse_xml(PositionType.DEEBOT, event_bus, xml)
 
 
-class GetChargerPos(XmlCommandWithMessageHandling, PosParser):
+class GetChargerPos(XmlCommandWithMessageHandling, Pos):
     """GetChargerPos command."""
 
     NAME = "GetChargerPos"
