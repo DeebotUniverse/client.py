@@ -8,7 +8,7 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .station_state import OnStationState
-from .stats import ReportStats
+from .stats import ReportStats, OnStats
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -17,6 +17,7 @@ __all__ = [
     "OnBattery",
     "OnMapSetV2",
     "ReportStats",
+    "OnStats",
 ]
 
 # fmt: off
@@ -29,6 +30,8 @@ _MESSAGES: list[type[Message]] = [
     OnMapSetV2,
 
     OnStationState,
+
+    OnStats,
 
     ReportStats,
 ]
