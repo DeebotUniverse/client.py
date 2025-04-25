@@ -19,12 +19,26 @@ class StrEnumWithXml(StrEnum):
         return obj
 
     @classmethod
-    def from_xml(cls, value: str | None) -> Self:
-        """Convert from xml value."""
+    def _from_xml(cls, value: str | None) -> Self | None:
+        """Convert from xml value, returning None if the value is not supported."""
         if value:
             for member in cls:
                 if member.xml_value == value:
                     return member
+        return None
+
+    @classmethod
+    def is_valid_xml_value(cls, value: str | None) -> bool:
+        """Convert from xml value."""
+        result = cls._from_xml(value)
+        return result is not None
+
+    @classmethod
+    def from_xml(cls, value: str | None) -> Self:
+        """Convert from xml value."""
+        result = cls._from_xml(value)
+        if result is not None:
+            return result
 
         msg = f"{value} is not a valid {cls.__name__}"
         raise ValueError(msg)
@@ -43,12 +57,26 @@ class IntEnumWithXml(IntEnum):
         return obj
 
     @classmethod
-    def from_xml(cls, value: str | None) -> Self:
-        """Convert from xml value."""
+    def _from_xml(cls, value: str | None) -> Self | None:
+        """Convert from xml value, returning None if the value is not supported."""
         if value:
             for member in cls:
                 if member.xml_value == value:
                     return member
+        return None
+
+    @classmethod
+    def is_valid_xml_value(cls, value: str | None) -> bool:
+        """Convert from xml value."""
+        result = cls._from_xml(value)
+        return result is not None
+
+    @classmethod
+    def from_xml(cls, value: str | None) -> Self:
+        """Convert from xml value."""
+        result = cls._from_xml(value)
+        if result is not None:
+            return result
 
         msg = f"{value} is not a valid {cls.__name__}"
         raise ValueError(msg)

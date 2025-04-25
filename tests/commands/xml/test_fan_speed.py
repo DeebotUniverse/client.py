@@ -41,8 +41,8 @@ async def test_get_fan_speed(speed: str, expected_event: Event) -> None:
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>"],
-    ids=["error"],
+    ["<ctl ret='error'/>", "<ctl ret='ok' />", "<ctl ret='ok' speed='invalid'/>"],
+    ids=["error", "no_state", "invalid_speed"],
 )
 async def test_get_fan_speed_error(xml: str) -> None:
     json = get_request_xml(xml)

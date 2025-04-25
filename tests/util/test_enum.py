@@ -13,6 +13,7 @@ class _TestStrEnumWithXml(StrEnumWithXml):
 
     def assert_self_conversion(self) -> None:
         assert self == _TestStrEnumWithXml(self.value)
+        assert _TestStrEnumWithXml.is_valid_xml_value(self.xml_value) is True
         assert self == _TestStrEnumWithXml.from_xml(self.xml_value)
 
 
@@ -22,6 +23,7 @@ class _TestIntEnumWithXml(IntEnumWithXml):
 
     def assert_self_conversion(self) -> None:
         assert self == _TestIntEnumWithXml(self.value)
+        assert _TestIntEnumWithXml.is_valid_xml_value(self.xml_value) is True
         assert self == _TestIntEnumWithXml.from_xml(self.xml_value)
 
 
@@ -49,5 +51,6 @@ def test_EnumWithXml_conversion(
 def test_EnumWithXml_invalid_value(
     test_enum_cls: type[T], invalid_value: str | None
 ) -> None:
+    assert test_enum_cls.is_valid_xml_value(invalid_value) is False
     with pytest.raises(ValueError, match=str(invalid_value)):
         test_enum_cls.from_xml(invalid_value)
