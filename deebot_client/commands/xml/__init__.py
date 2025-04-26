@@ -41,16 +41,30 @@ __all__ = [
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
+    GetBatteryInfo,
+
+    Charge,
+
+    GetChargeState,
+
     Clean,
     CleanArea,
-    GetBatteryInfo,
-    GetChargerPos,
-    GetCleanLogs,
-    GetError,
     GetCleanState,
+
+    GetCleanLogs,
+
+    GetError,
+
+    GetFanSpeed,
+
     GetLifeSpan,
-    GetPos,
+
     PlaySound,
+
+    GetChargerPos,
+    GetPos,
+
+    GetCleanSum,
 ]
 # fmt: on
 

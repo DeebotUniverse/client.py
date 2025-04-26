@@ -17,6 +17,7 @@ __all__: Sequence[str] = ["BatteryInfo", "Pos"]
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
     BatteryInfo,
+
     Pos
 ]
 # fmt: on
