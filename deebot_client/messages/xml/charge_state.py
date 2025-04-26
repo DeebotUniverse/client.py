@@ -26,9 +26,10 @@ class ChargeState(XmlMessage):
 
         :return: A message response
         """
-        if (charge := xml.find("charge")) is not None:
-            type_ = charge.attrib["type"].lower()
-            match type_:
+        if (charge := xml.find("charge")) is not None and (
+            charge_type := charge.attrib["type"]
+        ) is not None:
+            match charge_type:
                 case "slotcharging" | "slot_charging" | "wirecharging":
                     status = State.DOCKED
                 case "idle":
@@ -37,8 +38,7 @@ class ChargeState(XmlMessage):
                     status = State.RETURNING
                 case _:
                     status = State.ERROR
-            if status:
-                event_bus.notify(StateEvent(status))
-                return HandlingResult.success()
+            event_bus.notify(StateEvent(status))
+            return HandlingResult.success()
 
         return HandlingResult.analyse()

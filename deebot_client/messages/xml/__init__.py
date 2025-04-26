@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deebot_client.messages.xml.battery import BatteryInfo
-from deebot_client.messages.xml.charge import ChargeState
+from deebot_client.messages.xml.charge_state import ChargeState
 from deebot_client.messages.xml.pos import Pos
 
 if TYPE_CHECKING:
