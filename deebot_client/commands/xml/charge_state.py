@@ -16,20 +16,15 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetChargeState(XmlCommandWithMessageHandling):
-    """GetChargeState command."""
-
-    NAME = "GetChargeState"
+class ChargeStateParser:
+    """Support class for producing ChargeState events."""
 
     @classmethod
-    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+    def _parse_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
         :return: A message response
         """
-        if xml.attrib.get("ret") != "ok":
-            return HandlingResult.analyse()
-
         if (charge := xml.find("charge")) is not None and (
             charge_type := charge.attrib["type"]
         ) is not None:
@@ -46,3 +41,20 @@ class GetChargeState(XmlCommandWithMessageHandling):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class GetChargeState(XmlCommandWithMessageHandling, ChargeStateParser):
+    """GetChargeState command."""
+
+    NAME = "GetChargeState"
+
+    @classmethod
+    def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
+        """Handle xml message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if xml.attrib.get("ret") != "ok":
+            return HandlingResult.analyse()
+
+        return cls._parse_xml(event_bus, xml)

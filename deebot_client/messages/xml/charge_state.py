@@ -4,18 +4,17 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import StateEvent
-from deebot_client.message import HandlingResult
+from deebot_client.commands.xml.charge_state import ChargeStateParser
 from deebot_client.messages.xml.common import XmlMessage
-from deebot_client.models import State
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
     from deebot_client.event_bus import EventBus
+    from deebot_client.message import HandlingResult
 
 
-class ChargeState(XmlMessage):
+class ChargeState(XmlMessage, ChargeStateParser):
     """ChargeState message."""
 
     NAME = "ChargeState"
@@ -26,19 +25,4 @@ class ChargeState(XmlMessage):
 
         :return: A message response
         """
-        if (charge := xml.find("charge")) is not None and (
-            charge_type := charge.attrib["type"]
-        ) is not None:
-            match charge_type.lower():
-                case "slotcharging" | "slot_charging" | "wirecharging":
-                    status = State.DOCKED
-                case "idle":
-                    status = State.IDLE
-                case "going":
-                    status = State.RETURNING
-                case _:
-                    status = State.ERROR
-            event_bus.notify(StateEvent(status))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        return cls._parse_xml(event_bus, xml)
