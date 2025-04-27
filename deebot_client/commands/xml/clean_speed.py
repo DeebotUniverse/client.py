@@ -6,8 +6,9 @@ from typing import TYPE_CHECKING
 
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingResult
+from deebot_client.util import get_enum
 
-from .common import XmlCommandWithMessageHandling
+from .common import ExecuteCommand, XmlCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -15,8 +16,8 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetFanSpeed(XmlCommandWithMessageHandling):
-    """GetFanSpeed command."""
+class GetCleanSpeed(XmlCommandWithMessageHandling):
+    """GetCleanSpeed command."""
 
     NAME = "GetCleanSpeed"
 
@@ -29,16 +30,16 @@ class GetFanSpeed(XmlCommandWithMessageHandling):
         if xml.attrib.get("ret") != "ok" or not (speed := xml.attrib.get("speed")):
             return HandlingResult.analyse()
 
-        event: FanSpeedEvent | None = None
+        event_bus.notify(FanSpeedEvent(FanSpeedLevel.from_xml(speed)))
+        return HandlingResult.success()
 
-        match speed.lower():
-            case "standard":
-                event = FanSpeedEvent(FanSpeedLevel.NORMAL)
-            case "strong":
-                event = FanSpeedEvent(FanSpeedLevel.MAX)
 
-        if event:
-            event_bus.notify(event)
-            return HandlingResult.success()
+class SetCleanSpeed(ExecuteCommand):
+    """SetCleanSpeed command."""
 
-        return HandlingResult.analyse()
+    NAME = "SetCleanSpeed"
+
+    def __init__(self, speed: FanSpeedLevel | str) -> None:
+        if isinstance(speed, str):
+            speed = get_enum(FanSpeedLevel, speed)
+        super().__init__({"speed": speed.xml_value})

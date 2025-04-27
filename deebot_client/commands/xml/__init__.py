@@ -11,9 +11,10 @@ from .charge import Charge
 from .charge_state import GetChargeState
 from .clean import Clean, CleanArea, GetCleanState
 from .clean_logs import GetCleanLogs
+from .clean_speed import GetCleanSpeed, SetCleanSpeed
 from .error import GetError
-from .fan_speed import GetFanSpeed
 from .life_span import GetLifeSpan
+from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
 from .pos import GetChargerPos, GetPos
 from .stats import GetCleanSum
@@ -29,13 +30,20 @@ __all__ = [
     "GetChargeState",
     "GetChargerPos",
     "GetCleanLogs",
+    "GetCleanSpeed",
     "GetCleanState",
     "GetCleanSum",
     "GetError",
-    "GetFanSpeed",
     "GetLifeSpan",
+    "GetMapM",
+    "GetMapSet",
+    "GetMapSt",
     "GetPos",
+    "GetTrM",
     "PlaySound",
+    "PullM",
+    "PullMP",
+    "SetCleanSpeed",
 ]
 
 # fmt: off
@@ -43,9 +51,9 @@ __all__ = [
 _COMMANDS: list[type[XmlCommand]] = [
     GetBatteryInfo,
 
-    Charge,
-
     GetChargeState,
+
+    Charge,
 
     Clean,
     CleanArea,
@@ -53,11 +61,19 @@ _COMMANDS: list[type[XmlCommand]] = [
 
     GetCleanLogs,
 
+    GetCleanSpeed,
+    SetCleanSpeed,
+
     GetError,
 
-    GetFanSpeed,
-
     GetLifeSpan,
+
+    GetMapM,
+    GetMapSet,
+    GetMapSt,
+    GetTrM,
+    PullM,
+    PullMP,
 
     PlaySound,
 

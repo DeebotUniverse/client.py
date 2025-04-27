@@ -4,9 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.events import StateEvent
 from deebot_client.message import HandlingResult
-from deebot_client.models import State
+from deebot_client.messages.xml import ChargeState
 
 from .common import XmlCommandWithMessageHandling
 
@@ -16,7 +15,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-class GetChargeState(XmlCommandWithMessageHandling):
+class GetChargeState(XmlCommandWithMessageHandling, ChargeState):
     """GetChargeState command."""
 
     NAME = "GetChargeState"
@@ -27,25 +26,7 @@ class GetChargeState(XmlCommandWithMessageHandling):
 
         :return: A message response
         """
-        status: State | None = None
-
         if xml.attrib.get("ret") != "ok":
             return HandlingResult.analyse()
 
-        if (charge := xml.find("charge")) is not None:
-            type_ = charge.attrib["type"].lower()
-            match type_:
-                case "slotcharging" | "slot_charging" | "wirecharging":
-                    status = State.DOCKED
-                case "idle":
-                    status = State.IDLE
-                case "going":
-                    status = State.RETURNING
-                case _:
-                    status = State.ERROR
-
-        if status:
-            event_bus.notify(StateEvent(status))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        return cls._parse_xml(event_bus, xml)
