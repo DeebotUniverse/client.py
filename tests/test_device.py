@@ -133,3 +133,15 @@ async def test_mac_address(
 
     assert device.mac == mac
     await device.teardown()
+
+
+async def test_behaviour_with_no_map_capability(
+    authenticator: Authenticator, device_info_no_map: DeviceInfo
+) -> None:
+    device = Device(device_info_no_map, authenticator)
+    # deactivate refresh event subscribe refresh calls
+    device.events._get_refresh_commands = lambda _: []
+
+    assert device.map is None
+
+    await device.teardown()

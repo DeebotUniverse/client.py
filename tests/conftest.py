@@ -129,6 +129,15 @@ async def test_mqtt_client(
 async def static_device_info() -> StaticDeviceInfo:
     info = await get_static_device_info("yna5xi")
     assert info is not None
+    assert info.capabilities.map is not None
+    return info
+
+
+@pytest.fixture
+async def static_device_info_no_map() -> StaticDeviceInfo:
+    info = await get_static_device_info("2ap5uq")
+    assert info is not None
+    assert info.capabilities.map is None
     return info
 
 
@@ -154,6 +163,17 @@ def device_info(
     return DeviceInfo(
         api_device_info,
         static_device_info,
+    )
+
+
+@pytest.fixture
+def device_info_no_map(
+    api_device_info: ApiDeviceInfo,
+    static_device_info_no_map: StaticDeviceInfo,
+) -> DeviceInfo:
+    return DeviceInfo(
+        api_device_info,
+        static_device_info_no_map,
     )
 
 

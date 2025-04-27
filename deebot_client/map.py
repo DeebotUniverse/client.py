@@ -44,7 +44,7 @@ class Map:
         self,
         execute_command: DeviceCommandExecute,
         event_bus: EventBus,
-        capabilities: CapabilityMap | None,
+        capabilities: CapabilityMap,
     ) -> None:
         self._execute_command = execute_command
         self._event_bus = event_bus
@@ -102,7 +102,6 @@ class Map:
                     if (
                         self._map_data.map_piece_crc32_indicates_update(idx, value)
                         and event.requested
-                        and self._capabilities is not None
                     ):
                         tg.create_task(
                             self._execute_command(

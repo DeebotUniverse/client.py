@@ -66,8 +66,10 @@ class Device:
             self.execute_command, self.capabilities.get_refresh_commands
         )
 
-        self.map: Final[Map] = Map(
-            self.execute_command, self.events, self.capabilities.map
+        self.map: Final[Map | None] = (
+            Map(self.execute_command, self.events, self.capabilities.map)
+            if self.capabilities.map
+            else None
         )
 
         async def on_pos(event: PositionsEvent) -> None:
@@ -142,7 +144,8 @@ class Device:
                 await self._available_task
 
         await self.events.teardown()
-        await self.map.teardown()
+        if self.map:
+            await self.map.teardown()
 
     async def _available_task_worker(self) -> None:
         while True:
