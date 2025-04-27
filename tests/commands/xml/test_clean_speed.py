@@ -40,17 +40,21 @@ async def test_get_fan_speed(speed: str, expected_event: Event) -> None:
 
 
 @pytest.mark.parametrize(
-    "xml",
-    ["<ctl ret='error'/>", "<ctl ret='ok' />", "<ctl ret='ok' speed='invalid'/>"],
+    ("xml", "expected_state"),
+    [
+        ("<ctl ret='error'/>", HandlingState.ANALYSE_LOGGED),
+        ("<ctl ret='ok' />", HandlingState.ANALYSE_LOGGED),
+        ("<ctl ret='ok' speed='invalid'/>", HandlingState.ERROR),
+    ],
     ids=["error", "no_state", "invalid_speed"],
 )
-async def test_get_fan_speed_error(xml: str) -> None:
+async def test_get_fan_speed_error(xml: str, expected_state: HandlingState) -> None:
     json = get_request_xml(xml)
     await assert_command(
         GetCleanSpeed(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        command_result=CommandResult(expected_state),
     )
 
 

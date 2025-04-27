@@ -27,11 +27,7 @@ class GetCleanSpeed(XmlCommandWithMessageHandling):
 
         :return: A message response
         """
-        if (
-            xml.attrib.get("ret") != "ok"
-            or not (speed := xml.attrib.get("speed"))
-            or not FanSpeedLevel.is_valid_xml_value(speed)
-        ):
+        if xml.attrib.get("ret") != "ok" or not (speed := xml.attrib.get("speed")):
             return HandlingResult.analyse()
 
         event_bus.notify(FanSpeedEvent(FanSpeedLevel.from_xml(speed)))
