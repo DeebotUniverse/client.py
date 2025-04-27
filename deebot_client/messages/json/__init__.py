@@ -32,7 +32,6 @@ _MESSAGES: list[type[Message]] = [
     OnStationState,
 
     OnStats,
-
     ReportStats,
 ]
 # fmt: on
