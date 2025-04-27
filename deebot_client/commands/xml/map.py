@@ -7,7 +7,6 @@ from typing import TYPE_CHECKING
 from deebot_client.command import Command, CommandResult
 from deebot_client.events import MajorMapEvent, MapSetEvent, MapSetType, MinorMapEvent
 from deebot_client.events.map import CachedMapInfoEvent, MapSubsetEvent
-from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState
 
 from .common import XmlCommandWithMessageHandling
@@ -17,8 +16,6 @@ if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
     from deebot_client.event_bus import EventBus
-
-_LOGGER = get_logger(__name__)
 
 
 class GetMapSt(XmlCommandWithMessageHandling):
@@ -247,7 +244,7 @@ class PullMP(XmlCommandWithMessageHandling):
         super().__init__({"pid": str(piece_index)})
 
     @classmethod
-    def _handle_xml(cls, _event_bus: EventBus, xml: Element) -> HandlingResult:
+    def _handle_xml(cls, _: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
         Sample message response:
@@ -285,7 +282,7 @@ class GetTrM(XmlCommandWithMessageHandling):
     NAME = "GetTrM"
 
     @classmethod
-    def _handle_xml(cls, _event_bus: EventBus, xml: Element) -> HandlingResult:
+    def _handle_xml(cls, _: EventBus, xml: Element) -> HandlingResult:
         """Handle xml message and notify the correct event subscribers.
 
         :return: A message response
