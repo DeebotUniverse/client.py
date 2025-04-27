@@ -307,7 +307,9 @@ class CommandMqttP2P(Command, ABC):
                 data.pop(name, None)
             else:
                 try:
-                    values[param.name or name] = _pop_or_raise(name, param.type_, data)
+                    values[param.name or name] = cls._pop_or_raise(
+                        name, param.type_, data
+                    )
                 except KeyError as err:
                     if not param.optional:
                         msg = f'"{name}" is missing in {data}'
@@ -318,14 +320,18 @@ class CommandMqttP2P(Command, ABC):
 
         return cls(**values)
 
+    @classmethod
+    def _pop_or_raise(cls, name: str, type_: type, data: dict[str, Any]) -> Any:
+        value = data.pop(name)
+        try:
+            return cls._decode(type_, value)
+        except ValueError as err:
+            msg = f'Could not convert "{value}" of {name} into {type_}'
+            raise DeebotError(msg) from err
 
-def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
-    value = data.pop(name)
-    try:
+    @classmethod
+    def _decode(cls, type_: type, value: Any) -> Any:
         return type_(value)
-    except ValueError as err:
-        msg = f'Could not convert "{value}" of {name} into {type_}'
-        raise DeebotError(msg) from err
 
 
 class GetCommand(CommandWithMessageHandling, ABC):
