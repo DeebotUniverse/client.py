@@ -6,12 +6,15 @@ import json
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
+import pytest
+
 from deebot_client.command import DeviceCommandResult
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.models import DeviceInfo
+from deebot_client.hardware import get_static_device_info
+from deebot_client.models import DeviceInfo, StaticDeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
@@ -135,12 +138,24 @@ async def test_mac_address(
     await device.teardown()
 
 
+def static_device_info_no_map() -> StaticDeviceInfo:
+    """Return a StaticDeviceInfo without map capability."""
+    info = asyncio.run(get_static_device_info("2ap5uq"))
+    assert info is not None
+    assert info.capabilities.map is None
+    return info
+
+
+@pytest.mark.parametrize(
+    "static_device_info",
+    [
+        static_device_info_no_map(),
+    ],
+)
 async def test_behaviour_with_no_map_capability(
-    authenticator: Authenticator, device_info_no_map: DeviceInfo
+    authenticator: Authenticator, device_info: DeviceInfo
 ) -> None:
-    device = Device(device_info_no_map, authenticator)
-    # deactivate refresh event subscribe refresh calls
-    device.events._get_refresh_commands = lambda _: []
+    device = Device(device_info, authenticator)
 
     assert device.map is None
 

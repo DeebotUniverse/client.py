@@ -134,14 +134,6 @@ async def static_device_info() -> StaticDeviceInfo:
 
 
 @pytest.fixture
-async def static_device_info_no_map() -> StaticDeviceInfo:
-    info = await get_static_device_info("2ap5uq")
-    assert info is not None
-    assert info.capabilities.map is None
-    return info
-
-
-@pytest.fixture
 def api_device_info() -> ApiDeviceInfo:
     return ApiDeviceInfo(
         {
@@ -163,17 +155,6 @@ def device_info(
     return DeviceInfo(
         api_device_info,
         static_device_info,
-    )
-
-
-@pytest.fixture
-def device_info_no_map(
-    api_device_info: ApiDeviceInfo,
-    static_device_info_no_map: StaticDeviceInfo,
-) -> DeviceInfo:
-    return DeviceInfo(
-        api_device_info,
-        static_device_info_no_map,
     )
 
 
