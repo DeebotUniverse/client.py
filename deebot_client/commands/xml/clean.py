@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
-from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
 from deebot_client.models import CleanAction, CleanMode, State
 
@@ -15,8 +14,6 @@ if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
 
     from deebot_client.event_bus import EventBus
-
-_LOGGER = get_logger(__name__)
 
 
 class Clean(ExecuteCommand):
@@ -28,8 +25,6 @@ class Clean(ExecuteCommand):
     def __init__(
         self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
     ) -> None:
-        # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
-
         super().__init__(
             {
                 "type": CleanMode.AUTO.xml_value,
@@ -52,8 +47,6 @@ class CleanArea(ExecuteCommand):
         cleanings: int = 1,
         speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
     ) -> None:
-        # <ctl><clean type='SpotArea' act='s' speed='standard' deep='1' mid='4,5'/></ctl>
-
         super().__init__(
             {
                 "type": mode.xml_value,
