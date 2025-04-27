@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from deebot_client.command import CommandResult
@@ -11,72 +13,63 @@ from tests.commands import assert_command
 
 from . import get_request_xml
 
+if TYPE_CHECKING:
+    from deebot_client.events.base import Event
+
 
 @pytest.mark.parametrize(
-    ("command", "command_result"),
+    "command",
     [
-        (Clean(CleanAction.START, speed=FanSpeedLevel.MAX), HandlingState.SUCCESS),
-        (Clean(CleanAction.PAUSE), HandlingState.SUCCESS),
+        Clean(CleanAction.START, speed=FanSpeedLevel.MAX),
+        Clean(CleanAction.PAUSE),
     ],
 )
-async def test_Clean(command: Clean, command_result: HandlingState) -> None:
+async def test_Clean(command: Clean) -> None:
     json = get_request_xml("<ctl ret='ok'/>")
     await assert_command(
-        command, json, None, command_result=CommandResult(command_result)
+        command, json, None, command_result=CommandResult(HandlingState.SUCCESS)
     )
 
 
 @pytest.mark.parametrize(
-    ("command", "command_result"),
+    "command",
     [
-        (CleanArea(CleanMode.SPOT_AREA, "4", 1), HandlingState.SUCCESS),
+        CleanArea(CleanMode.SPOT_AREA, "4", 1),
     ],
 )
-async def test_CleanArea(command: CleanArea, command_result: HandlingState) -> None:
+async def test_CleanArea(command: CleanArea) -> None:
     json = get_request_xml("<ctl ret='ok'/>")
     await assert_command(
-        command, json, None, command_result=CommandResult(command_result)
+        command, json, None, command_result=CommandResult(HandlingState.SUCCESS)
     )
 
 
 @pytest.mark.parametrize(
-    ("speed", "action", "expected_fan_speed_event", "expected_state_event"),
+    ("params", "expected_events"),
     [
         (
-            FanSpeedLevel.NORMAL,
-            CleanAction.START,
-            FanSpeedEvent(FanSpeedLevel.NORMAL),
-            StateEvent(State.CLEANING),
+            "speed='standard' st='s'",
+            [FanSpeedEvent(FanSpeedLevel.NORMAL), StateEvent(State.CLEANING)],
         ),
         (
-            FanSpeedLevel.MAX,
-            CleanAction.START,
-            FanSpeedEvent(FanSpeedLevel.MAX),
-            StateEvent(State.CLEANING),
+            "speed='strong' st='s'",
+            [FanSpeedEvent(FanSpeedLevel.MAX), StateEvent(State.CLEANING)],
         ),
         (
-            FanSpeedLevel.NORMAL,
-            CleanAction.PAUSE,
-            FanSpeedEvent(FanSpeedLevel.NORMAL),
-            StateEvent(State.PAUSED),
+            "speed='standard' st='p'",
+            [FanSpeedEvent(FanSpeedLevel.NORMAL), StateEvent(State.PAUSED)],
         ),
         (
-            None,
-            CleanAction.RESUME,
-            None,
-            StateEvent(State.IDLE),
+            "st='r'",
+            [StateEvent(State.IDLE)],
         ),
         (
-            None,
-            CleanAction.STOP,
-            None,
-            StateEvent(State.IDLE),
+            "st='h'",
+            [StateEvent(State.IDLE)],
         ),
         (
-            FanSpeedLevel.MAX,
-            None,
-            FanSpeedEvent(FanSpeedLevel.MAX),
-            None,
+            "speed='strong'",
+            [FanSpeedEvent(FanSpeedLevel.MAX)],
         ),
     ],
     ids=[
@@ -89,20 +82,16 @@ async def test_CleanArea(command: CleanArea, command_result: HandlingState) -> N
     ],
 )
 async def test_get_clean_state(
-    speed: FanSpeedLevel | None,
-    action: CleanAction | None,
-    expected_fan_speed_event: FanSpeedEvent,
-    expected_state_event: StateEvent,
+    params: str,
+    expected_events: list[Event],
 ) -> None:
-    speed_section = f"speed='{speed.xml_value}'" if speed is not None else ""
-    state_section = f"st='{action.xml_value}'" if action is not None else ""
     json = get_request_xml(
-        f"<ctl ret='ok'><clean type='auto' {speed_section} {state_section} t='0' a='0' s='0' tr=''/></ctl>"
+        f"<ctl ret='ok'><clean type='auto' {params} t='0' a='0' s='0' tr=''/></ctl>"
     )
     await assert_command(
         GetCleanState(),
         json,
-        [x for x in [expected_fan_speed_event, expected_state_event] if x is not None],
+        expected_events,
     )
 
 
