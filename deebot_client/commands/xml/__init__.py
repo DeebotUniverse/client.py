@@ -16,6 +16,7 @@ from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
 from .pos import GetChargerPos, GetPos
 from .stats import GetCleanSum
+from .water_info import GetWaterBoxInfo, GetWaterPermeability, SetWaterPermeability
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
@@ -40,11 +41,14 @@ __all__ = [
     "GetMapSt",
     "GetPos",
     "GetTrM",
+    "GetWaterBoxInfo",
+    "GetWaterPermeability",
     "PlaySound",
     "PullM",
     "PullMP",
     "ResetLifeSpan",
     "SetCleanSpeed",
+    "SetWaterPermeability",
 ]
 
 # fmt: off
@@ -83,6 +87,10 @@ _COMMANDS: list[type[XmlCommand]] = [
     GetPos,
 
     GetCleanSum,
+
+    GetWaterPermeability,
+    GetWaterBoxInfo,
+    SetWaterPermeability,
 ]
 # fmt: on
 
