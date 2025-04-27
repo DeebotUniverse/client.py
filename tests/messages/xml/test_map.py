@@ -53,4 +53,4 @@ def test_Trace(tf: int, tt: int, tr: str) -> None:
     },
 )
 def test_Trace_error(xml_message: str) -> None:
-    assert_message_failure(MapP, xml_message, HandlingState.ANALYSE_LOGGED)
+    assert_message_failure(Trace, xml_message, HandlingState.ANALYSE_LOGGED)
