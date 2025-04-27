@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 import json
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from testfixtures import LogCapture
 
@@ -58,7 +59,7 @@ async def assert_execute_command(
 async def assert_set_command(
     command: JsonSetCommand,
     args: dict[str, Any],
-    expected_get_command_event: Event,
+    expected_get_command_events: Event | Sequence[Event],
 ) -> None:
     await assert_execute_command(command, args)
 
@@ -76,7 +77,13 @@ async def assert_set_command(
 
     # Success
     command.handle_mqtt_p2p(event_bus, json.dumps(get_message_json(get_success_body())))
-    event_bus.notify.assert_called_once_with(expected_get_command_event)
+    if isinstance(expected_get_command_events, Sequence):
+        event_bus.notify.assert_has_calls(
+            [call(x) for x in expected_get_command_events]
+        )
+        assert event_bus.notify.call_count == len(expected_get_command_events)
+    else:
+        event_bus.notify.assert_called_once_with(expected_get_command_events)
 
     payload = json.dumps({"body": {"data": args}})
     mqtt_command = command.create_from_mqtt(payload)

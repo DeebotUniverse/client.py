@@ -10,12 +10,12 @@ from .battery import GetBatteryInfo
 from .charge import Charge
 from .charge_state import GetChargeState
 from .clean_logs import GetCleanLogs
+from .clean_speed import GetCleanSpeed, SetCleanSpeed
 from .error import GetError
-from .fan_speed import GetFanSpeed
 from .life_span import GetLifeSpan
 from .map import GetMapM, GetMapSet, GetMapSt, GetTrM, PullM, PullMP
 from .play_sound import PlaySound
-from .pos import GetPos
+from .pos import GetChargerPos, GetPos
 from .stats import GetCleanSum
 
 if TYPE_CHECKING:
@@ -25,10 +25,11 @@ __all__ = [
     "Charge",
     "GetBatteryInfo",
     "GetChargeState",
+    "GetChargerPos",
     "GetCleanLogs",
+    "GetCleanSpeed",
     "GetCleanSum",
     "GetError",
-    "GetFanSpeed",
     "GetLifeSpan",
     "GetMapM",
     "GetMapSet",
@@ -38,22 +39,40 @@ __all__ = [
     "PlaySound",
     "PullM",
     "PullMP",
+    "SetCleanSpeed",
 ]
 
 # fmt: off
 # ordered by file asc
 _COMMANDS: list[type[XmlCommand]] = [
     GetBatteryInfo,
+
+    GetChargeState,
+
+    Charge,
+
     GetCleanLogs,
+
+    GetCleanSpeed,
+    SetCleanSpeed,
+
     GetError,
+
     GetLifeSpan,
+
     GetMapM,
     GetMapSet,
     GetMapSt,
     GetTrM,
-    PlaySound,
     PullM,
-    PullMP
+    PullMP,
+
+    PlaySound,
+
+    GetChargerPos,
+    GetPos,
+
+    GetCleanSum,
 ]
 # fmt: on
 

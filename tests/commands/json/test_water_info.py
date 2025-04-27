@@ -1,12 +1,18 @@
 from __future__ import annotations
 
 import re
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from deebot_client.commands.json import GetWaterInfo, SetWaterInfo
-from deebot_client.events import SweepType, WaterAmount, WaterInfoEvent
+from deebot_client.events.water_info import (
+    MopAttachedEvent,
+    SweepType,
+    WaterAmount,
+    WaterAmountEvent,
+    WaterSweepTypeEvent,
+)
 from tests.helpers import (
     get_request_json,
     get_success_body,
@@ -14,32 +20,49 @@ from tests.helpers import (
 
 from . import assert_command, assert_set_command
 
+if TYPE_CHECKING:
+    from deebot_client.events import Event
+
 
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        ({"amount": 2}, WaterInfoEvent(WaterAmount.MEDIUM)),
+        ({"amount": 2}, WaterAmountEvent(WaterAmount.MEDIUM)),
         (
             {"amount": 1, "enable": 1},
-            WaterInfoEvent(WaterAmount.LOW, mop_attached=True),
+            [
+                WaterAmountEvent(WaterAmount.LOW),
+                MopAttachedEvent(True),
+            ],
         ),
         (
             {"amount": 4, "enable": 0},
-            WaterInfoEvent(WaterAmount.ULTRAHIGH, mop_attached=False),
+            [
+                WaterAmountEvent(WaterAmount.ULTRAHIGH),
+                MopAttachedEvent(False),
+            ],
         ),
         (
             {"amount": 4, "sweepType": 1, "enable": 0},
-            WaterInfoEvent(
-                WaterAmount.ULTRAHIGH, SweepType.STANDARD, mop_attached=False
-            ),
+            [
+                WaterAmountEvent(WaterAmount.ULTRAHIGH),
+                MopAttachedEvent(False),
+                WaterSweepTypeEvent(SweepType.STANDARD),
+            ],
         ),
         (
             {"amount": 4, "sweepType": 2, "enable": 0},
-            WaterInfoEvent(WaterAmount.ULTRAHIGH, SweepType.DEEP, mop_attached=False),
+            [
+                WaterAmountEvent(WaterAmount.ULTRAHIGH),
+                MopAttachedEvent(False),
+                WaterSweepTypeEvent(SweepType.DEEP),
+            ],
         ),
     ],
 )
-async def test_GetWaterInfo(json: dict[str, Any], expected: WaterInfoEvent) -> None:
+async def test_GetWaterInfo(
+    json: dict[str, Any], expected: Event | list[Event]
+) -> None:
     json = get_request_json(get_success_body(json))
     await assert_command(GetWaterInfo(), json, expected)
 
@@ -51,13 +74,13 @@ async def test_SetWaterInfo_Wateramount(
 ) -> None:
     command = SetWaterInfo(water_value, sweep_value)
     args = {"amount": 2}
+    expected_events: list[Event] = [
+        WaterAmountEvent(WaterAmount.MEDIUM),
+    ]
     if sweep_value:
         args["sweepType"] = 1
-    await assert_set_command(
-        command,
-        args,
-        WaterInfoEvent(WaterAmount.MEDIUM, SweepType.STANDARD if sweep_value else None),
-    )
+        expected_events.append(WaterSweepTypeEvent(SweepType.STANDARD))
+    await assert_set_command(command, args, expected_events)
 
 
 @pytest.mark.parametrize(

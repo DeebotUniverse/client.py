@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.util.enum import StrEnumWithXml
 
-from . import auto_empty, station
+from . import auto_empty, station, water_info
 from .auto_empty import AutoEmptyEvent
 from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -27,7 +27,6 @@ from .map import (
 )
 from .network import NetworkInfoEvent
 from .station import StationEvent
-from .water_info import SweepType, WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
@@ -56,13 +55,11 @@ __all__ = [
     "PositionsEvent",
     "StationEvent",
     "SweepModeEvent",
-    "SweepType",
-    "WaterAmount",
-    "WaterInfoEvent",
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
     "station",
+    "water_info",
 ]
 
 

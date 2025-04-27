@@ -16,6 +16,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
+    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -93,8 +94,7 @@ from deebot_client.events import (
     TotalStatsEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
+    water_info,
 )
 from deebot_client.events.efficiency_mode import EfficiencyMode
 from deebot_client.models import StaticDeviceInfo
@@ -204,16 +204,19 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySetTypes(
-            event=WaterInfoEvent,
-            get=[GetWaterInfo()],
-            set=SetWaterInfo,
-            types=(
-                WaterAmount.LOW,
-                WaterAmount.MEDIUM,
-                WaterAmount.HIGH,
-                WaterAmount.ULTRAHIGH,
+        water=CapabilityWater(
+            amount=CapabilitySetTypes(
+                event=water_info.WaterAmountEvent,
+                get=[GetWaterInfo()],
+                set=SetWaterInfo,
+                types=(
+                    water_info.WaterAmount.LOW,
+                    water_info.WaterAmount.MEDIUM,
+                    water_info.WaterAmount.HIGH,
+                    water_info.WaterAmount.ULTRAHIGH,
+                ),
             ),
+            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),
     ),
 )

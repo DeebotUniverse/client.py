@@ -6,7 +6,13 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
-from deebot_client.events import SweepType, WaterAmount, WaterInfoEvent
+from deebot_client.events.water_info import (
+    MopAttachedEvent,
+    SweepType,
+    WaterAmount,
+    WaterAmountEvent,
+    WaterSweepTypeEvent,
+)
 from deebot_client.message import HandlingResult
 from deebot_client.util import get_enum
 
@@ -29,20 +35,14 @@ class GetWaterInfo(JsonGetCommand):
 
         :return: A message response
         """
-        mop_attached = data.get("enable")
-        if mop_attached is not None:
-            mop_attached = bool(mop_attached)
+        event_bus.notify(WaterAmountEvent(WaterAmount(int(data["amount"]))))
+
+        if (mop_attached := data.get("enable")) is not None:
+            event_bus.notify(MopAttachedEvent(bool(mop_attached)))
 
         if sweep_type := data.get("sweepType"):
-            sweep_type = SweepType(int(sweep_type))
+            event_bus.notify(WaterSweepTypeEvent(SweepType(int(sweep_type))))
 
-        event_bus.notify(
-            WaterInfoEvent(
-                WaterAmount(int(data["amount"])),
-                sweep_type,
-                mop_attached=mop_attached,
-            )
-        )
         return HandlingResult.success()
 
 
