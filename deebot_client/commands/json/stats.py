@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
-from deebot_client.messages.json import OnStats
 
 from .common import JsonCommandWithMessageHandling
 
@@ -52,11 +51,3 @@ class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
         stats_event = TotalStatsEvent(data["area"], data["time"], data["count"])
         event_bus.notify(stats_event)
         return HandlingResult.success()
-
-
-class GetOnStats(OnStats, JsonCommandWithMessageHandling):
-    """Get onStats command."""
-
-    NAME = "getOnStats"
-
-
