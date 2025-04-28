@@ -33,6 +33,13 @@ class SweepType(IntEnum):
     DEEP = 2
 
 
-WaterAmountEvent = ValueEvent[WaterAmount]
-WaterSweepTypeEvent = ValueEvent[SweepType]
-MopAttachedEvent = ValueEvent[bool]
+class WaterAmountEvent(ValueEvent[WaterAmount]):
+    """Water amount event."""
+
+
+class WaterSweepTypeEvent(ValueEvent[SweepType]):
+    """Water sweep type event."""
+
+
+class MopAttachedEvent(ValueEvent[bool]):
+    """Mop attached event."""
