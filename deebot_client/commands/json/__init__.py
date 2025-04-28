@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.command import Command, CommandMqttP2P
-
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
@@ -52,6 +50,8 @@ from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
 
 if TYPE_CHECKING:
+    from deebot_client.command import Command
+
     from .common import JsonCommand
 
 __all__ = [
@@ -241,9 +241,3 @@ _COMMANDS: list[type[JsonCommand]] = [
 # fmt: on
 
 COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}
-
-COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
-    cmd_name: cmd
-    for (cmd_name, cmd) in COMMANDS.items()
-    if issubclass(cmd, CommandMqttP2P)
-}

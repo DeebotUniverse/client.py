@@ -4,8 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.command import Command, CommandMqttP2P
-
 from .battery import GetBatteryInfo
 from .charge import Charge
 from .charge_state import GetChargeState
@@ -20,6 +18,8 @@ from .pos import GetChargerPos, GetPos
 from .stats import GetCleanSum
 
 if TYPE_CHECKING:
+    from deebot_client.command import Command
+
     from .common import XmlCommand
 
 __all__ = [
@@ -87,9 +87,3 @@ _COMMANDS: list[type[XmlCommand]] = [
 # fmt: on
 
 COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}
-
-COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
-    cmd_name: cmd
-    for (cmd_name, cmd) in COMMANDS.items()
-    if issubclass(cmd, CommandMqttP2P)
-}
