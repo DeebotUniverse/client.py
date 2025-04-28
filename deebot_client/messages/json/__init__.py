@@ -16,8 +16,8 @@ if TYPE_CHECKING:
 __all__ = [
     "OnBattery",
     "OnMapSetV2",
-    "ReportStats",
     "OnStats",
+    "ReportStats",
 ]
 
 # fmt: off
