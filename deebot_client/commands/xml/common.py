@@ -99,6 +99,7 @@ class XmlCommandMqttP2P(XmlCommand, CommandMqttP2P, ABC):
         xml = ElementTree.fromstring(payload)
         return cls._create_from_mqtt(xml.attrib)
 
+    @final
     @override
     def handle_mqtt_p2p(
         self, event_bus: EventBus, response_payload: str | bytes | bytearray
