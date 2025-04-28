@@ -8,7 +8,7 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .map import OnMapSetV2
 from .station_state import OnStationState
-from .stats import ReportStats, OnStats
+from .stats import OnStats, ReportStats
 
 if TYPE_CHECKING:
     from deebot_client.message import Message

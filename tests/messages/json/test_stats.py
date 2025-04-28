@@ -68,16 +68,16 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
     [
         (
             {
-                "area":2,
-                "time":89,
-                "cid":"2002066096",
-                "start":"1744009746",
-                "type":"auto",
-                "enablePowerMop":1,
-                "powerMopType":2,
-                "aiopen":1,
-                "aitypes":[9],
-                "avoidCount":1
+                "area": 2,
+                "time": 89,
+                "cid": "2002066096",
+                "start": "1744009746",
+                "type": "auto",
+                "enablePowerMop": 1,
+                "powerMopType": 2,
+                "aiopen": 1,
+                "aitypes": [9],
+                "avoidCount": 1,
             },
             StatsEvent(
                 area=2,
@@ -96,9 +96,8 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
                 "powerMopType": 2,
                 "aiopen": 1,
                 "aitypes": [9],
-                "avoidCount": 1
+                "avoidCount": 1,
             },
-
             StatsEvent(
                 area=50,
                 time=56289,
