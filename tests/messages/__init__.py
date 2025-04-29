@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 from unittest.mock import Mock
 
 from deebot_client.event_bus import EventBus
-from deebot_client.message import HandlingState, Message
+from deebot_client.message import HandlingState, Message, MessagePayloadType
 
 if TYPE_CHECKING:
     from deebot_client.events import Event
 
 
 def assert_message(
-    message: type[Message], data: dict[str, Any] | str, expected_event: Event
+    message: type[Message], data: MessagePayloadType, expected_event: Event
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
@@ -23,7 +23,7 @@ def assert_message(
 
 def assert_message_failure(
     message: type[Message],
-    data: dict[str, Any] | str,
+    data: MessagePayloadType,
     expected_result_state: HandlingState,
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
