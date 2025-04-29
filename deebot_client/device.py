@@ -14,6 +14,7 @@ from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
 from .command import Command
+from .const import DataType
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
@@ -34,6 +35,7 @@ from .rs.map import PositionType
 if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import DeviceCommandResult
+    from .message import MessagePayloadType
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
@@ -191,7 +193,7 @@ class Device:
         self.events.notify(AvailabilityEvent(available=available))
 
     def _handle_message(
-        self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]
+        self, message_name: str, message_data: MessagePayloadType
     ) -> None:
         """Handle the given message.
 
@@ -205,15 +207,32 @@ class Device:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
             if message := get_message(message_name, self._device_info.static.data_type):
-                if isinstance(message_data, dict):
-                    data = message_data
-                else:
-                    data = json.loads(message_data)
-
-                fw_version = data.get("header", {}).get("fwVer", None)
-                if fw_version:
-                    self.fw_version = fw_version
-
+                data = self.__decode_json_if_needed(message_name, message_data)
+                self.__update_version_from_message_header(data)
                 message.handle(self.events, data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("An exception occurred during handling message")
+
+    def __update_version_from_message_header(self, data: MessagePayloadType) -> None:
+        if isinstance(data, dict):
+            fw_version = data.get("header", {}).get("fwVer", None)
+            if fw_version:
+                self.fw_version = fw_version
+
+    def __decode_json_if_needed(
+        self, message_name: str, message_data: MessagePayloadType
+    ) -> MessagePayloadType:
+        data_type = self._device_info.static.data_type
+        if data_type == DataType.JSON and not isinstance(message_data, dict):
+            try:
+                data = json.loads(message_data)
+                if isinstance(data, dict):
+                    return data
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.exception(
+                    "Could not decode message %s payload %s as JSON",
+                    message_name,
+                    message_data,
+                )
+
+        return message_data
