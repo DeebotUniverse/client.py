@@ -19,6 +19,8 @@ if TYPE_CHECKING:
 
 _LOGGER = get_logger(__name__)
 
+MessagePayloadType = str | bytes | bytearray | dict[str, Any]
+
 
 class HandlingState(IntEnum):
     """Handling state enum."""
@@ -63,6 +65,15 @@ def _handle_error_or_analyse(
     ) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
+            # This happens if for some reason someone calls super() of an ABC where handle is not implemented
+            if not response:
+                _LOGGER.error(
+                    "Handler for message %s: %s returned no response. "
+                    "This is a bug in the implementation and should not happen",
+                    cls.NAME,
+                    data,
+                )
+                return HandlingResult(HandlingState.ERROR)
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
@@ -88,7 +99,7 @@ class Message(ABC):
     @classmethod
     @abstractmethod
     def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+        cls, event_bus: EventBus, message: MessagePayloadType
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
@@ -98,9 +109,7 @@ class Message(ABC):
     @classmethod
     @_handle_error_or_analyse
     @final
-    def handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
-    ) -> HandlingResult:
+    def handle(cls, event_bus: EventBus, message: MessagePayloadType) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
@@ -120,24 +129,30 @@ class MessageStr(Message, ABC):
         """
 
     @classmethod
-    # @_handle_error_or_analyse @edenhaus will make the decorator to work again
+    @_handle_error_or_analyse
     @final
     def __handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
         return cls._handle_str(event_bus, message)
 
     @classmethod
     def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+        cls, event_bus: EventBus, message: MessagePayloadType
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
         """
-        # This basically means an XML message
-        if isinstance(message, str):
-            return cls.__handle_str(event_bus, message)
+        if isinstance(message, bytearray):
+            data = bytes(message).decode()
+        elif isinstance(message, bytes):
+            data = message.decode()
+        elif isinstance(message, str):
+            data = message
+        else:
+            msg = "Unsupported message data type {message_type}"
+            raise TypeError(msg.format(message_type=type(message)))
 
-        return super()._handle(event_bus, message)
+        return cls.__handle_str(event_bus, data)
 
 
 class MessageDict(Message, ABC):
@@ -163,7 +178,7 @@ class MessageDict(Message, ABC):
 
     @classmethod
     def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+        cls, event_bus: EventBus, message: MessagePayloadType
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
