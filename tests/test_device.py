@@ -29,16 +29,18 @@ if TYPE_CHECKING:
     from deebot_client.models import ApiDeviceInfo
 
 
-def json_battery_message_payload() -> str:
+def json_battery_message_payload(expected_version: str | None = "1.8.2") -> str:
+    header = {
+        "pri": 1,
+        "tzm": 480,
+        "ts": "1304637391896",
+        "ver": "0.0.1",
+        "hwVer": "0.1.1",
+    }
+    if expected_version:
+        header.update({"fwVer": expected_version})
     data = {
-        "header": {
-            "pri": 1,
-            "tzm": 480,
-            "ts": "1304637391896",
-            "ver": "0.0.1",
-            "fwVer": "1.8.2",
-            "hwVer": "0.1.1",
-        },
+        "header": header,
         "body": {"data": {"value": 100, "isLow": 0}},
     }
     return json.dumps(data)
@@ -186,3 +188,85 @@ async def test_behaviour_with_no_map_capability(
     assert device.map is None
 
     await device.teardown()
+
+
+@pytest.mark.parametrize(
+    (
+        "data_type",
+        "get_battery_command",
+        "battery_message",
+        "battery_message_payload",
+        "expected_version",
+    ),
+    [
+        (
+            DataType.JSON,
+            GetBattery,
+            OnBattery,
+            json_battery_message_payload("1.8.2"),
+            "1.8.2",
+        ),
+        (
+            DataType.JSON,
+            GetBattery,
+            OnBattery,
+            json_battery_message_payload(None),
+            None,
+        ),
+        (DataType.JSON, GetBattery, OnBattery, "{corrupted}", None),
+        (
+            DataType.XML,
+            GetBatteryInfo,
+            BatteryInfo,
+            xml_battery_message_payload(),
+            None,
+        ),
+    ],
+    ids=["json_bot", "json_bot_no_version", "json_bot_corrupted_json", "xml_bot"],
+)
+@patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
+async def test_device_handle_message_behaviour(
+    data_type: DataType,
+    get_battery_command: Command,
+    battery_message: Message,
+    battery_message_payload: str,
+    expected_version: str | None,
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
+) -> None:
+    """Test the available check including if the status Event is fired correctly."""
+    received_statuses: asyncio.Queue[AvailabilityEvent] = asyncio.Queue()
+
+    async def on_status(event: AvailabilityEvent) -> None:
+        received_statuses.put_nowait(event)
+
+    # prepare mocks
+    battery_mock = Mock(spec_set=get_battery_command)
+
+    device_info = DeviceInfo(
+        api_device_info,
+        mock_static_device_info({AvailabilityEvent: [battery_mock]}, data_type),
+    )
+
+    # prepare bot and mock mqtt
+    bot = Device(device_info, authenticator)
+    mqtt_client = Mock(spec=MqttClient)
+    unsubscribe_mock = Mock(spec=Callable[[], None])
+    mqtt_client.subscribe.return_value = unsubscribe_mock
+    await bot.initialize(mqtt_client)
+
+    # deactivate refresh event subscribe refresh calls
+    bot.events._get_refresh_commands = lambda _: []
+
+    bot.events.subscribe(AvailabilityEvent, on_status)
+
+    # verify mqtt was subscribed and available task was started
+    mqtt_client.subscribe.assert_called_once()
+    sub_info: SubscriberInfo = mqtt_client.subscribe.call_args.args[0]
+    sub_info.callback(battery_message.NAME, battery_message_payload)
+    await asyncio.sleep(1)
+
+    assert bot.fw_version == expected_version
+
+    # teardown bot
+    await bot.teardown()
