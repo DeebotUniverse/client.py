@@ -239,11 +239,7 @@ class PullMP(XmlCommandWithMessageHandling):
 
     NAME = "PullMP"
 
-    def __init__(
-        self,
-        piece_index: int,
-        _: str | None = None,
-    ) -> None:
+    def __init__(self, piece_index: int, _: str | None = None) -> None:
         self._piece_index = piece_index
         super().__init__({"pid": str(piece_index)})
 
