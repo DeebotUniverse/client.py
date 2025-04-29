@@ -8,9 +8,16 @@ from deebot_client.event_bus import EventBus
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
+    Message,
     MessagePayloadType,
     MessageStr,
 )
+
+
+class WronglyImplementedMessage(Message):
+    """Mock class of a wrongly implemented message."""
+
+    NAME = "WronglyImplementedMessage"
 
 
 class TestMessageStr(MessageStr):
@@ -51,5 +58,12 @@ def test_MessageStr_should_convert_across_types(
 def test_MessageStr_should_error_on_unknown_types() -> None:
     event_bus = Mock(spec_set=EventBus)
     result = TestMessageStr.handle(event_bus, {"key": "value"})
+
+    assert result.state == HandlingState.ERROR
+
+
+def test_WronglyImplementedMessage() -> None:
+    event_bus = Mock(spec_set=EventBus)
+    result = WronglyImplementedMessage.handle(event_bus, {})
 
     assert result.state == HandlingState.ERROR
