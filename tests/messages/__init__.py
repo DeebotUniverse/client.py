@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 from typing import TYPE_CHECKING
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from deebot_client.event_bus import EventBus
 from deebot_client.message import HandlingState, Message, MessagePayloadType
@@ -11,14 +12,20 @@ if TYPE_CHECKING:
 
 
 def assert_message(
-    message: type[Message], data: MessagePayloadType, expected_event: Event
+    message: type[Message],
+    data: MessagePayloadType,
+    expected_events: Event | Sequence[Event],
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)
 
     assert result.state == HandlingState.SUCCESS
-    event_bus.notify.assert_called_once_with(expected_event)
+    if isinstance(expected_events, Sequence):
+        event_bus.notify.assert_has_calls([call(x) for x in expected_events])
+        assert event_bus.notify.call_count == len(expected_events)
+    else:
+        event_bus.notify.assert_called_once_with(expected_events)
 
 
 def assert_message_failure(

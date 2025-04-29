@@ -10,8 +10,10 @@ from . import assert_command, assert_set_command
 
 
 async def test_GetVolume() -> None:
-    json = get_request_json(get_success_body({"volume": 2, "total": 10}))
-    await assert_command(GetVolume(), json, VolumeEvent(2, 10))
+    json, firmware_event = get_request_json(
+        get_success_body({"volume": 2, "total": 10})
+    )
+    await assert_command(GetVolume(), json, (firmware_event, VolumeEvent(2, 10)))
 
 
 @pytest.mark.parametrize("level", [0, 2, 10])

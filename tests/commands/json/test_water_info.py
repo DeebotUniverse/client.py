@@ -27,44 +27,42 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("json", "expected"),
     [
-        ({"amount": 2}, WaterAmountEvent(WaterAmount.MEDIUM)),
+        ({"amount": 2}, (WaterAmountEvent(WaterAmount.MEDIUM),)),
         (
             {"amount": 1, "enable": 1},
-            [
+            (
                 WaterAmountEvent(WaterAmount.LOW),
                 MopAttachedEvent(True),
-            ],
+            ),
         ),
         (
             {"amount": 4, "enable": 0},
-            [
+            (
                 WaterAmountEvent(WaterAmount.ULTRAHIGH),
                 MopAttachedEvent(False),
-            ],
+            ),
         ),
         (
             {"amount": 4, "sweepType": 1, "enable": 0},
-            [
+            (
                 WaterAmountEvent(WaterAmount.ULTRAHIGH),
                 MopAttachedEvent(False),
                 WaterSweepTypeEvent(SweepType.STANDARD),
-            ],
+            ),
         ),
         (
             {"amount": 4, "sweepType": 2, "enable": 0},
-            [
+            (
                 WaterAmountEvent(WaterAmount.ULTRAHIGH),
                 MopAttachedEvent(False),
                 WaterSweepTypeEvent(SweepType.DEEP),
-            ],
+            ),
         ),
     ],
 )
-async def test_GetWaterInfo(
-    json: dict[str, Any], expected: Event | list[Event]
-) -> None:
-    json = get_request_json(get_success_body(json))
-    await assert_command(GetWaterInfo(), json, expected)
+async def test_GetWaterInfo(json: dict[str, Any], expected: tuple[Event, ...]) -> None:
+    json, firmware_event = get_request_json(get_success_body(json))
+    await assert_command(GetWaterInfo(), json, (firmware_event, *expected))
 
 
 @pytest.mark.parametrize(("water_value"), [WaterAmount.MEDIUM, "medium"])

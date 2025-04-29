@@ -43,6 +43,7 @@ __all__ = [
     "Event",
     "FanSpeedEvent",
     "FanSpeedLevel",
+    "FirmwareEvent",
     "MajorMapEvent",
     "MapChangedEvent",
     "MapSetEvent",
@@ -300,3 +301,10 @@ class CutDirectionEvent(Event):
     """Cut direction event representation."""
 
     angle: int
+
+
+@dataclass(frozen=True)
+class FirmwareEvent(Event):
+    """Firmware event."""
+
+    version: str

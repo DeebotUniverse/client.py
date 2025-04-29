@@ -20,16 +20,16 @@ if TYPE_CHECKING:
 @pytest.mark.parametrize(
     ("body", "expected_events"),
     [
-        ({"code": [0]}, ErrorEvent(0, "NoError: Robot is operational")),
-        ({"code": []}, ErrorEvent(0, "NoError: Robot is operational")),
+        ({"code": [0]}, (ErrorEvent(0, "NoError: Robot is operational"),)),
+        ({"code": []}, (ErrorEvent(0, "NoError: Robot is operational"),)),
         (
             {"code": [105]},
-            [StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")],
+            (StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")),
         ),
     ],
 )
 async def test_getErrors(
-    body: dict[str, Any], expected_events: Event | Sequence[Event]
+    body: dict[str, Any], expected_events: Sequence[Event]
 ) -> None:
-    json = get_request_json(get_success_body(body))
-    await assert_command(GetError(), json, expected_events)
+    json, firmware_event = get_request_json(get_success_body(body))
+    await assert_command(GetError(), json, (firmware_event, *expected_events))

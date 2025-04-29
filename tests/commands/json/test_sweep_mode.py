@@ -11,8 +11,10 @@ from . import assert_command, assert_set_enable_command
 
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetSweepMode(*, value: bool) -> None:
-    json = get_request_json(get_success_body({"type": 1 if value else 0}))
-    await assert_command(GetSweepMode(), json, SweepModeEvent(value))
+    json, firmware_event = get_request_json(
+        get_success_body({"type": 1 if value else 0})
+    )
+    await assert_command(GetSweepMode(), json, (firmware_event, SweepModeEvent(value)))
 
 
 @pytest.mark.parametrize("value", [False, True])

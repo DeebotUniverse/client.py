@@ -6,8 +6,10 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass
 from enum import IntEnum, auto
 import functools
+import json
 from typing import TYPE_CHECKING, Any, TypeVar, final
 
+from deebot_client.events import FirmwareEvent
 from deebot_client.util import verify_required_class_variables_exists
 
 from .logging_filter import get_logger
@@ -69,7 +71,7 @@ def _handle_error_or_analyse(
             if not response:
                 _LOGGER.error(
                     "Handler for message %s: %s returned no response. "
-                    "This is a bug in the implementation and should not happen",
+                    "This is a bug should not happen. Please report it.",
                     cls.NAME,
                     data,
                 )
@@ -149,14 +151,13 @@ class MessageStr(Message, ABC):
         elif isinstance(message, str):
             data = message
         else:
-            msg = "Unsupported message data type {message_type}"
-            raise TypeError(msg.format(message_type=type(message)))
+            return super()._handle(event_bus, message)
 
         return cls.__handle_str(event_bus, data)
 
 
-class MessageDict(Message, ABC):
-    """Dict message."""
+class MessageDictOrJson(Message, ABC):
+    """Dict or json message."""
 
     @classmethod
     @abstractmethod
@@ -184,13 +185,28 @@ class MessageDict(Message, ABC):
 
         :return: A message response
         """
-        if isinstance(message, dict):
-            return cls.__handle_dict(event_bus, message)
+        data = message
+        if not isinstance(message, dict):
+            try:
+                data = json.loads(message)
+            except Exception:  # pylint: disable=broad-except
+                _LOGGER.debug(
+                    "Could not decode message %s payload %s as JSON",
+                    cls.NAME,
+                    message,
+                )
+
+        if isinstance(data, dict):
+            fw_version = data.get("header", {}).get("fwVer", None)
+            if fw_version:
+                event_bus.notify(FirmwareEvent(fw_version))
+
+            return cls.__handle_dict(event_bus, data)
 
         return super()._handle(event_bus, message)
 
 
-class MessageBody(MessageDict, ABC):
+class MessageBody(MessageDictOrJson, ABC):
     """Dict message with body attribute."""
 
     @classmethod

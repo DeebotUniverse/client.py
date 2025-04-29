@@ -6,7 +6,6 @@ import asyncio
 from collections.abc import Callable, Coroutine
 from contextlib import suppress
 from datetime import datetime
-import json
 from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
@@ -14,12 +13,12 @@ from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
 from .command import Command
-from .const import DataType
 from .event_bus import EventBus
 from .events import (
     AvailabilityEvent,
     CleanLogEvent,
     CustomCommandEvent,
+    FirmwareEvent,
     LifeSpanEvent,
     PositionsEvent,
     StateEvent,
@@ -115,6 +114,11 @@ class Device:
 
         self.events.subscribe(NetworkInfoEvent, on_network)
 
+        async def on_firmware(event: FirmwareEvent) -> None:
+            self.fw_version = event.version
+
+        self.events.subscribe(FirmwareEvent, on_firmware)
+
     async def execute_command(self, command: Command) -> dict[str, Any]:
         """Execute given command.
 
@@ -207,32 +211,6 @@ class Device:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
             if message := get_message(message_name, self._device_info.static.data_type):
-                data = self.__decode_json_if_needed(message_name, message_data)
-                self.__update_version_from_message_header(data)
-                message.handle(self.events, data)
+                message.handle(self.events, message_data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("An exception occurred during handling message")
-
-    def __update_version_from_message_header(self, data: MessagePayloadType) -> None:
-        if isinstance(data, dict):
-            fw_version = data.get("header", {}).get("fwVer", None)
-            if fw_version:
-                self.fw_version = fw_version
-
-    def __decode_json_if_needed(
-        self, message_name: str, message_data: MessagePayloadType
-    ) -> MessagePayloadType:
-        data_type = self._device_info.static.data_type
-        if data_type == DataType.JSON and not isinstance(message_data, dict):
-            try:
-                data = json.loads(message_data)
-                if isinstance(data, dict):
-                    return data
-            except Exception:  # pylint: disable=broad-except
-                _LOGGER.exception(
-                    "Could not decode message %s payload %s as JSON",
-                    message_name,
-                    message_data,
-                )
-
-        return message_data

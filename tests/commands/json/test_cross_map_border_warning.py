@@ -17,9 +17,13 @@ from . import assert_command, assert_set_enable_command
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetCrossMapBorderWarning(*, value: bool) -> None:
     """Testing get cross map border warning."""
-    json = get_request_json(get_success_body({"enable": 1 if value else 0}))
+    json, firmware_event = get_request_json(
+        get_success_body({"enable": 1 if value else 0})
+    )
     await assert_command(
-        GetCrossMapBorderWarning(), json, CrossMapBorderWarningEvent(value)
+        GetCrossMapBorderWarning(),
+        json,
+        (firmware_event, CrossMapBorderWarningEvent(value)),
     )
 
 

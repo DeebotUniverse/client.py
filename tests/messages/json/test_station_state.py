@@ -4,6 +4,7 @@ from typing import Any
 
 import pytest
 
+from deebot_client.events import FirmwareEvent
 from deebot_client.events.station import State, StationEvent
 from deebot_client.messages.json.station_state import OnStationState
 from tests.messages import assert_message
@@ -38,4 +39,6 @@ def test_onStationState(
         },
     }
 
-    assert_message(OnStationState, data, StationEvent(expected))
+    assert_message(
+        OnStationState, data, (FirmwareEvent("1.30.0"), StationEvent(expected))
+    )
