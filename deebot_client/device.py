@@ -28,6 +28,7 @@ from .events import (
 )
 from .logging_filter import get_logger
 from .map import Map
+from .message import MessagePayloadType
 from .messages import get_message
 from .models import DeviceInfo, State
 from .rs.map import PositionType
@@ -35,7 +36,6 @@ from .rs.map import PositionType
 if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import DeviceCommandResult
-    from .message import MessagePayloadType
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
@@ -226,7 +226,7 @@ class Device:
         if data_type == DataType.JSON and not isinstance(message_data, dict):
             try:
                 data = json.loads(message_data)
-                if isinstance(data, dict):
+                if isinstance(data, MessagePayloadType):
                     return data
             except Exception:  # pylint: disable=broad-except
                 _LOGGER.exception(
