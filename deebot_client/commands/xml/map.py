@@ -241,10 +241,9 @@ class PullMP(XmlCommandWithMessageHandling):
 
     def __init__(
         self,
-        map_id: str,  # pylint: disable=unused-argument # noqa: ARG002
         piece_index: int,
+        _: str | None = None,
     ) -> None:
-        """Declare the map_id argument not to break compatibility with CapabilityMap."""
         self._piece_index = piece_index
         super().__init__({"pid": str(piece_index)})
 

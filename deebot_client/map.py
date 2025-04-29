@@ -105,7 +105,7 @@ class Map:
                     ):
                         tg.create_task(
                             self._execute_command(
-                                self._capabilities.minor.execute(event.map_id, idx)
+                                self._capabilities.minor.execute(idx, event.map_id)
                             )
                         )
 

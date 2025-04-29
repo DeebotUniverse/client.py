@@ -389,7 +389,7 @@ class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     NAME = "getMinorMap"
 
-    def __init__(self, map_id: str, piece_index: int) -> None:
+    def __init__(self, piece_index: int, map_id: str) -> None:
         super().__init__({"mid": map_id, "type": "ol", "pieceIndex": piece_index})
 
     @classmethod
