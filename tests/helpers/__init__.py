@@ -45,6 +45,7 @@ def get_message_json(body: dict[str, Any]) -> dict[str, Any]:
 
 def mock_static_device_info(
     events: Mapping[type[Event], list[Command]] | None = None,
+    data_type: DataType = DataType.JSON,
 ) -> StaticDeviceInfo:
     """Mock static device info."""
     if events is None:
@@ -57,4 +58,4 @@ def mock_static_device_info(
 
     mock.get_refresh_commands.side_effect = get_refresh_commands
 
-    return StaticDeviceInfo(DataType.JSON, mock)
+    return StaticDeviceInfo(data_type, mock)

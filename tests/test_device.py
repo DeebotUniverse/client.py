@@ -8,12 +8,16 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from deebot_client.command import DeviceCommandResult
+from deebot_client.command import Command, DeviceCommandResult
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.xml import GetBatteryInfo
+from deebot_client.const import DataType
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.hardware import get_static_device_info
+from deebot_client.messages.json import OnBattery
+from deebot_client.messages.xml import BatteryInfo
 from deebot_client.models import DeviceInfo, StaticDeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from tests.helpers import mock_static_device_info
@@ -21,11 +25,43 @@ from tests.helpers.tasks import block_till_done
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
+    from deebot_client.message import Message
     from deebot_client.models import ApiDeviceInfo
 
 
+def json_battery_message_payload() -> str:
+    data = {
+        "header": {
+            "pri": 1,
+            "tzm": 480,
+            "ts": "1304637391896",
+            "ver": "0.0.1",
+            "fwVer": "1.8.2",
+            "hwVer": "0.1.1",
+        },
+        "body": {"data": {"value": 100, "isLow": 0}},
+    }
+    return json.dumps(data)
+
+
+def xml_battery_message_payload() -> str:
+    return '<ctl ret="ok"><battery power="100" /></ctl>'
+
+
+@pytest.mark.parametrize(
+    ("data_type", "get_battery_command", "battery_message", "battery_message_payload"),
+    [
+        (DataType.JSON, GetBattery, OnBattery, json_battery_message_payload()),
+        (DataType.XML, GetBatteryInfo, BatteryInfo, xml_battery_message_payload()),
+    ],
+    ids=["json_bot", "xml_bot"],
+)
 @patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
 async def test_available_check_and_teardown(
+    data_type: DataType,
+    get_battery_command: Command,
+    battery_message: Message,
+    battery_message_payload: str,
     authenticator: Authenticator,
     api_device_info: ApiDeviceInfo,
 ) -> None:
@@ -40,10 +76,11 @@ async def test_available_check_and_teardown(
         assert received_statuses.get_nowait().available is expected
 
     # prepare mocks
-    battery_mock = Mock(spec_set=GetBattery)
+    battery_mock = Mock(spec_set=get_battery_command)
 
     device_info = DeviceInfo(
-        api_device_info, mock_static_device_info({AvailabilityEvent: [battery_mock]})
+        api_device_info,
+        mock_static_device_info({AvailabilityEvent: [battery_mock]}, data_type),
     )
     execute_mock = battery_mock.execute
 
@@ -88,19 +125,8 @@ async def test_available_check_and_teardown(
 
     # Simulate message over mqtt and therefore available is not needed
     await asyncio.sleep(0.8)
-    data = {
-        "header": {
-            "pri": 1,
-            "tzm": 480,
-            "ts": "1304637391896",
-            "ver": "0.0.1",
-            "fwVer": "1.8.2",
-            "hwVer": "0.1.1",
-        },
-        "body": {"data": {"value": 100, "isLow": 0}},
-    }
 
-    sub_info.callback("onBattery", json.dumps(data))
+    sub_info.callback(battery_message.NAME, battery_message_payload)
     await asyncio.sleep(1)
 
     # As the last message is not more than (interval-1) old, we skip the available check
