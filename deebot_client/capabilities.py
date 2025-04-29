@@ -175,9 +175,9 @@ class CapabilityMap:
     clear: CapabilityExecute[[]] | None = None
     major: CapabilityEvent[MajorMapEvent]
     minor: CapabilityExecute[[str, int]]
-    multi_state: CapabilitySetEnable[MultimapStateEvent]
+    multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
-    relocation: CapabilityExecute[[]]
+    relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
     trace: CapabilityEvent[MapTraceEvent]
 
@@ -213,7 +213,7 @@ class CapabilitySettings:
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, [int]]
+    volume: CapabilitySet[VolumeEvent, [int]] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

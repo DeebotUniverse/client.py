@@ -219,7 +219,7 @@ async def test_PullM_error(xml: str) -> None:
 async def test_PullMP(xml: str, expected_event: MinorMapEvent) -> None:
     json = get_request_xml(xml)
     await assert_command(
-        PullMP(piece_index=1),
+        PullMP(map_id="unused", piece_index=1),
         json,
         expected_event,
         command_result=CommandResult(
@@ -239,7 +239,7 @@ async def test_PullMP(xml: str, expected_event: MinorMapEvent) -> None:
 async def test_PullMP_error(xml: str) -> None:
     json = get_request_xml(xml)
     await assert_command(
-        PullMP(piece_index=1),
+        PullMP(map_id="unused", piece_index=1),
         json,
         None,
         command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
