@@ -214,6 +214,7 @@ async def test_behaviour_with_no_map_capability(
             None,
         ),
         (DataType.JSON, GetBattery, OnBattery, "{corrupted}", None),
+        (DataType.JSON, GetBattery, OnBattery, '["not an object"]', None),
         (
             DataType.XML,
             GetBatteryInfo,
@@ -222,7 +223,13 @@ async def test_behaviour_with_no_map_capability(
             None,
         ),
     ],
-    ids=["json_bot", "json_bot_no_version", "json_bot_corrupted_json", "xml_bot"],
+    ids=[
+        "json_bot",
+        "json_bot_no_version",
+        "json_bot_corrupted_json",
+        "json_bot_not_a_dict_json",
+        "xml_bot",
+    ],
 )
 @patch("deebot_client.device._AVAILABLE_CHECK_INTERVAL", 2)  # reduce interval
 async def test_device_handle_message_behaviour(
