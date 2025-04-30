@@ -6,7 +6,6 @@ import asyncio
 from collections.abc import Callable, Coroutine
 from contextlib import suppress
 from datetime import datetime
-import json
 from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
@@ -19,6 +18,7 @@ from .events import (
     AvailabilityEvent,
     CleanLogEvent,
     CustomCommandEvent,
+    FirmwareEvent,
     LifeSpanEvent,
     PositionsEvent,
     StateEvent,
@@ -34,6 +34,7 @@ from .rs.map import PositionType
 if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import DeviceCommandResult
+    from .message import MessagePayloadType
 
 _LOGGER = get_logger(__name__)
 _AVAILABLE_CHECK_INTERVAL = 60
@@ -113,6 +114,11 @@ class Device:
 
         self.events.subscribe(NetworkInfoEvent, on_network)
 
+        async def on_firmware(event: FirmwareEvent) -> None:
+            self.fw_version = event.version
+
+        self.events.subscribe(FirmwareEvent, on_firmware)
+
     async def execute_command(self, command: Command) -> dict[str, Any]:
         """Execute given command.
 
@@ -191,7 +197,7 @@ class Device:
         self.events.notify(AvailabilityEvent(available=available))
 
     def _handle_message(
-        self, message_name: str, message_data: str | bytes | bytearray | dict[str, Any]
+        self, message_name: str, message_data: MessagePayloadType
     ) -> None:
         """Handle the given message.
 
@@ -205,15 +211,6 @@ class Device:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
             if message := get_message(message_name, self._device_info.static.data_type):
-                if isinstance(message_data, dict):
-                    data = message_data
-                else:
-                    data = json.loads(message_data)
-
-                fw_version = data.get("header", {}).get("fwVer", None)
-                if fw_version:
-                    self.fw_version = fw_version
-
-                message.handle(self.events, data)
+                message.handle(self.events, message_data)
         except Exception:  # pylint: disable=broad-except
             _LOGGER.exception("An exception occurred during handling message")

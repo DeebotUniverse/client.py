@@ -18,9 +18,9 @@ from . import assert_command
     [
         (
             CustomCommand("getSleep"),
-            get_request_json(get_success_body({"enable": 1})),
+            get_request_json(get_success_body({"enable": 1}))[0],
             CustomCommandEvent(
-                "getSleep", get_message_json(get_success_body({"enable": 1}))
+                "getSleep", get_message_json(get_success_body({"enable": 1}))[0]
             ),
             CommandResult.success(),
         ),

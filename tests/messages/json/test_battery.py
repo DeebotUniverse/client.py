@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import pytest
 
-from deebot_client.events import BatteryEvent
+from deebot_client.events import BatteryEvent, FirmwareEvent
 from deebot_client.messages.json import OnBattery
 from tests.messages import assert_message
 
@@ -21,4 +21,4 @@ def test_onBattery(percentage: int) -> None:
         "body": {"data": {"value": percentage, "isLow": 1 if percentage < 20 else 0}},
     }
 
-    assert_message(OnBattery, data, BatteryEvent(percentage))
+    assert_message(OnBattery, data, (FirmwareEvent("1.8.2"), BatteryEvent(percentage)))

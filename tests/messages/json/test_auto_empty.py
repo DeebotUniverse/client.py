@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from deebot_client.events import auto_empty
+from deebot_client.events import FirmwareEvent, auto_empty
 from deebot_client.messages.json.auto_empty import OnAutoEmpty
 from tests.messages import assert_message
 
@@ -37,4 +37,8 @@ def test_onAutoEmpty(
     if frequency is not None:
         data["body"]["data"]["frequency"] = frequency
 
-    assert_message(OnAutoEmpty, data, auto_empty.AutoEmptyEvent(enable, expected_freq))
+    assert_message(
+        OnAutoEmpty,
+        data,
+        (FirmwareEvent("1.30.0"), auto_empty.AutoEmptyEvent(enable, expected_freq)),
+    )

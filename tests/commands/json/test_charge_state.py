@@ -10,16 +10,21 @@ from tests.helpers import get_request_json, get_success_body
 from . import assert_command
 
 if TYPE_CHECKING:
-    from deebot_client.events import StateEvent
+    from deebot_client.events import FirmwareEvent, StateEvent
+    from deebot_client.events.base import Event
 
 
 @pytest.mark.parametrize(
-    ("json", "expected"),
+    ("data", "expected"),
     [
         (get_request_json(get_success_body({"isCharging": 0, "mode": "slot"})), None),
     ],
 )
 async def test_GetChargeState(
-    json: dict[str, Any], expected: StateEvent | None
+    data: tuple[dict[str, Any], FirmwareEvent], expected: StateEvent | None
 ) -> None:
-    await assert_command(GetChargeState(), json, expected)
+    json, firmware_event = data
+    events: list[Event] = [firmware_event]
+    if expected:
+        events.append(expected)
+    await assert_command(GetChargeState(), json, events)

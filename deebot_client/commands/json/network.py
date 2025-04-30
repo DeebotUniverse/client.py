@@ -9,7 +9,7 @@ from deebot_client.events import NetworkInfoEvent
 from deebot_client.message import (
     HandlingResult,
     MessageBodyDataDict,
-    MessageDict,
+    MessageDictOrJson,
 )
 
 from .common import JsonCommand, JsonCommandWithMessageHandling
@@ -42,7 +42,7 @@ class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.success()
 
 
-class GetNetInfoLegacy(JsonCommand, CommandWithMessageHandling, MessageDict):
+class GetNetInfoLegacy(JsonCommand, CommandWithMessageHandling, MessageDictOrJson):
     """Get network info command."""
 
     NAME = "GetNetInfo"

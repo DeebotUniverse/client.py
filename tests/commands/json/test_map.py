@@ -15,6 +15,7 @@ from deebot_client.commands.json import (
 )
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import (
+    FirmwareEvent,
     MajorMapEvent,
     MapSetEvent,
     MapSetType,
@@ -72,7 +73,7 @@ async def test_getMapSubSet_customName(
     _type = MapSetType.ROOMS
     mid = "98100521"
     mssid = "8"
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "type": _type.value,
@@ -96,7 +97,7 @@ async def test_getMapSubSet_customName(
     await assert_command(
         GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
         json,
-        MapSubsetEvent(8, _type, expected_coordinates, expected_name),
+        [firmware_event, MapSubsetEvent(8, _type, expected_coordinates, expected_name)],
     )
 
 
@@ -122,12 +123,12 @@ async def test_getMapSubSet_invalid(
         "mid": mid,
         **additional_data,
     }
-    json = get_request_json(get_success_body(data))
+    json, firmware_event = get_request_json(get_success_body(data))
     with LogCapture() as log:
         await assert_command(
             GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
             json,
-            None,
+            firmware_event,
             command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
         )
 
@@ -147,7 +148,9 @@ async def test_getMapSubSet_invalid(
         )
 
 
-def _getMapSubSet_room_valid_response(value: str, id: int) -> dict[str, Any]:
+def _getMapSubSet_room_valid_response(
+    value: str, id: int
+) -> tuple[dict[str, Any], FirmwareEvent]:
     return get_request_json(
         get_success_body(
             {
@@ -164,11 +167,11 @@ def _getMapSubSet_room_valid_response(value: str, id: int) -> dict[str, Any]:
 
 async def test_getMapSubSet_living_room() -> None:
     value = "-1400,-1600;-1400,-1350;-950,-1100;-900,-150;-550,100;200,950;500,950;650,800;800,950;1850,950;1950,800;1950,-200;2050,-300;2300,-300;2550,-650;2700,-650;2700,-1600;2400,-1750;2700,-1900;2700,-2950;2450,-2950;2300,-3100;2400,-3200;2650,-3200;2700,-3500;2300,-3500;2200,-3250;2050,-3550;1200,-3550;1200,-3300;1050,-3200;950,-3300;950,-3550;600,-3550;550,-2850;850,-2800;950,-2700;850,-2600;950,-2400;900,-2350;800,-2300;550,-2500;550,-2350;400,-2250;200,-2650;-800,-2650;-950,-2550;-950,-2150;-650,-2000;-450,-2000;-400,-1950;-450,-1850;-750,-1800;-950,-1900;-1350,-1900;-1400,-1600"
-    json = _getMapSubSet_room_valid_response(value, 7)
+    json, firmware_event = _getMapSubSet_room_valid_response(value, 7)
     await assert_command(
         GetMapSubSet(mid="199390082", mssid="7", msid="1"),
         json,
-        MapSubsetEvent(7, MapSetType.ROOMS, value, "Living Room"),
+        [firmware_event, MapSubsetEvent(7, MapSetType.ROOMS, value, "Living Room")],
     )
 
 
@@ -185,7 +188,7 @@ async def test_getCachedMapInfo(
 ) -> None:
     expected_mid = "199390082"
     expected_name = "Erdgeschoss"
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "enable": 1,
@@ -213,7 +216,11 @@ async def test_getCachedMapInfo(
     await assert_command(
         command,
         json,
-        CachedMapInfoEvent(expected_name, active=True),
+        [
+            firmware_event,
+            CachedMapInfoEvent(expected_name, active=True),
+            *[firmware_event for _ in MapSetType],
+        ],
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
@@ -225,7 +232,7 @@ async def test_getCachedMapInfo(
 async def test_getMajorMap() -> None:
     expected_mid = "199390082"
     value = "1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,3378526980,2963288214,2739565817,729228561,2452519304,1295764014,1295764014,1295764014,2753376360,329080101,952462272,3648890579,412193448,1540631558,1295764014,1295764014,1561391782,1081327924,1096350476,2860639280,37066625,86907282,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014,1295764014"
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "mid": expected_mid,
@@ -307,7 +314,7 @@ async def test_getMajorMap() -> None:
     await assert_command(
         GetMajorMap(),
         json,
-        MajorMapEvent(expected_mid, expected_vaue, requested=True),
+        [firmware_event, MajorMapEvent(expected_mid, expected_vaue, requested=True)],
     )
 
 
@@ -316,40 +323,46 @@ async def test_getMapSet() -> None:
     msid = "8"
     room_value = "-442,2910;-442,982;1214,982;1214,2910"
     subsets = [7, 12, 17, 14, 10, 11, 13]
+    data, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": "ar",
+                "count": 7,
+                "mid": mid,
+                "msid": msid,
+                "subsets": [
+                    {"mssid": "7"},
+                    {"mssid": "12"},
+                    {"mssid": "17"},
+                    {"mssid": "14"},
+                    {"mssid": "10"},
+                    {"mssid": "11"},
+                    {"mssid": "13"},
+                ],
+            }
+        )
+    )
     json = (
         # getMapSet response
-        get_request_json(
-            get_success_body(
-                {
-                    "type": "ar",
-                    "count": 7,
-                    "mid": mid,
-                    "msid": msid,
-                    "subsets": [
-                        {"mssid": "7"},
-                        {"mssid": "12"},
-                        {"mssid": "17"},
-                        {"mssid": "14"},
-                        {"mssid": "10"},
-                        {"mssid": "11"},
-                        {"mssid": "13"},
-                    ],
-                }
-            )
-        ),
+        data,
         # getMapSubSet response
-        *(_getMapSubSet_room_valid_response(room_value, subset) for subset in subsets),
+        *(
+            _getMapSubSet_room_valid_response(room_value, subset)[0]
+            for subset in subsets
+        ),
     )
+    events = [firmware_event, MapSetEvent(MapSetType.ROOMS, subsets)]
+    for subset in subsets:
+        events.extend(
+            [
+                firmware_event,
+                MapSubsetEvent(subset, MapSetType.ROOMS, room_value, "Living Room"),
+            ]
+        )
     await assert_command(
         GetMapSet(mid),
         json,
-        (
-            MapSetEvent(MapSetType.ROOMS, subsets),
-            *(
-                MapSubsetEvent(subset, MapSetType.ROOMS, room_value, "Living Room")
-                for subset in subsets
-            ),
-        ),
+        events,
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"id": mid, "set_id": msid, "type": MapSetType.ROOMS, "subsets": subsets},
@@ -364,7 +377,7 @@ async def test_getMapSet() -> None:
 async def test_getMapSetV2_no_mop_zones() -> None:
     mid = "199390082"
     type = MapSetType.NO_MOP_ZONES
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "type": type,
@@ -381,6 +394,7 @@ async def test_getMapSetV2_no_mop_zones() -> None:
         GetMapSetV2(mid, type),
         json,
         (
+            firmware_event,
             MapSubsetEvent(
                 4,
                 type,
@@ -400,36 +414,39 @@ async def test_getMapSetV2_rooms() -> None:
     )
     subsets = [0, 1, 6, 2, 7, 3, 5]
     room_value = "-442,2910;-442,982;1214,982;1214,2910"
+    data, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gheijg",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 199,
+            }
+        )
+    )
     json = (
         # GetMapSetV2 response
-        get_request_json(
-            get_success_body(
-                {
-                    "type": type,
-                    "mid": mid,
-                    "msid": msid,
-                    "batid": "gheijg",
-                    "serial": 1,
-                    "index": 1,
-                    "subsets": subsets_comp,
-                    "infoSize": 199,
-                }
-            )
-        ),
+        data,
         # getMapSubSet response
-        *(_getMapSubSet_room_valid_response(room_value, subset) for subset in subsets),
+        *(
+            _getMapSubSet_room_valid_response(room_value, subset)[0]
+            for subset in subsets
+        ),
     )
+    events = [firmware_event, MapSetEvent(MapSetType(type), subsets)]
+    for subset in subsets:
+        events.extend(
+            [firmware_event, MapSubsetEvent(subset, type, room_value, "Living Room")]
+        )
 
     await assert_command(
         GetMapSetV2(mid, type),
         json,
-        (
-            MapSetEvent(MapSetType(type), subsets),
-            *(
-                MapSubsetEvent(subset, MapSetType.ROOMS, room_value, "Living Room")
-                for subset in subsets
-            ),
-        ),
+        events,
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"id": mid, "set_id": msid, "type": MapSetType(type), "subsets": subsets},
@@ -441,7 +458,7 @@ async def test_getMapSetV2_rooms() -> None:
 async def test_getMapSetV2_virtual_walls() -> None:
     mid = "199390082"
     type = MapSetType.VIRTUAL_WALLS
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "type": type,
@@ -475,10 +492,13 @@ async def test_getMapSetV2_virtual_walls() -> None:
     await assert_command(
         GetMapSetV2(mid, type),
         json,
-        [
-            MapSubsetEvent(int(subs["mssid"]), type, str(subs["coordinates"]))
-            for subs in expected_walls
-        ],
+        (
+            firmware_event,
+            *[
+                MapSubsetEvent(int(subs["mssid"]), type, str(subs["coordinates"]))
+                for subs in expected_walls
+            ],
+        ),
     )
 
 
@@ -486,7 +506,10 @@ async def test_getMapTrace() -> None:
     start = 0
     total = 160
     trace_value = "REMOVED"
-    json = get_request_json(
+    (
+        json,
+        firmware_event,
+    ) = get_request_json(
         get_success_body(
             {
                 "tid": "173207",
@@ -500,7 +523,7 @@ async def test_getMapTrace() -> None:
     await assert_command(
         GetMapTrace(start),
         json,
-        MapTraceEvent(start=start, total=total, data=trace_value),
+        (firmware_event, MapTraceEvent(start=start, total=total, data=trace_value)),
         command_result=CommandResult(
             HandlingState.SUCCESS, {"start": start, "total": total}, []
         ),
