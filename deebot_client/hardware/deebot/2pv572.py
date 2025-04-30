@@ -1,4 +1,4 @@
-"""2pv572 Capabilities."""
+"""OZMO 905 Capabilities."""
 
 from __future__ import annotations
 
