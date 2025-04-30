@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from collections.abc import Sequence
 import json
 from typing import TYPE_CHECKING, Any
-from unittest.mock import Mock
+from unittest.mock import Mock, call
 
 from testfixtures import LogCapture
 
@@ -35,15 +36,18 @@ async def assert_execute_command(
     assert command._args == args
 
     # success
-    json = get_request_json(get_success_body())
-    await assert_command(command, json, None)
+    json, firmware_event = get_request_json(get_success_body())
+    await assert_command(command, json, firmware_event)
 
     # failed
     with LogCapture() as log:
         body = {"code": 500, "msg": "fail"}
-        json = get_request_json(body)
+        json, firmware_event = get_request_json(body)
         await assert_command(
-            command, json, None, command_result=CommandResult(HandlingState.FAILED)
+            command,
+            json,
+            firmware_event,
+            command_result=CommandResult(HandlingState.FAILED),
         )
 
         log.check_present(
@@ -58,25 +62,33 @@ async def assert_execute_command(
 async def assert_set_command(
     command: JsonSetCommand,
     args: dict[str, Any],
-    expected_get_command_event: Event,
+    expected_get_command_events: Event | Sequence[Event],
 ) -> None:
     await assert_execute_command(command, args)
 
     event_bus = Mock(spec_set=EventBus)
 
     # Failed to set
-    json_data = get_message_json(
+    json_data, firmware_event = get_message_json(
         {
             "code": 500,
             "msg": "fail",
         }
     )
     command.handle_mqtt_p2p(event_bus, json.dumps(json_data))
-    event_bus.notify.assert_not_called()
+    event_bus.notify.assert_called_once_with(firmware_event)
 
+    event_bus.reset_mock()
     # Success
-    command.handle_mqtt_p2p(event_bus, json.dumps(get_message_json(get_success_body())))
-    event_bus.notify.assert_called_once_with(expected_get_command_event)
+    data, firmware_event = get_message_json(get_success_body())
+    command.handle_mqtt_p2p(event_bus, json.dumps(data))
+    if not isinstance(expected_get_command_events, Sequence):
+        expected_events = [firmware_event, expected_get_command_events]
+    else:
+        expected_events = [firmware_event, *expected_get_command_events]
+
+    event_bus.notify.assert_has_calls([call(x) for x in expected_events])
+    assert event_bus.notify.call_count == len(expected_events)
 
     payload = json.dumps({"body": {"data": args}})
     mqtt_command = command.create_from_mqtt(payload)

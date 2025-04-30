@@ -48,11 +48,10 @@ from deebot_client.events import (
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
     WorkMode,
     WorkModeEvent,
     auto_empty,
+    water_info,
 )
 
 if TYPE_CHECKING:
@@ -175,9 +174,10 @@ class CapabilityMap:
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
     major: CapabilityEvent[MajorMapEvent]
-    multi_state: CapabilitySetEnable[MultimapStateEvent]
+    minor: CapabilityExecute[[int, str]]
+    multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
-    relocation: CapabilityExecute[[]]
+    relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
     trace: CapabilityEvent[MapTraceEvent]
 
@@ -213,7 +213,7 @@ class CapabilitySettings:
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, [int]]
+    volume: CapabilitySet[VolumeEvent, [int]] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -227,6 +227,18 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilityWater:
+    """Capabilities for water."""
+
+    amount: CapabilitySetTypes[
+        water_info.WaterAmountEvent,
+        [water_info.WaterAmount | str],
+        water_info.WaterAmount,
+    ]
+    mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -252,9 +264,7 @@ class Capabilities(ABC):
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None
     stats: CapabilityStats
-    water: (
-        CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None
-    ) = None
+    water: CapabilityWater | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

@@ -10,7 +10,7 @@ from tests.helpers import (
 
 
 async def test_GetNetInfo() -> None:
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "ip": "192.168.1.100",
@@ -24,8 +24,11 @@ async def test_GetNetInfo() -> None:
     await assert_command(
         GetNetInfo(),
         json,
-        NetworkInfoEvent(
-            ip="192.168.1.100", ssid="WLAN", rssi=-61, mac="AA:BB:CC:DD:EE:FF"
+        (
+            firmware_event,
+            NetworkInfoEvent(
+                ip="192.168.1.100", ssid="WLAN", rssi=-61, mac="AA:BB:CC:DD:EE:FF"
+            ),
         ),
     )
 

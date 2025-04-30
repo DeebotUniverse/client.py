@@ -14,8 +14,12 @@ from . import assert_command, assert_set_enable_command
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetMoveUpWarning(*, value: bool) -> None:
     """Testing get moveup warning."""
-    json = get_request_json(get_success_body({"enable": 1 if value else 0}))
-    await assert_command(GetMoveUpWarning(), json, MoveUpWarningEvent(value))
+    json, firmware_event = get_request_json(
+        get_success_body({"enable": 1 if value else 0})
+    )
+    await assert_command(
+        GetMoveUpWarning(), json, (firmware_event, MoveUpWarningEvent(value))
+    )
 
 
 @pytest.mark.parametrize("value", [False, True])

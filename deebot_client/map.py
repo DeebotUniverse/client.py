@@ -8,7 +8,6 @@ from typing import TYPE_CHECKING, Final
 
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
-from .commands.json import GetMinorMap
 from .events import (
     MajorMapEvent,
     MapSetEvent,
@@ -31,9 +30,9 @@ from .util import (
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from .capabilities import CapabilityMap
     from .device import DeviceCommandExecute
     from .event_bus import EventBus
-
 
 _LOGGER = get_logger(__name__)
 
@@ -45,10 +44,12 @@ class Map:
         self,
         execute_command: DeviceCommandExecute,
         event_bus: EventBus,
+        capabilities: CapabilityMap,
     ) -> None:
         self._execute_command = execute_command
         self._event_bus = event_bus
 
+        self._capabilities = capabilities
         self._map_data: Final[MapData] = MapData(event_bus)
         self._amount_rooms: int = 0
         self._last_image: str | None = None
@@ -104,7 +105,7 @@ class Map:
                     ):
                         tg.create_task(
                             self._execute_command(
-                                GetMinorMap(map_id=event.map_id, piece_index=idx)
+                                self._capabilities.minor.execute(idx, event.map_id)
                             )
                         )
 

@@ -129,6 +129,7 @@ async def test_mqtt_client(
 async def static_device_info() -> StaticDeviceInfo:
     info = await get_static_device_info("yna5xi")
     assert info is not None
+    assert info.capabilities.map is not None
     return info
 
 

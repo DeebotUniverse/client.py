@@ -14,8 +14,10 @@ from . import assert_command, assert_set_command
 
 
 async def test_GetFanSpeed() -> None:
-    json = get_request_json(get_success_body({"speed": 2}))
-    await assert_command(GetFanSpeed(), json, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
+    json, firmware_event = get_request_json(get_success_body({"speed": 2}))
+    await assert_command(
+        GetFanSpeed(), json, (firmware_event, FanSpeedEvent(FanSpeedLevel.MAX_PLUS))
+    )
 
 
 @pytest.mark.parametrize(("value"), [FanSpeedLevel.MAX, "max"])

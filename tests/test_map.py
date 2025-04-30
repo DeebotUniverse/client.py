@@ -22,7 +22,7 @@ from deebot_client.map import (
     Map,
     MapData,
 )
-from deebot_client.models import Room
+from deebot_client.models import Room, StaticDeviceInfo
 from deebot_client.rs.map import PositionType
 
 from .common import block_till_done
@@ -83,9 +83,12 @@ async def test_Map_subscriptions(
     event_bus: EventBus,
     prepare_fn: Callable[[Mock], None],
     events_with_subscriber: list[type[Event]],
+    static_device_info: StaticDeviceInfo,
 ) -> None:
     prepare_fn(event_bus_mock)
-    map = Map(execute_mock, event_bus_mock)
+    capabilities_map = static_device_info.capabilities.map
+    assert capabilities_map is not None
+    map = Map(execute_mock, event_bus_mock, capabilities_map)
 
     calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
     event_bus_mock.subscribe.assert_has_calls(calls)
@@ -126,11 +129,15 @@ async def test_Map_subscriptions(
     assert not map._unsubscribers
 
 
-async def setup_map(execute_mock: AsyncMock, event_bus: EventBus) -> Map:
+async def setup_map(
+    execute_mock: AsyncMock, event_bus: EventBus, static_device_info: StaticDeviceInfo
+) -> Map:
     async def on_change(_: MapChangedEvent) -> None:
         pass
 
-    map = Map(execute_mock, event_bus)
+    capabilities_map = static_device_info.capabilities.map
+    assert capabilities_map is not None
+    map = Map(execute_mock, event_bus, capabilities_map)
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
     return map
@@ -156,9 +163,10 @@ async def test_invalid_map_piece_index(
     event_bus: EventBus,
     event: Event,
     exception_class: type[Exception],
+    static_device_info: StaticDeviceInfo,
 ) -> None:
     """Test invalid map piece index."""
-    await setup_map(execute_mock, event_bus)
+    await setup_map(execute_mock, event_bus, static_device_info)
 
     event_bus.notify(event)
     with pytest.raises(exception_class) as ex:
@@ -173,9 +181,10 @@ async def test_invalid_map_piece_index(
 async def test_get_svg_map_empty(
     execute_mock: AsyncMock,
     event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
 ) -> None:
     """Test getting svg map without data returns None."""
-    map = await setup_map(execute_mock, event_bus)
+    map = await setup_map(execute_mock, event_bus, static_device_info)
     assert map.get_svg_map() is None
 
 
@@ -184,11 +193,12 @@ def test_get_svg_map(
     benchmark: BenchmarkFixture,
     execute_mock: AsyncMock,
     event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
 ) -> None:
     """Test getting svg map."""
 
     async def test_fn() -> str | None:
-        map = await setup_map(execute_mock, event_bus)
+        map = await setup_map(execute_mock, event_bus, static_device_info)
 
         for event in _events_for_map_test():
             event_bus.notify(event)

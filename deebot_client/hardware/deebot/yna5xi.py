@@ -16,6 +16,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStats,
+    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -37,7 +38,12 @@ from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
-from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapTrace,
+    GetMinorMap,
+)
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
     SetMultimapState,
@@ -77,8 +83,7 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
+    water_info,
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.models import StaticDeviceInfo
@@ -130,6 +135,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             changed=CapabilityEvent(MapChangedEvent, []),
             clear=CapabilityExecute(ClearMap),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
+            minor=CapabilityExecute(GetMinorMap),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),
@@ -158,16 +164,19 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        water=CapabilitySetTypes(
-            event=WaterInfoEvent,
-            get=[GetWaterInfo()],
-            set=SetWaterInfo,
-            types=(
-                WaterAmount.LOW,
-                WaterAmount.MEDIUM,
-                WaterAmount.HIGH,
-                WaterAmount.ULTRAHIGH,
+        water=CapabilityWater(
+            amount=CapabilitySetTypes(
+                event=water_info.WaterAmountEvent,
+                get=[GetWaterInfo()],
+                set=SetWaterInfo,
+                types=(
+                    water_info.WaterAmount.LOW,
+                    water_info.WaterAmount.MEDIUM,
+                    water_info.WaterAmount.HIGH,
+                    water_info.WaterAmount.ULTRAHIGH,
+                ),
             ),
+            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),
     ),
 )

@@ -23,7 +23,7 @@ async def test_GetStationState(
     additional_content: dict[str, Any],
     expected: State,
 ) -> None:
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "content": {"error": [], **additional_content},
@@ -31,4 +31,6 @@ async def test_GetStationState(
             }
         )
     )
-    await assert_command(GetStationState(), json, StationEvent(expected))
+    await assert_command(
+        GetStationState(), json, (firmware_event, StationEvent(expected))
+    )

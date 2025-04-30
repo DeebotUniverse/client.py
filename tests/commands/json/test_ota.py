@@ -18,7 +18,7 @@ from . import assert_command, assert_set_command
     ],
 )
 async def test_GetOta(*, auto_enabled: bool, support_auto: bool) -> None:
-    json = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "autoSwitch": 1 if auto_enabled else 0,
@@ -32,12 +32,15 @@ async def test_GetOta(*, auto_enabled: bool, support_auto: bool) -> None:
     await assert_command(
         GetOta(),
         json,
-        OtaEvent(
-            auto_enabled=auto_enabled,
-            support_auto=support_auto,
-            version="1.7.2",
-            status="idle",
-            progress=0,
+        (
+            firmware_event,
+            OtaEvent(
+                auto_enabled=auto_enabled,
+                support_auto=support_auto,
+                version="1.7.2",
+                status="idle",
+                progress=0,
+            ),
         ),
     )
 

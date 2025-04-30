@@ -9,7 +9,7 @@ import pytest
 
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.map import MapChangedEvent
-from deebot_client.events.water_info import WaterInfoEvent
+from deebot_client.events.water_info import WaterAmountEvent
 from deebot_client.models import State
 
 if TYPE_CHECKING:
@@ -82,7 +82,7 @@ async def test_refresh_when_coming_back_online(
         await asyncio.sleep(0.1)
         available_mock.assert_awaited_with(event)
 
-    event_bus.subscribe(WaterInfoEvent, AsyncMock())
+    event_bus.subscribe(WaterAmountEvent, AsyncMock())
     event_bus.subscribe(StateEvent, AsyncMock())
     event_bus.subscribe(AvailabilityEvent, available_mock)
     await asyncio.sleep(0.1)
@@ -94,7 +94,7 @@ async def test_refresh_when_coming_back_online(
     await notify(available=True)
 
     _verify_event_command_called(
-        execute_mock, WaterInfoEvent, event_bus, expected_call=True
+        execute_mock, WaterAmountEvent, event_bus, expected_call=True
     )
     _verify_event_command_called(
         execute_mock, StateEvent, event_bus, expected_call=True

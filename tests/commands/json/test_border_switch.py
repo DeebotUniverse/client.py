@@ -14,8 +14,12 @@ from . import assert_command, assert_set_enable_command
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetBorderSwitch(*, value: bool) -> None:
     """Testing get border switch."""
-    json = get_request_json(get_success_body({"enable": 1 if value else 0}))
-    await assert_command(GetBorderSwitch(), json, BorderSwitchEvent(value))
+    json, firmware_event = get_request_json(
+        get_success_body({"enable": 1 if value else 0})
+    )
+    await assert_command(
+        GetBorderSwitch(), json, (firmware_event, BorderSwitchEvent(value))
+    )
 
 
 @pytest.mark.parametrize("value", [False, True])

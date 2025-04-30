@@ -4,7 +4,7 @@ from typing import Any
 
 import pytest
 
-from deebot_client.events import CleanJobStatus, ReportStatsEvent, StatsEvent
+from deebot_client.events import CleanJobStatus, FirmwareEvent, ReportStatsEvent, StatsEvent
 from deebot_client.messages.json import OnStats, ReportStats
 from tests.messages import assert_message
 
@@ -60,7 +60,7 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
         "body": {"data": data},
     }
 
-    assert_message(ReportStats, data, expected)
+    assert_message(ReportStats, data, (FirmwareEvent("1.8.2"), expected))
 
 
 @pytest.mark.parametrize(
