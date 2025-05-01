@@ -4,7 +4,12 @@ from typing import Any
 
 import pytest
 
-from deebot_client.events import CleanJobStatus, FirmwareEvent, ReportStatsEvent, StatsEvent
+from deebot_client.events import (
+    CleanJobStatus,
+    FirmwareEvent,
+    ReportStatsEvent,
+    StatsEvent,
+)
 from deebot_client.messages.json import OnStats, ReportStats
 from tests.messages import assert_message
 
