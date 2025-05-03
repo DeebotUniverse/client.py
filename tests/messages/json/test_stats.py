@@ -124,4 +124,4 @@ def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
         "body": {"data": data},
     }
 
-    assert_message(OnStats, data, expected)
+    assert_message(OnStats, data, (FirmwareEvent("1.8.2"), expected))
