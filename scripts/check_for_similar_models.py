@@ -3,8 +3,10 @@
 from __future__ import annotations
 
 import asyncio
+import json
 import logging
 import os
+from pathlib import Path
 import time
 
 import aiohttp
@@ -13,6 +15,12 @@ from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
 from deebot_client.hardware.deebot import DEVICES, _load
 from deebot_client.util import md5
+
+
+def _save_models(models_map: dict[str, list[str]]) -> None:
+    """Save models to file."""
+    with Path("models_map.json").open("w") as f:
+        f.write(json.dumps(models_map, indent=4))
 
 
 async def main() -> None:
@@ -33,6 +41,8 @@ async def main() -> None:
         name_map: dict[str, list[str]] = {}
         for key, value in (await api_client.get_product_iot_map()).items():
             name_map.setdefault(value["name"], []).append(key)
+
+        await asyncio.get_event_loop().run_in_executor(None, _save_models, name_map)
 
         # Load current models
         await asyncio.get_event_loop().run_in_executor(None, _load)
