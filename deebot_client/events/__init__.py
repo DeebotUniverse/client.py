@@ -34,6 +34,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
+    "AutoCutDirectionEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -54,6 +55,7 @@ __all__ = [
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "RainDelayEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",
@@ -237,6 +239,11 @@ class AdvancedModeEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class AutoCutDirectionEvent(EnableEvent):
+    """Auto cut direction event."""
+
+
+@dataclass(frozen=True)
 class ContinuousCleaningEvent(EnableEvent):
     """Continuous cleaning event."""
 
@@ -308,3 +315,11 @@ class FirmwareEvent(Event):
     """Firmware event."""
 
     version: str
+
+
+@dataclass(frozen=True)
+class RainDelayEvent(Event):
+    """Rain delay event representation."""
+
+    enable: bool
+    delay: int
