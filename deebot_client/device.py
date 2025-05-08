@@ -20,6 +20,7 @@ from .events import (
     CustomCommandEvent,
     FirmwareEvent,
     LifeSpanEvent,
+    Position,
     PositionsEvent,
     StateEvent,
     StatsEvent,
@@ -77,7 +78,9 @@ class Device:
             if self._state == StateEvent(State.DOCKED):
                 return
 
-            deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
+            deebot: Position | None = next(
+                (p for p in event.positions if p.type == PositionType.DEEBOT), None
+            )
 
             if deebot:
                 on_charger = filter(
