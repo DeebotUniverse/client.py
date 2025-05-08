@@ -42,6 +42,8 @@ class ChargeState(XmlMessage):
                 case "slotcharging" | "slot_charging" | "wirecharging":
                     status = State.DOCKED
                 case "idle":
+                    # Bot reports IDLE while not on the charger (e.g. while cleaning)
+                    # We ignore this state since it will conflict with the actual cleaning state
                     pass
                 case "going":
                     status = State.RETURNING
