@@ -21,11 +21,10 @@ if TYPE_CHECKING:
     ("state", "expected_event"),
     [
         ("SlotCharging", StateEvent(State.DOCKED)),
-        ("Idle", StateEvent(State.IDLE)),
         ("Going", StateEvent(State.RETURNING)),
         ("unknown state returned", StateEvent(State.ERROR)),
     ],
-    ids=["slot_charging", "idle", "going", "unknown"],
+    ids=["slot_charging", "going", "unknown"],
 )
 async def test_get_charge_state(state: str, expected_event: Event) -> None:
     json = get_request_xml(f"<ctl ret='ok'><charge type='{state}' g='0'/></ctl>")
@@ -34,8 +33,12 @@ async def test_get_charge_state(state: str, expected_event: Event) -> None:
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>", "<ctl ret='ok'></ctl>"],
-    ids=["error", "no_state"],
+    [
+        "<ctl ret='error'/>",
+        "<ctl ret='ok'></ctl>",
+        "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>",
+    ],
+    ids=["error", "no_state", "idle"],
 )
 async def test_get_charge_state_error(xml: str) -> None:
     json = get_request_xml(xml)

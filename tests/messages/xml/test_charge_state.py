@@ -13,11 +13,10 @@ from tests.messages import assert_message, assert_message_failure
     ("state", "expected_event"),
     [
         ("SlotCharging", StateEvent(State.DOCKED)),
-        ("Idle", StateEvent(State.IDLE)),
         ("Going", StateEvent(State.RETURNING)),
         ("unknown state returned", StateEvent(State.ERROR)),
     ],
-    ids=["slot_charging", "idle", "going", "unknown"],
+    ids=["slot_charging", "going", "unknown"],
 )
 async def test_charge_state(state: str, expected_event: Event) -> None:
     xml_message = f'<ctl ts="1745329944849" td="ChargeState"><charge type="{state}" h="" r="" s="" g="0" /></ctl>'
@@ -28,8 +27,9 @@ async def test_charge_state(state: str, expected_event: Event) -> None:
     "xml_message",
     [
         '<ctl ts="1745329944849" td="ChargeState" />',
+        '<ctl ts="1745329944849" td="ChargeState"><charge type="Idle" h="" r="" s="" g="0" /></ctl>',
     ],
-    ids=["missing_payload"],
+    ids=["missing_payload", "idle"],
 )
 async def test_charge_state_error(xml_message: str) -> None:
     assert_message_failure(ChargeState, xml_message, HandlingState.ANALYSE_LOGGED)
