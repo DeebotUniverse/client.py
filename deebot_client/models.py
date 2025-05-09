@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 from enum import IntEnum, unique
-from pathlib import Path
 from typing import TYPE_CHECKING, Required, TypedDict
 
 from deebot_client.util.enum import StrEnumWithXml
@@ -91,26 +90,3 @@ class Credentials:
     token: str
     user_id: str
     expires_at: int = 0
-
-
-def _str_to_bool_or_cert(value: bool | str) -> bool | str:
-    """Convert string to bool or certificate."""
-    if isinstance(value, bool):
-        return value
-
-    if value is not None:
-        value = value.lower()
-        if value in ("y", "yes", "t", "true", "on", "1"):
-            return True
-        if value in ("n", "no", "f", "false", "off", "0"):
-            return False
-        path = Path(str(value))
-        if path.exists():
-            # User could provide a path to a CA Cert as well, which is useful for Bumper
-            if path.is_file():
-                return value
-            msg = f"Certificate path provided is not a file: {value}"
-            raise ValueError(msg)
-
-    msg = f'Cannot convert "{value}" to a bool or certificate path'
-    raise ValueError(msg)
