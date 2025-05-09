@@ -13,18 +13,21 @@ from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.xml import GetBatteryInfo
 from deebot_client.const import DataType
 from deebot_client.device import Device
-from deebot_client.events import AvailabilityEvent
+from deebot_client.events import AvailabilityEvent, StateEvent
+from deebot_client.events.map import Position, PositionsEvent
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.hardware import get_static_device_info
 from deebot_client.messages.json import OnBattery
 from deebot_client.messages.xml import BatteryInfo
 from deebot_client.models import DeviceInfo, StaticDeviceInfo
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
+from deebot_client.rs.map import PositionType
 from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
+    from deebot_client.event_bus import EventBus
     from deebot_client.message import Message
     from deebot_client.models import ApiDeviceInfo
 
@@ -274,6 +277,88 @@ async def test_device_handle_message_behaviour(
     await asyncio.sleep(1)
 
     assert bot.fw_version == expected_version
+
+    # teardown bot
+    await bot.teardown()
+
+
+@pytest.mark.parametrize(
+    ("pos_event", "expected_call"),
+    [
+        (PositionsEvent([]), False),
+        (PositionsEvent([Position(PositionType.CHARGER, 0, 0, 0)]), False),
+        (PositionsEvent([Position(PositionType.DEEBOT, 0, 0, 0)]), False),
+        (
+            PositionsEvent(
+                [
+                    Position(PositionType.DEEBOT, 0, 0, 0),
+                    Position(PositionType.CHARGER, 0, 0, 0),
+                ]
+            ),
+            True,
+        ),
+        (
+            PositionsEvent(
+                [
+                    Position(PositionType.CHARGER, 0, 0, 0),
+                    Position(PositionType.DEEBOT, 0, 0, 0),
+                ]
+            ),
+            True,
+        ),
+        (
+            PositionsEvent(
+                [
+                    Position(PositionType.CHARGER, 1, 0, 0),
+                    Position(PositionType.DEEBOT, 0, 0, 0),
+                ]
+            ),
+            False,
+        ),
+        (
+            PositionsEvent(
+                [
+                    Position(PositionType.DEEBOT, 0, 0, 0),
+                    Position(PositionType.CHARGER, 1, 0, 0),
+                ]
+            ),
+            False,
+        ),
+        (
+            PositionsEvent(
+                [
+                    Position(PositionType.DEEBOT, 0, 0, 0),
+                    Position(PositionType.CHARGER, 1, 0, 0),
+                    Position(PositionType.CHARGER, 0, 0, 0),
+                ]
+            ),
+            True,
+        ),
+    ],
+)
+async def test_onPos_device_handling(
+    authenticator: Authenticator,
+    device_info: DeviceInfo,
+    event_bus_mock: Mock,
+    event_bus: EventBus,
+    pos_event: PositionsEvent,
+    expected_call: bool,
+) -> None:
+    """Test the available check including if the status Event is fired correctly."""
+    with patch("deebot_client.device.EventBus", return_value=event_bus_mock):
+        bot = Device(device_info, authenticator)
+        mqtt_client = Mock(spec=MqttClient)
+        unsubscribe_mock = Mock(spec=Callable[[], None])
+        mqtt_client.subscribe.return_value = unsubscribe_mock
+        await bot.initialize(mqtt_client)
+
+    bot.events.notify(pos_event)
+    await block_till_done(event_bus._tasks)
+
+    if expected_call:
+        event_bus_mock.request_refresh.assert_called_once_with(StateEvent)
+    else:
+        event_bus_mock.request_refresh.assert_not_called()
 
     # teardown bot
     await bot.teardown()
