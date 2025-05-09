@@ -77,18 +77,20 @@ class Device:
             if self._state == StateEvent(State.DOCKED):
                 return
 
-            deebot = next(p for p in event.positions if p.type == PositionType.DEEBOT)
+            deebot = next(
+                (p for p in event.positions if p.type == PositionType.DEEBOT), None
+            )
 
-            if deebot:
-                on_charger = filter(
-                    lambda p: p.type == PositionType.CHARGER
-                    and p.x == deebot.x
-                    and p.y == deebot.y,
-                    event.positions,
-                )
-                if on_charger:
-                    # deebot on charger so the status should be docked... Checking
-                    self.events.request_refresh(StateEvent)
+            if deebot and any(
+                p
+                for p in event.positions
+                if p.type == PositionType.CHARGER
+                and p.x == deebot.x
+                and p.y == deebot.y
+            ):
+                # Deebot is on charger and the status is not docked
+                # Request refresh for the state
+                self.events.request_refresh(StateEvent)
 
         self.events.subscribe(PositionsEvent, on_pos)
 
