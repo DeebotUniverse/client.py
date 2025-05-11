@@ -17,10 +17,35 @@ from deebot_client.hardware.deebot import DEVICES, _load
 from deebot_client.util import md5
 
 
-def _save_models(models_map: dict[str, list[str]]) -> None:
-    """Save models to file."""
-    with Path("models_map.json").open("w") as f:
-        f.write(json.dumps(models_map, indent=4))
+def _save_file(name: str, data: dict[str, list[str]]) -> None:
+    """Save data to file."""
+    path = Path("similarity_output")
+    path.mkdir(exist_ok=True)
+    with path.joinpath(name).open("w") as f:
+        f.write(json.dumps(data, indent=4))
+
+
+def _add_models_by_similarity(models: list[str]) -> None:
+    """Add models by similarity."""
+    if len(models) < 2:
+        # No similar models
+        return
+
+    model_to_link = None
+    for model in models:
+        if model in DEVICES:
+            model_to_link = model
+            break
+
+    if model_to_link:
+        # Found a model to link
+        for model in models:
+            if model != model_to_link and model not in DEVICES:
+                os.symlink(
+                    f"{model_to_link}.py",
+                    f"{model}.py",
+                    dir_fd=os.open("deebot_client/hardware/deebot", os.O_RDONLY),
+                )
 
 
 async def main() -> None:
@@ -38,37 +63,26 @@ async def main() -> None:
         )
         api_client = ApiClient(authenticator)
 
+        iot_map = await api_client.get_product_iot_map()
         name_map: dict[str, list[str]] = {}
-        for key, value in (await api_client.get_product_iot_map()).items():
+        ui_logic_map: dict[str, list[str]] = {}
+        for key, value in iot_map.items():
             name_map.setdefault(value["name"], []).append(key)
+            ui_logic_map.setdefault(value["UILogicId"], []).append(key)
 
-        await asyncio.get_event_loop().run_in_executor(None, _save_models, name_map)
+        await asyncio.get_event_loop().run_in_executor(
+            None, _save_file, "models_map.json", name_map
+        )
+        await asyncio.get_event_loop().run_in_executor(
+            None, _save_file, "ui_logic_map.json", ui_logic_map
+        )
 
         # Load current models
         await asyncio.get_event_loop().run_in_executor(None, _load)
 
-        for models in name_map.values():
-            if len(models) < 2:
-                # No similar models
-                continue
-
-            model_to_link = None
-            for model in models:
-                if model in DEVICES:
-                    model_to_link = model
-                    break
-
-            if model_to_link:
-                # Found a model to link
-                for model in models:
-                    if model != model_to_link and model not in DEVICES:
-                        os.symlink(
-                            f"{model_to_link}.py",
-                            f"{model}.py",
-                            dir_fd=os.open(
-                                "deebot_client/hardware/deebot", os.O_RDONLY
-                            ),
-                        )
+        for map in (name_map, ui_logic_map):
+            for models in map.values():
+                _add_models_by_similarity(models)
 
 
 if __name__ == "__main__":

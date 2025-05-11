@@ -29,4 +29,5 @@ test.py
 *.cpython*.so
 
 .codspeed
-models_map.json
+
+similarity_output/
