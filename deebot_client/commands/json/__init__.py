@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
-from .auto_cut_direction import GetAutoCutDirection, SetAutoCutDirection
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
@@ -40,7 +39,6 @@ from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
-from .rain_delay import GetRainDelay, SetRainDelay
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
 from .stats import GetStats, GetTotalStats
@@ -63,7 +61,6 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
-    "GetAutoCutDirection",
     "GetBattery",
     "GetBorderSwitch",
     "GetCachedMapInfo",
@@ -94,7 +91,6 @@ __all__ = [
     "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
-    "GetRainDelay",
     "GetSafeProtect",
     "GetStats",
     "GetSweepMode",
@@ -107,7 +103,6 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
-    "SetAutoCutDirection",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
     "SetChildLock",
@@ -121,7 +116,6 @@ __all__ = [
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
-    "SetRainDelay",
     "SetRelocationState",
     "SetSafeProtect",
     "SetSweepMode",
@@ -138,9 +132,6 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
 
-    GetAutoCutDirection,
-    SetAutoCutDirection,
-    
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
 
@@ -217,9 +208,6 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetPos,
 
-    GetRainDelay,
-    SetRainDelay,
-    
     SetRelocationState,
 
     GetSafeProtect,
