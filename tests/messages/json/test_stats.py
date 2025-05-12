@@ -109,6 +109,14 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
                 type="auto",
             ),
         ),
+        (
+            {"mowid": "0", "time": 11269, "area": 2889500, "mowedArea": 1005475},
+            StatsEvent(
+                area=2889500,
+                time=11269,
+                type=None,
+            ),
+        ),
     ],
 )
 def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
