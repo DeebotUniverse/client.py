@@ -24,38 +24,39 @@ class Clean(ExecuteCommand):
     HAS_SUB_ELEMENT = True
 
     def __init__(
-        self, action: CleanAction, speed: FanSpeedLevel = FanSpeedLevel.NORMAL
+        self,
+        action: CleanAction,
+        speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
+        mode: CleanMode = CleanMode.AUTO,
+        additional_args: dict[str, str] | None = None,
     ) -> None:
+        """Initialize the command."""
+        if additional_args is None:
+            additional_args = {}
         super().__init__(
             {
-                "type": CleanMode.AUTO.xml_value,
+                "type": mode.xml_value,
                 "act": action.xml_value,
                 "speed": speed.xml_value,
+                **additional_args,
             }
         )
 
 
-class CleanArea(ExecuteCommand):
+class CleanArea(Clean):
     """Clean area command."""
-
-    NAME = "Clean"
-    HAS_SUB_ELEMENT = True
 
     def __init__(
         self,
         mode: CleanMode,
-        area: str,
+        area_or_coordinates: str,
         cleanings: int = 1,
-        speed: FanSpeedLevel = FanSpeedLevel.NORMAL,
     ) -> None:
+        key = "area" if mode == CleanMode.SPOT_AREA else "p"
         super().__init__(
-            {
-                "type": mode.xml_value,
-                "act": CleanAction.START.xml_value,
-                "speed": speed.xml_value,
-                "deep": str(cleanings),
-                "mid": area,
-            }
+            CleanAction.START,
+            mode=mode,
+            additional_args={"deep": str(cleanings), key: area_or_coordinates},
         )
 
 

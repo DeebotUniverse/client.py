@@ -93,8 +93,27 @@ async def test_Clean_act(
             CleanAreaV2(CleanMode.SPOT_AREA, "5,8"),
             {"act": "start", "content": {"type": "spotArea", "value": "5,8"}},
         ),
+        (
+            CleanArea(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            {
+                "act": "start",
+                "type": "customArea",
+                "content": "1580.0,-4087.0,3833.0,-7525.0",
+                "count": 1,
+            },
+        ),
+        (
+            CleanAreaV2(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            {
+                "act": "start",
+                "content": {
+                    "type": "customArea",
+                    "value": "1580.0,-4087.0,3833.0,-7525.0",
+                },
+            },
+        ),
     ],
-    ids=["CleanArea", "CleanAreaV2"],
+    ids=["Rooms", "Rooms V2", "Coordinates", "Coordinates V2"],
 )
 async def test_CleanArea(
     command: CleanArea | CleanAreaV2, args: dict[str, str]
