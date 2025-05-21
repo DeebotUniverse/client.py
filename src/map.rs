@@ -347,7 +347,10 @@ impl MapData {
 
     fn update_map_piece(&mut self, index: usize, base64_data: String) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            return Err(PyValueError::new_err("Index out of bounds"));
+            return Err(PyValueError::new_err(format!(
+                "Index out of bounds;index:{},base64_data:{}",
+                index, base64_data
+            )));
         }
         self.map_pieces[index]
             .update_points(&base64_data)
