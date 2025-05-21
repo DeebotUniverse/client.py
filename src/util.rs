@@ -7,7 +7,7 @@ use liblzma::stream::Stream;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
-pub fn decompress_base64_data(value: String) -> Result<Vec<u8>, Box<dyn Error>> {
+pub fn decompress_base64_data(value: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let bytes = general_purpose::STANDARD.decode(value)?;
 
     if is_zstd_compressed(&bytes) {
@@ -51,8 +51,13 @@ fn is_zstd_compressed(bytes: &[u8]) -> bool {
 
 /// Decompress base64 decoded compressed string by using lzma or zstd
 #[pyfunction(name = "decompress_base64_data")]
-fn python_decompress_base64_data(value: String) -> Result<Vec<u8>, PyErr> {
-    decompress_base64_data(value).map_err(|err| PyValueError::new_err(err.to_string()))
+fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
+    decompress_base64_data(value).map_err(|err| {
+        let mut err = err.to_string();
+        err.push_str(";value:");
+        err.push_str(value);
+        PyValueError::new_err(err)
+    })
 }
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {

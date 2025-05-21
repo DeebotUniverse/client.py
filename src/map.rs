@@ -68,7 +68,7 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
         .collect()
 }
 
-fn extract_trace_points(value: String) -> Result<Vec<TracePoint>, Box<dyn Error>> {
+fn extract_trace_points(value: &str) -> Result<Vec<TracePoint>, Box<dyn Error>> {
     let decompressed_data = decompress_base64_data(value)?;
     process_trace_points(&decompressed_data)
 }
@@ -333,9 +333,13 @@ impl MapData {
     }
 
     fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
-        self.trace_points.extend(
-            extract_trace_points(value).map_err(|err| PyValueError::new_err(err.to_string()))?,
-        );
+        self.trace_points
+            .extend(extract_trace_points(&value).map_err(|err| {
+                let mut err = err.to_string();
+                err.push_str(";value:");
+                err.push_str(&value);
+                PyValueError::new_err(err)
+            })?);
         Ok(())
     }
 
@@ -348,8 +352,15 @@ impl MapData {
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         self.map_pieces[index]
-            .update_points(base64_data)
-            .map_err(|err| PyValueError::new_err(err.to_string()))
+            .update_points(&base64_data)
+            .map_err(|err| {
+                let mut err = err.to_string();
+                err.push_str(";index:");
+                err.push_str(index.to_string().as_str());
+                err.push_str(",base64_data:");
+                err.push_str(&base64_data);
+                PyValueError::new_err(err)
+            })
     }
 
     fn map_piece_crc32_indicates_update(
@@ -627,7 +638,7 @@ impl MapPiece {
         self.pixels_indexed.as_ref()
     }
 
-    fn update_points(&mut self, base64_data: String) -> Result<bool, Box<dyn std::error::Error>> {
+    fn update_points(&mut self, base64_data: &str) -> Result<bool, Box<dyn std::error::Error>> {
         let decoded = decompress_base64_data(base64_data)?;
         let old_crc32 = self.crc32;
 
@@ -795,7 +806,7 @@ mod tests {
     #[test]
     fn test_extract_trace_points_success() {
         let input = "XQAABACvAAAAAAAAAEINQkt4BfqEvt9Pow7YU9KWRVBcSBosIDAOtACCicHy+vmfexxcutQUhqkAPQlBawOeXo/VSrOqF7yhdJ1JPICUs3IhIebU62Qego0vdk8oObiLh3VY/PVkqQyvR4dHxUDzMhX7HAguZVn3yC17+cQ18N4kaydN3LfSUtV/zejrBM4=";
-        let result = extract_trace_points(input.to_string()).unwrap();
+        let result = extract_trace_points(input).unwrap();
         let expected = vec![
             TracePoint {
                 x: 0,
@@ -985,9 +996,7 @@ mod tests {
 
     #[test]
     fn test_update_map_piece_of_empty_piece() {
-        let data = String::from(
-            "XQAABAAQJwAAAABv/f//o7f/Rz5IFXI5YVG4kijmo4YH+e7kHoLTL8U6PAFLsX7Jhrz0KgA=",
-        );
+        let data = "XQAABAAQJwAAAABv/f//o7f/Rz5IFXI5YVG4kijmo4YH+e7kHoLTL8U6PAFLsX7Jhrz0KgA=";
         let mut map_piece = MapPiece {
             crc32: 0,
             pixels_indexed: None,

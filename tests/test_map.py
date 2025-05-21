@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING
-from unittest.mock import ANY, AsyncMock, Mock, call
+from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
 
@@ -186,6 +186,19 @@ async def test_get_svg_map_empty(
     """Test getting svg map without data returns None."""
     map = await setup_map(execute_mock, event_bus, static_device_info)
     assert map.get_svg_map() is None
+
+
+async def test_empty_maptrace(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test empty data will not raise exception."""
+    with patch("deebot_client.map.MapData", autospec=True):
+        map = await setup_map(execute_mock, event_bus, static_device_info)
+        event_bus.notify(MapTraceEvent(0, 0, ""))
+        await block_till_done(event_bus)
+        map._map_data.add_trace_points.assert_not_called()
 
 
 def test_get_svg_map(
