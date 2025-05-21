@@ -53,9 +53,7 @@ fn is_zstd_compressed(bytes: &[u8]) -> bool {
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     decompress_base64_data(value).map_err(|err| {
-        let mut err = err.to_string();
-        err.push_str(";value:");
-        err.push_str(value);
+        let err = format!("{};value:{}", err, value);
         PyValueError::new_err(err)
     })
 }

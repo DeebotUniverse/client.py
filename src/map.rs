@@ -335,9 +335,7 @@ impl MapData {
     fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
         self.trace_points
             .extend(extract_trace_points(&value).map_err(|err| {
-                let mut err = err.to_string();
-                err.push_str(";value:");
-                err.push_str(&value);
+                let err = format!("{};value:{}", err, value);
                 PyValueError::new_err(err)
             })?);
         Ok(())
@@ -354,11 +352,7 @@ impl MapData {
         self.map_pieces[index]
             .update_points(&base64_data)
             .map_err(|err| {
-                let mut err = err.to_string();
-                err.push_str(";index:");
-                err.push_str(index.to_string().as_str());
-                err.push_str(",base64_data:");
-                err.push_str(&base64_data);
+                let err = format!("{};index:{},base64_data:{}", err, index, base64_data);
                 PyValueError::new_err(err)
             })
     }
