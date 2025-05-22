@@ -1,3 +1,4 @@
+use log::error;
 use std::error::Error;
 use std::io::{Cursor, Read};
 
@@ -53,8 +54,8 @@ fn is_zstd_compressed(bytes: &[u8]) -> bool {
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     decompress_base64_data(value).map_err(|err| {
-        let err = format!("{};value:{}", err, value);
-        PyValueError::new_err(err)
+        error!("Error decompressing base64 data: {}; value:{}", err, value);
+        PyValueError::new_err(err.to_string())
     })
 }
 

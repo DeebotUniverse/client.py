@@ -7,7 +7,7 @@ use base64::Engine;
 use byteorder::{LittleEndian, ReadBytesExt};
 use crc32fast::Hasher;
 use image::{GenericImageView, GrayImage, Luma};
-use log::debug;
+use log::{debug, error};
 use once_cell::sync::Lazy;
 use png::{BitDepth, ColorType, Compression, Encoder};
 use pyo3::exceptions::PyValueError;
@@ -335,8 +335,8 @@ impl MapData {
     fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
         self.trace_points
             .extend(extract_trace_points(&value).map_err(|err| {
-                let err = format!("{};value:{}", err, value);
-                PyValueError::new_err(err)
+                error!("Failed to extract trace points: {};value:{}", err, value);
+                PyValueError::new_err(err.to_string())
             })?);
         Ok(())
     }
@@ -347,16 +347,20 @@ impl MapData {
 
     fn update_map_piece(&mut self, index: usize, base64_data: String) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            return Err(PyValueError::new_err(format!(
-                "Index out of bounds;index:{},base64_data:{}",
+            error!(
+                "Index out of bounds; index:{}, base64_data:{}",
                 index, base64_data
-            )));
+            );
+            return Err(PyValueError::new_err("Index out of bounds"));
         }
         self.map_pieces[index]
             .update_points(&base64_data)
             .map_err(|err| {
-                let err = format!("{};index:{},base64_data:{}", err, index, base64_data);
-                PyValueError::new_err(err)
+                error!(
+                    "Failed to update map piece: {}; index:{}, base64_data:{}",
+                    err, index, base64_data,
+                );
+                PyValueError::new_err(err.to_string())
             })
     }
 
@@ -366,6 +370,7 @@ impl MapData {
         crc32: u32,
     ) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
+            error!("Index out of bounds; index:{}", index);
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))
