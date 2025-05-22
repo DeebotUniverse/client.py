@@ -138,7 +138,7 @@ class Map:
             if event.start == 0:
                 self._map_data.clear_trace_points()
 
-            if event.data:
+            if event.data.strip():
                 self._map_data.add_trace_points(event.data)
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
