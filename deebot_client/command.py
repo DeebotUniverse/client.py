@@ -192,6 +192,10 @@ class Command(ABC):
                 "tzm": 60,
                 "tzc": "Europe/London"
             })
+            device_id = device_info["did"]
+            resource_id = device_info["resource"]
+
+            sst_token = await authenticator.get_sst_token(device_id, resource_id)
             query_params = {
                 "fmt": self.DATA_TYPE.value,
                 "ct": "q",
@@ -201,11 +205,17 @@ class Command(ABC):
                 "apn": self.NAME, # (clean|charge)
                 "si": device_info["resource"]    # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
+
+            headers = {
+                **REQUEST_HEADERS,
+                "Authorization": f"Bearer {sst_token}",
+            }
+
             return await authenticator.post_authenticated(
                 self._api_path,
                 body,
                 query_params=query_params,
-                headers=REQUEST_HEADERS,
+                headers=headers,
             )
 
     def __handle_response(
@@ -235,6 +245,7 @@ class Command(ABC):
                 exc_info=True,
             )
             return CommandResult(HandlingState.ERROR)
+
 
     @abstractmethod
     def _handle_response(

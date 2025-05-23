@@ -259,6 +259,8 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
+    
+
     async def post(
         self,
         path: str,
@@ -269,29 +271,21 @@ class _AuthClient:
         credentials: Credentials | None = None,
     ) -> dict[str, Any]:
         """Perform a post request."""
-        if path == PATH_API_ISSUE_NEW_PERMISSION:
-            url == urljoin(self._config.api_base_url, "api/" + path)
-        else:
-            url = urljoin(self._config.portal_url, "api/" + path)
-
+        url = urljoin(self._config.portal_url, "api/" + path)
         logger_request_params = f"url={url}, params={query_params}, json={json}"
-        if credentials is not None:
-            if path == PATH_API_IOT_CONTROL or path == PATH_API_ISSUE_NEW_PERMISSION:
-                headers.update({
-                        "Authorization": f"Bearer {credentials.token}",
-                    })
-            else:
-                json.update(
-                    {
-                        "auth": {
-                            "with": "users",
-                            "userid": credentials.user_id,
-                            "realm": REALM,
-                            "token": credentials.token,
-                            "resource": self._config.device_id,
-                        }
+
+        if credentials is not None and (headers is None or "Authorization" not in headers):
+            json.update(
+                {
+                    "auth": {
+                        "with": "users",
+                        "userid": credentials.user_id,
+                        "realm": REALM,
+                        "token": credentials.token,
+                        "resource": self._config.device_id,
                     }
-                )
+                }
+            )
 
         for i in range(MAX_RETRIES):
             _LOGGER.debug(
@@ -424,6 +418,29 @@ class Authenticator:
             headers=headers,
             credentials=await self.authenticate(),
         )
+    
+    async def get_sst_token(self, device_id: str, resource_id: str) -> str:
+        credentials = await self.authenticate()
+        perm_payload = {
+            "acl": [{
+                "policy": [{
+                    "obj": [f"Endpoint:{resource_id}:{device_id}"],
+                    "perms": ["Control"]
+                }],
+                "svc": "dim"
+            }],
+            "exp": 600,
+            "sub": resource_id
+        }
+        response = await self._auth_client.post(
+            PATH_API_ISSUE_NEW_PERMISSION,
+            perm_payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {credentials.token}"
+            }
+        )
+        return response["data"]["data"]["token"]
 
     async def teardown(self) -> None:
         """Teardown authenticator."""
