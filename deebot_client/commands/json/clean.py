@@ -150,16 +150,17 @@ class CleanV3(ExecuteCommand):
         _LOGGER.debug("Post-clean action executed: %s", self._args.get("act"))
 
         if self._args.get("act") == CleanAction.START.value:
-            try:
-                await SetError(505).execute(authenticator, device_info, event_bus)
-            except Exception:
-                _LOGGER.warning("Could not clear error 505")
+            new_state = event_bus.get_last_event(StateEvent)
+            if new_state and new_state.state == State.PAUSED:
+                try:
+                    await SetError(505).execute(authenticator, device_info, event_bus)
+                except Exception:
+                    _LOGGER.warning("Could not clear error 505")
 
-            # Do an extra resume if required
-            try:
-                await CleanV3(CleanAction.RESUME).execute(authenticator, device_info, event_bus)
-            except Exception:
-                _LOGGER.warning("Could not resume after clearing error")
+                try:
+                    await CleanV3(CleanAction.RESUME).execute(authenticator, device_info, event_bus)
+                except Exception:
+                    _LOGGER.warning("Could not resume after clearing error")
 
         return result
 
