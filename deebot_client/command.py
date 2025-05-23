@@ -183,6 +183,14 @@ class Command(ABC):
 
         elif self._api_path == PATH_API_IOT_CONTROL:
             body = payload["payload"]
+            body["header"].update({
+                "channel": "Android",
+                "m": "request",
+                "pri": 2,
+                "ver": "0.0.22",
+                "tzm": 60,
+                "tzc": "Europe/London"
+            })
             query_params = {
                 "fmt": self.DATA_TYPE.value,
                 "ct": "q",
@@ -190,7 +198,7 @@ class Command(ABC):
                 "er": device_info["resource"],
                 "et": device_info["class"],
                 "apn": self.NAME, # (clean|charge)
-                "si": device_info["resource"],    # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+                "si": device_info["resource"]    # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
             return await authenticator.post_authenticated(
                 self._api_path,
