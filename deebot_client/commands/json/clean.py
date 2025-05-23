@@ -130,13 +130,6 @@ class CleanV3(ExecuteCommand):
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
     ) -> tuple[CommandResult, dict[str, Any]]:
-        # Clear error before starting
-        if self._action == CleanAction.START:
-            try:
-                await SetError(505).execute(authenticator, device_info, event_bus)
-            except Exception:
-                _LOGGER.warning("Could not clear error 505")
-
         # Resume ↔ Start logic
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict):
@@ -151,7 +144,21 @@ class CleanV3(ExecuteCommand):
             ):
                 self._args = self._get_args(CleanAction.RESUME)
 
-        return await super()._execute(authenticator, device_info, event_bus)
+        result = await super()._execute(authenticator, device_info, event_bus)
+
+        if self._action == CleanAction.START:
+            try:
+                await SetError(505).execute(authenticator, device_info, event_bus)
+            except Exception:
+                _LOGGER.warning("Could not clear error 505")
+
+            # Do an extra resume if required
+            try:
+                await CleanV3(CleanAction.RESUME).execute(authenticator, device_info, event_bus)
+            except Exception:
+                _LOGGER.warning("Could not resume after clearing error")
+
+        return result
 
 
 class CleanAreaV3(CleanV3):
