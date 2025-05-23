@@ -8,6 +8,7 @@ from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
+from deebot_client.const import PATH_API_IOT_CONTROL
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
@@ -103,6 +104,39 @@ class CleanAreaV2(CleanV2):
             args["content"].update(self._additional_content)
         return args
 
+class CleanV3(Clean):
+    """Clean V3 command."""
+
+    NAME = "clean_V3"
+
+    def __init__(self, action: CleanAction) -> None:
+        super().__init__(action)
+        self._api_path = PATH_API_IOT_CONTROL
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        content: dict[str, str] = {}
+        args = {"act": action.value, "content": content}
+        match action:
+            case CleanAction.START:
+                content["type"] = CleanMode.AUTO.value
+            case CleanAction.STOP | CleanAction.PAUSE:
+                content["type"] = ""
+        return args
+
+
+class CleanAreaV3(CleanV3):
+    """Clean area command."""
+
+    def __init__(self, mode: CleanMode, area: str, _: int = 1) -> None:
+        self._additional_content = {"type": mode.value, "value": area}
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
+
 
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
@@ -159,3 +193,8 @@ class GetCleanInfoV2(GetCleanInfo):
     """Get clean info v2 command."""
 
     NAME = "getCleanInfo_V2"
+
+class GetCleanInfoV3(GetCleanInfo):
+    """Get clean info v3 command."""
+
+    NAME = "getCleanInfo_V3"

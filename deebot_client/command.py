@@ -14,7 +14,7 @@ from deebot_client.exceptions import (
 )
 from deebot_client.util import verify_required_class_variables_exists
 
-from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
+from .const import PATH_API_IOT_DEVMANAGER, PATH_API_IOT_CONTROL, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
@@ -76,6 +76,7 @@ class Command(ABC):
         if args is None:
             args = {}
         self._args = args
+        self._api_path = PATH_API_IOT_DEVMANAGER
 
     @abstractmethod
     def _get_payload(self) -> dict[str, Any] | list[Any] | str:
@@ -151,7 +152,8 @@ class Command(ABC):
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
-        payload = {
+        if self._api_path == PATH_API_IOT_DEVMANAGER:
+            payload = {
             "cmdName": self.NAME,
             "payload": self._get_payload(),
             "payloadType": self.DATA_TYPE.value,
@@ -159,25 +161,34 @@ class Command(ABC):
             "toId": device_info["did"],
             "toRes": device_info["resource"],
             "toType": device_info["class"],
-        }
+            }
 
-        credentials = await authenticator.authenticate()
-        query_params = {
-            "mid": payload["toType"],
-            "did": payload["toId"],
-            "td": payload["td"],
-            "u": credentials.user_id,
-            "cv": "1.67.3",
-            "t": "a",
-            "av": "1.3.1",
-        }
+            credentials = await authenticator.authenticate()
+            query_params = {
+                "mid": payload["toType"],
+                "did": payload["toId"],
+                "td": payload["td"],
+                "u": credentials.user_id,
+                "cv": "1.67.3",
+                "t": "a",
+                "av": "1.3.1",
+            }
+            return await authenticator.post_authenticated(
+                self._api_path,
+                payload,
+                query_params=query_params,
+                headers=REQUEST_HEADERS,
+            )
 
-        return await authenticator.post_authenticated(
-            PATH_API_IOT_DEVMANAGER,
-            payload,
-            query_params=query_params,
-            headers=REQUEST_HEADERS,
-        )
+        elif self._api_path == PATH_API_IOT_CONTROL:
+            body = ...
+            query_params = ...
+            return await authenticator.post_authenticated(
+                self._api_path,
+                body,
+                query_params=query_params,
+                headers=REQUEST_HEADERS,
+            )
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
