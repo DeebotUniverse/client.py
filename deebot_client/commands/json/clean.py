@@ -11,6 +11,7 @@ from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from deebot_client.const import PATH_API_IOT_CONTROL
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
+from .set_error import SetError
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
@@ -104,24 +105,32 @@ class CleanAreaV2(CleanV2):
             args["content"].update(self._additional_content)
         return args
 
-class CleanV3(Clean):
+class CleanV3(ExecuteCommand):
     """Clean V3 command."""
 
     NAME = "clean"
 
     def __init__(self, action: CleanAction) -> None:
-        super().__init__(action)
+        self._action = action
+        super().__init__(self._get_args(action))
         self._api_path = PATH_API_IOT_CONTROL
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
-        content: dict[str, str] = {}
+        content = {}
         args = {"act": action.value, "content": content}
-        match action:
-            case CleanAction.START:
-                content["type"] = CleanMode.AUTO.value
-            case CleanAction.STOP | CleanAction.PAUSE:
-                content["type"] = ""
+        if action == CleanAction.START:
+            content["type"] = CleanMode.AUTO.value
         return args
+
+    async def _execute(self, authenticator, device_info, event_bus):
+        # 🔧 Clear error before starting
+        if self._action == CleanAction.START:
+            try:
+                await SetError(505).execute(authenticator, device_info, event_bus)
+            except Exception:
+                _LOGGER.warning("Could not clear error 505")
+
+        return await super()._execute(authenticator, device_info, event_bus)
 
 
 class CleanAreaV3(CleanV3):
