@@ -146,7 +146,9 @@ class CleanV3(ExecuteCommand):
 
         result = await super()._execute(authenticator, device_info, event_bus)
 
-        if self._action == CleanAction.START:
+        _LOGGER.debug("Post-clean action executed: %s", self._args.get("act"))
+
+        if self._args.get("act") == CleanAction.START.value:
             try:
                 await SetError(505).execute(authenticator, device_info, event_bus)
             except Exception:
