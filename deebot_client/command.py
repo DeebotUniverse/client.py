@@ -152,17 +152,18 @@ class Command(ABC):
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
-        if self._api_path == PATH_API_IOT_DEVMANAGER:
-            payload = {
-            "cmdName": self.NAME,
-            "payload": self._get_payload(),
-            "payloadType": self.DATA_TYPE.value,
-            "td": "q",
-            "toId": device_info["did"],
-            "toRes": device_info["resource"],
-            "toType": device_info["class"],
-            }
 
+        payload = {
+        "cmdName": self.NAME,
+        "payload": self._get_payload(),
+        "payloadType": self.DATA_TYPE.value,
+        "td": "q",
+        "toId": device_info["did"],
+        "toRes": device_info["resource"],
+        "toType": device_info["class"],
+        }
+
+        if self._api_path == PATH_API_IOT_DEVMANAGER:
             credentials = await authenticator.authenticate()
             query_params = {
                 "mid": payload["toType"],
@@ -181,8 +182,16 @@ class Command(ABC):
             )
 
         elif self._api_path == PATH_API_IOT_CONTROL:
-            body = ...
-            query_params = ...
+            body = payload["payload"]
+            query_params = {
+                "fmt": self.DATA_TYPE.value,
+                "ct": "q",
+                "eid": device_info["did"],
+                "er": device_info["resource"],
+                "et": device_info["class"],
+                "apn": self.NAME, # (clean|charge)
+                "si": device_info["resource"],    # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+            }
             return await authenticator.post_authenticated(
                 self._api_path,
                 body,
