@@ -107,7 +107,7 @@ class CleanAreaV2(CleanV2):
 class CleanV3(Clean):
     """Clean V3 command."""
 
-    NAME = "clean_V3"
+    NAME = "clean"
 
     def __init__(self, action: CleanAction) -> None:
         super().__init__(action)
