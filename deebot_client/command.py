@@ -202,7 +202,7 @@ class Command(ABC):
                 "eid": device_id,
                 "er": device_info["resource"],
                 "et": device_class,
-                "apn": self.NAME, # (clean|charge)
+                "apn": self.NAME, # (clean|charge|setError)
                 "si": device_info["resource"] # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
 
