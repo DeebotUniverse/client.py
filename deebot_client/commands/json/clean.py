@@ -118,10 +118,11 @@ class CleanV3(ExecuteCommand):
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
         content = {}
         args = {"act": action.value, "content": content}
-        if action == CleanAction.START:
-            content["type"] = CleanMode.AUTO.value
-        elif action in (CleanAction.STOP, CleanAction.PAUSE):
-            content["type"] = ""
+        match action:
+            case CleanAction.START | CleanAction.RESUME:
+                content["type"] = CleanMode.AUTO.value
+            case CleanAction.STOP | CleanAction.PAUSE:
+                content["type"] = ""
         return args
 
     async def _execute(
