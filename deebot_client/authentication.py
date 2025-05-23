@@ -271,7 +271,10 @@ class _AuthClient:
         credentials: Credentials | None = None,
     ) -> dict[str, Any]:
         """Perform a post request."""
-        url = urljoin(self._config.portal_url, "api/" + path)
+        if path == PATH_API_ISSUE_NEW_PERMISSION:
+            url = urljoin(self._config.api_base_url, "api/" + path)
+        else:
+            url = urljoin(self._config.portal_url, "api/" + path)
         logger_request_params = f"url={url}, params={query_params}, json={json}"
 
         if credentials is not None and (headers is None or "Authorization" not in headers):
