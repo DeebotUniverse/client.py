@@ -120,15 +120,36 @@ class CleanV3(ExecuteCommand):
         args = {"act": action.value, "content": content}
         if action == CleanAction.START:
             content["type"] = CleanMode.AUTO.value
+        elif action in (CleanAction.STOP, CleanAction.PAUSE):
+            content["type"] = ""
         return args
 
-    async def _execute(self, authenticator, device_info, event_bus):
-        # 🔧 Clear error before starting
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[CommandResult, dict[str, Any]]:
+        # Clear error before starting
         if self._action == CleanAction.START:
             try:
                 await SetError(505).execute(authenticator, device_info, event_bus)
             except Exception:
                 _LOGGER.warning("Could not clear error 505")
+
+        # Resume ↔ Start logic
+        state = event_bus.get_last_event(StateEvent)
+        if state and isinstance(self._args, dict):
+            if (
+                self._args["act"] == CleanAction.RESUME.value
+                and state.state != State.PAUSED
+            ):
+                self._args = self._get_args(CleanAction.START)
+            elif (
+                self._args["act"] == CleanAction.START.value
+                and state.state == State.PAUSED
+            ):
+                self._args = self._get_args(CleanAction.RESUME)
 
         return await super()._execute(authenticator, device_info, event_bus)
 
