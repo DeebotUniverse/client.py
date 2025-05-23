@@ -275,13 +275,12 @@ class _AuthClient:
             url = urljoin(self._config.portal_url, "api/" + path)
 
         logger_request_params = f"url={url}, params={query_params}, json={json}"
-
-        if path == PATH_API_IOT_CONTROL or path == PATH_API_ISSUE_NEW_PERMISSION:
-            headers.update({
-                    "Authorization": f"Bearer {credentials.token}",
-                })
-        else:
-            if credentials is not None:
+        if credentials is not None:
+            if path == PATH_API_IOT_CONTROL or path == PATH_API_ISSUE_NEW_PERMISSION:
+                headers.update({
+                        "Authorization": f"Bearer {credentials.token}",
+                    })
+            else:
                 json.update(
                     {
                         "auth": {
