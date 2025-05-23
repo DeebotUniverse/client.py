@@ -11,7 +11,7 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
-from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
+from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM, PATH_API_IOT_CONTROL, PATH_API_ISSUE_NEW_PERMISSION
 from .exceptions import (
     ApiError,
     ApiTimeoutError,
@@ -56,6 +56,7 @@ class RestConfiguration:
     portal_url: str
     login_url: str
     auth_code_url: str
+    api_base_url: str
 
 
 def create_rest_config(
@@ -76,6 +77,7 @@ def create_rest_config(
         tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
         login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
         auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+        api_base_url = f"https://api-base.dc-{country_url}.ww.ecouser.{tld}"
 
     return RestConfiguration(
         session=session,
@@ -84,6 +86,7 @@ def create_rest_config(
         portal_url=portal_url,
         login_url=login_url,
         auth_code_url=auth_code_url,
+        api_base_url=api_base_url,
     )
 
 
@@ -266,21 +269,30 @@ class _AuthClient:
         credentials: Credentials | None = None,
     ) -> dict[str, Any]:
         """Perform a post request."""
-        url = urljoin(self._config.portal_url, "api/" + path)
+        if path == PATH_API_ISSUE_NEW_PERMISSION:
+            url == urljoin(self._config.api_base_url, "api/" + path)
+        else:
+            url = urljoin(self._config.portal_url, "api/" + path)
+
         logger_request_params = f"url={url}, params={query_params}, json={json}"
 
-        if credentials is not None:
-            json.update(
-                {
-                    "auth": {
-                        "with": "users",
-                        "userid": credentials.user_id,
-                        "realm": REALM,
-                        "token": credentials.token,
-                        "resource": self._config.device_id,
+        if path == PATH_API_IOT_CONTROL or path == PATH_API_ISSUE_NEW_PERMISSION:
+            headers.update({
+                    "Authorization": f"Bearer {credentials.token}",
+                })
+        else:
+            if credentials is not None:
+                json.update(
+                    {
+                        "auth": {
+                            "with": "users",
+                            "userid": credentials.user_id,
+                            "realm": REALM,
+                            "token": credentials.token,
+                            "resource": self._config.device_id,
+                        }
                     }
-                }
-            )
+                )
 
         for i in range(MAX_RETRIES):
             _LOGGER.debug(
