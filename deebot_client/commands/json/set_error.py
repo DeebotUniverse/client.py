@@ -13,9 +13,7 @@ class SetError(ExecuteCommand):
 
     def __init__(self, code: int) -> None:
         super().__init__({
-            "data": {
-                "act": "remove",
-                "code": [code]
-            }
+            "act": "remove",
+            "code": [code]
         })
         self._api_path = PATH_API_IOT_CONTROL
