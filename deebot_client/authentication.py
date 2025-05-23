@@ -429,12 +429,12 @@ class Authenticator:
             credentials=await self.authenticate(),
         )
 
-    async def get_sst_token(self, device_id: str, resource_id: str) -> str:
+    async def get_sst_token(self, device_id: str, device_class: str) -> str:
         credentials = await self.authenticate()
         perm_payload = {
             "acl": [{
                 "policy": [{
-                    "obj": [f"Endpoint:{resource_id}:{device_id}"],
+                    "obj": [f"Endpoint:{device_class}:{device_id}"],
                     "perms": ["Control"]
                 }],
                 "svc": "dim"
@@ -442,30 +442,15 @@ class Authenticator:
             "exp": 600,
             "sub": credentials.user_id
         }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {credentials.token}"
-        }
-
-        try:
-            _LOGGER.debug(
-                "Requesting SST token with payload: %s", perm_payload
-            )
-            response = await self._auth_client.post(
-                PATH_API_ISSUE_NEW_PERMISSION,
-                perm_payload,
-                headers=headers
-            )
-
-            # Check response content
-            if response.get("code") != 0 or "data" not in response or "data" not in response["data"]:
-                raise AuthenticationError(f"Invalid SST token response: {response}")
-
-            return response["data"]["data"]["token"]
-
-        except (ApiTimeoutError, ClientResponseError, ApiError, AuthenticationError) as err:
-            _LOGGER.error("Failed to get SST token: %s", err)
-            raise
+        response = await self._auth_client.post(
+            PATH_API_ISSUE_NEW_PERMISSION,
+            perm_payload,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {credentials.token}"
+            }
+        )
+        return response["data"]["data"]["token"]
 
     async def teardown(self) -> None:
         """Teardown authenticator."""
