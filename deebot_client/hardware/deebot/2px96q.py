@@ -81,7 +81,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
-            action=CapabilityCleanAction(command=CleanV2),
+            action=CapabilityCleanAction(command=CleanV3),
         ),
         custom=CapabilityCustomCommand(
             event=CustomCommandEvent, get=[], set=CustomCommand
@@ -131,7 +131,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV3()]),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
