@@ -163,8 +163,9 @@ class Command(ABC):
         "toType": device_info["class"],
         }
 
+        credentials = await authenticator.authenticate()
+
         if self._api_path == PATH_API_IOT_DEVMANAGER:
-            credentials = await authenticator.authenticate()
             query_params = {
                 "mid": payload["toType"],
                 "did": payload["toId"],
