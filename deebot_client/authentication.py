@@ -77,7 +77,7 @@ def create_rest_config(
         tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
         login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
         auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
-        api_base_url = f"https://api-base.dc-{country_url}.ww.ecouser.{tld}"
+        api_base_url = f"https://api-base.dc{continent_postfix}.ww.ecouser.net"
 
     return RestConfiguration(
         session=session,
@@ -429,12 +429,12 @@ class Authenticator:
             credentials=await self.authenticate(),
         )
 
-    async def get_sst_token(self, device_id: str, resource_id: str) -> str:
+    async def get_sst_token(self, device_id: str, device_class: str) -> str:
         credentials = await self.authenticate()
         perm_payload = {
             "acl": [{
                 "policy": [{
-                    "obj": [f"Endpoint:{resource_id}:{device_id}"],
+                    "obj": [f"Endpoint:{device_class}:{device_id}"],
                     "perms": ["Control"]
                 }],
                 "svc": "dim"
@@ -442,29 +442,13 @@ class Authenticator:
             "exp": 600,
             "sub": credentials.user_id
         }
-        headers = {
-            "Content-Type": "application/json",
-            "Authorization": f"Bearer {credentials.token}"
-        }
-
-        _LOGGER.debug(
-            "Get SST Token Request info: url=%s, json=%s, headers=%s",
-            PATH_API_ISSUE_NEW_PERMISSION,
-            perm_payload,
-            headers,
-        )
         response = await self._auth_client.post(
             PATH_API_ISSUE_NEW_PERMISSION,
             perm_payload,
-            headers=headers
-        )
-        raw_content = await response.read()
-        _LOGGER.debug(
-            "Get SST Token Response info: status=%s, content_type=%s, headers=%s, raw=%s",
-            response.status,
-            response.content_type,
-            response.headers,
-            raw_content,
+            headers={
+                "Content-Type": "application/json",
+                "Authorization": f"Bearer {credentials.token}"
+            }
         )
         return response["data"]["data"]["token"]
 

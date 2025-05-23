@@ -193,17 +193,17 @@ class Command(ABC):
                 "tzc": "Europe/London"
             })
             device_id = device_info["did"]
-            resource_id = device_info["resource"]
+            device_class = device_info["class"]
 
-            sst_token = await authenticator.get_sst_token(device_id, resource_id)
+            sst_token = await authenticator.get_sst_token(device_id, device_class)
             query_params = {
                 "fmt": self.DATA_TYPE.value,
                 "ct": "q",
                 "eid": device_id,
-                "er": resource_id,
-                "et": device_info["class"],
+                "er": device_info["resource"],
+                "et": device_class,
                 "apn": self.NAME, # (clean|charge)
-                "si": resource_id # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+                "si": device_info["resource"] # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
 
             headers = {
