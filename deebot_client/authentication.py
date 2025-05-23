@@ -259,7 +259,7 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
-    
+
 
     async def post(
         self,
@@ -299,6 +299,13 @@ class _AuthClient:
             )
 
             try:
+                _LOGGER.debug(
+                    "Request info: url=%s, json=%s, params=%s, headers=%s",
+                    url,
+                    json,
+                    query_params,
+                    headers,
+                )
                 async with self._config.session.post(
                     url,
                     json=json,
@@ -421,7 +428,7 @@ class Authenticator:
             headers=headers,
             credentials=await self.authenticate(),
         )
-    
+
     async def get_sst_token(self, device_id: str, resource_id: str) -> str:
         credentials = await self.authenticate()
         perm_payload = {
@@ -433,15 +440,31 @@ class Authenticator:
                 "svc": "dim"
             }],
             "exp": 600,
-            "sub": resource_id
+            "sub": credentials.user_id
         }
+        headers = {
+            "Content-Type": "application/json",
+            "Authorization": f"Bearer {credentials.token}"
+        }
+
+        _LOGGER.debug(
+            "Get SST Token Request info: url=%s, json=%s, headers=%s",
+            PATH_API_ISSUE_NEW_PERMISSION,
+            perm_payload,
+            headers,
+        )
         response = await self._auth_client.post(
             PATH_API_ISSUE_NEW_PERMISSION,
             perm_payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {credentials.token}"
-            }
+            headers=headers
+        )
+        raw_content = await response.read()
+        _LOGGER.debug(
+            "Get SST Token Response info: status=%s, content_type=%s, headers=%s, raw=%s",
+            response.status,
+            response.content_type,
+            response.headers,
+            raw_content,
         )
         return response["data"]["data"]["token"]
 

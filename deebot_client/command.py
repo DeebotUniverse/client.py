@@ -199,11 +199,11 @@ class Command(ABC):
             query_params = {
                 "fmt": self.DATA_TYPE.value,
                 "ct": "q",
-                "eid": device_info["did"],
-                "er": device_info["resource"],
+                "eid": device_id,
+                "er": resource_id,
                 "et": device_info["class"],
                 "apn": self.NAME, # (clean|charge)
-                "si": device_info["resource"]    # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+                "si": resource_id # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
 
             headers = {
