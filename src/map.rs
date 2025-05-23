@@ -368,13 +368,9 @@ impl MapData {
         &mut self,
         index: usize,
         crc32: u32,
-        base64_data: &str,
     ) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            error!(
-                "Index out of bounds; index:{}, base64_data:{}",
-                index, base64_data
-            );
+            error!("Index out of bounds; index:{}, crc32:{}", index, crc32);
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))

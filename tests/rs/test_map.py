@@ -76,3 +76,17 @@ def test_MapData_update_map_piece_invalid(
             expected_log,
         )
     )
+
+
+def test_MapData_map_piece_crc32_indicates_update_invalid() -> None:
+    """Test invalid MapData.map_piece_crc32_indicates_update."""
+    map_data = MapData()
+    with pytest.raises(ValueError, match="Index out of bounds"), LogCapture() as log:
+        map_data.map_piece_crc32_indicates_update(1000, 1)
+    log.check_present(
+        (
+            "deebot_client.map",
+            "ERROR",
+            "Index out of bounds; index:1000, crc32:1",
+        )
+    )
