@@ -8,12 +8,15 @@ from deebot_client.const import ERROR_CODES
 from deebot_client.events import ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
+from deebot_client.logging_filter import get_logger
 
 from .common import JsonCommandWithMessageHandling
+from .set_error import SetError
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
+_LOGGER = get_logger(__name__)
 
 class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
@@ -33,6 +36,10 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.analyse()
 
         error: int | None = 0
+
+        if 505 in codes:
+            _LOGGER.debug("Clearing error 505")
+            SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
 
         if codes:
             # the last error code
