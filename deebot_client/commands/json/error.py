@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+import asyncio
 
 from deebot_client.const import ERROR_CODES
 from deebot_client.events import ErrorEvent, StateEvent
@@ -39,7 +40,9 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         if 505 in codes:
             _LOGGER.debug("Clearing error 505")
-            SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
+            asyncio.create_task(
+                SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
+            )
 
         if codes:
             # the last error code
