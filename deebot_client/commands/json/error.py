@@ -41,7 +41,7 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if 505 in codes:
             _LOGGER.debug("Clearing error 505")
             asyncio.create_task(
-                SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
+                SetError(505)._execute(event_bus.authenticator, event_bus.device_info, event_bus)
             )
 
         if codes:
