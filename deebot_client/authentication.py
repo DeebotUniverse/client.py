@@ -259,8 +259,6 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
-
-
     async def post(
         self,
         path: str,

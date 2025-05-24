@@ -152,15 +152,14 @@ class Command(ABC):
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
-
         payload = {
-        "cmdName": self.NAME,
-        "payload": self._get_payload(),
-        "payloadType": self.DATA_TYPE.value,
-        "td": "q",
-        "toId": device_info["did"],
-        "toRes": device_info["resource"],
-        "toType": device_info["class"],
+            "cmdName": self.NAME,
+            "payload": self._get_payload(),
+            "payloadType": self.DATA_TYPE.value,
+            "td": "q",
+            "toId": device_info["did"],
+            "toRes": device_info["resource"],
+            "toType": device_info["class"],
         }
 
         credentials = await authenticator.authenticate()
@@ -245,7 +244,6 @@ class Command(ABC):
                 exc_info=True,
             )
             return CommandResult(HandlingState.ERROR)
-
 
     @abstractmethod
     def _handle_response(
