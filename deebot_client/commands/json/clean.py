@@ -146,6 +146,13 @@ class CleanV3(ExecuteCommand):
                 self._args = self._get_args(CleanAction.RESUME)
 
         result = await super()._execute(authenticator, device_info, event_bus)
+        if self._args.get("act") == CleanAction.START.value:
+            new_state = event_bus.get_last_event(StateEvent)
+            if new_state and new_state.state == State.PAUSED:
+                try:
+                    await CleanV3(CleanAction.RESUME)._execute(authenticator, device_info, event_bus)
+                except Exception:
+                    _LOGGER.warning("Could not resume after clearing error")
 
         _LOGGER.debug("Post-clean action executed: %s", self._args.get("act"))
 
