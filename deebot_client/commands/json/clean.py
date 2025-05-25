@@ -136,18 +136,15 @@ class CleanV3(ExecuteCommand):
         if state and isinstance(self._args, dict):
             if (
                 state.state == State.DOCKED
-                and self._args["act"] == CleanAction.START.value
-            ):
-                # always send resume whenever we send start if docked
-                # because we can't tell if state is paused or not
-                resume_cmd = CleanV3(CleanAction.RESUME)
-                await resume_cmd._execute(authenticator, device_info, event_bus)
-            elif (
-                state.state == State.DOCKED
                 and self._args["act"] == CleanAction.RESUME.value
             ):
                 # if docked and resume, send resume...
                 self._args = self._get_args(CleanAction.RESUME)
+            elif (
+                state.state == State.DOCKED
+                and self._args["act"] == CleanAction.START.value
+            ):
+                self._args = self._get_args(CleanAction.START)
             elif (
                 self._args["act"] == CleanAction.RESUME.value
                 and state.state != State.PAUSED
@@ -233,8 +230,3 @@ class GetCleanInfoV2(GetCleanInfo):
     """Get clean info v2 command."""
 
     NAME = "getCleanInfo_V2"
-
-class GetCleanInfoV3(GetCleanInfo):
-    """Get clean info v3 command."""
-
-    NAME = "getCleanInfo_V3"
