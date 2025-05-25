@@ -248,7 +248,7 @@ test = [
 requires-dist = [
     { name = "aiohttp", specifier = "~=3.10" },
     { name = "aiomqtt", specifier = ">=2.0.0,<3.0" },
-    { name = "cachetools", specifier = ">=6,<6.1" },
+    { name = "cachetools", specifier = ">=5.0.0,<7.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
 ]
 
