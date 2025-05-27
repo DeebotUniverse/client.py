@@ -81,4 +81,5 @@ class SetError(ExecuteCommand):
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
     ) -> tuple[CommandResult, dict[str, Any]]:
+        """Execute the command to set an error state."""
         return await super()._execute(authenticator, device_info, event_bus)
