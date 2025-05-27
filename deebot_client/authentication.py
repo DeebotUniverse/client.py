@@ -297,13 +297,6 @@ class _AuthClient:
             )
 
             try:
-                _LOGGER.debug(
-                    "Request info: url=%s, json=%s, params=%s, headers=%s",
-                    url,
-                    json,
-                    query_params,
-                    headers,
-                )
                 async with self._config.session.post(
                     url,
                     json=json,
@@ -311,14 +304,6 @@ class _AuthClient:
                     headers=headers,
                     timeout=_TIMEOUT,
                 ) as res:
-                    raw_content = await res.read()
-                    _LOGGER.debug(
-                        "Response info: status=%s, content_type=%s, headers=%s, raw=%s",
-                        res.status,
-                        res.content_type,
-                        res.headers,
-                        raw_content,
-                    )
                     if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
