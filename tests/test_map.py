@@ -202,13 +202,13 @@ async def test_empty_maptrace(
 
 
 def test_get_svg_map(
-    event_loop: asyncio.AbstractEventLoop,
     benchmark: BenchmarkFixture,
     execute_mock: AsyncMock,
     event_bus: EventBus,
     static_device_info: StaticDeviceInfo,
 ) -> None:
     """Test getting svg map."""
+    event_loop = asyncio.new_event_loop()
 
     async def test_fn() -> str | None:
         map = await setup_map(execute_mock, event_bus, static_device_info)
