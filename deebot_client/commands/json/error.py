@@ -41,11 +41,14 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         error: int | None = 0
 
+        background_tasks = set()
         if 505 in codes:
             _LOGGER.debug("Clearing error 505")
-            asyncio.create_task(
-                SetError(505)._execute(event_bus.authenticator, event_bus.device_info, event_bus)
+            task = asyncio.create_task(
+                SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
             )
+            background_tasks.add(task)
+            task.add_done_callback(background_tasks.discard)
 
         if codes:
             # the last error code
@@ -72,7 +75,7 @@ class SetError(ExecuteCommand):
         })
         self._api_path = PATH_API_IOT_CONTROL
 
-    async def _execute(
+    async def execute(
         self,
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,

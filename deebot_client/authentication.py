@@ -428,6 +428,7 @@ class Authenticator:
         )
 
     async def get_sst_token(self, device_id: str, device_class: str) -> str:
+        """Get access token for a device."""
         credentials = await self.authenticate()
         perm_payload = {
             "acl": [{
