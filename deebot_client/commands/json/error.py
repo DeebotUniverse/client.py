@@ -11,10 +11,13 @@ from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 from deebot_client.logging_filter import get_logger
 
-from .common import JsonCommandWithMessageHandling
-from .set_error import SetError
+from .common import JsonCommandWithMessageHandling, ExecuteCommand
+from deebot_client.const import PATH_API_IOT_CONTROL
 
 if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.models import ApiDeviceInfo
+    from deebot_client.command import CommandResult
     from deebot_client.event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
@@ -56,3 +59,23 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+class SetError(ExecuteCommand):
+    """SetError state command."""
+
+    NAME = "setError"
+
+    def __init__(self, code: int) -> None:
+        super().__init__({
+            "act": "remove",
+            "code": [code]
+        })
+        self._api_path = PATH_API_IOT_CONTROL
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[CommandResult, dict[str, Any]]:
+        return await super()._execute(authenticator, device_info, event_bus)

@@ -11,7 +11,6 @@ from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from deebot_client.const import PATH_API_IOT_CONTROL
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
-from .set_error import SetError
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
@@ -135,17 +134,6 @@ class CleanV3(ExecuteCommand):
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict):
             if (
-                state.state == State.DOCKED
-                and self._args["act"] == CleanAction.RESUME.value
-            ):
-                # if docked and resume, send resume...
-                self._args = self._get_args(CleanAction.RESUME)
-            elif (
-                state.state == State.DOCKED
-                and self._args["act"] == CleanAction.START.value
-            ):
-                self._args = self._get_args(CleanAction.START)
-            elif (
                 self._args["act"] == CleanAction.RESUME.value
                 and state.state != State.PAUSED
             ):
@@ -159,7 +147,6 @@ class CleanV3(ExecuteCommand):
         result = await super()._execute(authenticator, device_info, event_bus)
 
         return result
-
 
 class CleanAreaV3(CleanV3):
     """Clean area command."""

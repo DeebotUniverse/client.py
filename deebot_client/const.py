@@ -106,6 +106,7 @@ ERROR_CODES = {
     319: "Cleaning solution is running low",
     404: "Recipient unavailable",
     500: "Request Timeout",
+    505: "An error occurred, please clear it and try again",
     601: "ERROR_ClosedAIVISideAbnormal",
     602: "ClosedAIVIRollAbnormal",
     1007: "Mop plugged",
