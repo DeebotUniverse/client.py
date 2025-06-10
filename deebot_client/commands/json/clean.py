@@ -121,7 +121,7 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         state = data.get("state")
         if data.get("trigger") == "alert":
             status = State.ERROR
-        elif state == "clean":
+        elif state in ("clean", "washing"):
             clean_state = data.get("cleanState", {})
             motion_state = clean_state.get("motionState")
             if motion_state == "working":
