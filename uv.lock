@@ -258,7 +258,7 @@ requires-dist = [
 [package.metadata.requires-dev]
 dev = [
     { name = "maturin", extras = ["patchelf"], specifier = "==1.8.7" },
-    { name = "maturin-import-hook", specifier = "==0.2.0" },
+    { name = "maturin-import-hook", specifier = "==0.3.0" },
     { name = "mypy", specifier = "==1.16.0" },
     { name = "pre-commit", specifier = "==4.2.0" },
     { name = "pycountry", specifier = "==24.6.1" },
@@ -461,14 +461,14 @@ patchelf = [
 
 [[package]]
 name = "maturin-import-hook"
-version = "0.2.0"
+version = "0.3.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "filelock" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/93/5f/9d426545c49926f4212fbe6244bc397508a29f65e35fe307835c07c0be7b/maturin_import_hook-0.2.0.tar.gz", hash = "sha256:e8a81333179faf7b5f413e44c2a1c89604fefff433679275f724950b0a632adf", size = 31071, upload-time = "2024-12-08T12:26:18.748Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/75/a1/3b007a4132265d5da19096d6835cd4c7e9908afb9156afb96d19ff190f39/maturin_import_hook-0.3.0.tar.gz", hash = "sha256:cdd51ce267663c437c4aea1bfd5f7ee5884b54a9d866ea924227d68d758bbba2", size = 30785, upload-time = "2025-06-08T15:43:57.801Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/48/1e88f90750a66825a5ea8fd2e26908e4e4acade0fe5a378c36d14bc0138d/maturin_import_hook-0.2.0-py3-none-any.whl", hash = "sha256:742d882213d6aa24bacf6775ce26ab96bd4ee26ceafbbbad69d60fdc98d95ec8", size = 31134, upload-time = "2024-12-08T12:26:16.895Z" },
+    { url = "https://files.pythonhosted.org/packages/9f/55/0c17a1fccec90dffbb1d904d7ddb7971e4e95f994c6264637e8fe66a5b86/maturin_import_hook-0.3.0-py3-none-any.whl", hash = "sha256:f5d20b4bc3056d84170dc08fe655160421b28d2b5128b48f55312315cdbb2cfe", size = 30848, upload-time = "2025-06-08T15:43:56.298Z" },
 ]
 
 [[package]]
