@@ -355,8 +355,8 @@ jobs:
       - name: 🏗 Install the project
         run: |
           uv pip install --system -r requirements-dev.txt
-          maturin build -v
-          uv pip install target/wheels/deebot_client-*.whl
+          maturin build
+          uv pip install --system target/wheels/deebot_client-*.whl
       - name: Run benchmarks
         uses: CodSpeedHQ/action@0010eb0ca6e89b80c88e8edaaa07cfe5f3e6664d # main
         with:
