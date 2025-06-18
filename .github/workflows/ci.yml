@@ -353,7 +353,8 @@ jobs:
           name: requirements-test.txt
       - name: 🏗 Install the project
         run: |
-          uv pip install -e . --system -r requirements-test.txt
+          uv pip install --system -r requirements-test.txt
+          maturin develop -v
       - name: Run benchmarks
         uses: CodSpeedHQ/action@0010eb0ca6e89b80c88e8edaaa07cfe5f3e6664d # main
         with:
