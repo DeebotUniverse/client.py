@@ -348,13 +348,13 @@ jobs:
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ needs.info.outputs.default_python_version }}
-      - name: Download requirements-test.txt
+      - name: Download requirements-dev.txt
         uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093 # v4.3.0
         with:
-          name: requirements-test.txt
+          name: requirements-dev.txt
       - name: 🏗 Install the project
         run: |
-          uv pip install --system -r requirements-test.txt
+          uv pip install --system -r requirements-dev.txt
           maturin develop -v
       - name: Run benchmarks
         uses: CodSpeedHQ/action@0010eb0ca6e89b80c88e8edaaa07cfe5f3e6664d # main
