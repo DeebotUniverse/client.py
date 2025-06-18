@@ -21,56 +21,56 @@ permissions:
   contents: read
 
 jobs:
-  # info:
-  #   name: Collect information & prepare
-  #   outputs:
-  #     default_python_version: ${{ steps.info.outputs.default_python_version }}
-  #     python_versions: ${{ steps.info.outputs.python_versions }}
-  #   runs-on: ubuntu-latest
-  #   steps:
-  #     - name: ⤵️  Check out code from GitHub
-  #       uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
-  #     - name: Collect information
-  #       id: info
-  #       run: |
-  #         default_python_version=$(cat .python-version)
-  #         echo "default python version: ${default_python_version}"
-  #         echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
+  info:
+    name: Collect information & prepare
+    outputs:
+      default_python_version: ${{ steps.info.outputs.default_python_version }}
+      python_versions: ${{ steps.info.outputs.python_versions }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️  Check out code from GitHub
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+      - name: Collect information
+        id: info
+        run: |
+          default_python_version=$(cat .python-version)
+          echo "default python version: ${default_python_version}"
+          echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
 
-  #         # Ensure ADDITIONAL_PYTHON_VERSIONS is properly initialized
-  #         ADDITIONAL_PYTHON_VERSIONS=${ADDITIONAL_PYTHON_VERSIONS:-"[]"}
+          # Ensure ADDITIONAL_PYTHON_VERSIONS is properly initialized
+          ADDITIONAL_PYTHON_VERSIONS=${ADDITIONAL_PYTHON_VERSIONS:-"[]"}
 
-  #         # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version
-  #         if [[ ! ${ADDITIONAL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
-  #           # Handle empty or "[]" case properly
-  #           if [[ ${ADDITIONAL_PYTHON_VERSIONS} == "[]" ]]; then
-  #             all_python_versions="['${default_python_version}']"
-  #           elif [[ -z ${ADDITIONAL_PYTHON_VERSIONS} ]]; then
-  #             all_python_versions="['${default_python_version}']"
-  #           else
-  #             all_python_versions="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
-  #           fi
-  #         else
-  #           all_python_versions="${ADDITIONAL_PYTHON_VERSIONS}"
-  #         fi
-  #         echo "python_versions: ${all_python_versions}"
-  #         echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
-  #     - name: 🏗 Install uv
-  #       uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6.1.0
-  #     - name: Generate requirements files
-  #       run: |
-  #         uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
-  #         uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
-  #     - name: Upload requirements-test.txt
-  #       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-  #       with:
-  #         name: requirements-test.txt
-  #         path: requirements-test.txt
-  #     - name: Upload requirements-dev.txt
-  #       uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
-  #       with:
-  #         name: requirements-dev.txt
-  #         path: requirements-dev.txt
+          # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version
+          if [[ ! ${ADDITIONAL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
+            # Handle empty or "[]" case properly
+            if [[ ${ADDITIONAL_PYTHON_VERSIONS} == "[]" ]]; then
+              all_python_versions="['${default_python_version}']"
+            elif [[ -z ${ADDITIONAL_PYTHON_VERSIONS} ]]; then
+              all_python_versions="['${default_python_version}']"
+            else
+              all_python_versions="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+            fi
+          else
+            all_python_versions="${ADDITIONAL_PYTHON_VERSIONS}"
+          fi
+          echo "python_versions: ${all_python_versions}"
+          echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@f0ec1fc3b38f5e7cd731bb6ce540c5af426746bb # v6.1.0
+      - name: Generate requirements files
+        run: |
+          uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
+          uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
+      - name: Upload requirements-test.txt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: requirements-test.txt
+          path: requirements-test.txt
+      - name: Upload requirements-dev.txt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: requirements-dev.txt
+          path: requirements-dev.txt
 
   # python-code-quality:
   #   runs-on: "ubuntu-latest"
@@ -334,7 +334,8 @@ jobs:
     runs-on: "ubuntu-latest"
     name: Run benchmarks
     if: ${{ github.event_name != 'release' }}
-    # needs:
+    needs:
+      - info
     #   - build-test-native
     #   - build-test-musl
     #   - sdist
