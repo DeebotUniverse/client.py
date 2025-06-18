@@ -135,7 +135,7 @@ jobs:
         with:
           override: true
           components: llvm-tools
-          cache-key: ${{ matrix.python-version }}
+          cache-key: ${{ matrix.python-version }}-hashFiles('Cargo.lock')
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
