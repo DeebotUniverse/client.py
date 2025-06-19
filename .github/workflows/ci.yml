@@ -355,7 +355,7 @@ jobs:
       - name: 🏗 Install the project
         run: |
           uv pip install --system -r requirements-dev.txt
-          maturin build
+          maturin build --profile codspeed
           uv pip install --system target/wheels/deebot_client-*.whl
       - name: 🏗 Remove source files
         run: |

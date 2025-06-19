@@ -25,3 +25,7 @@ zstd = "0.13.3"
 
 [dev-dependencies]
 rstest = "0.25.0"
+
+[profile.codspeed]
+inherits = "release"
+debug = true
