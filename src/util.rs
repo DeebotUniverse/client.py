@@ -8,31 +8,40 @@ use liblzma::stream::Stream;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
+const ZSTD_MAGIC: [u8; 4] = [0x28, 0xb5, 0x2f, 0xfd];
+
+/// Fast check if compressed data is zstd.
+#[inline]
+fn is_zstd_compressed(bytes: &[u8]) -> bool {
+    bytes.len() >= 4 && bytes[..4] == ZSTD_MAGIC
+}
+
 pub fn decompress_base64_data(value: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     let bytes = general_purpose::STANDARD.decode(value)?;
-
     if is_zstd_compressed(&bytes) {
         decompress_zstd(&bytes)
     } else {
-        decompress_lzma(bytes)
+        decompress_lzma(&bytes)
     }
 }
 
-fn decompress_lzma(mut bytes: Vec<u8>) -> Result<Vec<u8>, Box<dyn Error>> {
+/// Decompress LZMA data, avoiding Vec insert overhead.
+fn decompress_lzma(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     if bytes.len() < 8 {
         return Err("Invalid 7z compressed data".into());
     }
 
-    for _ in 0..=3 {
-        bytes.insert(8, 0);
-    }
+    // Form tailored header without repeated inserts (much faster)
+    let mut full = Vec::with_capacity(bytes.len() + 4);
+    full.extend_from_slice(&bytes[..8]);
+    full.extend_from_slice(&[0, 0, 0, 0]);
+    full.extend_from_slice(&bytes[8..]);
 
-    let source = Cursor::new(&bytes);
+    let source = Cursor::new(full);
     let stream = Stream::new_lzma_decoder(u64::MAX)?;
     let mut r = XzDecoder::new_stream(source, stream);
     let mut result = Vec::new();
     r.read_to_end(&mut result)?;
-
     Ok(result)
 }
 
@@ -40,14 +49,7 @@ fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut decoder = zstd::Decoder::new(bytes)?;
     let mut result = Vec::new();
     decoder.read_to_end(&mut result)?;
-
     Ok(result)
-}
-
-fn is_zstd_compressed(bytes: &[u8]) -> bool {
-    // Implement a check to determine if the data is zstd-compressed
-    // That the data starts with the magic bytes of zstd-compressed data
-    bytes.starts_with(&[0x28, 0xb5, 0x2f, 0xfd])
 }
 
 /// Decompress base64 decoded compressed string by using lzma or zstd
