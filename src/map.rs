@@ -1,17 +1,14 @@
-use std::error::Error;
-use std::io::Cursor;
-
 use super::util::decompress_base64_data;
 use base64::engine::general_purpose;
 use base64::Engine;
-use byteorder::{LittleEndian, ReadBytesExt};
 use crc32fast::Hasher;
 use image::{GenericImageView, GrayImage, Luma};
 use log::{debug, error};
-use once_cell::sync::Lazy;
 use png::{BitDepth, ColorType, Compression, Encoder};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use std::error::Error;
+use std::fmt::Write as FmtWrite;
 use svg::node::element::{
     Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Use,
 };
@@ -20,26 +17,23 @@ use svg::{Document, Node};
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const NOT_INUSE_CRC32: u32 = 1295764014;
-const DEFAULT_MAP_BACKGROUND: &[u8; 3] = &[0xba, 0xda, 0xff];
 const MAP_TRANSPARENT_INDEX: u8 = 0;
 const MAP_FLOOR_INDEX: u8 = 1;
-static MAP_IMAGE_PALETTE: Lazy<Vec<u8>> = Lazy::new(|| {
-    let mut palette = Vec::new();
-    palette.extend_from_slice(&[0x00, 0x00, 0x00]); // Transparent
-    palette.extend_from_slice(DEFAULT_MAP_BACKGROUND); // Floor
-    palette.extend_from_slice(&[0x4e, 0x96, 0xe2]); // Wall
-    palette.extend_from_slice(&[0x1a, 0x81, 0xed]); // Carpet
-    palette.extend_from_slice(&[0xde, 0xe9, 0xfb]); // Not scanned space
-    palette.extend_from_slice(&[0xed, 0xf3, 0xfb]); // Possible obstacle
-    palette
-});
-static MAP_IMAGE_PALETTE_LEN: Lazy<usize> = Lazy::new(|| MAP_IMAGE_PALETTE.len() / 3);
-static MAP_IMAGE_PALETTE_TRANSPARENCY: Lazy<Vec<u8>> = Lazy::new(|| {
-    // 0 -> Transparent, 255 -> Fully opaque
-    let mut transparency = vec![0u8];
-    transparency.resize(*MAP_IMAGE_PALETTE_LEN, 255);
-    transparency
-});
+
+// when updating palette, update MAP_IMAGE_PALETTE_LEN and MAP_IMAGE_PALETTE_TRANSPARENCY
+const MAP_IMAGE_PALETTE: &[u8] = &[
+    0x00, 0x00, 0x00, // Transparent
+    0xba, 0xda, 0xff, // Floor
+    0x4e, 0x96, 0xe2, // Wall
+    0x1a, 0x81, 0xed, // Carpet
+    0xde, 0xe9, 0xfb, // Not scanned space
+    0xed, 0xf3, 0xfb, // Possible obstacle
+];
+const MAP_IMAGE_PALETTE_LEN: u8 = 6;
+// 0 -> Transparent, 255 -> Fully opaque
+// (first entry is transparent, rest opaque)
+const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
+
 const MAP_PIECE_SIZE: u16 = 100;
 const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
@@ -59,9 +53,8 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
             if chunk.len() < 5 {
                 return Err("Invalid trace points length".into());
             }
-            let mut cursor = Cursor::new(&chunk[0..4]);
-            let x = cursor.read_i16::<LittleEndian>()?;
-            let y = cursor.read_i16::<LittleEndian>()?;
+            let x = i16::from_le_bytes([chunk[0], chunk[1]]);
+            let y = i16::from_le_bytes([chunk[2], chunk[3]]);
             let connected = ((chunk[4] >> 7) & 1) == 0;
             Ok(TracePoint { x, y, connected })
         })
@@ -95,13 +88,12 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
         // Not enough points to generate a path
         return None;
     }
-
-    let mut svg_path = String::new();
+    let mut svg_path = String::with_capacity(points.len() * 7); // heuristic
     let mut last_command = SvgPathCommand::MoveTo;
 
-    let first_p = points.first().unwrap();
+    let first_p = &points[0];
     let space = if 0.0 < first_p.y { " " } else { "" };
-    svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
+    let _ = write!(svg_path, "M{}{}{}", first_p.x, space, first_p.y);
 
     for pair in points.windows(2) {
         let prev_p = &pair[0];
@@ -114,7 +106,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
 
         if !p.connected {
             let space = if 0.0 < y { " " } else { "" };
-            svg_path.push_str(&format!("m{}{}{}", x, space, y));
+            let _ = write!(svg_path, "m{}{}{}", x, space, y);
             last_command = SvgPathCommand::MoveBy;
         } else if x == 0.0 {
             if last_command != SvgPathCommand::VerticalLineBy {
@@ -123,7 +115,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if y >= 0.0 {
                 svg_path.push(' ');
             }
-            svg_path.push_str(&format!("{}", y));
+            let _ = write!(svg_path, "{}", y);
         } else if y == 0.0 {
             if last_command != SvgPathCommand::HorizontalLineBy {
                 svg_path.push('h');
@@ -131,7 +123,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if x >= 0.0 {
                 svg_path.push(' ');
             }
-            svg_path.push_str(&format!("{}", x));
+            let _ = write!(svg_path, "{}", x);
         } else {
             if last_command != SvgPathCommand::LineBy {
                 svg_path.push('l');
@@ -140,7 +132,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
                 svg_path.push(' ');
             }
             let space = if 0.0 < y { " " } else { "" };
-            svg_path.push_str(&format!("{}{}{}", x, space, y));
+            let _ = write!(svg_path, "{}{}{}", x, space, y);
         }
     }
 
@@ -534,7 +526,7 @@ impl MapData {
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color
-                        let pixel = if *pixel_idx > *MAP_IMAGE_PALETTE_LEN as u8 {
+                        let pixel = if *pixel_idx > MAP_IMAGE_PALETTE_LEN {
                             MAP_FLOOR_INDEX
                         } else {
                             *pixel_idx
@@ -576,8 +568,8 @@ impl MapData {
             encoder.set_compression(Compression::Best);
             encoder.set_color(ColorType::Indexed);
             encoder.set_depth(BitDepth::Eight);
-            encoder.set_palette(MAP_IMAGE_PALETTE.clone());
-            encoder.set_trns(MAP_IMAGE_PALETTE_TRANSPARENCY.clone()); // Add transparency chunk
+            encoder.set_palette(MAP_IMAGE_PALETTE.as_ref());
+            encoder.set_trns(MAP_IMAGE_PALETTE_TRANSPARENCY.as_ref());
 
             let mut writer = encoder.write_header().unwrap();
             writer.write_image_data(image.as_ref()).unwrap();
