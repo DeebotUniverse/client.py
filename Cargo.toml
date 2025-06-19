@@ -29,3 +29,5 @@ rstest = "0.25.0"
 [profile.codspeed]
 inherits = "release"
 debug = true
+strip = false
+lto = false
