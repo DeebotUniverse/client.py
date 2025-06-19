@@ -354,9 +354,9 @@ jobs:
           name: requirements-dev.txt
       - name: 🏗 Install the project
         run: |
-          uv pip install --system -r requirements-dev.txt
+          uv pip install --no-build --system -r requirements-dev.txt
           maturin build --profile codspeed
-          uv pip install --system target/wheels/deebot_client-*.whl
+          uv pip install --no-build --system target/wheels/deebot_client-*.whl
       - name: 🏗 Remove source files
         run: |
           rm -rf deebot_client/
