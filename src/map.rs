@@ -446,17 +446,16 @@ impl MapData {
             .add(defs)
             .add(image);
 
-        for subset in subsets.iter() {
+        for subset in &subsets {
             document.append(get_svg_subset(subset)?);
         }
-        if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
+        if let Some(trace) = get_trace_path(&self.trace_points) {
             document.append(trace);
         }
-        for position in get_svg_positions(positions, &viewbox) {
+        for position in get_svg_positions(&positions, &viewbox) {
             document.append(position);
         }
-
-        Ok(Some(document.to_string().replace("\n", "")))
+        Ok(Some(document.to_string().replace('\n', "")))
     }
 }
 
@@ -504,19 +503,18 @@ impl MapData {
         let mut max_x = 0u16;
         let mut max_y = 0u16;
 
-        self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
+        for (i, piece) in self.map_pieces.iter().enumerate() {
             // Order of the pieces is from bottom-left to top-right (column by column)
             let piece_x = (i as u16 / 8) * MAP_PIECE_SIZE;
             let piece_y = MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
                 debug!("Adding piece at {} ({}, {})", i, piece_x, piece_y);
-
-                pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
+                for (j, &pixel_idx) in pixels.iter().enumerate() {
                     // Order of the pixels is from top-left to bottom-right (row by row)
 
                     // Check if the pixel is not fully transparent (alpha > 0)
-                    if pixel_idx != &MAP_TRANSPARENT_INDEX {
+                    if pixel_idx != MAP_TRANSPARENT_INDEX {
                         let pixel_x = j as u16 % MAP_PIECE_SIZE;
                         let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
@@ -526,10 +524,10 @@ impl MapData {
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color
-                        let pixel = if *pixel_idx > MAP_IMAGE_PALETTE_LEN {
+                        let pixel = if pixel_idx > MAP_IMAGE_PALETTE_LEN {
                             MAP_FLOOR_INDEX
                         } else {
-                            *pixel_idx
+                            pixel_idx
                         };
 
                         image.put_pixel(new_x.into(), new_y.into(), Luma([pixel]));
@@ -538,10 +536,9 @@ impl MapData {
                         max_x = max_x.max(new_x);
                         max_y = max_y.max(new_y);
                     }
-                });
+                }
             }
-        });
-
+        }
         if min_x == u16::MAX || min_y == u16::MAX || max_x == 0 || max_y == 0 {
             return Ok(None);
         }
@@ -582,12 +579,12 @@ impl MapData {
     }
 }
 
-fn get_svg_positions(positions: Vec<Position>, viewbox: &ViewBox) -> Vec<Use> {
-    let mut positions: Vec<&Position> = positions.iter().to_owned().collect();
-    positions.sort_by_key(|d| -> i32 { d.position_type.order() });
+fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
+    let mut positions: Vec<&'a Position> = positions.iter().collect();
+    positions.sort_by_key(|d| d.position_type.order());
     debug!("Adding positions: {:?}", positions);
 
-    let mut svg_positions = Vec::new();
+    let mut svg_positions = Vec::with_capacity(positions.len());
 
     for position in positions {
         let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
@@ -628,25 +625,28 @@ impl MapPiece {
         self.crc32 != NOT_INUSE_CRC32
     }
 
-    fn pixels_indexed(&self) -> Option<&Vec<u8>> {
-        self.pixels_indexed.as_ref()
+    fn pixels_indexed(&self) -> Option<&[u8]> {
+        self.pixels_indexed.as_deref()
     }
 
     fn update_points(&mut self, base64_data: &str) -> Result<bool, Box<dyn std::error::Error>> {
         let decoded = decompress_base64_data(base64_data)?;
-        let old_crc32 = self.crc32;
-
         let mut hasher = Hasher::new();
         hasher.update(&decoded);
-        self.crc32 = hasher.finalize();
+        let new_crc = hasher.finalize();
 
+        if self.crc32 == new_crc {
+            // No change in data, return false
+            return Ok(false);
+        }
+
+        self.crc32 = new_crc;
         if self.in_use() {
             self.pixels_indexed = Some(decoded);
         } else {
             self.pixels_indexed = None;
         }
-
-        Ok(self.crc32 != old_crc32)
+        Ok(true)
     }
 }
 
@@ -753,11 +753,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case( vec![Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(vec![Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(vec![Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    fn test_get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    fn test_get_svg_positions(#[case] positions: &[Position], #[case] expected: String) {
         let viewbox = (-500, -500, 1000, 1000);
         let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
             .iter()
