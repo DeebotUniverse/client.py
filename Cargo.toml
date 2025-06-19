@@ -30,4 +30,3 @@ rstest = "0.25.0"
 inherits = "release"
 debug = true
 strip = false
-lto = false

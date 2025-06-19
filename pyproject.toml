@@ -76,7 +76,6 @@ test = [
 features = ["pyo3/extension-module"]
 module-name = "deebot_client.rs"
 auditwheel = "repair"
-#strip = true
 exclude = [
     { path = "**/.*/**", format = "sdist" },
     { path = "**/.*", format = "sdist" },
