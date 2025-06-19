@@ -359,9 +359,7 @@ jobs:
           uv pip install --system target/wheels/deebot_client-*.whl
       - name: 🏗 Remove source files
         run: |
-          ls -al
-          rm -rf deebot_client/ src/
-          ls -al
+          rm -rf deebot_client/
       - name: Run benchmarks
         uses: CodSpeedHQ/action@0010eb0ca6e89b80c88e8edaaa07cfe5f3e6664d # main
         with:
