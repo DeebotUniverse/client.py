@@ -146,16 +146,17 @@ fn get_trace_path(trace_points: &[TracePoint]) -> Option<Path> {
 
     let path_data =
         points_to_svg_path(&trace_points.iter().map(Into::into).collect::<Vec<Point>>())?;
-    let trace = Path::new()
-        .set("fill", "none")
-        .set("stroke", "#fff")
-        .set("stroke-width", 1.5)
-        .set("stroke-linejoin", "round")
-        .set("vector-effect", "non-scaling-stroke")
-        .set("transform", "scale(0.2-0.2)")
-        .set("d", path_data);
 
-    Some(trace)
+    Some(
+        Path::new()
+            .set("fill", "none")
+            .set("stroke", "#fff")
+            .set("stroke-width", 1.5)
+            .set("stroke-linejoin", "round")
+            .set("vector-effect", "non-scaling-stroke")
+            .set("transform", "scale(0.2-0.2)")
+            .set("d", path_data),
+    )
 }
 
 #[derive(Debug, PartialEq)]
@@ -219,6 +220,11 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
     } else {
         // More than 2 points: use a Polygon
         let color = get_color(&subset.set_type)?;
+        let mut coords = Vec::with_capacity(points.len() * 2);
+        for p in points {
+            coords.push(p.x);
+            coords.push(p.y);
+        }
         Ok(Box::new(
             Polygon::new()
                 .set("fill", format!("{}30", color))
@@ -226,13 +232,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
-                .set(
-                    "points",
-                    points
-                        .iter()
-                        .flat_map(|p| vec![p.x, p.y])
-                        .collect::<Vec<f32>>(),
-                ),
+                .set("points", coords),
         ))
     }
 }
