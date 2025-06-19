@@ -194,18 +194,19 @@ fn get_color(set_type: &str) -> PyResult<&'static str> {
 
 fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
     debug!("Adding subset: {:?}", subset);
-    let points: Vec<Point> = subset
-        .coordinates
-        .split(',')
-        .map(|s| {
-            s.trim_matches(|c: char| !c.is_numeric() && c != '-')
-                .parse::<f32>()
-                .unwrap_or_default()
-        })
-        .collect::<Vec<f32>>()
-        .chunks(2)
-        .map(|chunk| calc_point(chunk[0], chunk[1]))
-        .collect();
+    let mut numbers = subset.coordinates.split(',').filter_map(|s| {
+        let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
+        if s.is_empty() {
+            None
+        } else {
+            s.parse::<f32>().ok()
+        }
+    });
+
+    let mut points = Vec::with_capacity(subset.coordinates.len() / 2);
+    while let (Some(x), Some(y)) = (numbers.next(), numbers.next()) {
+        points.push(calc_point(x, y));
+    }
 
     if points.len() == 2 {
         // Only 2 points: use a Path
