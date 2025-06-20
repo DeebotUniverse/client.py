@@ -197,6 +197,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
         if s.is_empty() {
+            debug!("Skipping empty coordinate in subset: {:?}", subset);
             None
         } else {
             s.parse::<f32>().ok()
@@ -772,6 +773,7 @@ mod tests {
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path d=\"M-78-13.36h35.34\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon fill=\"#ffa50030\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\" stroke=\"#ffa500\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
         let result = get_svg_subset(&subset).unwrap().to_string();
         assert_eq!(result, expected);
@@ -996,9 +998,9 @@ mod tests {
             crc32: 0,
             pixels_indexed: None,
         };
-        let update = map_piece.update_points(data).unwrap();
-        assert!(update);
+        assert!(map_piece.update_points(data).unwrap());
         assert_eq!(map_piece.crc32, NOT_INUSE_CRC32);
         assert!(map_piece.pixels_indexed.is_none());
+        assert!(!map_piece.update_points(data).unwrap());
     }
 }
