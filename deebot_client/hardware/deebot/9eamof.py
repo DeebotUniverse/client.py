@@ -34,9 +34,7 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import (
-    Clean,
     CleanArea,
-    GetCleanInfo,
     CleanV2,
     GetCleanInfoV2,
 )
