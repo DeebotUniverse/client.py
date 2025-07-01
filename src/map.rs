@@ -106,7 +106,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
 
         if !p.connected {
             let space = if 0.0 < y { " " } else { "" };
-            let _ = write!(svg_path, "m{}{}{}", x, space, y);
+            let _ = write!(svg_path, "m{x}{space}{y}");
             last_command = SvgPathCommand::MoveBy;
         } else if x == 0.0 {
             if last_command != SvgPathCommand::VerticalLineBy {
@@ -115,7 +115,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if y >= 0.0 {
                 svg_path.push(' ');
             }
-            let _ = write!(svg_path, "{}", y);
+            let _ = write!(svg_path, "{y}");
         } else if y == 0.0 {
             if last_command != SvgPathCommand::HorizontalLineBy {
                 svg_path.push('h');
@@ -123,7 +123,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if x >= 0.0 {
                 svg_path.push(' ');
             }
-            let _ = write!(svg_path, "{}", x);
+            let _ = write!(svg_path, "{x}");
         } else {
             if last_command != SvgPathCommand::LineBy {
                 svg_path.push('l');
@@ -132,7 +132,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
                 svg_path.push(' ');
             }
             let space = if 0.0 < y { " " } else { "" };
-            let _ = write!(svg_path, "{}{}{}", x, space, y);
+            let _ = write!(svg_path, "{x}{space}{y}");
         }
     }
 
@@ -193,11 +193,11 @@ fn get_color(set_type: &str) -> PyResult<&'static str> {
 }
 
 fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
-    debug!("Adding subset: {:?}", subset);
+    debug!("Adding subset: {subset:?}");
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
         if s.is_empty() {
-            debug!("Skipping empty coordinate in subset: {:?}", subset);
+            debug!("Skipping empty coordinate in subset: {subset:?}");
             None
         } else {
             s.parse::<f32>().ok()
@@ -229,7 +229,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
         }
         Ok(Box::new(
             Polygon::new()
-                .set("fill", format!("{}30", color))
+                .set("fill", format!("{color}30"))
                 .set("stroke", color)
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
@@ -329,7 +329,7 @@ impl MapData {
     fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
         self.trace_points
             .extend(extract_trace_points(&value).map_err(|err| {
-                error!("Failed to extract trace points: {};value:{}", err, value);
+                error!("Failed to extract trace points: {err};value:{value}");
                 PyValueError::new_err(err.to_string())
             })?);
         Ok(())
@@ -341,18 +341,14 @@ impl MapData {
 
     fn update_map_piece(&mut self, index: usize, base64_data: String) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            error!(
-                "Index out of bounds; index:{}, base64_data:{}",
-                index, base64_data
-            );
+            error!("Index out of bounds; index:{index}, base64_data:{base64_data}");
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         self.map_pieces[index]
             .update_points(&base64_data)
             .map_err(|err| {
                 error!(
-                    "Failed to update map piece: {}; index:{}, base64_data:{}",
-                    err, index, base64_data,
+                    "Failed to update map piece: {err}; index:{index}, base64_data:{base64_data}",
                 );
                 PyValueError::new_err(err.to_string())
             })
@@ -364,7 +360,7 @@ impl MapData {
         crc32: u32,
     ) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            error!("Index out of bounds; index:{}, crc32:{}", index, crc32);
+            error!("Index out of bounds; index:{index}, crc32:{crc32}");
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))
@@ -441,7 +437,7 @@ impl MapData {
             .set("width", viewbox.width)
             .set("height", viewbox.height)
             .set("style", "image-rendering: pixelated")
-            .set("href", format!("data:image/png;base64,{}", base64_image));
+            .set("href", format!("data:image/png;base64,{base64_image}"));
 
         let mut document = Document::new()
             .set("viewBox", viewbox.to_svg_viewbox())
@@ -511,7 +507,7 @@ impl MapData {
             let piece_y = MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
-                debug!("Adding piece at {} ({}, {})", i, piece_x, piece_y);
+                debug!("Adding piece at {i} ({piece_x}, {piece_y})");
                 for (j, &pixel_idx) in pixels.iter().enumerate() {
                     // Order of the pixels is from top-left to bottom-right (row by row)
 
@@ -547,7 +543,7 @@ impl MapData {
 
         let view_box = ViewBox::new(min_x, min_y, max_x, max_y);
 
-        debug!("Image bounding box: {:?}", view_box);
+        debug!("Image bounding box: {view_box:?}");
 
         // Crop the image to the actual size
         image = image
@@ -584,7 +580,7 @@ impl MapData {
 fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
     let mut positions: Vec<&'a Position> = positions.iter().collect();
     positions.sort_by_key(|d| d.position_type.order());
-    debug!("Adding positions: {:?}", positions);
+    debug!("Adding positions: {positions:?}");
 
     let mut svg_positions = Vec::with_capacity(positions.len());
 
