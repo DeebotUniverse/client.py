@@ -6,7 +6,7 @@ from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -65,11 +65,6 @@ if TYPE_CHECKING:
     from deebot_client.models import CleanAction, CleanMode
 
 
-_T = TypeVar("_T")
-_EVENT = TypeVar("_EVENT", bound=Event)
-_P = ParamSpec("_P")
-
-
 def _get_events(
     capabilities: DataclassInstance | type[DataclassInstance],
 ) -> MappingProxyType[type[Event], list[Command]]:
@@ -87,46 +82,46 @@ def _get_events(
 
 
 @dataclass(frozen=True)
-class CapabilityEvent(Generic[_EVENT]):
+class CapabilityEvent[E: Event]:
     """Capability for an event with get command."""
 
-    event: type[_EVENT]
+    event: type[E]
     get: list[Command]
 
 
 @dataclass(frozen=True)
-class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _P]):
+class CapabilitySet[E: Event, **P](CapabilityEvent[E]):
     """Capability setCommand with event."""
 
-    set: Callable[_P, CommandWithMessageHandling]
+    set: Callable[P, CommandWithMessageHandling]
 
 
 @dataclass(frozen=True)
-class CapabilitySetEnable(CapabilitySet[_EVENT, [bool]]):
+class CapabilitySetEnable[E: Event](CapabilitySet[E, [bool]]):
     """Capability for SetEnableCommand with event."""
 
 
 @dataclass(frozen=True)
-class CapabilityExecute(Generic[_P]):
+class CapabilityExecute[**P]:
     """Capability to execute a command."""
 
-    execute: Callable[_P, Command]
+    execute: Callable[P, Command]
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityTypes(Generic[_T]):
+class CapabilityTypes[T]:
     """Capability to specify types support."""
 
-    types: tuple[_T, ...]
+    types: tuple[T, ...]
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityExecuteTypes(CapabilityTypes[_T], CapabilityExecute[[_T]]):
+class CapabilityExecuteTypes[T](CapabilityTypes[T], CapabilityExecute[[T]]):
     """Capability to execute a command with types."""
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilitySetTypes(CapabilitySet[_EVENT, _P], CapabilityTypes[_T]):
+class CapabilitySetTypes[E: Event, **P, T](CapabilitySet[E, P], CapabilityTypes[T]):
     """Capability for set command and types."""
 
 
@@ -153,7 +148,7 @@ class CapabilityClean:
 
 
 @dataclass(frozen=True)
-class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
+class CapabilityCustomCommand[E: Event](CapabilityEvent[E]):
     """Capability custom command."""
 
     set: Callable[[str, Any], Command]

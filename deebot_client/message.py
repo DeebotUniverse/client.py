@@ -7,7 +7,7 @@ from dataclasses import dataclass
 from enum import IntEnum, auto
 import functools
 import json
-from typing import TYPE_CHECKING, Any, TypeVar, final
+from typing import TYPE_CHECKING, Any, final
 
 from deebot_client.events import FirmwareEvent
 from deebot_client.util import verify_required_class_variables_exists
@@ -52,19 +52,13 @@ class HandlingResult:
         return HandlingResult(HandlingState.ANALYSE)
 
 
-_MessageT = TypeVar("_MessageT", bound="Message")
-_DataT = TypeVar("_DataT")
-
-
-def _handle_error_or_analyse(
-    func: Callable[[type[_MessageT], EventBus, _DataT], HandlingResult],
-) -> Callable[[type[_MessageT], EventBus, _DataT], HandlingResult]:
+def _handle_error_or_analyse[M: Message, T](
+    func: Callable[[type[M], EventBus, T], HandlingResult],
+) -> Callable[[type[M], EventBus, T], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
-    def wrapper(
-        cls: type[_MessageT], event_bus: EventBus, data: _DataT
-    ) -> HandlingResult:
+    def wrapper(cls: type[M], event_bus: EventBus, data: T) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
             # This happens if for some reason someone calls super() of an ABC where handle is not implemented
