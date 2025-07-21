@@ -29,6 +29,7 @@ from . import assert_command, assert_execute_command
                     LifeSpan.HUMIDIFY_MAINTENANCE,
                     LifeSpan.DUST_BAG,
                     LifeSpan.CLEANING_FLUID,
+                    LifeSpan.CLEANING_SOLUTION,
                     LifeSpan.STRAINER,
                     LifeSpan.HAND_FILTER,
                 }
@@ -67,6 +68,7 @@ from . import assert_command, assert_execute_command
                 LifeSpanEvent(LifeSpan.HUMIDIFY, 98.53, 191547),
                 LifeSpanEvent(LifeSpan.HUMIDIFY_MAINTENANCE, 51.53, 22260),
                 LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400),
+                LifeSpanEvent(LifeSpan.CLEANING_SOLUTION, 100.0, 86400),
                 LifeSpanEvent(LifeSpan.DUST_BAG, 67.7, 2031),
                 LifeSpanEvent(LifeSpan.HAND_FILTER, 100.0, 30000),
                 LifeSpanEvent(LifeSpan.STRAINER, 100.0, 1800),
@@ -145,6 +147,15 @@ from . import assert_command, assert_execute_command
                 )
             ),
             (LifeSpanEvent(LifeSpan.CLEANING_FLUID, 100.0, 86400),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.CLEANING_SOLUTION}),
+            get_request_json(
+                get_success_body(
+                    [{"type": "cleaningSolution", "left": 100, "total": 100}]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.CLEANING_SOLUTION, 100.0, 100),),
         ),
         (
             GetLifeSpan({LifeSpan.DUST_BAG}),

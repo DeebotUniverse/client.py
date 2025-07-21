@@ -182,6 +182,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.HAND_FILTER,
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
+                LifeSpan.CLEANING_SOLUTION,
             ),
             event=LifeSpanEvent,
             get=[
@@ -191,7 +192,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.FILTER,
                         LifeSpan.HAND_FILTER,
                         LifeSpan.SIDE_BRUSH,
-                        LifeSpan.UNIT_CARE,
+                        LifeSpan.CLEANING_SOLUTION,
                     ]
                 )
             ],
