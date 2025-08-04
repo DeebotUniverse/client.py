@@ -50,11 +50,11 @@ cache-keys = [
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    "maturin[patchelf]==1.9.0",
+    "maturin[patchelf]==1.9.2",
     "maturin-import-hook==0.3.0",
 ]
 lint = [
-    "mypy==1.16.1",
+    "mypy==1.17.1",
     "pre-commit==4.2.0",
     "pylint==3.3.7",
     "types-cachetools>=5.5.0.20240820",
@@ -62,13 +62,13 @@ lint = [
 ]
 test = [
     "pycountry==24.6.1",
-    "pytest-asyncio==1.0.0",
+    "pytest-asyncio==1.1.0",
     "pytest-codspeed>=3.1.2",
     "pytest-cov==6.2.1",
     "pytest-docker-fixtures==1.4.0",
     "pytest-timeout==2.4.0",
     "pytest==8.4.1",
-    "testfixtures==8.3.0",
+    "testfixtures==9.1.0",
     "pytest-github-actions-annotate-failures==0.3.0",
 ]
 
