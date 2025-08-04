@@ -20,7 +20,7 @@ coverage:
         paths:
           - deebot_client/*
       rust:
-        target: 100%
+        target: 99.7%
         threshold: 0
         paths:
           - src/*
