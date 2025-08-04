@@ -1,5 +1,5 @@
 version = 1
-revision = 2
+revision = 3
 requires-python = ">=3.13.0"
 
 [[package]]
@@ -270,7 +270,7 @@ dev = [
     { name = "pytest-docker-fixtures", specifier = "==1.4.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
-    { name = "testfixtures", specifier = "==8.3.0" },
+    { name = "testfixtures", specifier = "==9.1.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
 ]
@@ -290,7 +290,7 @@ test = [
     { name = "pytest-docker-fixtures", specifier = "==1.4.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
-    { name = "testfixtures", specifier = "==8.3.0" },
+    { name = "testfixtures", specifier = "==9.1.0" },
 ]
 
 [[package]]
@@ -887,11 +887,11 @@ wheels = [
 
 [[package]]
 name = "testfixtures"
-version = "8.3.0"
+version = "9.1.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/3b/25/d7e9d05f87e2ab84657a0dfb1f24fc295d542ac2eb221531d976ea4aa1ff/testfixtures-8.3.0.tar.gz", hash = "sha256:d4c0b84af2f267610f908009b50d6f983a4e58ade22c67bab6787b5a402d59c0", size = 137420, upload-time = "2024-06-07T18:12:27.484Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/76/37/1084db985a7bda417f012570f369d18a6b4afbc59bc423908d0219c38188/testfixtures-9.1.0.tar.gz", hash = "sha256:517e9cf353942723533ae1100ca45dd27fe0785c3ad2765075f5cb1cbce01482", size = 88605, upload-time = "2025-07-08T19:30:55.157Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/1a/4e/699671ba484b94bda0959b281ff59b24f728263befd13e060fa038ce3bc8/testfixtures-8.3.0-py3-none-any.whl", hash = "sha256:3d1e0e0005c4d6ac2a2ab27916704c6471047f0d2f78f2e54adf20abdacc7b10", size = 105085, upload-time = "2024-06-07T18:12:23.298Z" },
+    { url = "https://files.pythonhosted.org/packages/f3/b6/c60e4a39c6bc717e7c08d1428e2bf53e735bbb020563c91d7f272aa552b1/testfixtures-9.1.0-py3-none-any.whl", hash = "sha256:2f4786194cd92b0b2f2f2d29f72346bdd0191baae58532532b7bfcaecd59ba02", size = 106258, upload-time = "2025-07-08T19:30:53.614Z" },
 ]
 
 [[package]]
