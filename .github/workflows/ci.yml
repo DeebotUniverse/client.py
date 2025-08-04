@@ -361,7 +361,7 @@ jobs:
         run: |
           rm -rf deebot_client/
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@74eaaf1129580c3a7c50e3a799c367fdfdafc486 # main
+        uses: CodSpeedHQ/action@0b6e7a3d96c9d2a6057e7bcea6b45aaf2f7ce60b # v3.8.0
         with:
           run: pytest tests/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
