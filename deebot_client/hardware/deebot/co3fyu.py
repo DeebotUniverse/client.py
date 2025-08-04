@@ -18,7 +18,6 @@ from deebot_client.capabilities import (
     CapabilitySetTypes,
     CapabilityStation,
     CapabilityStats,
-    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands import StationAction
@@ -77,7 +76,6 @@ from deebot_client.commands.json.voice_assistant_state import (
     SetVoiceAssistantState,
 )
 from deebot_client.commands.json.volume import GetVolume, SetVolume
-from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
