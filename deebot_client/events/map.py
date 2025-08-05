@@ -41,6 +41,14 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MapInfoV2Event(Event):
+    """Map info v2 event representation."""
+
+    map_id: str
+    coordinates_map: list[list[str]]
+
+
+@dataclass(frozen=True)
 class MajorMapEvent(Event):
     """Major map event."""
 
