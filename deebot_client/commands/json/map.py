@@ -15,7 +15,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MinorMapEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
+from deebot_client.events.map import CachedMapInfoEvent, MapInfoV2Event
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.rs.util import decompress_base64_data
@@ -406,3 +406,27 @@ class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class GetMapInfoV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get map info v2 command."""
+
+    NAME = "getMapInfo_V2"
+
+    def __init__(self, map_id: str = "") -> None:
+        super().__init__({"mid": map_id, "type": "0"})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        coordinates = decompress_base64_data(data["info"]).decode()
+        coordinates_map = json.loads(coordinates)
+
+        event_bus.notify(
+            MapInfoV2Event(
+                map_id=data["mid"],
+                coordinates_map=coordinates_map,
+            )
+        )
+        return HandlingResult.success()
