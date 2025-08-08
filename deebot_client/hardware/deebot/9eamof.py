@@ -58,6 +58,7 @@ from deebot_client.commands.json.map import (
     GetMajorMap,
     GetMapTrace,
     GetMinorMap,
+    GetMapInfoV2,
 )
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
@@ -204,6 +205,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             minor=CapabilityExecute(GetMinorMap),
+            map_info=CapabilityExecute(GetMapInfoV2),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),
