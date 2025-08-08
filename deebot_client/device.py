@@ -26,7 +26,7 @@ from .events import (
     TotalStatsEvent,
 )
 from .logging_filter import get_logger
-from .map import Map
+from .map import Map, MapV2
 from .messages import get_message
 from .models import DeviceInfo, State
 from .rs.map import PositionType
@@ -67,8 +67,12 @@ class Device:
             self.execute_command, self.capabilities.get_refresh_commands
         )
 
-        self.map: Final[Map | None] = (
-            Map(self.execute_command, self.events, self.capabilities.map)
+        self.map: Final[Map | MapV2 | None] = (
+            (
+                MapV2(self.execute_command, self.events, self.capabilities.map)
+                if self.capabilities.map.map_info
+                else Map(self.execute_command, self.events, self.capabilities.map)
+            )
             if self.capabilities.map
             else None
         )

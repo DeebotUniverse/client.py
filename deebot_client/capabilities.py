@@ -170,6 +170,7 @@ class CapabilityMap:
     clear: CapabilityExecute[[]] | None = None
     major: CapabilityEvent[MajorMapEvent]
     minor: CapabilityExecute[[int, str]]
+    map_info: CapabilityExecute[[str]] | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
