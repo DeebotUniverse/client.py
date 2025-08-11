@@ -99,7 +99,7 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
                         duration=int(log.attrib["l"]),
                     )
                 )
-            except Exception:  # pylint: disable = broad-exception-caught
+            except Exception:
                 _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
         event_bus.notify(CleanLogEvent(logs))
         return CommandResult.success()

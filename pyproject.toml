@@ -56,7 +56,6 @@ dev = [
 lint = [
     "mypy==1.17.1",
     "pre-commit==4.2.0",
-    "pylint==3.3.7",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
@@ -151,59 +150,3 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 13
-
-[tool.ruff.lint.pylint]
-max-args = 7
-
-
-[tool.pylint.MAIN]
-py-version = "3.13"
-ignore = ["tests"]
-fail-on = ["I"]
-extension-pkg-allow-list = [
-    "deebot_client.rs",
-    "deebot_client.rs.map",
-    "deebot_client.rs.util",
-]
-
-[tool.pylint.BASIC]
-good-names = ["i", "j", "k", "ex", "_", "T", "x", "y", "id", "tg"]
-
-[tool.pylint."MESSAGES CONTROL"]
-# Reasons disabled:
-# format - handled by black
-# duplicate-code - unavoidable
-# cyclic-import - doesn't test if both import on load
-# abstract-class-little-used - prevents from setting right foundation
-# too-many-* - are not enforced for the sake of readability
-# too-few-* - same as too-many-*
-# abstract-method - with intro of async there are always methods missing
-# inconsistent-return-statements - doesn't handle raise
-# too-many-ancestors - it's too strict.
-# wrong-import-order - isort guards this
-# ---
-# Pylint CodeStyle plugin
-# consider-using-namedtuple-or-dataclass - too opinionated
-# consider-using-assignment-expr - decision to use := better left to devs
-disable = [
-    "format",
-    "cyclic-import",
-    "duplicate-code",
-    "too-many-arguments",
-    "too-many-instance-attributes",
-    "too-many-locals",
-    "too-many-ancestors",
-    "too-few-public-methods",
-    "invalid-name",
-]
-enable = ["useless-suppression", "use-symbolic-message-instead"]
-
-[tool.pylint.REPORTS]
-score = false
-
-
-[tool.pylint.FORMAT]
-expected-line-ending-format = "LF"
-
-[tool.pylint.EXCEPTIONS]
-overgeneral-exceptions = ["builtins.BaseException", "builtins.Exception"]

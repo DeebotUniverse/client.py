@@ -176,7 +176,6 @@ class PullM(XmlCommandWithMessageHandling):
         *,
         mid: str | int,
         msid: str | int,
-        # pylint: disable=redefined-builtin
         type: (MapSetType | str) = MapSetType.ROOMS,
     ) -> None:
         if isinstance(type, MapSetType):

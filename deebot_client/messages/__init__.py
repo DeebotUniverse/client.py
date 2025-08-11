@@ -80,7 +80,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
         _LOGGER.debug('Unknown message "%s"', message_name)
         return None
 
-    from deebot_client.commands import (  # pylint: disable=import-outside-toplevel # noqa: PLC0415
+    from deebot_client.commands import (  # noqa: PLC0415
         COMMANDS,
     )
 

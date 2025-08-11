@@ -169,7 +169,7 @@ class Device:
 
                     result = await asyncio.gather(*tasks)
                     self._set_available(available=all(r.device_reached for r in result))
-                except Exception:  # pylint: disable=broad-exception-caught
+                except Exception:
                     _LOGGER.debug(
                         "An exception occurred during the available check",
                         exc_info=True,
@@ -214,5 +214,5 @@ class Device:
 
             if message := get_message(message_name, self._device_info.static.data_type):
                 message.handle(self.events, message_data)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception("An exception occurred during handling message")
