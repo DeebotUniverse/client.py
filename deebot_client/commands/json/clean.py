@@ -4,7 +4,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.const import PATH_API_IOT_CONTROL
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
@@ -92,63 +91,6 @@ class CleanV2(Clean):
 
 
 class CleanAreaV2(CleanV2):
-    """Clean area command."""
-
-    def __init__(self, mode: CleanMode, area: str, _: int = 1) -> None:
-        self._additional_content = {"type": mode.value, "value": area}
-        super().__init__(CleanAction.START)
-
-    def _get_args(self, action: CleanAction) -> dict[str, Any]:
-        args = super()._get_args(action)
-        if action == CleanAction.START:
-            args["content"].update(self._additional_content)
-        return args
-
-
-class CleanV3(ExecuteCommand):
-    """Clean V3 command."""
-
-    NAME = "clean"
-
-    def __init__(self, action: CleanAction) -> None:
-        self._action = action
-        super().__init__(self._get_args(action))
-        self._api_path = PATH_API_IOT_CONTROL
-
-    def _get_args(self, action: CleanAction) -> dict[str, Any]:
-        content = {}
-        args = {"act": action.value, "content": content}
-        match action:
-            case CleanAction.START | CleanAction.RESUME:
-                content["type"] = CleanMode.AUTO.value
-            case CleanAction.STOP | CleanAction.PAUSE:
-                content["type"] = ""
-        return args
-
-    async def _execute(
-        self,
-        authenticator: Authenticator,
-        device_info: ApiDeviceInfo,
-        event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
-        # Resume ↔ Start logic
-        state = event_bus.get_last_event(StateEvent)
-        if state and isinstance(self._args, dict):
-            if (
-                self._args["act"] == CleanAction.RESUME.value
-                and state.state != State.PAUSED
-            ):
-                self._args = self._get_args(CleanAction.START)
-            elif (
-                self._args["act"] == CleanAction.START.value
-                and state.state == State.PAUSED
-            ):
-                self._args = self._get_args(CleanAction.RESUME)
-
-        return await super()._execute(authenticator, device_info, event_bus)
-
-
-class CleanAreaV3(CleanV3):
     """Clean area command."""
 
     def __init__(self, mode: CleanMode, area: str, _: int = 1) -> None:

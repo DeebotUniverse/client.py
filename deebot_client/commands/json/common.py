@@ -40,7 +40,8 @@ class JsonCommand(Command, ABC):
 
     DATA_TYPE = DataType.JSON
 
-    def _get_payload(self) -> dict[str, Any] | list[Any]:
+    def get_payload(self) -> dict[str, Any] | list[Any]:
+        """Get the payload for the rest call."""
         payload = {
             "header": {
                 "pri": "1",

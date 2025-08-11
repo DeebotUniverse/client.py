@@ -14,12 +14,6 @@ from deebot_client.exceptions import (
 )
 from deebot_client.util import verify_required_class_variables_exists
 
-from .const import (
-    PATH_API_IOT_CONTROL,
-    PATH_API_IOT_DEVMANAGER,
-    REQUEST_HEADERS,
-    DataType,
-)
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
@@ -27,6 +21,9 @@ if TYPE_CHECKING:
     from types import MappingProxyType
 
     from .authentication import Authenticator
+    from .const import (
+        DataType,
+    )
     from .event_bus import EventBus
     from .models import ApiDeviceInfo
 
@@ -81,10 +78,9 @@ class Command(ABC):
         if args is None:
             args = {}
         self._args = args
-        self._api_path = PATH_API_IOT_DEVMANAGER
 
     @abstractmethod
-    def _get_payload(self) -> dict[str, Any] | list[Any] | str:
+    def get_payload(self) -> dict[str, Any] | list[Any] | str:
         """Get the payload for the rest call."""
 
     @final
@@ -157,73 +153,7 @@ class Command(ABC):
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
-        payload = {
-            "cmdName": self.NAME,
-            "payload": self._get_payload(),
-            "payloadType": self.DATA_TYPE.value,
-            "td": "q",
-            "toId": device_info["did"],
-            "toRes": device_info["resource"],
-            "toType": device_info["class"],
-        }
-
-        credentials = await authenticator.authenticate()
-
-        if self._api_path == PATH_API_IOT_CONTROL:
-            body = payload["payload"]
-            body["header"].update(
-                {
-                    "channel": "Android",
-                    "m": "request",
-                    "pri": 2,
-                    "ver": "0.0.22",
-                    "tzm": 60,
-                    "tzc": "Europe/London",
-                }
-            )
-            device_id = device_info["did"]
-            device_class = device_info["class"]
-
-            sst_token = await authenticator.get_sst_token(device_id, device_class)
-            query_params = {
-                "fmt": self.DATA_TYPE.value,
-                "ct": "q",
-                "eid": device_id,
-                "er": device_info["resource"],
-                "et": device_class,
-                "apn": self.NAME,  # (clean|charge|setError)
-                "si": device_info[
-                    "resource"
-                ],  # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
-            }
-
-            headers = {
-                **REQUEST_HEADERS,
-                "Authorization": f"Bearer {sst_token}",
-            }
-
-            return await authenticator.post_authenticated(
-                self._api_path,
-                body,
-                query_params=query_params,
-                headers=headers,
-            )
-
-        query_params = {
-            "mid": payload["toType"],
-            "did": payload["toId"],
-            "td": payload["td"],
-            "u": credentials.user_id,
-            "cv": "1.67.3",
-            "t": "a",
-            "av": "1.3.1",
-        }
-        return await authenticator.post_authenticated(
-            self._api_path,
-            payload,
-            query_params=query_params,
-            headers=REQUEST_HEADERS,
-        )
+        return await authenticator.execute_command_request(self, device_info)
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]

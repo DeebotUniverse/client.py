@@ -109,7 +109,12 @@ async def test_GetCleanLogs(caplog: pytest.LogCaptureFixture) -> None:
         ]
     )
 
-    await assert_command(GetCleanLogs(), json, expected)
+    await assert_command(
+        GetCleanLogs(),
+        json,
+        expected,
+        mock_authenticator_func_name="post_authenticated",
+    )
 
     assert (
         "deebot_client.commands.json.clean_logs",
@@ -130,6 +135,7 @@ async def test_GetCleanLogs_analyse_logged(
         json,
         None,
         command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        mock_authenticator_func_name="post_authenticated",
     )
 
     assert (
@@ -145,6 +151,7 @@ async def test_GetCleanLogs_handle_error(caplog: pytest.LogCaptureFixture) -> No
         {},
         None,
         command_result=CommandResult(HandlingState.ERROR),
+        mock_authenticator_func_name="post_authenticated",
     )
 
     assert (

@@ -75,7 +75,7 @@ async def test_common_functionality(
     assert_func: Callable[[Mock], None],
     caplog: pytest.LogCaptureFixture,
 ) -> None:
-    authenticator.post_authenticated.return_value = response_json
+    authenticator.execute_command_request.return_value = response_json
     event_bus = Mock(spec_set=EventBus)
 
     available = await command.execute(authenticator, api_device_info, event_bus)

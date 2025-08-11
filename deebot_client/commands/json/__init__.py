@@ -12,7 +12,7 @@ from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .child_lock import GetChildLock, SetChildLock
-from .clean import Clean, CleanArea, CleanV2, CleanV3, GetCleanInfo, GetCleanInfoV2
+from .clean import Clean, CleanArea, CleanV2, GetCleanInfo, GetCleanInfoV2
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
@@ -59,7 +59,6 @@ __all__ = [
     "Clean",
     "CleanArea",
     "CleanV2",
-    "CleanV3",
     "ClearMap",
     "GetAdvancedMode",
     "GetBattery",
@@ -161,10 +160,10 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     Clean,
     CleanV2,
-    CleanV3,
     CleanArea,
     GetCleanInfo,
     GetCleanInfoV2,
+
 
     GetCleanLogs,
 

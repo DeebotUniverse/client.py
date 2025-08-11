@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from abc import ABC, abstractmethod
 import asyncio
 from dataclasses import dataclass
 from http import HTTPStatus
@@ -13,9 +14,12 @@ from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
 from .const import (
     COUNTRY_CHINA,
+    PATH_API_IOT_CONTROL,
+    PATH_API_IOT_DEVMANAGER,
     PATH_API_ISSUE_NEW_PERMISSION,
     PATH_API_USERS_USER,
     REALM,
+    REQUEST_HEADERS,
 )
 from .exceptions import (
     ApiError,
@@ -24,13 +28,17 @@ from .exceptions import (
     InvalidAuthenticationError,
 )
 from .logging_filter import get_logger
-from .models import Credentials
+from .models import ApiDeviceInfo, Credentials
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Mapping
+    from collections.abc import Awaitable, Callable, Coroutine, Mapping
+
+    from multidict import istr
+
+    from .command import Command
 
 
 _LOGGER = get_logger(__name__)
@@ -75,7 +83,7 @@ def create_rest_config(
     continent_postfix = get_continent_url_postfix(alpha_2_country)
     country = get_ecovacs_country(alpha_2_country)
     if override_rest_url:
-        portal_url = login_url = auth_code_url = override_rest_url
+        portal_url = login_url = auth_code_url = api_base_url = override_rest_url
     else:
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
@@ -116,6 +124,9 @@ class _AuthClient:
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
+        self._api_users_url = urljoin(
+            self._config.portal_url, "api/" + PATH_API_USERS_USER
+        )
 
     async def login(self) -> Credentials:
         """Login using username and password."""
@@ -250,7 +261,7 @@ class _AuthClient:
         }
 
         for i in range(3):
-            resp = await self.post(PATH_API_USERS_USER, data)
+            resp = await _post(self._config.session, self._api_users_url, data)
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
@@ -264,108 +275,83 @@ class _AuthClient:
 
         raise AuthenticationError("failed to login with token")
 
-    async def post(
-        self,
-        path: str,
-        json: dict[str, Any],
-        *,
-        query_params: dict[str, Any] | None = None,
-        headers: dict[str, Any] | None = None,
-        credentials: Credentials | None = None,
-    ) -> dict[str, Any]:
-        """Perform a post request."""
-        if path == PATH_API_ISSUE_NEW_PERMISSION:
-            url = urljoin(self._config.api_base_url, "api/" + path)
-        else:
-            url = urljoin(self._config.portal_url, "api/" + path)
-        logger_request_params = f"url={url}, params={query_params}, json={json}"
 
-        if credentials is not None and (
-            headers is None or "Authorization" not in headers
-        ):
-            json.update(
-                {
-                    "auth": {
-                        "with": "users",
-                        "userid": credentials.user_id,
-                        "realm": REALM,
-                        "token": credentials.token,
-                        "resource": self._config.device_id,
-                    }
-                }
-            )
+async def _post(
+    session: ClientSession,
+    url: str,
+    json: dict[str | istr, Any],
+    *,
+    query_params: dict[str, Any] | None = None,
+    headers: dict[istr, str] | None = None,
+) -> dict[str, Any]:
+    """Perform a post request."""
+    logger_request_params = f"url={url}, params={query_params}, json={json}"
 
-        for i in range(MAX_RETRIES):
-            _LOGGER.debug(
-                "Calling api(%d/%d): %s",
-                i + 1,
-                MAX_RETRIES,
-                logger_request_params,
-            )
+    for i in range(MAX_RETRIES):
+        _LOGGER.debug(
+            "Calling api(%d/%d): %s",
+            i + 1,
+            MAX_RETRIES,
+            logger_request_params,
+        )
 
-            try:
-                async with self._config.session.post(
-                    url,
-                    json=json,
-                    params=query_params,
-                    headers=headers,
-                    timeout=_TIMEOUT,
-                ) as res:
-                    res.raise_for_status()
+        try:
+            async with session.post(
+                url,
+                json=json,
+                params=query_params,
+                headers=headers,
+                timeout=_TIMEOUT,
+            ) as res:
+                res.raise_for_status()
 
-                    if res.status == HTTPStatus.OK:
-                        response_data: dict[str, Any] = await res.json()
-                        _LOGGER.debug(
-                            "Success calling api %s, response=%s",
-                            logger_request_params,
-                            response_data,
-                        )
-                        return response_data
-
+                if res.status == HTTPStatus.OK:
+                    response_data: dict[str, Any] = await res.json()
                     _LOGGER.debug(
-                        "Error calling api %s, response=%s", logger_request_params, res
+                        "Success calling api %s, response=%s",
+                        logger_request_params,
+                        response_data,
                     )
-                    raise ApiError("Request failed") from ClientResponseError(
-                        res.request_info,
-                        res.history,
-                        status=res.status,
-                        message=str(res.reason),
-                        headers=res.headers,
-                    )
-            except TimeoutError as ex:
-                _LOGGER.debug("Timeout (%d) reached on path: %s", _TIMEOUT, path)
-                raise ApiTimeoutError(path=path, timeout=_TIMEOUT) from ex
-            except ClientResponseError as ex:
-                _LOGGER.debug("Error: %s", logger_request_params, exc_info=True)
-                if ex.status == HTTPStatus.BAD_GATEWAY:
-                    seconds_to_sleep = 10
-                    _LOGGER.info(
-                        "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
-                        seconds_to_sleep,
-                    )
+                    return response_data
 
-                    await asyncio.sleep(seconds_to_sleep)
-                    continue
+                _LOGGER.debug(
+                    "Error calling api %s, response=%s", logger_request_params, res
+                )
+                raise ApiError("Request failed") from ClientResponseError(
+                    res.request_info,
+                    res.history,
+                    status=res.status,
+                    message=str(res.reason),
+                    headers=res.headers,
+                )
+        except TimeoutError as ex:
+            _LOGGER.debug("Timeout (%d) reached on path: %s", _TIMEOUT, url)
+            raise ApiTimeoutError(path=url, timeout=_TIMEOUT) from ex
+        except ClientResponseError as ex:
+            _LOGGER.debug("Error: %s", logger_request_params, exc_info=True)
+            if ex.status == HTTPStatus.BAD_GATEWAY:
+                seconds_to_sleep = 10
+                _LOGGER.info(
+                    "Retry calling API due 502: Unfortunately the ecovacs api is unreliable. Retrying in %d seconds",
+                    seconds_to_sleep,
+                )
 
-                raise ApiError from ex
+                await asyncio.sleep(seconds_to_sleep)
+                continue
 
-        raise ApiError("Unknown error occurred")
+            raise ApiError from ex
+
+    raise ApiError("Unknown error occurred")
 
 
-class Authenticator:
-    """Authenticator."""
+class Authenticator(ABC):
+    """Base authenticator."""
 
     def __init__(
         self,
-        config: RestConfiguration,
-        account_id: str,
-        password_hash: str,
+        credentials_fn: Callable[[], Awaitable[Credentials]],
     ) -> None:
-        self._auth_client = _AuthClient(
-            config,
-            account_id,
-            password_hash,
-        )
+        self._credentials_fn = credentials_fn
 
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
@@ -384,8 +370,8 @@ class Authenticator:
                 or self._credentials.expires_at < time.time()
             ):
                 _LOGGER.debug("Performing login")
-                self._credentials = await self._auth_client.login()
                 self._cancel_refresh_task()
+                self._credentials = await self._credentials_fn()
                 self._create_refresh_task(self._credentials)
 
                 for on_changed in self._on_credentials_changed:
@@ -403,51 +389,6 @@ class Authenticator:
 
         self._on_credentials_changed.add(callback)
         return unsubscribe
-
-    async def post_authenticated(
-        self,
-        path: str,
-        json: dict[str, Any],
-        *,
-        query_params: dict[str, Any] | None = None,
-        headers: dict[str, Any] | None = None,
-    ) -> dict[str, Any]:
-        """Perform an authenticated post request."""
-        return await self._auth_client.post(
-            path,
-            json,
-            query_params=query_params,
-            headers=headers,
-            credentials=await self.authenticate(),
-        )
-
-    async def get_sst_token(self, device_id: str, device_class: str) -> str:
-        """Get access token for a device."""
-        credentials = await self.authenticate()
-        perm_payload = {
-            "acl": [
-                {
-                    "policy": [
-                        {
-                            "obj": [f"Endpoint:{device_class}:{device_id}"],
-                            "perms": ["Control"],
-                        }
-                    ],
-                    "svc": "dim",
-                }
-            ],
-            "exp": 600,
-            "sub": credentials.user_id,
-        }
-        response = await self._auth_client.post(
-            PATH_API_ISSUE_NEW_PERMISSION,
-            perm_payload,
-            headers={
-                "Content-Type": "application/json",
-                "Authorization": f"Bearer {credentials.token}",
-            },
-        )
-        return response["data"]["data"]["token"]
 
     async def teardown(self) -> None:
         """Teardown authenticator."""
@@ -475,3 +416,209 @@ class Authenticator:
         validity = (credentials.expires_at - time.time()) * 0.99
 
         self._refresh_handle = asyncio.get_event_loop().call_later(validity, refresh)
+
+    @abstractmethod
+    async def post_authenticated(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[istr, str] | None = None,
+    ) -> dict[str, Any]:
+        """Perform an authenticated post request."""
+
+    @abstractmethod
+    async def execute_command_request(
+        self, command: Command, device_info: ApiDeviceInfo
+    ) -> dict[str, Any]:
+        """Execute a command request."""
+
+
+class UserAuthenticator(Authenticator):
+    """User authenticator."""
+
+    def __init__(
+        self, config: RestConfiguration, account_id: str, password_hash: str
+    ) -> None:
+        self._config = config
+        auth_client = _AuthClient(config, account_id, password_hash)
+
+        super().__init__(auth_client.login)
+
+    async def post_authenticated(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[istr, str] | None = None,
+    ) -> dict[str, Any]:
+        """Perform an authenticated post request."""
+        credentials = await self.authenticate()
+        json.update(
+            {
+                "auth": {
+                    "with": "users",
+                    "userid": credentials.user_id,
+                    "realm": REALM,
+                    "token": credentials.token,
+                    "resource": self._config.device_id,
+                }
+            }
+        )
+
+        url = urljoin(self._config.portal_url, "api/" + path)
+        return await _post(
+            self._config.session,
+            url,
+            json,
+            query_params=query_params,
+            headers=headers,
+        )
+
+    async def execute_command_request(
+        self, command: Command, device_info: ApiDeviceInfo
+    ) -> dict[str, Any]:
+        """Execute a command request."""
+        credentials = await self.authenticate()
+
+        payload = {
+            "cmdName": command.NAME,
+            "payload": command.get_payload(),
+            "payloadType": command.DATA_TYPE.value,
+            "td": "q",
+            "toId": device_info["did"],
+            "toRes": device_info["resource"],
+            "toType": device_info["class"],
+        }
+
+        query_params = {
+            "mid": payload["toType"],
+            "did": payload["toId"],
+            "td": payload["td"],
+            "u": credentials.user_id,
+            "cv": "1.67.3",
+            "t": "a",
+            "av": "1.3.1",
+        }
+        return await self.post_authenticated(
+            PATH_API_IOT_DEVMANAGER,
+            payload,
+            query_params=query_params,
+            headers=REQUEST_HEADERS,
+        )
+
+
+class DeviceAuthenticator(Authenticator):
+    """Device authenticator."""
+
+    def __init__(
+        self,
+        config: RestConfiguration,
+        user_authenticator: UserAuthenticator,
+        device_info: ApiDeviceInfo,
+    ) -> None:
+        self._config = config
+        self._user_authenticator = user_authenticator
+        self._device_info = device_info
+
+        super().__init__(self._get_device_token)
+
+    async def _get_device_token(self) -> Credentials:
+        """Get access token for a device."""
+        user_credentials = await self._user_authenticator.authenticate()
+        validity = 600
+        expires_at = int(time.time() + validity)
+        perm_payload = {
+            "acl": [
+                {
+                    "policy": [
+                        {
+                            "obj": [
+                                f"Endpoint:{self._device_info['class']}:{self._device_info['did']}"
+                            ],
+                            "perms": ["Control"],
+                        }
+                    ],
+                    "svc": "dim",
+                }
+            ],
+            "exp": validity,
+            "sub": user_credentials.user_id,
+        }
+        url = urljoin(self._config.api_base_url, "api/" + PATH_API_ISSUE_NEW_PERMISSION)
+        response = await _post(
+            self._config.session,
+            url,
+            perm_payload,
+            headers={
+                hdrs.CONTENT_TYPE: "application/json",
+                hdrs.AUTHORIZATION: f"Bearer {user_credentials.token}",
+            },
+        )
+        return Credentials(
+            response["data"]["data"]["token"],
+            user_credentials.user_id,
+            expires_at,
+        )
+
+    async def post_authenticated(
+        self,
+        path: str,
+        json: dict[str, Any],
+        *,
+        query_params: dict[str, Any] | None = None,
+        headers: dict[istr, str] | None = None,
+    ) -> dict[str, Any]:
+        """Perform an authenticated post request."""
+        return await self._user_authenticator.post_authenticated(
+            path,
+            json,
+            query_params=query_params,
+            headers=headers,
+        )
+
+    async def execute_command_request(
+        self, command: Command, device_info: ApiDeviceInfo
+    ) -> dict[str, Any]:
+        """Execute a command request."""
+        body = {
+            "header": {
+                "channel": "Android",
+                "m": "request",
+                "pri": 2,
+                "ver": "0.0.22",
+                "tzm": 60,
+                "tzc": "Europe/London",
+            },
+            "payload": command.get_payload(),
+        }
+
+        credentials = await self.authenticate()
+        query_params = {
+            "fmt": command.DATA_TYPE.value,
+            "ct": "q",
+            "eid": device_info["did"],
+            "er": device_info["resource"],
+            "et": device_info["class"],
+            "apn": command.NAME,
+            "si": device_info[
+                "resource"
+            ],  # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+        }
+
+        headers = {
+            **REQUEST_HEADERS,
+            hdrs.AUTHORIZATION: f"Bearer {credentials.token}",
+            hdrs.ACCEPT: "application/json",
+        }
+
+        url = urljoin(self._config.portal_url, "api/" + PATH_API_IOT_CONTROL)
+        return await _post(
+            self._config.session,
+            url,
+            body,
+            query_params=query_params,
+            headers=headers,
+        )

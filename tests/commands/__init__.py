@@ -4,7 +4,9 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, call
 
-from deebot_client.authentication import Authenticator
+from deebot_client.authentication import (
+    Authenticator,
+)
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.models import (
@@ -51,19 +53,24 @@ async def assert_command(
     *,
     command_result: CommandResult | None = None,
     expected_raw_response: dict[str, Any] | None = None,
+    mock_authenticator_func_name: str = "execute_command_request",
 ) -> None:
     command_result = command_result or CommandResult.success()
     event_bus = Mock(spec_set=EventBus)
-    authenticator = Mock(spec_set=Authenticator)
+    authenticator = Mock(
+        spec_set=Authenticator,
+    )
     authenticator.authenticate = AsyncMock(
         return_value=Credentials("token", "user_id", 9999)
     )
+
     if isinstance(json_api_response, tuple):
-        authenticator.post_authenticated = AsyncMock(side_effect=json_api_response)
+        mock = AsyncMock(side_effect=json_api_response)
     else:
-        authenticator.post_authenticated = AsyncMock(return_value=json_api_response)
+        mock = AsyncMock(return_value=json_api_response)
         if expected_raw_response is None:
             expected_raw_response = json_api_response
+    setattr(authenticator, mock_authenticator_func_name, mock)
     device_info = ApiDeviceInfo(
         {
             "company": "company",
@@ -81,7 +88,7 @@ async def assert_command(
 
     # verify
     verify_result(command_result, expected_raw_response)
-    authenticator.post_authenticated.assert_called()
+    getattr(authenticator, mock_authenticator_func_name).assert_called()
     if expected_events:
         if isinstance(expected_events, Sequence):
             event_bus.notify.assert_has_calls([call(x) for x in expected_events])

@@ -12,7 +12,7 @@ import time
 import aiohttp
 
 from deebot_client.api_client import ApiClient
-from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.authentication import UserAuthenticator, create_rest_config
 from deebot_client.hardware.deebot import DEVICES, _load
 from deebot_client.util import md5
 
@@ -58,7 +58,7 @@ async def main() -> None:
             alpha_2_country=os.environ["ECOVACS_COUNTRY"],
         )
 
-        authenticator = Authenticator(
+        authenticator = UserAuthenticator(
             rest, os.environ["ECOVACS_USERNAME"], md5(os.environ["ECOVACS_PASSWORD"])
         )
         api_client = ApiClient(authenticator)

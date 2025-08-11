@@ -32,7 +32,8 @@ class XmlCommand(Command, ABC):
     DATA_TYPE = DataType.XML
     HAS_SUB_ELEMENT = False
 
-    def _get_payload(self) -> str:
+    def get_payload(self) -> str:
+        """Get the payload for the rest call."""
         element = ctl_element = Element("ctl")
 
         if len(self._args) > 0:
