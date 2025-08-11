@@ -83,7 +83,7 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
             try:
                 stop_reason = XmlStopReason.from_value(xml_stop_reason_attrib)
             except ValueError as e:
-                _LOGGER.error(
+                _LOGGER.exception(
                     "Could not decode stop reason: %s",
                     xml_stop_reason_attrib,
                     exc_info=e,

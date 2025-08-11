@@ -61,6 +61,10 @@ def _handle_error_or_analyse[M: Message, T](
     def wrapper(cls: type[M], event_bus: EventBus, data: T) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            return HandlingResult(HandlingState.ERROR)
+        else:
             # This happens if for some reason someone calls super() of an ABC where handle is not implemented
             if not response:
                 _LOGGER.error(
@@ -76,9 +80,6 @@ def _handle_error_or_analyse[M: Message, T](
             if response.state == HandlingState.ERROR:
                 _LOGGER.warning("Could not parse %s: %s", cls.NAME, data)
             return response
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
-            return HandlingResult(HandlingState.ERROR)
 
     return wrapper
 
@@ -251,13 +252,14 @@ class MessageBodyData(MessageBody, ABC):
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
+        except Exception:  # pylint: disable=broad-except
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            return HandlingResult(HandlingState.ERROR)
+        else:
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             return response
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
-            return HandlingResult(HandlingState.ERROR)
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:

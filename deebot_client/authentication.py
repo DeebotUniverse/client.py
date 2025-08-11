@@ -298,6 +298,8 @@ class _AuthClient:
                     headers=headers,
                     timeout=_TIMEOUT,
                 ) as res:
+                    res.raise_for_status()
+
                     if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
@@ -310,7 +312,7 @@ class _AuthClient:
                     _LOGGER.debug(
                         "Error calling api %s, response=%s", logger_request_params, res
                     )
-                    raise ClientResponseError(
+                    raise ApiError from ClientResponseError(
                         res.request_info,
                         res.history,
                         status=res.status,

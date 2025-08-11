@@ -105,9 +105,10 @@ ignore = [
     # Conflicts with the Ruff formatter
     "COM812",
 
+    "TRY003", # raise-vanilla-args: Avoid specifying long messages outside the exception class
+
     # Remove later
     "TD",     # Todos
-    "TRY",    # tryceratops
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`
 
@@ -125,6 +126,10 @@ required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.per-file-ignores]
+"tests/fixtures/**" = [
+    "T201",   # print found
+    "TRY002", # raise-vanilla-class: Create your own exception
+]
 "tests/**" = [
     "D100",    # Missing docstring in public module
     "D103",    # Missing docstring in public function
