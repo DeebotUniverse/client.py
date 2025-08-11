@@ -14,7 +14,12 @@ from deebot_client.exceptions import (
 )
 from deebot_client.util import verify_required_class_variables_exists
 
-from .const import PATH_API_IOT_DEVMANAGER, PATH_API_IOT_CONTROL, REQUEST_HEADERS, DataType
+from .const import (
+    PATH_API_IOT_CONTROL,
+    PATH_API_IOT_DEVMANAGER,
+    REQUEST_HEADERS,
+    DataType,
+)
 from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
@@ -164,33 +169,18 @@ class Command(ABC):
 
         credentials = await authenticator.authenticate()
 
-        if self._api_path == PATH_API_IOT_DEVMANAGER:
-            query_params = {
-                "mid": payload["toType"],
-                "did": payload["toId"],
-                "td": payload["td"],
-                "u": credentials.user_id,
-                "cv": "1.67.3",
-                "t": "a",
-                "av": "1.3.1",
-            }
-            return await authenticator.post_authenticated(
-                self._api_path,
-                payload,
-                query_params=query_params,
-                headers=REQUEST_HEADERS,
-            )
-
-        elif self._api_path == PATH_API_IOT_CONTROL:
+        if self._api_path == PATH_API_IOT_CONTROL:
             body = payload["payload"]
-            body["header"].update({
-                "channel": "Android",
-                "m": "request",
-                "pri": 2,
-                "ver": "0.0.22",
-                "tzm": 60,
-                "tzc": "Europe/London"
-            })
+            body["header"].update(
+                {
+                    "channel": "Android",
+                    "m": "request",
+                    "pri": 2,
+                    "ver": "0.0.22",
+                    "tzm": 60,
+                    "tzc": "Europe/London",
+                }
+            )
             device_id = device_info["did"]
             device_class = device_info["class"]
 
@@ -201,8 +191,10 @@ class Command(ABC):
                 "eid": device_id,
                 "er": device_info["resource"],
                 "et": device_class,
-                "apn": self.NAME, # (clean|charge|setError)
-                "si": device_info["resource"] # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
+                "apn": self.NAME,  # (clean|charge|setError)
+                "si": device_info[
+                    "resource"
+                ],  # new http param si (some random id which matches request header X-ECO-REQUEST-ID)
             }
 
             headers = {
@@ -216,6 +208,22 @@ class Command(ABC):
                 query_params=query_params,
                 headers=headers,
             )
+
+        query_params = {
+            "mid": payload["toType"],
+            "did": payload["toId"],
+            "td": payload["td"],
+            "u": credentials.user_id,
+            "cv": "1.67.3",
+            "t": "a",
+            "av": "1.3.1",
+        }
+        return await authenticator.post_authenticated(
+            self._api_path,
+            payload,
+            query_params=query_params,
+            headers=REQUEST_HEADERS,
+        )
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]

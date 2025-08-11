@@ -2,25 +2,25 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
 import asyncio
+from typing import TYPE_CHECKING, Any
 
-from deebot_client.const import ERROR_CODES
+from deebot_client.const import ERROR_CODES, PATH_API_IOT_CONTROL
 from deebot_client.events import ErrorEvent, StateEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
-from deebot_client.logging_filter import get_logger
 
-from .common import JsonCommandWithMessageHandling, ExecuteCommand
-from deebot_client.const import PATH_API_IOT_CONTROL
+from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.models import ApiDeviceInfo
     from deebot_client.command import CommandResult
     from deebot_client.event_bus import EventBus
+    from deebot_client.models import ApiDeviceInfo
 
 _LOGGER = get_logger(__name__)
+
 
 class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
@@ -45,7 +45,9 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if 505 in codes:
             _LOGGER.debug("Clearing error 505")
             task = asyncio.create_task(
-                SetError(505).execute(event_bus.authenticator, event_bus.device_info, event_bus)
+                SetError(505).execute(
+                    event_bus.authenticator, event_bus.device_info, event_bus
+                )
             )
             background_tasks.add(task)
             task.add_done_callback(background_tasks.discard)
@@ -63,16 +65,14 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         return HandlingResult.analyse()
 
+
 class SetError(ExecuteCommand):
     """SetError state command."""
 
     NAME = "setError"
 
     def __init__(self, code: int) -> None:
-        super().__init__({
-            "act": "remove",
-            "code": [code]
-        })
+        super().__init__({"act": "remove", "code": [code]})
         self._api_path = PATH_API_IOT_CONTROL
 
     async def execute(

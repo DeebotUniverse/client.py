@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.const import PATH_API_IOT_CONTROL
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
-from deebot_client.const import PATH_API_IOT_CONTROL
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
@@ -104,6 +104,7 @@ class CleanAreaV2(CleanV2):
             args["content"].update(self._additional_content)
         return args
 
+
 class CleanV3(ExecuteCommand):
     """Clean V3 command."""
 
@@ -144,9 +145,8 @@ class CleanV3(ExecuteCommand):
             ):
                 self._args = self._get_args(CleanAction.RESUME)
 
-        result = await super()._execute(authenticator, device_info, event_bus)
+        return await super()._execute(authenticator, device_info, event_bus)
 
-        return result
 
 class CleanAreaV3(CleanV3):
     """Clean area command."""

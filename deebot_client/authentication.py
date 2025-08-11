@@ -11,7 +11,12 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
-from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM, PATH_API_IOT_CONTROL, PATH_API_ISSUE_NEW_PERMISSION
+from .const import (
+    COUNTRY_CHINA,
+    PATH_API_ISSUE_NEW_PERMISSION,
+    PATH_API_USERS_USER,
+    REALM,
+)
 from .exceptions import (
     ApiError,
     ApiTimeoutError,
@@ -275,7 +280,9 @@ class _AuthClient:
             url = urljoin(self._config.portal_url, "api/" + path)
         logger_request_params = f"url={url}, params={query_params}, json={json}"
 
-        if credentials is not None and (headers is None or "Authorization" not in headers):
+        if credentials is not None and (
+            headers is None or "Authorization" not in headers
+        ):
             json.update(
                 {
                     "auth": {
@@ -416,23 +423,27 @@ class Authenticator:
         """Get access token for a device."""
         credentials = await self.authenticate()
         perm_payload = {
-            "acl": [{
-                "policy": [{
-                    "obj": [f"Endpoint:{device_class}:{device_id}"],
-                    "perms": ["Control"]
-                }],
-                "svc": "dim"
-            }],
+            "acl": [
+                {
+                    "policy": [
+                        {
+                            "obj": [f"Endpoint:{device_class}:{device_id}"],
+                            "perms": ["Control"],
+                        }
+                    ],
+                    "svc": "dim",
+                }
+            ],
             "exp": 600,
-            "sub": credentials.user_id
+            "sub": credentials.user_id,
         }
         response = await self._auth_client.post(
             PATH_API_ISSUE_NEW_PERMISSION,
             perm_payload,
             headers={
                 "Content-Type": "application/json",
-                "Authorization": f"Bearer {credentials.token}"
-            }
+                "Authorization": f"Bearer {credentials.token}",
+            },
         )
         return response["data"]["data"]["token"]
 
