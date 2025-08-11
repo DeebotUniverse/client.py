@@ -312,7 +312,7 @@ class _AuthClient:
                     _LOGGER.debug(
                         "Error calling api %s, response=%s", logger_request_params, res
                     )
-                    raise ApiError from ClientResponseError(
+                    raise ApiError("Request failed") from ClientResponseError(
                         res.request_info,
                         res.history,
                         status=res.status,
