@@ -104,7 +104,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        values = [int(value) for value in data["value"].split(",")]
+        values = [int(value) for value in data["value"].split(",") if value]
         map_id = data["mid"]
 
         return HandlingResult(
@@ -140,11 +140,10 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     def __init__(
         self,
         mid: str,
-        # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         super().__init__({"mid": mid, "type": type})
 
@@ -230,11 +229,10 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         mid: str | int,
         mssid: str | int,
         msid: str | int | None = None,
-        # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         if msid is None and type == MapSetType.ROOMS.value:
             error_msid_type = f"msid is required when type='{MapSetType.ROOMS.value}'"
@@ -360,7 +358,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         start = int(data["traceStart"])
 
         if "traceValue" not in data:
-            # TODO verify that this is legit pylint: disable=fixme
+            # TODO verify that this is legit
             return HandlingResult.analyse()
 
         event_bus.notify(

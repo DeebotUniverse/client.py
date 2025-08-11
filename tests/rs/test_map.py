@@ -5,7 +5,7 @@ from __future__ import annotations
 import pytest
 from testfixtures import LogCapture
 
-from deebot_client.rs.map import MapData
+from deebot_client.rs.map import MapData, PositionType
 
 
 @pytest.mark.parametrize(
@@ -90,3 +90,14 @@ def test_MapData_map_piece_crc32_indicates_update_invalid() -> None:
             "Index out of bounds; index:1000, crc32:1",
         )
     )
+
+
+def test_PositionType_eq() -> None:
+    """Test PositionType equality."""
+    assert PositionType.DEEBOT == PositionType.DEEBOT
+    assert PositionType.DEEBOT == 0
+
+    assert PositionType.CHARGER == PositionType.CHARGER
+    assert PositionType.CHARGER == 1
+
+    assert PositionType.DEEBOT != PositionType.CHARGER

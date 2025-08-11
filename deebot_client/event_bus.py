@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 import threading
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Final, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
 from .logging_filter import get_logger
@@ -43,17 +43,17 @@ class _OnSubscriptionCallback:
             self._unsub = None
 
 
-class _EventProcessingData(Generic[T]):
+class _EventProcessingData[E: Event]:
     """Data class, which holds all needed data per EventDto."""
 
     def __init__(self, refresh_commands: list[Command]) -> None:
         self.refresh_commands: Final = refresh_commands
 
         self.subscriber_callbacks: Final[
-            list[Callable[[T], Coroutine[Any, Any, None]]]
+            list[Callable[[E], Coroutine[Any, Any, None]]]
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
-        self.last_event: T | None = None
+        self.last_event: E | None = None
         self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
         self.on_subscription_callbacks: Final[list[_OnSubscriptionCallback]] = []
@@ -129,7 +129,7 @@ class EventBus:
                 and event_processing_data.last_event
                 and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
             ):
-                # TODO distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
+                # TODO distinguish better between docked and idle and outside event bus.
                 # Problem getCleanInfo will return state=idle, when bot is charging
                 event = StateEvent(State.DOCKED)  # type: ignore[assignment]
             elif (

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -233,7 +233,7 @@ class MqttClient:
                         "Could not authenticate. Please check your credentials and afterwards reload the integration."
                     )
                     return
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     _LOGGER.exception("An exception occurred")
                     return
 
@@ -246,7 +246,7 @@ class MqttClient:
         _LOGGER.debug(
             "Got message: topic=%s, payload=%s", message.topic, message.payload
         )
-        self._last_message_received_at = datetime.now()
+        self._last_message_received_at = datetime.now(tz=UTC)
 
         if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
@@ -288,7 +288,7 @@ class MqttClient:
         try:
             if sub_info := self._subscriptions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception("An exception occurred during handling atr message")
 
     def _handle_p2p(
@@ -325,7 +325,7 @@ class MqttClient:
                     request_id,
                     command_name,
                 )
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception(
                 "An exception occurred during handling p2p message: topic=%s; payload=%s",
                 "/".join(topic_split),

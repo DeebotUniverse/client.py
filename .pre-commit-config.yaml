@@ -3,7 +3,6 @@ ci:
   skip:
     # This steps run in the ci workflow. Keep in sync
     - mypy
-    - pylint
     - verifyNoGetLogger
     - rust-fmt
     - rust-check
@@ -14,15 +13,15 @@ default_language_version:
 
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.10
+    rev: v0.12.7
     hooks:
-      - id: ruff
+      - id: ruff-check
         args:
           - --fix
           - --unsafe-fixes
       - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.20.0
     hooks:
       - id: pyupgrade
         args:
@@ -110,14 +109,6 @@ repos:
         types:
           - python
         require_serial: true
-      - id: pylint
-        name: Check with pylint
-        entry: scripts/run-in-env.sh pylint
-        language: script
-        types:
-          - python
-        require_serial: true
-        exclude: ^tests/.+
       - id: verifyNoGetLogger
         name: Verify no getLogger usages
         entry: scripts/check_getLogger.sh

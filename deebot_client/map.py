@@ -154,7 +154,7 @@ class Map:
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
-        # TODO make it nice pylint: disable=fixme
+        # TODO make it nice
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)

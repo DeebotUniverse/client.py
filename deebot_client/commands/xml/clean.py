@@ -52,7 +52,7 @@ class CleanArea(Clean):
         area_or_coordinates: str,
         cleanings: int = 1,
     ) -> None:
-        key = "area" if mode == CleanMode.SPOT_AREA else "p"
+        key = "mid" if mode == CleanMode.SPOT_AREA else "p"
         super().__init__(
             CleanAction.START,
             mode=mode,
