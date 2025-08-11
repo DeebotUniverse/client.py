@@ -108,7 +108,6 @@ ignore = [
     # Remove later
     "TD",     # Todos
     "A",      # bultins
-    "DTZ",    # use tz need to test it first
     "TRY",    # tryceratops
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`

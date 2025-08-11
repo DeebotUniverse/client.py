@@ -27,7 +27,9 @@ async def verify_subscribe(
     expected_called: bool,
 ) -> None:
     command = "test"
-    data = json.dumps({"test": str(datetime.datetime.now())}).encode("utf-8")
+    data = json.dumps({"test": str(datetime.datetime.now(tz=datetime.UTC))}).encode(
+        "utf-8"
+    )
     api = device_info.api
     topic = f"iot/atr/{command}/{api['did']}/{api['class']}/{api['resource']}/j"
     await test_client.publish(topic, data)

@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import UTC, datetime
 import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -246,7 +246,7 @@ class MqttClient:
         _LOGGER.debug(
             "Got message: topic=%s, payload=%s", message.topic, message.payload
         )
-        self._last_message_received_at = datetime.now()
+        self._last_message_received_at = datetime.now(tz=UTC)
 
         if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
