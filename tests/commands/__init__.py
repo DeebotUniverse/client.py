@@ -4,9 +4,7 @@ from collections.abc import Callable, Sequence
 from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, call
 
-from deebot_client.authentication import (
-    Authenticator,
-)
+from deebot_client.authentication import Authenticator
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.models import (
@@ -57,13 +55,10 @@ async def assert_command(
 ) -> None:
     command_result = command_result or CommandResult.success()
     event_bus = Mock(spec_set=EventBus)
-    authenticator = Mock(
-        spec_set=Authenticator,
-    )
+    authenticator = Mock(spec_set=Authenticator)
     authenticator.authenticate = AsyncMock(
         return_value=Credentials("token", "user_id", 9999)
     )
-
     if isinstance(json_api_response, tuple):
         mock = AsyncMock(side_effect=json_api_response)
     else:

@@ -21,9 +21,7 @@ if TYPE_CHECKING:
     from types import MappingProxyType
 
     from .authentication import Authenticator
-    from .const import (
-        DataType,
-    )
+    from .const import DataType
     from .event_bus import EventBus
     from .models import ApiDeviceInfo
 
