@@ -80,7 +80,7 @@ class GetCleanLogs(JsonCommand):
                                 duration=log["last"],
                             )
                         )
-                    except Exception:  # pylint: disable=broad-except
+                    except Exception:
                         _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
 
                 event_bus.notify(CleanLogEvent(logs))

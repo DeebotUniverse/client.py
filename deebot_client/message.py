@@ -61,7 +61,7 @@ def _handle_error_or_analyse[M: Message, T](
     def wrapper(cls: type[M], event_bus: EventBus, data: T) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
         else:
@@ -184,7 +184,7 @@ class MessageDictOrJson(Message, ABC):
         if not isinstance(message, dict):
             try:
                 data = json.loads(message)
-            except Exception:  # pylint: disable=broad-except
+            except Exception:
                 _LOGGER.debug(
                     "Could not decode message %s payload %s as JSON",
                     cls.NAME,
@@ -252,7 +252,7 @@ class MessageBodyData(MessageBody, ABC):
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
         else:

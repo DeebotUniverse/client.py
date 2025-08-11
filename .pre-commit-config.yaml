@@ -3,7 +3,6 @@ ci:
   skip:
     # This steps run in the ci workflow. Keep in sync
     - mypy
-    - pylint
     - verifyNoGetLogger
     - rust-fmt
     - rust-check
@@ -110,14 +109,6 @@ repos:
         types:
           - python
         require_serial: true
-      - id: pylint
-        name: Check with pylint
-        entry: scripts/run-in-env.sh pylint
-        language: script
-        types:
-          - python
-        require_serial: true
-        exclude: ^tests/.+
       - id: verifyNoGetLogger
         name: Verify no getLogger usages
         entry: scripts/check_getLogger.sh
