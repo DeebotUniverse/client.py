@@ -141,10 +141,10 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         self,
         mid: str,
         # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         super().__init__({"mid": mid, "type": type})
 
@@ -231,10 +231,10 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         mssid: str | int,
         msid: str | int | None = None,
         # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         if msid is None and type == MapSetType.ROOMS.value:
             error_msid_type = f"msid is required when type='{MapSetType.ROOMS.value}'"

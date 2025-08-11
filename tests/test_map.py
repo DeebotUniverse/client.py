@@ -88,7 +88,7 @@ async def test_Map_subscriptions(
     prepare_fn(event_bus_mock)
     capabilities_map = static_device_info.capabilities.map
     assert capabilities_map is not None
-    map = Map(execute_mock, event_bus_mock, capabilities_map)
+    map_obj = Map(execute_mock, event_bus_mock, capabilities_map)
 
     calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
     event_bus_mock.subscribe.assert_has_calls(calls)
@@ -97,7 +97,7 @@ async def test_Map_subscriptions(
     )
     # +1 is for the on_first_subscription call
     num_unsubs = len(calls) + 1
-    assert len(map._unsubscribers) == num_unsubs
+    assert len(map_obj._unsubscribers) == num_unsubs
 
     async def on_change() -> None:
         pass
@@ -116,7 +116,7 @@ async def test_Map_subscriptions(
     calls.append(call(MapChangedEvent, on_change))
     calls.extend([call(event, ANY) for event in events])
     event_bus_mock.subscribe.assert_has_calls(calls)
-    assert len(map._unsubscribers) == num_unsubs
+    assert len(map_obj._unsubscribers) == num_unsubs
     for event in events:
         assert event_bus.has_subscribers(event)
 
@@ -125,8 +125,8 @@ async def test_Map_subscriptions(
         if event not in events_with_subscriber:
             assert not event_bus.has_subscribers(event)
 
-    await map.teardown()
-    assert not map._unsubscribers
+    await map_obj.teardown()
+    assert not map_obj._unsubscribers
 
 
 async def setup_map(
@@ -137,10 +137,10 @@ async def setup_map(
 
     capabilities_map = static_device_info.capabilities.map
     assert capabilities_map is not None
-    map = Map(execute_mock, event_bus, capabilities_map)
+    map_obj = Map(execute_mock, event_bus, capabilities_map)
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
-    return map
+    return map_obj
 
 
 @pytest.mark.parametrize(
@@ -184,8 +184,8 @@ async def test_get_svg_map_empty(
     static_device_info: StaticDeviceInfo,
 ) -> None:
     """Test getting svg map without data returns None."""
-    map = await setup_map(execute_mock, event_bus, static_device_info)
-    assert map.get_svg_map() is None
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    assert map_obj.get_svg_map() is None
 
 
 async def test_empty_maptrace(
@@ -195,10 +195,10 @@ async def test_empty_maptrace(
 ) -> None:
     """Test empty data will not raise exception."""
     with patch("deebot_client.map.MapData", autospec=True):
-        map = await setup_map(execute_mock, event_bus, static_device_info)
+        map_obj = await setup_map(execute_mock, event_bus, static_device_info)
         event_bus.notify(MapTraceEvent(0, 0, ""))
         await block_till_done(event_bus)
-        map._map_data.add_trace_points.assert_not_called()
+        map_obj._map_data.add_trace_points.assert_not_called()
 
 
 def test_get_svg_map(
@@ -211,13 +211,13 @@ def test_get_svg_map(
     event_loop = asyncio.new_event_loop()
 
     async def test_fn() -> str | None:
-        map = await setup_map(execute_mock, event_bus, static_device_info)
+        map_obj = await setup_map(execute_mock, event_bus, static_device_info)
 
         for event in _events_for_map_test():
             event_bus.notify(event)
 
         await block_till_done(event_bus)
-        return map.get_svg_map()
+        return map_obj.get_svg_map()
 
     @benchmark
     def svg_map() -> str | None:

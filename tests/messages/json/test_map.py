@@ -11,14 +11,14 @@ from deebot_client.messages.json import OnMapSetV2
 
 
 @pytest.mark.parametrize(
-    ("mid", "type"),
+    ("mid", "set_type"),
     [
         ("199390082", MapSetType.ROOMS),
         ("199390082", MapSetType.NO_MOP_ZONES),
         ("199390082", MapSetType.VIRTUAL_WALLS),
     ],
 )
-def test_onMapSetV2(mid: str, type: MapSetType) -> None:
+def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -28,7 +28,7 @@ def test_onMapSetV2(mid: str, type: MapSetType) -> None:
             "fwVer": "1.8.2",
             "hwVer": "0.1.1",
         },
-        "body": {"data": {"mid": mid, "type": type.value}},
+        "body": {"data": {"mid": mid, "type": set_type.value}},
     }
 
     # NOTE: this needs to be updated when OnMapSetV2 can call commands

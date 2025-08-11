@@ -84,7 +84,11 @@ class GetMapSet(XmlCommandWithMessageHandling):
 
     @classmethod
     def _find_subsets(cls, maps: list[Element]) -> list[int]:
-        return [int(mid) for map in maps if (mid := map.attrib.get("mid")) is not None]
+        return [
+            int(mid)
+            for map_obj in maps
+            if (mid := map_obj.attrib.get("mid")) is not None
+        ]
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:
@@ -177,10 +181,10 @@ class PullM(XmlCommandWithMessageHandling):
         mid: str | int,
         msid: str | int,
         # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         self._map_type = type
         self._map_subset_id = int(mid)
