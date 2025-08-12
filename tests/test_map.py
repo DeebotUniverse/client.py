@@ -210,11 +210,18 @@ def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> Paramet
         msg = f"Module does not have required attributes: {required_attributes}"
         raise AttributeError(msg)
 
+    # To keep codspeed test history, we hide the params for the original test, which is now test_1
+    test_name = (
+        pytest.HIDDEN_PARAM
+        if filename == "test_1"
+        else f"{filename}-{module.DEVICE_CLASS}"
+    )
+
     return pytest.param(
         module.DEVICE_CLASS,
         module.EVENTS,
         module.SVG,
-        id=f"{filename}-{module.DEVICE_CLASS}",
+        id=test_name,
     )
 
 
