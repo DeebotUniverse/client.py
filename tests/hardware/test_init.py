@@ -109,7 +109,7 @@ async def test_get_static_device_info(
 
 
 @pytest.mark.parametrize(
-    ("device_class", "expected"),
+    ("class_", "expected"),
     [
         (
             "5xu9h3",
@@ -242,9 +242,11 @@ async def test_get_static_device_info(
     ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
 )
 async def test_capabilities_event_extraction(
-    static_device_info: StaticDeviceInfo, expected: dict[type[Event], list[Command]]
+    class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    capabilities = static_device_info.capabilities
+    info = await get_static_device_info(class_)
+    assert info is not None
+    capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
         assert capabilities.get_refresh_commands(event) == expected_commands, (
