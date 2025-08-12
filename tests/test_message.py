@@ -32,7 +32,7 @@ class TestMessageStr(MessageStr):
 
 
 @pytest.mark.parametrize(
-    ("input", "expected"),
+    ("value", "expected"),
     [
         ("a string", "a string"),
         (b"a byte string", "a byte string"),
@@ -41,10 +41,10 @@ class TestMessageStr(MessageStr):
     ids=["string", "byte string", "byte array"],
 )
 def test_MessageStr_should_convert_across_types(
-    input: MessagePayloadType, expected: str
+    value: MessagePayloadType, expected: str
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
-    result = TestMessageStr.handle(event_bus, input)
+    result = TestMessageStr.handle(event_bus, value)
 
     assert result.state == HandlingState.SUCCESS
 

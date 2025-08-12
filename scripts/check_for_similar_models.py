@@ -80,8 +80,8 @@ async def main() -> None:
         # Load current models
         await asyncio.get_event_loop().run_in_executor(None, _load)
 
-        for map in (name_map, ui_logic_map):
-            for models in map.values():
+        for map_obj in (name_map, ui_logic_map):
+            for models in map_obj.values():
                 _add_models_by_similarity(models)
 
 

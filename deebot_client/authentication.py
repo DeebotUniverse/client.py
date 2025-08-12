@@ -153,7 +153,7 @@ class _AuthClient:
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
             _LOGGER.debug("got %s", json)
-            # TODO better error handling # pylint: disable=fixme
+            # TODO better error handling
             if json["code"] == "0000":
                 data: dict[str, Any] = json["data"]
                 return data
@@ -298,6 +298,8 @@ class _AuthClient:
                     headers=headers,
                     timeout=_TIMEOUT,
                 ) as res:
+                    res.raise_for_status()
+
                     if res.status == HTTPStatus.OK:
                         response_data: dict[str, Any] = await res.json()
                         _LOGGER.debug(
@@ -310,7 +312,7 @@ class _AuthClient:
                     _LOGGER.debug(
                         "Error calling api %s, response=%s", logger_request_params, res
                     )
-                    raise ClientResponseError(
+                    raise ApiError("Request failed") from ClientResponseError(
                         res.request_info,
                         res.history,
                         status=res.status,
@@ -423,7 +425,7 @@ class Authenticator:
             async def async_refresh() -> None:
                 try:
                     await self.authenticate(force=True)
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     _LOGGER.exception("An exception occurred during refreshing token")
 
             create_task(self._tasks, async_refresh())

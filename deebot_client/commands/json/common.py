@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+from datetime import UTC, datetime
 import json
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
@@ -44,7 +44,7 @@ class JsonCommand(Command, ABC):
         payload = {
             "header": {
                 "pri": "1",
-                "ts": datetime.now().timestamp(),
+                "ts": datetime.now(tz=UTC).timestamp(),
                 "tzm": 480,
                 "ver": "0.0.50",
             }

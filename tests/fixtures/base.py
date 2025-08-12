@@ -3,7 +3,7 @@ from __future__ import annotations
 from abc import ABC, abstractmethod
 import contextlib
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import UTC, datetime
 import os
 from pprint import pformat
 import re
@@ -205,7 +205,7 @@ class BaseContainer(ABC):
             raise Exception(msg)
 
         print(f"{self.name} started")
-        self._start_time = datetime.now()
+        self._start_time = datetime.now(tz=UTC)
 
         return HostPort(self.get_host(), self.get_port())
 

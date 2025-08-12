@@ -1,4 +1,4 @@
-"""Deebot DEEBOT T80 OMNI Capabilities."""
+"""DEEBOT X8 OMNI Capabilities."""
 
 from __future__ import annotations
 
@@ -18,7 +18,6 @@ from deebot_client.capabilities import (
     CapabilitySetTypes,
     CapabilityStation,
     CapabilityStats,
-    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands import StationAction
@@ -34,7 +33,7 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import (
-    CleanAreaV2,
+    CleanArea,
     CleanV2,
     GetCleanInfoV2,
 )
@@ -56,7 +55,6 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
-    GetMapInfoV2,
     GetMapTrace,
     GetMinorMap,
 )
@@ -78,7 +76,6 @@ from deebot_client.commands.json.voice_assistant_state import (
     SetVoiceAssistantState,
 )
 from deebot_client.commands.json.volume import GetVolume, SetVolume
-from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -119,7 +116,6 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
     auto_empty,
-    water_info,
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
@@ -138,7 +134,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
-            action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
+            action=CapabilityCleanAction(command=CleanV2, area=CleanArea),
             continuous=CapabilitySetEnable(
                 ContinuousCleaningEvent,
                 [GetContinuousCleaning()],
@@ -183,8 +179,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.HAND_FILTER,
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
-                LifeSpan.CLEANING_SOLUTION,
-                LifeSpan.SEWAGE_BOX,
             ),
             event=LifeSpanEvent,
             get=[
@@ -194,8 +188,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.FILTER,
                         LifeSpan.HAND_FILTER,
                         LifeSpan.SIDE_BRUSH,
-                        LifeSpan.CLEANING_SOLUTION,
-                        LifeSpan.SEWAGE_BOX,
+                        LifeSpan.UNIT_CARE,
                     ]
                 )
             ],
@@ -208,7 +201,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             minor=CapabilityExecute(GetMinorMap),
-            map_info=CapabilityExecute(GetMapInfoV2),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),
@@ -274,20 +266,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
-        ),
-        water=CapabilityWater(
-            amount=CapabilitySetTypes(
-                event=water_info.WaterAmountEvent,
-                get=[GetWaterInfo()],
-                set=SetWaterInfo,
-                types=(
-                    water_info.WaterAmount.LOW,
-                    water_info.WaterAmount.MEDIUM,
-                    water_info.WaterAmount.HIGH,
-                    water_info.WaterAmount.ULTRAHIGH,
-                ),
-            ),
-            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),
     ),
 )

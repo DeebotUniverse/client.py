@@ -107,7 +107,7 @@ class Command(ABC):
                     device_reached=self._targets_bot, raw_response=response
                 )
 
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.warning(
                 "Could not execute command %s",
                 self.NAME,
@@ -188,6 +188,15 @@ class Command(ABC):
         """
         try:
             result = self._handle_response(event_bus, response)
+        except Exception:
+            _LOGGER.warning(
+                "Could not parse response for %s: %s",
+                self.NAME,
+                response,
+                exc_info=True,
+            )
+            return CommandResult(HandlingState.ERROR)
+        else:
             if result.state == HandlingState.ANALYSE:
                 _LOGGER.debug(
                     "ANALYSE: Could not handle command: %s with %s", self.NAME, response
@@ -198,14 +207,6 @@ class Command(ABC):
                     result.requested_commands,
                 )
             return result
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning(
-                "Could not parse response for %s: %s",
-                self.NAME,
-                response,
-                exc_info=True,
-            )
-            return CommandResult(HandlingState.ERROR)
 
     @abstractmethod
     def _handle_response(
