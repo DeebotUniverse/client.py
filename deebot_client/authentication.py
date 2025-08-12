@@ -283,6 +283,7 @@ async def _post(
     *,
     query_params: dict[str, Any] | None = None,
     headers: dict[istr, str] | None = None,
+    expected_content_type: str = "application/json",
 ) -> dict[str, Any]:
     """Perform a post request."""
     logger_request_params = f"url={url}, params={query_params}, json={json}"
@@ -306,7 +307,9 @@ async def _post(
                 res.raise_for_status()
 
                 if res.status == HTTPStatus.OK:
-                    response_data: dict[str, Any] = await res.json()
+                    response_data: dict[str, Any] = await res.json(
+                        content_type=expected_content_type
+                    )
                     _LOGGER.debug(
                         "Success calling api %s, response=%s",
                         logger_request_params,
@@ -615,10 +618,13 @@ class DeviceAuthenticator(Authenticator):
         }
 
         url = urljoin(self._config.portal_url, "api/" + PATH_API_IOT_CONTROL)
+        # Ecovacs is setting not the correct content type in the response
+        # even if the response is json
         return await _post(
             self._config.session,
             url,
             body,
             query_params=query_params,
             headers=headers,
+            expected_content_type="application/octet-stream",
         )
