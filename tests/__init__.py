@@ -2,19 +2,17 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
-
-import pytest
+from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Iterable, Iterator
+    from collections.abc import Callable, Iterator
     from types import ModuleType
 
     from _pytest.mark import ParameterSet
 
 
 def load_data_folder(
-    folder: str, extract_fn: Callable[[ModuleType], Iterable[Any]]
+    folder: str, extract_fn: Callable[[ModuleType, str], ParameterSet]
 ) -> Iterator[ParameterSet]:
     """Iterate over all files in tests/data/[folder] and call passed extract function."""
     map_data_dir = Path(__file__).parent / "data" / folder
@@ -36,4 +34,4 @@ def load_data_folder(
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
 
-                yield pytest.param(*extract_fn(module), id=filename)
+                yield extract_fn(module, filename)

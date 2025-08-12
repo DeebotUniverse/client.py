@@ -13,6 +13,8 @@ from deebot_client.events.map import (
 )
 from deebot_client.rs.map import PositionType
 
+DEVICE_CLASS = "yna5xi"
+
 EVENTS = [
     PositionsEvent(
         positions=[

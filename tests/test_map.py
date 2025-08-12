@@ -31,6 +31,7 @@ if TYPE_CHECKING:
     from collections.abc import Callable
     from types import ModuleType
 
+    from _pytest.mark import ParameterSet
     from pytest_codspeed import BenchmarkFixture
 
     from deebot_client.event_bus import EventBus
@@ -202,16 +203,23 @@ async def test_empty_maptrace(
         map_obj._map_data.add_trace_points.assert_not_called()
 
 
-def extractor_for_test_get_svg_map(module: ModuleType) -> tuple[list[Event], str]:
+def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:
     """Extract EVENTS and SVG from the module."""
-    if not hasattr(module, "EVENTS") or not hasattr(module, "SVG"):
-        raise AttributeError("Module does not have EVENTS or SVG attributes.")
+    required_attributes = ["EVENTS", "SVG", "DEVICE_CLASS"]
+    if not all(hasattr(module, attr) for attr in required_attributes):
+        msg = f"Module does not have required attributes: {required_attributes}"
+        raise AttributeError(msg)
 
-    return module.EVENTS, module.SVG
+    return pytest.param(
+        module.DEVICE_CLASS,
+        module.EVENTS,
+        module.SVG,
+        id=f"{filename}-{module.DEVICE_CLASS}",
+    )
 
 
 @pytest.mark.parametrize(
-    ("events", "expected_svg"),
+    ("device_class", "events", "expected_svg"),
     load_data_folder("map", extractor_for_test_get_svg_map),
 )
 def test_get_svg_map(
