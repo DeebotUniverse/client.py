@@ -56,9 +56,9 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapTrace,
     GetMinorMap,
-    GetMapInfoV2,
 )
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,

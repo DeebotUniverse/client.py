@@ -207,6 +207,7 @@ dependencies = [
     { name = "aiomqtt" },
     { name = "cachetools" },
     { name = "defusedxml" },
+    { name = "svg-py" },
 ]
 
 [package.dev-dependencies]
@@ -253,6 +254,7 @@ requires-dist = [
     { name = "aiomqtt", specifier = ">=2.0.0,<3.0" },
     { name = "cachetools", specifier = ">=5.0.0,<7.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
+    { name = "svg-py", specifier = "~=1.5.0" },
 ]
 
 [package.metadata.requires-dev]
@@ -883,6 +885,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/a1/53/830aa4c3066a8ab0ae9a9955976fb770fe9c6102117c8ec4ab3ea62d89e8/rich-14.0.0.tar.gz", hash = "sha256:82f1bc23a6a21ebca4ae0c45af9bdbc492ed20231dcb63f297d6d1021a9d5725", size = 224078, upload-time = "2025-03-30T14:15:14.23Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/0d/9b/63f4c7ebc259242c89b3acafdb37b41d1185c07ff0011164674e9076b491/rich-14.0.0-py3-none-any.whl", hash = "sha256:1c9491e1951aac09caffd42f448ee3d04e58923ffe14993f6e83068dc395d7e0", size = 243229, upload-time = "2025-03-30T14:15:12.283Z" },
+]
+
+[[package]]
+name = "svg-py"
+version = "1.5.0"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/b9/6d/4680d284924d66082b39e7508b70346a8132c06a4bac497ef4d2c05430ec/svg_py-1.5.0.tar.gz", hash = "sha256:a036d0118176c2498601fab33b9b68dd9754e6a5fa12e4d36cce071b307b5c11", size = 40710, upload-time = "2024-09-23T07:34:04.893Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/51/2b/a541bed029de9ac6a558d3eeeeb0fff5046687651e61d38df3dc43f48e2a/svg_py-1.5.0-py3-none-any.whl", hash = "sha256:5c467efd5a43e8df4dd6f6d078063f195a04966721d36c43d62f5d7529f908d1", size = 13443, upload-time = "2024-09-23T07:34:03.319Z" },
 ]
 
 [[package]]

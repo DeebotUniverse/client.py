@@ -146,10 +146,6 @@ required-imports = ["from __future__ import annotations"]
     "PYI021", #  docstring-in-stub
 ]
 
-[tool.ruff.lint.flake8-tidy-imports.banned-api]
-"svg.Path".msg = "Use map.Path instead"
-
-
 [tool.ruff.lint.mccabe]
 max-complexity = 13
 
