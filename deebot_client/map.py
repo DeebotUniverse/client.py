@@ -333,7 +333,10 @@ class MapV2:
                         height=10,
                         elements=[
                             svg.Path(
-                                d="M0,10 L10,0",
+                                d=[
+                                    svg.MoveTo(0, 10),
+                                    svg.LineTo(10, 0),
+                                ],
                                 stroke="grey",
                                 stroke_width=2,
                             )
