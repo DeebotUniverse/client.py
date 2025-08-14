@@ -7,7 +7,6 @@ from enum import IntEnum, unique
 from .base import ValueEvent
 
 __all__ = [
-    "CustomWaterAmountEvent",
     "MopAttachedEvent",
     "SweepType",
     "WaterAmount",
@@ -34,12 +33,8 @@ class SweepType(IntEnum):
     DEEP = 2
 
 
-class WaterAmountEvent(ValueEvent[WaterAmount]):
+class WaterAmountEvent(ValueEvent[WaterAmount | int]):
     """Water amount event."""
-
-
-class CustomWaterAmountEvent(ValueEvent[int]):
-    """Custom water amount event."""
 
 
 class WaterSweepTypeEvent(ValueEvent[SweepType]):

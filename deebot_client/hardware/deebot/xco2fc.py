@@ -192,9 +192,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         ),
         water=CapabilityWater(
             amount=CapabilityNumber(
-                event=water_info.CustomWaterAmountEvent,
+                event=water_info.WaterAmountEvent,
                 get=[GetWaterInfo()],
-                set=SetWaterInfo,
+                set=lambda custom_amount: SetWaterInfo(custom_amount=custom_amount),
                 min=0,
                 max=50,
             ),
