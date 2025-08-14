@@ -11,6 +11,7 @@ from deebot_client.events.water_info import (
     SweepType,
     WaterAmount,
     WaterAmountEvent,
+    WaterCustomAmountEvent,
     WaterSweepTypeEvent,
 )
 from deebot_client.message import HandlingResult
@@ -39,7 +40,7 @@ class GetWaterInfo(JsonGetCommand):
             event_bus.notify(WaterAmountEvent(WaterAmount(int(data["amount"]))))
 
         if "customAmount" in data:
-            event_bus.notify(WaterAmountEvent(int(data["customAmount"])))
+            event_bus.notify(WaterCustomAmountEvent(int(data["customAmount"])))
 
         if (mop_attached := data.get("enable")) is not None:
             event_bus.notify(MopAttachedEvent(bool(mop_attached)))

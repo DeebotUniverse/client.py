@@ -242,7 +242,7 @@ class CapabilityWater:
             [water_info.WaterAmount | str],
             water_info.WaterAmount,
         ]
-        | CapabilityNumber[water_info.CustomWaterAmountEvent, [int]]
+        | CapabilityNumber[water_info.WaterCustomAmountEvent, [int]]
     )
     mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
 

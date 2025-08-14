@@ -11,6 +11,7 @@ from deebot_client.events.water_info import (
     SweepType,
     WaterAmount,
     WaterAmountEvent,
+    WaterCustomAmountEvent,
     WaterSweepTypeEvent,
 )
 from tests.helpers import (
@@ -68,7 +69,7 @@ if TYPE_CHECKING:
                 "type": 1,
             },
             (
-                WaterAmountEvent(30),
+                WaterCustomAmountEvent(30),
                 MopAttachedEvent(True),
                 WaterSweepTypeEvent(SweepType.STANDARD),
             ),
@@ -108,13 +109,13 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: tuple[Event, ...]) -
         (
             SetWaterInfo(custom_amount=30),
             {"customAmount": 30},
-            [WaterAmountEvent(30)],
+            [WaterCustomAmountEvent(30)],
         ),
         (
             SetWaterInfo(custom_amount=30, sweep_type="deep"),
             {"customAmount": 30, "sweepType": 2},
             [
-                WaterAmountEvent(30),
+                WaterCustomAmountEvent(30),
                 WaterSweepTypeEvent(SweepType.DEEP),
             ],
         ),
