@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
 from deebot_client.events.water_info import (
+    CustomWaterAmountEvent,
     MopAttachedEvent,
     SweepType,
     WaterAmount,
@@ -35,7 +36,11 @@ class GetWaterInfo(JsonGetCommand):
 
         :return: A message response
         """
-        event_bus.notify(WaterAmountEvent(WaterAmount(int(data["amount"]))))
+        if "amount" in data:
+            event_bus.notify(WaterAmountEvent(WaterAmount(int(data["amount"]))))
+
+        if "customAmount" in data:
+            event_bus.notify(CustomWaterAmountEvent(int(data["customAmount"])))
 
         if (mop_attached := data.get("enable")) is not None:
             event_bus.notify(MopAttachedEvent(bool(mop_attached)))

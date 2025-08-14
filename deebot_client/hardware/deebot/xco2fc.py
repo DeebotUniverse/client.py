@@ -11,6 +11,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityLifeSpan,
     CapabilityMap,
+    CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -190,16 +191,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
         water=CapabilityWater(
-            amount=CapabilitySetTypes(
-                event=water_info.WaterAmountEvent,
+            amount=CapabilityNumber(
+                event=water_info.CustomWaterAmountEvent,
                 get=[GetWaterInfo()],
                 set=SetWaterInfo,
-                types=(
-                    water_info.WaterAmount.LOW,
-                    water_info.WaterAmount.MEDIUM,
-                    water_info.WaterAmount.HIGH,
-                    water_info.WaterAmount.ULTRAHIGH,
-                ),
+                min=0,
+                max=50,
             ),
             mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),
