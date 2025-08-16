@@ -109,8 +109,9 @@ class Command(ABC):
 
         except Exception:
             _LOGGER.warning(
-                "Could not execute command %s",
+                "Could not execute command %s for %s",
                 self.NAME,
+                device_info["class"],
                 exc_info=True,
             )
         return DeviceCommandResult(device_reached=False)
@@ -126,15 +127,19 @@ class Command(ABC):
             response = await self._execute_api_request(authenticator, device_info)
         except ApiTimeoutError:
             _LOGGER.warning(
-                "Could not execute command %s: Timeout reached",
+                "Could not execute command %s for %s: Timeout reached",
                 self.NAME,
+                device_info["class"],
             )
             return CommandResult(HandlingState.ERROR), {}
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
             _LOGGER.debug(
-                "ANALYSE: Could not handle command: %s with %s", self.NAME, response
+                "ANALYSE: Could not handle command %s for %s: %s",
+                self.NAME,
+                device_info["class"],
+                response,
             )
             return (
                 CommandResult(
@@ -145,7 +150,12 @@ class Command(ABC):
                 response,
             )
         if result.state == HandlingState.ERROR:
-            _LOGGER.warning("Could not parse %s: %s", self.NAME, response)
+            _LOGGER.warning(
+                "Could not parse %s for %s: %s",
+                self.NAME,
+                device_info["class"],
+                response,
+            )
         return result, response
 
     async def _execute_api_request(
@@ -190,7 +200,7 @@ class Command(ABC):
             result = self._handle_response(event_bus, response)
         except Exception:
             _LOGGER.warning(
-                "Could not parse response for %s: %s",
+                "Could not parse response %s for %s: %s",
                 self.NAME,
                 response,
                 exc_info=True,
