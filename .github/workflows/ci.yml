@@ -87,7 +87,6 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
         with:
-          cache-all-crates: true
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
       - name: 🏗 Install the project
@@ -95,7 +94,9 @@ jobs:
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: uv run --frozen mypy deebot_client/
+        run: |
+          source .venv/bin/activate
+          mypy deebot_client/
 
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
@@ -139,7 +140,6 @@ jobs:
         uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
       - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
         with:
-          override: true
           components: llvm-tools
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
       - name: Install cargo-llvm-cov
