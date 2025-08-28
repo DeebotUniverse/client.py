@@ -102,6 +102,7 @@ ERROR_CODES = {
     317: "Clean Water Tank refill malfunction",
     318: "Dirty Water Tank is full",
     319: "Cleaning solution is running low",
+    322: "Clean Water Tank is empty or not installed",
     404: "Recipient unavailable",
     500: "Request Timeout",
     601: "ERROR_ClosedAIVISideAbnormal",
