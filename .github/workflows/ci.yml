@@ -87,7 +87,7 @@ jobs:
 
       - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
         with:
-          override: true
+          cache-all-crates: true
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
       - name: 🏗 Install the project
