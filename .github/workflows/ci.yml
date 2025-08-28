@@ -132,7 +132,7 @@ jobs:
         with:
           override: true
           components: llvm-tools
-          cache-key: ${{ matrix.python-version }}-${{ hashFiles('Cargo.lock') }}
+          cache-key: rust-${{ runner.os }}-${{ matrix.python-version }}-${{ hashFiles('Cargo.lock', 'Cargo.toml', 'pyproject.toml') }}
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
