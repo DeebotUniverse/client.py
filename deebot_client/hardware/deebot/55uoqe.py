@@ -161,7 +161,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             types=(
                 LifeSpan.BRUSH,
                 LifeSpan.FILTER,
-                LifeSpan.HAND_FILTER,
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
             ),
@@ -171,8 +170,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     [
                         LifeSpan.BRUSH,
                         LifeSpan.FILTER,
-                        LifeSpan.HAND_FILTER,
                         LifeSpan.SIDE_BRUSH,
+                        LifeSpan.UNIT_CARE,
                     ]
                 )
             ],
