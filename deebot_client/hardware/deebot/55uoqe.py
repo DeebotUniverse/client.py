@@ -154,6 +154,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
                 LifeSpan.ROUND_MOP,
+                LifeSpan.DUST_BAG,
             ),
             event=LifeSpanEvent,
             get=[
@@ -164,6 +165,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
                         LifeSpan.ROUND_MOP,
+                        LifeSpan.DUST_BAG,
                     ]
                 )
             ],
@@ -219,7 +221,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
         station=CapabilityStation(
             action=CapabilityExecuteTypes(
-                station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
+                station_action.StationAction,
+                types=(
+                    StationAction.EMPTY_DUSTBIN,
+                    StationAction.DRY_MOP,
+                    StationAction.CLEAN_BASE,
+                ),
             ),
             auto_empty=CapabilitySetTypes(
                 event=AutoEmptyEvent,
