@@ -103,6 +103,7 @@ ERROR_CODES = {
     318: "Dirty Water Tank is full",
     319: "Cleaning solution is running low",
     322: "Clean Water Tank is empty or not installed",
+    323: "Dirty Water Tank is full not installed",
     404: "Recipient unavailable",
     500: "Request Timeout",
     601: "ERROR_ClosedAIVISideAbnormal",

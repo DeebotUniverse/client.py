@@ -33,8 +33,8 @@ from deebot_client.commands.json.carpet import (
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import (
-    CleanAreaV2,
-    CleanV2,
+    Clean,
+    CleanArea,
     GetCleanInfoV2,
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
@@ -121,7 +121,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
-            action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
+            action=CapabilityCleanAction(command=Clean, area=CleanArea),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             preference=CapabilitySetEnable(
@@ -163,6 +163,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.FILTER,
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
+                LifeSpan.ROUND_MOP,
             ),
             event=LifeSpanEvent,
             get=[
@@ -172,6 +173,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.FILTER,
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
+                        LifeSpan.ROUND_MOP,
                     ]
                 )
             ],
