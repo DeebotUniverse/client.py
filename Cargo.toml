@@ -22,6 +22,10 @@ pyo3 = "0.25.0"
 pyo3-log = "0.12.4"
 svg = "0.18.0"
 zstd = "0.13.3"
+# New dependencies for EventBus
+tokio = { version = "1.0", features = ["full"] }
+dashmap = "5.5"
+futures = "0.3"
 
 [dev-dependencies]
 rstest = "0.26.0"
