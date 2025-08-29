@@ -34,3 +34,5 @@ class StationAction(IntEnum):
     """Enum class for all possible station actions."""
 
     EMPTY_DUSTBIN = 1
+    DRY_MOP = 2
+    CLEAN_BASE = 3

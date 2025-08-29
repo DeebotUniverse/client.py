@@ -16,6 +16,8 @@ class State(IntEnum):
 
     IDLE = 0
     EMPTYING = 1
+    DRYING_MOP = 2
+    CLEANING_BASE = 3
 
 
 @dataclass(frozen=True)
