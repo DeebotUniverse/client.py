@@ -25,7 +25,6 @@ from deebot_client.commands import StationAction
 from deebot_client.commands.json import station_action
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
-from deebot_client.commands.json.border_switch import GetBorderSwitch, SetBorderSwitch
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
     SetCarpetAutoFanBoost,
@@ -40,10 +39,6 @@ from deebot_client.commands.json.clean import (
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
-from deebot_client.commands.json.clean_preference import (
-    GetCleanPreference,
-    SetCleanPreference,
-)
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 from deebot_client.commands.json.error import GetError
@@ -63,7 +58,6 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
-from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
@@ -75,13 +69,11 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
-    BorderSwitchEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
-    CleanPreferenceEvent,
     CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
@@ -128,11 +120,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-            preference=CapabilitySetEnable(
-                CleanPreferenceEvent,
-                [GetCleanPreference()],
-                SetCleanPreference,
-            ),
             work_mode=CapabilitySetTypes(
                 event=WorkModeEvent,
                 get=[GetWorkMode()],
@@ -158,7 +145,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 FanSpeedLevel.QUIET,
                 FanSpeedLevel.NORMAL,
                 FanSpeedLevel.MAX,
-                FanSpeedLevel.MAX_PLUS,
             ),
         ),
         life_span=CapabilityLifeSpan(
@@ -168,7 +154,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 LifeSpan.SIDE_BRUSH,
                 LifeSpan.UNIT_CARE,
                 LifeSpan.ROUND_MOP,
-                LifeSpan.DUST_BAG,
             ),
             event=LifeSpanEvent,
             get=[
@@ -179,7 +164,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                         LifeSpan.SIDE_BRUSH,
                         LifeSpan.UNIT_CARE,
                         LifeSpan.ROUND_MOP,
-                        LifeSpan.DUST_BAG,
                     ]
                 )
             ],
@@ -194,18 +178,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
-            relocation=CapabilityExecute(SetRelocationState),
             rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
-            border_switch=CapabilitySetEnable(
-                BorderSwitchEvent,
-                [GetBorderSwitch()],
-                SetBorderSwitch,
-            ),
             carpet_auto_fan_boost=CapabilitySetEnable(
                 CarpetAutoFanBoostEvent,
                 [GetCarpetAutoFanBoost()],
@@ -268,7 +246,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     water_info.WaterAmount.LOW,
                     water_info.WaterAmount.MEDIUM,
                     water_info.WaterAmount.HIGH,
-                    water_info.WaterAmount.ULTRAHIGH,
                 ),
             ),
             mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
