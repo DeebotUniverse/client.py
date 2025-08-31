@@ -25,6 +25,7 @@ from deebot_client.commands import StationAction
 from deebot_client.commands.json import station_action
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.border_spin import GetBorderSpin, SetBorderSpin
 from deebot_client.commands.json.carpet import (
     GetCarpetAutoFanBoost,
     SetCarpetAutoFanBoost,
@@ -39,6 +40,10 @@ from deebot_client.commands.json.clean import (
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
+from deebot_client.commands.json.continuous_cleaning import (
+    GetContinuousCleaning,
+    SetContinuousCleaning,
+)
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficiencyMode
 from deebot_client.commands.json.error import GetError
@@ -69,11 +74,13 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
+    BorderSpinEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
+    ContinuousCleaningEvent,
     CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
@@ -118,6 +125,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         charge=CapabilityExecute(Charge),
         clean=CapabilityClean(
             action=CapabilityCleanAction(command=Clean, area=CleanArea),
+            continuous=CapabilitySetEnable(
+                ContinuousCleaningEvent,
+                [GetContinuousCleaning()],
+                SetContinuousCleaning,
+            ),
             count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
             log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             work_mode=CapabilitySetTypes(
@@ -186,6 +198,11 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(
+            border_spin=CapabilitySetEnable(
+                BorderSpinEvent,
+                [GetBorderSpin()],
+                SetBorderSpin,
+            ),
             carpet_auto_fan_boost=CapabilitySetEnable(
                 CarpetAutoFanBoostEvent,
                 [GetCarpetAutoFanBoost()],

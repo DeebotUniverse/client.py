@@ -4,6 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
+from deebot_client.commands.json.border_spin import GetBorderSpin, SetBorderSpin
+
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
@@ -137,6 +139,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetBorderSwitch,
     SetBorderSwitch,
+
+    GetBorderSpin,
+    SetBorderSpin,
 
     GetBattery,
 

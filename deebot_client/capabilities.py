@@ -12,6 +12,7 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BorderSpinEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -196,6 +197,7 @@ class CapabilitySettings:
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
         | None
     ) = None
+    border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None

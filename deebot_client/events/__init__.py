@@ -310,3 +310,8 @@ class FirmwareEvent(Event):
     """Firmware event."""
 
     version: str
+
+
+@dataclass(frozen=True)
+class BorderSpinEvent(EnableEvent):
+    """Border spin event."""
