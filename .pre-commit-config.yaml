@@ -1,16 +1,3 @@
-ci:
-  autofix_prs: false
-  skip:
-    # This steps run in the ci workflow. Keep in sync
-    - mypy
-    - verifyNoGetLogger
-    - rust-fmt
-    - rust-check
-    - rust-clippy
-
-default_language_version:
-  python: python3.13
-
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
     rev: v0.12.11
