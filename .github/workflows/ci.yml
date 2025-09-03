@@ -130,7 +130,7 @@ jobs:
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
       - name: 🏗 Install the project
-        run: uv sync --locked --group lint
+        run: uv sync --locked --group lint --no-install-project
       - uses: actions/cache@0400d5f644dc74513175e3cd8d07132dd4860809 # v4.2.4
         with:
           path: ~/.cache/pre-commit
@@ -139,6 +139,7 @@ jobs:
         env:
           SKIP: no-commit-to-branch,mypy,verifyNoGetLogger,rust-fmt,rust-check,rust-clippy
         run: |
+          source .venv/bin/activate
           pre-commit run --show-diff-on-failure --color=always --all-files
 
   tests:
