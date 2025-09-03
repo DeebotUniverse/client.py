@@ -34,7 +34,6 @@ repos:
       - id: detect-private-key
       - id: no-commit-to-branch
         args: [--branch, main, --branch, dev]
-      - id: requirements-txt-fixer
   # - repo: https://github.com/doublify/pre-commit-rust
   #   rev: v1.0
   #   hooks:
