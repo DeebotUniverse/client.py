@@ -371,6 +371,7 @@ jobs:
         with:
           run: pytest tests/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
+          mode: instrumentation
 
   sdist:
     name: Create source distribution
