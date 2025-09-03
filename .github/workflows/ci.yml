@@ -56,7 +56,7 @@ jobs:
           echo "python_versions: ${all_python_versions}"
           echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
       - name: Generate requirements files
         run: |
           uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
@@ -79,15 +79,24 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
 
+      - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
+        id: setup-python
+
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
+        with:
+          cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
       - name: 🏗 Install the project
         run: uv sync --locked --group lint
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: uv run --frozen mypy deebot_client/
+        run: |
+          source .venv/bin/activate
+          mypy deebot_client/
 
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
@@ -100,7 +109,7 @@ jobs:
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
-      - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48 # v1.13.0
+      - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
         with:
           components: rustfmt,clippy
       - name: Rust format
@@ -126,13 +135,13 @@ jobs:
       - uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
           python-version: ${{ matrix.python-version }}
+        id: setup-python
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
-      - uses: actions-rust-lang/setup-rust-toolchain@fb51252c7ba57d633bc668f941da052e410add48 # v1.13.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
+      - uses: actions-rust-lang/setup-rust-toolchain@ac90e63697ac2784f4ecfe2964e1a285c304003a # v1.14.1
         with:
-          override: true
           components: llvm-tools
-          cache-key: ${{ matrix.python-version }}-${{ hashFiles('Cargo.lock') }}
+          cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
@@ -142,7 +151,7 @@ jobs:
       - name: Prepare env and install requirements
         shell: bash
         run: |
-          uv venv -p ${{ matrix.python-version }}
+          uv venv -p ${{ steps.setup-python.outputs.python-version }}
           uv pip install --system -r requirements-dev.txt
       - name: Execute tests
         id: tests
@@ -157,7 +166,7 @@ jobs:
           pytest tests --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov report --lcov --output-path coverage.lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@18283e04ce6e62d37312384ff67231eb8fd56d24 # v5.4.3
+        uses: codecov/codecov-action@fdcc8476540edceab3de004e990f80d881c6cc00 # v5.5.0
         with:
           fail_ci_if_error: true
           disable_telem: true
@@ -228,7 +237,7 @@ jobs:
           name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
         with:
           enable-cache: true
       - name: Download requirements-test.txt
@@ -340,7 +349,7 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
       - name: 🏗 Setup Python
         uses: actions/setup-python@a26af69be951a213d495a4c3e4e4022e16d87065 # v5.6.0
         with:
@@ -358,7 +367,7 @@ jobs:
         run: |
           rm -rf deebot_client/
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@0b6e7a3d96c9d2a6057e7bcea6b45aaf2f7ce60b # v3.8.0
+        uses: CodSpeedHQ/action@76578c2a7ddd928664caa737f0e962e3085d4e7c # v3.8.1
         with:
           run: pytest tests/ --codspeed
           token: ${{ secrets.CODSPEED_TOKEN }}
@@ -371,7 +380,7 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: 🏗 Set up uv
-        uses: astral-sh/setup-uv@d9e0f98d3fc6adb07d1e3d37f3043649ddad06a1 # v6.5.0
+        uses: astral-sh/setup-uv@4959332f0f014c5280e7eac8b70c90cb574c9f9b # v6.6.0
         with:
           enable-cache: true
       - name: 🏗 Set package version
