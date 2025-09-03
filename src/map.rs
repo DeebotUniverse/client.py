@@ -560,7 +560,7 @@ impl MapData {
         {
             let mut encoder = Encoder::new(&mut png_data, image.width(), image.height());
 
-            encoder.set_compression(Compression::Best);
+            encoder.set_compression(Compression::Balanced);
             encoder.set_color(ColorType::Indexed);
             encoder.set_depth(BitDepth::Eight);
             encoder.set_palette(MAP_IMAGE_PALETTE.as_ref());
