@@ -2,6 +2,7 @@ use pyo3::prelude::*;
 
 mod map;
 mod util;
+mod event_bus;
 
 /// Deebot client written in Rust
 #[pymodule]
@@ -10,6 +11,7 @@ fn rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
 
     register_submodule(py, m, map::init_module)?;
     register_submodule(py, m, util::init_module)?;
+    register_submodule(py, m, event_bus::init_module)?;
     Ok(())
 }
 
