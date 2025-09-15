@@ -200,7 +200,7 @@ class Command(ABC):
             result = self._handle_response(event_bus, response)
         except Exception:
             _LOGGER.warning(
-                "Could not parse response %s for %s: %s",
+                "Could not parse response for %s: %s",
                 self.NAME,
                 response,
                 exc_info=True,
