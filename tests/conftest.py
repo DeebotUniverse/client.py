@@ -12,6 +12,7 @@ from deebot_client.api_client import ApiClient
 from deebot_client.authentication import (
     Authenticator,
     RestConfiguration,
+    UserAuthenticator,
     create_rest_config as create_config_rest,
 )
 from deebot_client.event_bus import EventBus
@@ -58,8 +59,8 @@ def rest_config(
 
 
 @pytest.fixture
-def authenticator() -> Authenticator:
-    authenticator = Mock(spec_set=Authenticator)
+def authenticator() -> UserAuthenticator:
+    authenticator = Mock(spec_set=UserAuthenticator)
     authenticator.authenticate.return_value = Credentials("token", "user_id", 9999)
     authenticator.execute_command_request.return_value = (
         authenticator.post_authenticated.return_value

@@ -8,6 +8,7 @@ from contextlib import suppress
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final
 
+from deebot_client.authentication import DeviceAuthenticator
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
@@ -32,7 +33,7 @@ from .models import DeviceInfo, State
 from .rs.map import PositionType
 
 if TYPE_CHECKING:
-    from .authentication import Authenticator
+    from .authentication import Authenticator, UserAuthenticator
     from .command import DeviceCommandResult
     from .message import MessagePayloadType
 
@@ -48,12 +49,14 @@ class Device:
     def __init__(
         self,
         device_info: DeviceInfo,
-        authenticator: Authenticator,
+        authenticator: UserAuthenticator,
     ) -> None:
         self._device_info = device_info
         self.device_info: Final = device_info.api
         self.capabilities: Final = device_info.static.capabilities
-        self._authenticator = authenticator
+        self._authenticator: Authenticator = authenticator
+        if self.capabilities.use_device_authenticator:
+            self._authenticator = DeviceAuthenticator(authenticator, device_info.api)
 
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None

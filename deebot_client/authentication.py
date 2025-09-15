@@ -449,6 +449,11 @@ class UserAuthenticator(Authenticator):
 
         super().__init__(auth_client.login)
 
+    @property
+    def config(self) -> RestConfiguration:
+        """Return the rest configuration."""
+        return self._config
+
     async def post_authenticated(
         self,
         path: str,
@@ -518,11 +523,9 @@ class DeviceAuthenticator(Authenticator):
 
     def __init__(
         self,
-        config: RestConfiguration,
         user_authenticator: UserAuthenticator,
         device_info: ApiDeviceInfo,
     ) -> None:
-        self._config = config
         self._user_authenticator = user_authenticator
         self._device_info = device_info
 
@@ -550,9 +553,12 @@ class DeviceAuthenticator(Authenticator):
             "exp": validity,
             "sub": user_credentials.user_id,
         }
-        url = urljoin(self._config.api_base_url, "api/" + PATH_API_ISSUE_NEW_PERMISSION)
+        url = urljoin(
+            self._user_authenticator.config.api_base_url,
+            "api/" + PATH_API_ISSUE_NEW_PERMISSION,
+        )
         response = await _post(
-            self._config.session,
+            self._user_authenticator.config.session,
             url,
             perm_payload,
             headers={
@@ -617,11 +623,13 @@ class DeviceAuthenticator(Authenticator):
             hdrs.ACCEPT: "application/json",
         }
 
-        url = urljoin(self._config.portal_url, "api/" + PATH_API_IOT_CONTROL)
+        url = urljoin(
+            self._user_authenticator.config.portal_url, "api/" + PATH_API_IOT_CONTROL
+        )
         # Ecovacs is setting not the correct content type in the response
         # even if the response is json
         return await _post(
-            self._config.session,
+            self._user_authenticator.config.session,
             url,
             body,
             query_params=query_params,

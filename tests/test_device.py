@@ -26,7 +26,7 @@ from tests.helpers import mock_static_device_info
 from tests.helpers.tasks import block_till_done
 
 if TYPE_CHECKING:
-    from deebot_client.authentication import Authenticator
+    from deebot_client.authentication import UserAuthenticator
     from deebot_client.event_bus import EventBus
     from deebot_client.message import Message
     from deebot_client.models import ApiDeviceInfo
@@ -67,7 +67,7 @@ async def test_available_check_and_teardown(
     get_battery_command: Command,
     battery_message: Message,
     battery_message_payload: str,
-    authenticator: Authenticator,
+    authenticator: UserAuthenticator,
     api_device_info: ApiDeviceInfo,
 ) -> None:
     """Test the available check including if the status Event is fired correctly."""
@@ -148,7 +148,7 @@ async def test_available_check_and_teardown(
 
 
 async def test_mac_address(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: UserAuthenticator, device_info: DeviceInfo
 ) -> None:
     """Test that the mac address is change on NetworkInfoEvent."""
     device = Device(device_info, authenticator)
@@ -184,7 +184,7 @@ def static_device_info_no_map() -> StaticDeviceInfo:
     ],
 )
 async def test_behaviour_with_no_map_capability(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: UserAuthenticator, device_info: DeviceInfo
 ) -> None:
     device = Device(device_info, authenticator)
 
@@ -241,7 +241,7 @@ async def test_device_handle_message_behaviour(
     battery_message: Message,
     battery_message_payload: str,
     expected_version: str | None,
-    authenticator: Authenticator,
+    authenticator: UserAuthenticator,
     api_device_info: ApiDeviceInfo,
 ) -> None:
     """Test the available check including if the status Event is fired correctly."""
@@ -337,7 +337,7 @@ async def test_device_handle_message_behaviour(
     ],
 )
 async def test_onPos_device_handling(
-    authenticator: Authenticator,
+    authenticator: UserAuthenticator,
     device_info: DeviceInfo,
     event_bus_mock: Mock,
     event_bus: EventBus,
