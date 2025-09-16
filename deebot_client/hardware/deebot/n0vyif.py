@@ -283,6 +283,6 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                 max=50,
             ),
             mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
-        ),        
+        ),
     ),
 )
