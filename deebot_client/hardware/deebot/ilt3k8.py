@@ -38,7 +38,6 @@ from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import (
     CleanArea,
     CleanV2,
-    GetCleanInfoV2,
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
@@ -54,7 +53,6 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
-from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.voice_assistant_state import (
@@ -64,6 +62,7 @@ from deebot_client.commands.json.voice_assistant_state import (
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
+from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -217,7 +216,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
             # TODO: add true detect once the implementation supports the 'level' attribute
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetWorkState()]),
         station=CapabilityStation(
             action=CapabilityExecuteTypes(
                 station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
@@ -231,7 +230,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     auto_empty.Frequency.SMART,
                 ),
             ),
-            state=CapabilityEvent(StationEvent, [GetStationState()]),
+            state=CapabilityEvent(StationEvent, [GetWorkState()]),
         ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),
