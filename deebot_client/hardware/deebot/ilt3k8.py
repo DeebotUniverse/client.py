@@ -11,12 +11,14 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityExecuteTypes,
     CapabilityLifeSpan,
+    CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStation,
     CapabilityStats,
+    CapabilityWater,
     DeviceType,
 )
 from deebot_client.commands import StationAction
@@ -60,6 +62,7 @@ from deebot_client.commands.json.voice_assistant_state import (
     SetVoiceAssistantState,
 )
 from deebot_client.commands.json.volume import GetVolume, SetVolume
+from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -91,6 +94,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
     auto_empty,
+    water_info,
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
@@ -234,6 +238,15 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             report=CapabilityEvent(ReportStatsEvent, []),
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
-        # TODO add water once https://github.com/DeebotUniverse/client.py/pull/1100 is merged
+        water=CapabilityWater(
+            amount=CapabilityNumber(
+                event=water_info.WaterCustomAmountEvent,
+                get=[GetWaterInfo()],
+                set=lambda custom_amount: SetWaterInfo(custom_amount=custom_amount),
+                min=0,
+                max=50,
+            ),
+            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
+        ),
     ),
 )
