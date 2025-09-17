@@ -188,7 +188,7 @@ jobs:
           cargo llvm-cov clean --workspace
           cargo test
           maturin develop --uv
-          pytest tests --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
+          pytest tests -n auto --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov report --lcov --output-path coverage.lcov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
@@ -282,13 +282,13 @@ jobs:
         id: pytest
         run: |
           source .venv/bin/activate
-          pytest tests -v ${{ matrix.pytest_args || ''}}
+          pytest tests -n auto -v ${{ matrix.pytest_args || ''}}
       - name: Run pytest (windows)
         if: ${{ matrix.platform.name == 'Windows' }}
         id: pytest_windows
         run: |
           .venv/Scripts/activate
-          pytest tests -v -m "not docker"
+          pytest tests -n auto -v -m "not docker"
 
   build-test-musl:
     name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
