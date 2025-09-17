@@ -142,10 +142,14 @@ class LifeSpan(StrEnumWithXml):
     LENS_BRUSH = "lensBrush", "LensBrush"
     DUST_BAG = "dustBag", "DustBag"
     CLEANING_FLUID = "autoWater_cleaningFluid", "AutoWater_cleaningFluid"
+    CLEANING_SOLUTION = "cleaningSolution", "CleaningSolution"
+    SEWAGE_BOX = "sewageBox", "SewageBox"
     STRAINER = "strainer", "Strainer"
     HAND_FILTER = "handFilter", "HandFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
     STATION_FILTER = "spHeap", "SpHeap"
+    WATER_SINK = "waterSink", "WaterSink"
+    MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
 
 
 @dataclass(frozen=True)

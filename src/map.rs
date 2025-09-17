@@ -1,17 +1,14 @@
-use std::error::Error;
-use std::io::Cursor;
-
 use super::util::decompress_base64_data;
 use base64::engine::general_purpose;
 use base64::Engine;
-use byteorder::{LittleEndian, ReadBytesExt};
 use crc32fast::Hasher;
 use image::{GenericImageView, GrayImage, Luma};
 use log::{debug, error};
-use once_cell::sync::Lazy;
 use png::{BitDepth, ColorType, Compression, Encoder};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use std::error::Error;
+use std::fmt::Write as FmtWrite;
 use svg::node::element::{
     Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Use,
 };
@@ -20,26 +17,23 @@ use svg::{Document, Node};
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const NOT_INUSE_CRC32: u32 = 1295764014;
-const DEFAULT_MAP_BACKGROUND: &[u8; 3] = &[0xba, 0xda, 0xff];
 const MAP_TRANSPARENT_INDEX: u8 = 0;
 const MAP_FLOOR_INDEX: u8 = 1;
-static MAP_IMAGE_PALETTE: Lazy<Vec<u8>> = Lazy::new(|| {
-    let mut palette = Vec::new();
-    palette.extend_from_slice(&[0x00, 0x00, 0x00]); // Transparent
-    palette.extend_from_slice(DEFAULT_MAP_BACKGROUND); // Floor
-    palette.extend_from_slice(&[0x4e, 0x96, 0xe2]); // Wall
-    palette.extend_from_slice(&[0x1a, 0x81, 0xed]); // Carpet
-    palette.extend_from_slice(&[0xde, 0xe9, 0xfb]); // Not scanned space
-    palette.extend_from_slice(&[0xed, 0xf3, 0xfb]); // Possible obstacle
-    palette
-});
-static MAP_IMAGE_PALETTE_LEN: Lazy<usize> = Lazy::new(|| MAP_IMAGE_PALETTE.len() / 3);
-static MAP_IMAGE_PALETTE_TRANSPARENCY: Lazy<Vec<u8>> = Lazy::new(|| {
-    // 0 -> Transparent, 255 -> Fully opaque
-    let mut transparency = vec![0u8];
-    transparency.resize(*MAP_IMAGE_PALETTE_LEN, 255);
-    transparency
-});
+
+// when updating palette, update MAP_IMAGE_PALETTE_LEN and MAP_IMAGE_PALETTE_TRANSPARENCY
+const MAP_IMAGE_PALETTE: &[u8] = &[
+    0x00, 0x00, 0x00, // Transparent
+    0xba, 0xda, 0xff, // Floor
+    0x4e, 0x96, 0xe2, // Wall
+    0x1a, 0x81, 0xed, // Carpet
+    0xde, 0xe9, 0xfb, // Not scanned space
+    0xed, 0xf3, 0xfb, // Possible obstacle
+];
+const MAP_IMAGE_PALETTE_LEN: u8 = 6;
+// 0 -> Transparent, 255 -> Fully opaque
+// (first entry is transparent, rest opaque)
+const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
+
 const MAP_PIECE_SIZE: u16 = 100;
 const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
@@ -59,9 +53,8 @@ fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn 
             if chunk.len() < 5 {
                 return Err("Invalid trace points length".into());
             }
-            let mut cursor = Cursor::new(&chunk[0..4]);
-            let x = cursor.read_i16::<LittleEndian>()?;
-            let y = cursor.read_i16::<LittleEndian>()?;
+            let x = i16::from_le_bytes([chunk[0], chunk[1]]);
+            let y = i16::from_le_bytes([chunk[2], chunk[3]]);
             let connected = ((chunk[4] >> 7) & 1) == 0;
             Ok(TracePoint { x, y, connected })
         })
@@ -95,13 +88,12 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
         // Not enough points to generate a path
         return None;
     }
-
-    let mut svg_path = String::new();
+    let mut svg_path = String::with_capacity(points.len() * 7); // heuristic
     let mut last_command = SvgPathCommand::MoveTo;
 
-    let first_p = points.first().unwrap();
+    let first_p = &points[0];
     let space = if 0.0 < first_p.y { " " } else { "" };
-    svg_path.push_str(&format!("M{}{}{}", first_p.x, space, first_p.y));
+    let _ = write!(svg_path, "M{}{}{}", first_p.x, space, first_p.y);
 
     for pair in points.windows(2) {
         let prev_p = &pair[0];
@@ -114,7 +106,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
 
         if !p.connected {
             let space = if 0.0 < y { " " } else { "" };
-            svg_path.push_str(&format!("m{}{}{}", x, space, y));
+            let _ = write!(svg_path, "m{x}{space}{y}");
             last_command = SvgPathCommand::MoveBy;
         } else if x == 0.0 {
             if last_command != SvgPathCommand::VerticalLineBy {
@@ -123,7 +115,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if y >= 0.0 {
                 svg_path.push(' ');
             }
-            svg_path.push_str(&format!("{}", y));
+            let _ = write!(svg_path, "{y}");
         } else if y == 0.0 {
             if last_command != SvgPathCommand::HorizontalLineBy {
                 svg_path.push('h');
@@ -131,7 +123,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
             } else if x >= 0.0 {
                 svg_path.push(' ');
             }
-            svg_path.push_str(&format!("{}", x));
+            let _ = write!(svg_path, "{x}");
         } else {
             if last_command != SvgPathCommand::LineBy {
                 svg_path.push('l');
@@ -140,7 +132,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
                 svg_path.push(' ');
             }
             let space = if 0.0 < y { " " } else { "" };
-            svg_path.push_str(&format!("{}{}{}", x, space, y));
+            let _ = write!(svg_path, "{x}{space}{y}");
         }
     }
 
@@ -154,16 +146,17 @@ fn get_trace_path(trace_points: &[TracePoint]) -> Option<Path> {
 
     let path_data =
         points_to_svg_path(&trace_points.iter().map(Into::into).collect::<Vec<Point>>())?;
-    let trace = Path::new()
-        .set("fill", "none")
-        .set("stroke", "#fff")
-        .set("stroke-width", 1.5)
-        .set("stroke-linejoin", "round")
-        .set("vector-effect", "non-scaling-stroke")
-        .set("transform", "scale(0.2-0.2)")
-        .set("d", path_data);
 
-    Some(trace)
+    Some(
+        Path::new()
+            .set("fill", "none")
+            .set("stroke", "#fff")
+            .set("stroke-width", 1.5)
+            .set("stroke-linejoin", "round")
+            .set("vector-effect", "non-scaling-stroke")
+            .set("transform", "scale(0.2-0.2)")
+            .set("d", path_data),
+    )
 }
 
 #[derive(Debug, PartialEq)]
@@ -200,19 +193,21 @@ fn get_color(set_type: &str) -> PyResult<&'static str> {
 }
 
 fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
-    debug!("Adding subset: {:?}", subset);
-    let points: Vec<Point> = subset
-        .coordinates
-        .split(',')
-        .map(|s| {
-            s.trim_matches(|c: char| !c.is_numeric() && c != '-')
-                .parse::<f32>()
-                .unwrap_or_default()
-        })
-        .collect::<Vec<f32>>()
-        .chunks(2)
-        .map(|chunk| calc_point(chunk[0], chunk[1]))
-        .collect();
+    debug!("Adding subset: {subset:?}");
+    let mut numbers = subset.coordinates.split(',').filter_map(|s| {
+        let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
+        if s.is_empty() {
+            debug!("Skipping empty coordinate in subset: {subset:?}");
+            None
+        } else {
+            s.parse::<f32>().ok()
+        }
+    });
+
+    let mut points = Vec::with_capacity(subset.coordinates.len() / 2);
+    while let (Some(x), Some(y)) = (numbers.next(), numbers.next()) {
+        points.push(calc_point(x, y));
+    }
 
     if points.len() == 2 {
         // Only 2 points: use a Path
@@ -227,20 +222,19 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
     } else {
         // More than 2 points: use a Polygon
         let color = get_color(&subset.set_type)?;
+        let mut coords = Vec::with_capacity(points.len() * 2);
+        for p in points {
+            coords.push(p.x);
+            coords.push(p.y);
+        }
         Ok(Box::new(
             Polygon::new()
-                .set("fill", format!("{}30", color))
+                .set("fill", format!("{color}30"))
                 .set("stroke", color)
                 .set("stroke-width", 1.5)
                 .set("stroke-dasharray", "4")
                 .set("vector-effect", "non-scaling-stroke")
-                .set(
-                    "points",
-                    points
-                        .iter()
-                        .flat_map(|p| vec![p.x, p.y])
-                        .collect::<Vec<f32>>(),
-                ),
+                .set("points", coords),
         ))
     }
 }
@@ -335,7 +329,7 @@ impl MapData {
     fn add_trace_points(&mut self, value: String) -> Result<(), PyErr> {
         self.trace_points
             .extend(extract_trace_points(&value).map_err(|err| {
-                error!("Failed to extract trace points: {};value:{}", err, value);
+                error!("Failed to extract trace points: {err};value:{value}");
                 PyValueError::new_err(err.to_string())
             })?);
         Ok(())
@@ -347,18 +341,14 @@ impl MapData {
 
     fn update_map_piece(&mut self, index: usize, base64_data: String) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            error!(
-                "Index out of bounds; index:{}, base64_data:{}",
-                index, base64_data
-            );
+            error!("Index out of bounds; index:{index}, base64_data:{base64_data}");
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         self.map_pieces[index]
             .update_points(&base64_data)
             .map_err(|err| {
                 error!(
-                    "Failed to update map piece: {}; index:{}, base64_data:{}",
-                    err, index, base64_data,
+                    "Failed to update map piece: {err}; index:{index}, base64_data:{base64_data}",
                 );
                 PyValueError::new_err(err.to_string())
             })
@@ -370,7 +360,7 @@ impl MapData {
         crc32: u32,
     ) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
-            error!("Index out of bounds; index:{}, crc32:{}", index, crc32);
+            error!("Index out of bounds; index:{index}, crc32:{crc32}");
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))
@@ -447,24 +437,23 @@ impl MapData {
             .set("width", viewbox.width)
             .set("height", viewbox.height)
             .set("style", "image-rendering: pixelated")
-            .set("href", format!("data:image/png;base64,{}", base64_image));
+            .set("href", format!("data:image/png;base64,{base64_image}"));
 
         let mut document = Document::new()
             .set("viewBox", viewbox.to_svg_viewbox())
             .add(defs)
             .add(image);
 
-        for subset in subsets.iter() {
+        for subset in &subsets {
             document.append(get_svg_subset(subset)?);
         }
-        if let Some(trace) = get_trace_path(self.trace_points.as_slice()) {
+        if let Some(trace) = get_trace_path(&self.trace_points) {
             document.append(trace);
         }
-        for position in get_svg_positions(positions, &viewbox) {
+        for position in get_svg_positions(&positions, &viewbox) {
             document.append(position);
         }
-
-        Ok(Some(document.to_string().replace("\n", "")))
+        Ok(Some(document.to_string().replace('\n', "")))
     }
 }
 
@@ -512,19 +501,18 @@ impl MapData {
         let mut max_x = 0u16;
         let mut max_y = 0u16;
 
-        self.map_pieces.iter().enumerate().for_each(|(i, piece)| {
+        for (i, piece) in self.map_pieces.iter().enumerate() {
             // Order of the pieces is from bottom-left to top-right (column by column)
             let piece_x = (i as u16 / 8) * MAP_PIECE_SIZE;
             let piece_y = MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE);
 
             if let Some(pixels) = piece.pixels_indexed() {
-                debug!("Adding piece at {} ({}, {})", i, piece_x, piece_y);
-
-                pixels.iter().enumerate().for_each(|(j, pixel_idx)| {
+                debug!("Adding piece at {i} ({piece_x}, {piece_y})");
+                for (j, &pixel_idx) in pixels.iter().enumerate() {
                     // Order of the pixels is from top-left to bottom-right (row by row)
 
                     // Check if the pixel is not fully transparent (alpha > 0)
-                    if pixel_idx != &MAP_TRANSPARENT_INDEX {
+                    if pixel_idx != MAP_TRANSPARENT_INDEX {
                         let pixel_x = j as u16 % MAP_PIECE_SIZE;
                         let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
@@ -534,10 +522,10 @@ impl MapData {
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color
-                        let pixel = if *pixel_idx > *MAP_IMAGE_PALETTE_LEN as u8 {
+                        let pixel = if pixel_idx > MAP_IMAGE_PALETTE_LEN {
                             MAP_FLOOR_INDEX
                         } else {
-                            *pixel_idx
+                            pixel_idx
                         };
 
                         image.put_pixel(new_x.into(), new_y.into(), Luma([pixel]));
@@ -546,17 +534,16 @@ impl MapData {
                         max_x = max_x.max(new_x);
                         max_y = max_y.max(new_y);
                     }
-                });
+                }
             }
-        });
-
+        }
         if min_x == u16::MAX || min_y == u16::MAX || max_x == 0 || max_y == 0 {
             return Ok(None);
         }
 
         let view_box = ViewBox::new(min_x, min_y, max_x, max_y);
 
-        debug!("Image bounding box: {:?}", view_box);
+        debug!("Image bounding box: {view_box:?}");
 
         // Crop the image to the actual size
         image = image
@@ -573,11 +560,11 @@ impl MapData {
         {
             let mut encoder = Encoder::new(&mut png_data, image.width(), image.height());
 
-            encoder.set_compression(Compression::Best);
+            encoder.set_compression(Compression::Balanced);
             encoder.set_color(ColorType::Indexed);
             encoder.set_depth(BitDepth::Eight);
-            encoder.set_palette(MAP_IMAGE_PALETTE.clone());
-            encoder.set_trns(MAP_IMAGE_PALETTE_TRANSPARENCY.clone()); // Add transparency chunk
+            encoder.set_palette(MAP_IMAGE_PALETTE.as_ref());
+            encoder.set_trns(MAP_IMAGE_PALETTE_TRANSPARENCY.as_ref());
 
             let mut writer = encoder.write_header().unwrap();
             writer.write_image_data(image.as_ref()).unwrap();
@@ -590,12 +577,12 @@ impl MapData {
     }
 }
 
-fn get_svg_positions(positions: Vec<Position>, viewbox: &ViewBox) -> Vec<Use> {
-    let mut positions: Vec<&Position> = positions.iter().to_owned().collect();
-    positions.sort_by_key(|d| -> i32 { d.position_type.order() });
-    debug!("Adding positions: {:?}", positions);
+fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
+    let mut positions: Vec<&'a Position> = positions.iter().collect();
+    positions.sort_by_key(|d| d.position_type.order());
+    debug!("Adding positions: {positions:?}");
 
-    let mut svg_positions = Vec::new();
+    let mut svg_positions = Vec::with_capacity(positions.len());
 
     for position in positions {
         let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
@@ -636,25 +623,28 @@ impl MapPiece {
         self.crc32 != NOT_INUSE_CRC32
     }
 
-    fn pixels_indexed(&self) -> Option<&Vec<u8>> {
-        self.pixels_indexed.as_ref()
+    fn pixels_indexed(&self) -> Option<&[u8]> {
+        self.pixels_indexed.as_deref()
     }
 
     fn update_points(&mut self, base64_data: &str) -> Result<bool, Box<dyn std::error::Error>> {
         let decoded = decompress_base64_data(base64_data)?;
-        let old_crc32 = self.crc32;
-
         let mut hasher = Hasher::new();
         hasher.update(&decoded);
-        self.crc32 = hasher.finalize();
+        let new_crc = hasher.finalize();
 
+        if self.crc32 == new_crc {
+            // No change in data, return false
+            return Ok(false);
+        }
+
+        self.crc32 = new_crc;
         if self.in_use() {
             self.pixels_indexed = Some(decoded);
         } else {
             self.pixels_indexed = None;
         }
-
-        Ok(self.crc32 != old_crc32)
+        Ok(true)
     }
 }
 
@@ -761,11 +751,11 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case( vec![Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(vec![Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(vec![Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    fn test_get_svg_positions(#[case] positions: Vec<Position>, #[case] expected: String) {
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    fn test_get_svg_positions(#[case] positions: &[Position], #[case] expected: String) {
         let viewbox = (-500, -500, 1000, 1000);
         let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
             .iter()
@@ -779,6 +769,7 @@ mod tests {
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path d=\"M-78-13.36h35.34\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon fill=\"#ffa50030\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\" stroke=\"#ffa500\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
         let result = get_svg_subset(&subset).unwrap().to_string();
         assert_eq!(result, expected);
@@ -1003,9 +994,9 @@ mod tests {
             crc32: 0,
             pixels_indexed: None,
         };
-        let update = map_piece.update_points(data).unwrap();
-        assert!(update);
+        assert!(map_piece.update_points(data).unwrap());
         assert_eq!(map_piece.crc32, NOT_INUSE_CRC32);
         assert!(map_piece.pixels_indexed.is_none());
+        assert!(!map_piece.update_points(data).unwrap());
     }
 }

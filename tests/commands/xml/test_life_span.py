@@ -9,9 +9,9 @@ from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetLifeSpan, ResetLifeSpan
 from deebot_client.events import LifeSpan, LifeSpanEvent
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
 
 from . import (
+    assert_command,
     assert_execute_command,
     get_failure_body,
     get_request_xml,

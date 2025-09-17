@@ -9,14 +9,8 @@ from enum import Enum
 import hashlib
 from typing import TYPE_CHECKING, Any, TypeVar
 
-from deebot_client.logging_filter import get_logger
-
-_LOGGER = get_logger(__name__)
-
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Iterable
-
-_T = TypeVar("_T")
 
 
 def md5(text: str) -> str:
@@ -35,9 +29,9 @@ def verify_required_class_variables_exists(
                 raise ValueError(msg)
 
 
-def create_task(
-    tasks: set[asyncio.Future[Any]], target: Coroutine[Any, Any, _T]
-) -> asyncio.Task[_T]:
+def create_task[T](
+    tasks: set[asyncio.Future[Any]], target: Coroutine[Any, Any, T]
+) -> asyncio.Task[T]:
     """Create task with done callback to remove it from tasks and add it to tasks."""
     task = asyncio.create_task(target)
     tasks.add(task)
@@ -56,10 +50,7 @@ async def cancel(tasks: set[asyncio.Future[Any]]) -> None:
         await asyncio.gather(*tasks_to_wait)
 
 
-_S = TypeVar("_S", bound=Enum)
-
-
-def get_enum(enum: type[_S], value: str) -> _S:
+def get_enum[S: Enum](enum: type[S], value: str) -> S:
     """Get enum member from name."""
     value = value.upper()
     if value in enum.__members__:
@@ -69,11 +60,7 @@ def get_enum(enum: type[_S], value: str) -> _S:
     raise ValueError(msg)
 
 
-_KT = TypeVar("_KT")
-_VT = TypeVar("_VT")
-
-
-class OnChangedDict(dict[_KT, _VT]):
+class OnChangedDict[KT, VT](dict[KT, VT]):
     """Dict, which will call passed on_change if a change happens."""
 
     _MODIFYING_FUNCTIONS = (
@@ -84,18 +71,18 @@ class OnChangedDict(dict[_KT, _VT]):
     )
 
     def __init__(
-        self, on_change: Callable[[], None], iterable: Iterable[tuple[_KT, _VT]] = ()
+        self, on_change: Callable[[], None], iterable: Iterable[tuple[KT, VT]] = ()
     ) -> None:
         super().__init__(iterable)
         self._on_change = on_change
 
     # This is needed as __getattribute__ won't be invoked for implicit special method lookup
-    def __setitem__(self, key: _KT, value: _VT) -> None:
+    def __setitem__(self, key: KT, value: VT) -> None:
         self._on_change()
         super().__setitem__(key, value)
 
     # This is needed as __getattribute__ won't be invoked for implicit special method lookup
-    def __delitem__(self, key: _KT) -> None:
+    def __delitem__(self, key: KT) -> None:
         self._on_change()
         return super().__delitem__(key)
 
@@ -105,6 +92,7 @@ class OnChangedDict(dict[_KT, _VT]):
         return super().__getattribute__(name)
 
 
+_T = TypeVar("_T")
 LST = list[_T] | set[_T] | tuple[_T, ...]
 
 

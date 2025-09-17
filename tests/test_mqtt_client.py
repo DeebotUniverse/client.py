@@ -34,7 +34,7 @@ async def test_last_message_received_at(
     await asyncio.sleep(4)
 
     # Mock time for assertion
-    expected = datetime.datetime(2023, 1, 1)
+    expected = datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC)
     with patch("deebot_client.mqtt_client.datetime", wraps=datetime.datetime) as dt:
         dt.now.return_value = expected
 

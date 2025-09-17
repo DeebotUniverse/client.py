@@ -1,7 +1,5 @@
 from __future__ import annotations
 
-from typing import TypeVar
-
 import pytest
 
 from deebot_client.util.enum import IntEnumWithXml, StrEnumWithXml
@@ -25,13 +23,10 @@ class _TestIntEnumWithXml(IntEnumWithXml):
         assert self == _TestIntEnumWithXml.from_xml(self.xml_value)
 
 
-T = TypeVar("T", _TestStrEnumWithXml, _TestIntEnumWithXml)
-
-
 @pytest.mark.parametrize(
     "test_enum", list(_TestStrEnumWithXml) + list(_TestIntEnumWithXml)
 )
-def test_EnumWithXml_conversion(
+def test_EnumWithXml_conversion[T: (_TestStrEnumWithXml, _TestIntEnumWithXml)](
     test_enum: T,
 ) -> None:
     test_enum.assert_self_conversion()
@@ -46,7 +41,7 @@ def test_EnumWithXml_conversion(
         (_TestIntEnumWithXml, None),
     ],
 )
-def test_EnumWithXml_invalid_value(
+def test_EnumWithXml_invalid_value[T: (_TestStrEnumWithXml, _TestIntEnumWithXml)](
     test_enum_cls: type[T], invalid_value: str | None
 ) -> None:
     with pytest.raises(ValueError, match=str(invalid_value)):

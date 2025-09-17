@@ -9,6 +9,7 @@ from .battery import OnBattery
 from .map import OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
+from .work_state import OnWorkState
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -33,6 +34,8 @@ _MESSAGES: list[type[Message]] = [
 
     OnStats,
     ReportStats,
+
+    OnWorkState,
 ]
 # fmt: on
 

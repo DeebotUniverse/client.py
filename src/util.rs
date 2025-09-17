@@ -56,7 +56,7 @@ fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     decompress_base64_data(value).map_err(|err| {
-        error!("Error decompressing base64 data: {}; value:{}", err, value);
+        error!("Error decompressing base64 data: {err}; value:{value}");
         PyValueError::new_err(err.to_string())
     })
 }

@@ -1,22 +1,8 @@
-ci:
-  autofix_prs: false
-  skip:
-    # This steps run in the ci workflow. Keep in sync
-    - mypy
-    - pylint
-    - verifyNoGetLogger
-    - rust-fmt
-    - rust-check
-    - rust-clippy
-
-default_language_version:
-  python: python3.13
-
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.11.13
+    rev: v0.13.0
     hooks:
-      - id: ruff
+      - id: ruff-check
         args:
           - --fix
           - --unsafe-fixes
@@ -41,14 +27,13 @@ repos:
           - json
         exclude: ^uv.lock$
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: detect-private-key
       - id: no-commit-to-branch
         args: [--branch, main, --branch, dev]
-      - id: requirements-txt-fixer
   # - repo: https://github.com/doublify/pre-commit-rust
   #   rev: v1.0
   #   hooks:
@@ -110,14 +95,6 @@ repos:
         types:
           - python
         require_serial: true
-      - id: pylint
-        name: Check with pylint
-        entry: scripts/run-in-env.sh pylint
-        language: script
-        types:
-          - python
-        require_serial: true
-        exclude: ^tests/.+
       - id: verifyNoGetLogger
         name: Verify no getLogger usages
         entry: scripts/check_getLogger.sh

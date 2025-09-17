@@ -15,7 +15,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("input", "expected"),
+    ("value", "expected"),
     [
         (
             "XQAABACZAAAAABaOQmW9Bsibxz42rKUpGlV7Rr4D1S/9x9mDa60v4J1BKrEsnk34EAt6X5gKkxwYzfOu3T8GAPpmIy5o4A==",
@@ -37,19 +37,19 @@ if TYPE_CHECKING:
     ids=["1", "2", "3", "4"],
 )
 def test_decompress_base64_data_lzma(
-    benchmark: BenchmarkFixture, input: str, expected: bytes
+    benchmark: BenchmarkFixture, value: str, expected: bytes
 ) -> None:
     """Test decompress_base64_data function with lzma base64 values."""
     # Benchmark only the production function
-    result = benchmark(decompress_base64_data, input)
+    result = benchmark(decompress_base64_data, value)
     assert result == expected
 
     # Verify that the old python function is producing the same result
-    assert _decompress_7z_base64_data_python(input) == result
+    assert _decompress_7z_base64_data_python(value) == result
 
 
 @pytest.mark.parametrize(
-    ("input", "expected"),
+    ("value", "expected"),
     [
         (
             "KLUv/SB//QEAMgQKDKClbQC+WNsvI/5vYPMSO6jz8h7OwN2BYlTHRR2DYgSeurlRRyp2UAgALXwANbAWWqAuACQBKiDgFiUJ",
@@ -59,16 +59,16 @@ def test_decompress_base64_data_lzma(
     ids=["1"],
 )
 def test_decompress_base64_data_zstd(
-    benchmark: BenchmarkFixture, input: str, expected: bytes
+    benchmark: BenchmarkFixture, value: str, expected: bytes
 ) -> None:
     """Test decompress_base64_data function with zstd base64 values."""
     # Benchmark only the production function
-    result = benchmark(decompress_base64_data, input)
+    result = benchmark(decompress_base64_data, value)
     assert result == expected
 
 
 @pytest.mark.parametrize(
-    ("input", "expected_error"),
+    ("value", "expected_error"),
     [
         (
             "XQAABADHAAAAAC2WwEHwYhHX3vWwDK80QCnaQU0mwUd9Vk34ub6OxzOk6kdFfbFvpVp4iIlKisAvp0MznQNYEZ8koxFHnO,+iM44GUKgujGQKgzl0bScbQgaon1jI3eyCRikWlkmrbwA=",
@@ -84,10 +84,10 @@ def test_decompress_base64_data_zstd(
         ),
     ],
 )
-def test_decompress_base64_data_errors(input: str, expected_error: str) -> None:
+def test_decompress_base64_data_errors(value: str, expected_error: str) -> None:
     """Test decompress_base64_data function."""
     with pytest.raises(ValueError, match=expected_error):
-        assert decompress_base64_data(input)
+        assert decompress_base64_data(value)
 
 
 def _decompress_7z_base64_data_python(data: str) -> bytes:

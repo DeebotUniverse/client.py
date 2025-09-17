@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from datetime import UTC, datetime, timedelta
 import threading
-from typing import TYPE_CHECKING, Any, Final, Generic, TypeVar
+from typing import TYPE_CHECKING, Any, Final, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
 from .logging_filter import get_logger
@@ -15,6 +15,7 @@ from .util import cancel, create_task
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
+    from .capabilities import Capabilities
     from .command import Command
     from .device import DeviceCommandExecute
 
@@ -43,17 +44,17 @@ class _OnSubscriptionCallback:
             self._unsub = None
 
 
-class _EventProcessingData(Generic[T]):
+class _EventProcessingData[E: Event]:
     """Data class, which holds all needed data per EventDto."""
 
     def __init__(self, refresh_commands: list[Command]) -> None:
         self.refresh_commands: Final = refresh_commands
 
         self.subscriber_callbacks: Final[
-            list[Callable[[T], Coroutine[Any, Any, None]]]
+            list[Callable[[E], Coroutine[Any, Any, None]]]
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
-        self.last_event: T | None = None
+        self.last_event: E | None = None
         self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
         self.on_subscription_callbacks: Final[list[_OnSubscriptionCallback]] = []
@@ -65,14 +66,19 @@ class EventBus:
     def __init__(
         self,
         execute_command: DeviceCommandExecute,
-        get_refresh_commands: Callable[[type[Event]], list[Command]],
+        capabilities: Capabilities,
     ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
         self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 
         self._execute_command: Final = execute_command
-        self._get_refresh_commands = get_refresh_commands
+        self._capabilities = capabilities
+
+    @property
+    def capabilities(self) -> Capabilities:
+        """Return capabilities."""
+        return self._capabilities
 
     def has_subscribers(self, event: type[T]) -> bool:
         """Return True, if emitter has subscribers."""
@@ -129,7 +135,7 @@ class EventBus:
                 and event_processing_data.last_event
                 and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
             ):
-                # TODO distinguish better between docked and idle and outside event bus. # pylint: disable=fixme
+                # TODO distinguish better between docked and idle and outside event bus.
                 # Problem getCleanInfo will return state=idle, when bot is charging
                 event = StateEvent(State.DOCKED)  # type: ignore[assignment]
             elif (
@@ -207,7 +213,7 @@ class EventBus:
 
             if event_processing_data is None:
                 event_processing_data = _EventProcessingData(
-                    self._get_refresh_commands(event_class)
+                    self._capabilities.get_refresh_commands(event_class)
                 )
                 self._event_processing_dict[event_class] = event_processing_data
 
