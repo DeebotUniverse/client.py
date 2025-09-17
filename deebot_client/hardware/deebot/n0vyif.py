@@ -36,8 +36,7 @@ from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import (
     CleanAreaV2,
-    CleanV2,
-    GetCleanInfoV2,
+    CleanV2
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
@@ -69,7 +68,6 @@ from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
-from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
