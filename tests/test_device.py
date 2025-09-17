@@ -77,7 +77,7 @@ async def test_available_check_and_teardown(
         received_statuses.put_nowait(event)
 
     async def assert_received_status(*, expected: bool) -> None:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0)
         assert received_statuses.get_nowait().available is expected
 
     # prepare mocks
@@ -97,6 +97,10 @@ async def test_available_check_and_teardown(
     await bot.initialize(mqtt_client)
 
     bot.events.subscribe(AvailabilityEvent, on_status)
+    await asyncio.sleep(0)  # let refresh task of event bus be processed
+    execute_mock.assert_awaited_once()
+    execute_mock.reset_mock()
+    await assert_received_status(expected=True)
 
     # verify mqtt was subscribed and available task was started
     mqtt_client.subscribe.assert_called_once()
@@ -137,7 +141,7 @@ async def test_available_check_and_teardown(
 
     # teardown bot and verify that bot was unsubscribed from mqtt and available task was canceled.
     await bot.teardown()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0)
 
     unsubscribe_mock.assert_called()
     assert bot._available_task.done()
