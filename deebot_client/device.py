@@ -63,9 +63,7 @@ class Device:
 
         self.fw_version: str | None = None
         self.mac: str | None = None
-        self.events: Final[EventBus] = EventBus(
-            self.execute_command, self.capabilities.get_refresh_commands
-        )
+        self.events: Final[EventBus] = EventBus(self.execute_command, self.capabilities)
 
         self.map: Final[Map | None] = (
             Map(self.execute_command, self.events, self.capabilities.map)

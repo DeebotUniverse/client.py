@@ -6,12 +6,34 @@ from xml.etree.ElementTree import Element, SubElement
 from defusedxml import ElementTree  # type: ignore[import-untyped]
 from testfixtures import LogCapture
 
-from deebot_client.command import CommandResult
+from deebot_client.command import Command, CommandResult
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
+from tests.commands import assert_command as assert_command_base
 
 if TYPE_CHECKING:
+    from collections.abc import Sequence
+
     from deebot_client.commands.xml.common import ExecuteCommand
+    from deebot_client.events import Event
+
+
+async def assert_command(
+    command: Command,
+    json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
+    expected_events: Event | None | Sequence[Event],
+    *,
+    device_class: str = "2pv572",
+    command_result: CommandResult | None = None,
+    expected_raw_response: dict[str, Any] | None = None,
+) -> None:
+    await assert_command_base(
+        command,
+        json_api_response,
+        expected_events,
+        device_class=device_class,
+        command_result=command_result,
+        expected_raw_response=expected_raw_response,
+    )
 
 
 def get_success_body(
