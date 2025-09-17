@@ -46,6 +46,7 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapSet,
     GetMapTrace,
     GetMinorMap,
 )
@@ -166,6 +167,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
             rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            set=CapabilityExecute(GetMapSet),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),

@@ -8,9 +8,8 @@ from deebot_client.command import CommandResult, CommandWithMessageHandling
 from deebot_client.commands.xml import GetCleanSpeed, SetCleanSpeed
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
 
-from . import get_request_xml
+from . import assert_command, get_request_xml
 
 if TYPE_CHECKING:
     from deebot_client.events.base import Event

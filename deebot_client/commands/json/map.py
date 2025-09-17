@@ -33,22 +33,6 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     NAME = "getCachedMapInfo"
-    # version definition for using type of getMapSet v1 or v2
-    _map_set_command: type[GetMapSet | GetMapSetV2]
-
-    def __init__(
-        self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
-    ) -> None:
-        match version:
-            case 1:
-                self._map_set_command = GetMapSet
-            case 2:
-                self._map_set_command = GetMapSetV2
-            case _:
-                error_wrong_version = f"version={version} is not supported"
-                raise ValueError(error_wrong_version)
-
-        super().__init__(args)
 
     @classmethod
     def _handle_body_data_dict(
@@ -79,13 +63,18 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
+            commands: list[Command] = []
+
+            if map_obj := event_bus.capabilities.map:
+                map_id = result.args["map_id"]
+                commands.extend(
+                    map_obj.set.execute(map_id, entry) for entry in MapSetType
+                )
+
             return CommandResult(
                 result.state,
                 result.args,
-                [
-                    self._map_set_command(result.args["map_id"], entry)
-                    for entry in MapSetType
-                ],
+                commands,
             )
 
         return result

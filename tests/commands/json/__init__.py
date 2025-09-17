@@ -7,10 +7,10 @@ from unittest.mock import Mock, call
 
 from testfixtures import LogCapture
 
-from deebot_client.command import CommandResult
+from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
+from tests.commands import assert_command as assert_command_base
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
 if TYPE_CHECKING:
@@ -27,6 +27,25 @@ __all__ = [
     "assert_set_command",
     "assert_set_enable_command",
 ]
+
+
+async def assert_command(
+    command: Command,
+    json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
+    expected_events: Event | None | Sequence[Event],
+    *,
+    device_class: str = "kr0277",
+    command_result: CommandResult | None = None,
+    expected_raw_response: dict[str, Any] | None = None,
+) -> None:
+    await assert_command_base(
+        command,
+        json_api_response,
+        expected_events,
+        device_class=device_class,
+        command_result=command_result,
+        expected_raw_response=expected_raw_response,
+    )
 
 
 async def assert_execute_command(
