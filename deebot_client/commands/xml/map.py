@@ -51,10 +51,13 @@ class GetMapSt(XmlCommandWithMessageHandling):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS:
+            commands = []
+            if map_obj := event_bus.capabilities.map:
+                commands = [map_obj.set.execute("", entry) for entry in MapSetType]
             return CommandResult(
                 result.state,
                 result.args,
-                [GetMapSet(entry) for entry in MapSetType],
+                commands,
             )
 
         return result

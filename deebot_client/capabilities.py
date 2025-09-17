@@ -183,7 +183,7 @@ class CapabilityMap:
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
-    set: CapabilityExecute[[str, MapSetType]] | None = None
+    set: CapabilityExecute[[str, MapSetType]]
     trace: CapabilityEvent[MapTraceEvent]
 
 
