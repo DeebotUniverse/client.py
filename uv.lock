@@ -314,7 +314,7 @@ dev = [
     { name = "pytest-docker-fixtures", specifier = "==1.4.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
-    { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "testfixtures", specifier = "==9.1.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
@@ -334,7 +334,7 @@ test = [
     { name = "pytest-docker-fixtures", specifier = "==1.4.0" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.3.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
-    { name = "pytest-xdist", specifier = ">=3.8.0" },
+    { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "testfixtures", specifier = "==9.1.0" },
 ]
 
