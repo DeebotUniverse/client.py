@@ -140,7 +140,34 @@ def test_onWorkState(
     assert_message(OnWorkState, data, (FirmwareEvent("1.30.0"), *expected))
 
 
-async def test_onWorkStateUnknownValues() -> None:
+@pytest.mark.parametrize(
+    "message_data",
+    [
+        {
+            "paused": 0,
+            "robotState": {
+                "state": "unknownState",
+                "trigger": "app",
+            },
+            "stationState": {"state": "anotherUnknownState", "trigger": "app"},
+        },
+        {
+            "paused": 0,
+        },
+        {
+            "paused": 0,
+            "robotState": {
+                "state": "cleaning",
+                "trigger": "app",
+            },
+        },
+        {
+            "paused": 0,
+            "stationState": {"state": "emptying", "trigger": "app"},
+        },
+    ],
+)
+async def test_onWorkState_edge_cases(message_data: dict[str, Any]) -> None:
     data: dict[str, Any] = {
         "header": {
             "pri": 1,
@@ -151,19 +178,7 @@ async def test_onWorkStateUnknownValues() -> None:
             "hwVer": "0.1.1",
             "wkVer": "0.1.54",
         },
-        "body": {
-            "data": {
-                "paused": 0,
-                "robotState": {
-                    "state": "unknownState",
-                    "trigger": "app",
-                },
-                "stationState": {
-                    "state": "anotherUnknownState",
-                    "trigger": "app",
-                },
-            },
-        },
+        "body": {"data": message_data},
     }
 
     assert_message_failure(

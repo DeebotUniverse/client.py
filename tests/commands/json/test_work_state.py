@@ -130,19 +130,35 @@ async def test_GetWorkState(
     await assert_command(GetWorkState(), json, (firmware_event, *expected))
 
 
-async def test_GetWorkStateUnknownValues() -> None:
-    json, firmware_event = get_request_json(
-        get_success_body(
-            {
-                "paused": 0,
-                "robotState": {
-                    "state": "unknownState",
-                    "trigger": "app",
-                },
-                "stationState": {"state": "anotherUnknownState", "trigger": "app"},
-            }
-        )
-    )
+@pytest.mark.parametrize(
+    "request_data",
+    [
+        {
+            "paused": 0,
+            "robotState": {
+                "state": "unknownState",
+                "trigger": "app",
+            },
+            "stationState": {"state": "anotherUnknownState", "trigger": "app"},
+        },
+        {
+            "paused": 0,
+        },
+        {
+            "paused": 0,
+            "robotState": {
+                "state": "cleaning",
+                "trigger": "app",
+            },
+        },
+        {
+            "paused": 0,
+            "stationState": {"state": "emptying", "trigger": "app"},
+        },
+    ],
+)
+async def test_GetWorkState_edge_cases(request_data: dict[str, Any]) -> None:
+    json, firmware_event = get_request_json(get_success_body(request_data))
     await assert_command(
         GetWorkState(),
         json,
