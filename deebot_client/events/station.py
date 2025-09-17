@@ -15,9 +15,9 @@ class State(IntEnum):
     """Enum class for all possible base station statuses."""
 
     IDLE = 0
-    EMPTYING = 1
-    WASHING = 2
-    DRYING = 3
+    EMPTYING_DUSTBIN = 1
+    WASHING_MOP = 2
+    DRYING_MOP = 3
 
 
 @dataclass(frozen=True)

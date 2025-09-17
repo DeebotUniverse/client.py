@@ -47,21 +47,24 @@ if TYPE_CHECKING:
             "idle",
             {},
             "emptying",
-            [StateEvent(RobotState.DOCKED), StationEvent(StationState.EMPTYING)],
+            [
+                StateEvent(RobotState.DOCKED),
+                StationEvent(StationState.EMPTYING_DUSTBIN),
+            ],
         ),
         (
             0,
             "idle",
             {},
             "washing",
-            [StateEvent(RobotState.DOCKED), StationEvent(StationState.WASHING)],
+            [StateEvent(RobotState.DOCKED), StationEvent(StationState.WASHING_MOP)],
         ),
         (
             0,
             "idle",
             {},
             "drying",
-            [StateEvent(RobotState.DOCKED), StationEvent(StationState.DRYING)],
+            [StateEvent(RobotState.DOCKED), StationEvent(StationState.DRYING_MOP)],
         ),
         (
             0,
@@ -89,14 +92,17 @@ if TYPE_CHECKING:
             "cleaning",
             {"cleanState": {"cid": "122", "type": "freeClean"}},
             "emptying",
-            [StateEvent(RobotState.DOCKED), StationEvent(StationState.EMPTYING)],
+            [
+                StateEvent(RobotState.DOCKED),
+                StationEvent(StationState.EMPTYING_DUSTBIN),
+            ],
         ),
         (
             0,
             "cleaning",
             {"cleanState": {"cid": "122", "type": "freeClean"}},
             "washing",
-            [StateEvent(RobotState.DOCKED), StationEvent(StationState.WASHING)],
+            [StateEvent(RobotState.DOCKED), StationEvent(StationState.WASHING_MOP)],
         ),
         (
             1,

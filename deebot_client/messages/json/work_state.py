@@ -17,17 +17,17 @@ _WORK_STATE_2_EVENTS: dict[str, dict[str, tuple[RobotState | None, StationState]
         "idle": (None, StationState.IDLE),
         "goCharging": (RobotState.RETURNING, StationState.IDLE),
         "goEmptying": (RobotState.RETURNING, StationState.IDLE),
-        "emptying": (RobotState.DOCKED, StationState.EMPTYING),
-        "washing": (RobotState.DOCKED, StationState.WASHING),
-        "drying": (RobotState.DOCKED, StationState.DRYING),
+        "emptying": (RobotState.DOCKED, StationState.EMPTYING_DUSTBIN),
+        "washing": (RobotState.DOCKED, StationState.WASHING_MOP),
+        "drying": (RobotState.DOCKED, StationState.DRYING_MOP),
     },
     "cleaning": {
         "idle": (RobotState.CLEANING, StationState.IDLE),
         "goCharging": (RobotState.RETURNING, StationState.IDLE),
         "goEmptying": (RobotState.RETURNING, StationState.IDLE),
-        "emptying": (RobotState.DOCKED, StationState.EMPTYING),
-        "washing": (RobotState.DOCKED, StationState.WASHING),
-        "drying": (RobotState.DOCKED, StationState.DRYING),
+        "emptying": (RobotState.DOCKED, StationState.EMPTYING_DUSTBIN),
+        "washing": (RobotState.DOCKED, StationState.WASHING_MOP),
+        "drying": (RobotState.DOCKED, StationState.DRYING_MOP),
     },
 }
 
