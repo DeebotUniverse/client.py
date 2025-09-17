@@ -150,6 +150,8 @@ class LifeSpan(StrEnumWithXml):
     HAND_FILTER = "handFilter", "HandFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
     STATION_FILTER = "spHeap", "SpHeap"
+    WATER_SINK = "waterSink", "WaterSink"
+    MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
 
 
 @dataclass(frozen=True)
