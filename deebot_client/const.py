@@ -5,14 +5,18 @@ from __future__ import annotations
 from enum import Enum, StrEnum
 from typing import Self
 
+from aiohttp import hdrs
+
 REALM = "ecouser.net"
 PATH_API_APPSVR_APP = "appsvr/app.do"
 PATH_API_PIM_PRODUCT_IOT_MAP = "pim/product/getProductIotMap"
 PATH_API_IOT_DEVMANAGER = "iot/devmanager.do"
+PATH_API_IOT_CONTROL = "iot/endpoint/control"
+PATH_API_ISSUE_NEW_PERMISSION = "new-perm/token/sst/issue"
 PATH_API_LG_LOG = "lg/log.do"
 PATH_API_USERS_USER = "users/user.do"
 REQUEST_HEADERS = {
-    "User-Agent": "Dalvik/2.1.0 (Linux; U; Android 5.1.1; A5010 Build/LMY48Z)",
+    hdrs.USER_AGENT: "Dalvik/2.1.0 (Linux; U; Android 5.1.1; A5010 Build/LMY48Z)",
 }
 COUNTRY_CHINA = "CN"
 
@@ -104,6 +108,7 @@ ERROR_CODES = {
     319: "Cleaning solution is running low",
     404: "Recipient unavailable",
     500: "Request Timeout",
+    505: "An error occurred, please clear it and try again",
     601: "ERROR_ClosedAIVISideAbnormal",
     602: "ClosedAIVIRollAbnormal",
     1007: "Mop plugged",

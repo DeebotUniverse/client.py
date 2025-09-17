@@ -252,6 +252,7 @@ class Capabilities(ABC):
     """Capabilities."""
 
     device_type: DeviceType = field(kw_only=False)
+    use_device_authenticator: bool = field(kw_only=False, default=False)
 
     availability: CapabilityEvent[AvailabilityEvent]
     battery: CapabilityEvent[BatteryEvent]

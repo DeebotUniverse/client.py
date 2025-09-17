@@ -116,13 +116,11 @@ ignore = [
 [tool.ruff.lint.flake8-pytest-style]
 fixture-parentheses = false
 
-
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
 known-first-party = ["deebot_client"]
 required-imports = ["from __future__ import annotations"]
-
 
 [tool.ruff.lint.per-file-ignores]
 "tests/fixtures/**" = [
@@ -153,3 +151,6 @@ required-imports = ["from __future__ import annotations"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 13
+
+[tool.ruff.lint.pylint]
+max-args = 6

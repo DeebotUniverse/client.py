@@ -7,7 +7,7 @@ from unittest.mock import AsyncMock, patch
 
 import pytest
 
-from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.authentication import UserAuthenticator, create_rest_config
 from deebot_client.models import Credentials
 
 if TYPE_CHECKING:
@@ -29,7 +29,7 @@ async def test_authenticator_authenticate(rest_config: RestConfiguration) -> Non
         login_mock.return_value = Credentials(
             "token", "user_id", int(time.time() + 123456789)
         )
-        authenticator = Authenticator(rest_config, "test", "test")
+        authenticator = UserAuthenticator(rest_config, "test", "test")
 
         unsub = authenticator.subscribe(on_changed)
 

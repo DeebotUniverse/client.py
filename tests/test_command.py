@@ -31,7 +31,8 @@ class _TestCommand(JsonCommandMqttP2P):
     ) -> None:
         pass
 
-    def _get_payload(self) -> dict[str, Any] | list[Any]:
+    def get_payload(self) -> dict[str, Any] | list[Any]:
+        """Get the payload for the rest call."""
         return {}
 
     def _handle_response(
@@ -103,7 +104,7 @@ async def test_execute_api_timeout_error(
 ) -> None:
     """Test that on api timeout the stack trace is not logged."""
     command = _TestCommand(1)
-    authenticator.post_authenticated.side_effect = ApiTimeoutError(
+    authenticator.execute_command_request.side_effect = ApiTimeoutError(
         "test", ClientTimeout(60)
     )
     result = await command.execute(authenticator, api_device_info, event_bus_mock)
