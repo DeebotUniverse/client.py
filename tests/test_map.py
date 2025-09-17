@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
@@ -213,7 +214,7 @@ def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> Paramet
     # To keep codspeed test history, we hide the params for the original test, which is now test_1
     test_name = (
         pytest.HIDDEN_PARAM
-        if filename == "test_1"
+        if filename == "test_1" and os.getenv("CI") == "true"
         else f"{filename}-{module.DEVICE_CLASS}"
     )
 
