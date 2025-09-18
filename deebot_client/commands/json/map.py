@@ -71,6 +71,9 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
                     map_obj.set.execute(map_id, entry) for entry in MapSetType
                 )
 
+                if map_obj.info:
+                    commands.append(map_obj.info.execute(map_id))
+
             return CommandResult(
                 result.state,
                 result.args,

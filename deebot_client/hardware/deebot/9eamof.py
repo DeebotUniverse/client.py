@@ -205,9 +205,9 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
         map=CapabilityMap(
             cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
+            info=CapabilityExecute(GetMapInfoV2),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             minor=CapabilityExecute(GetMinorMap),
-            map_info=CapabilityExecute(GetMapInfoV2),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),

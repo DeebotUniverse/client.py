@@ -68,7 +68,7 @@ class Device:
         self.map: Final[Map | MapV2 | None] = (
             (
                 MapV2(self.execute_command, self.events, self.capabilities.map)
-                if self.capabilities.map.map_info
+                if self.capabilities.map.info
                 else Map(self.execute_command, self.events, self.capabilities.map)
             )
             if self.capabilities.map

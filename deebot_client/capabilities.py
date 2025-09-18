@@ -176,10 +176,10 @@ class CapabilityMap:
 
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
+    info: CapabilityExecute[[str]] | None = None
     clear: CapabilityExecute[[]] | None = None
     major: CapabilityEvent[MajorMapEvent]
     minor: CapabilityExecute[[int, str]]
-    map_info: CapabilityExecute[[str]] | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None

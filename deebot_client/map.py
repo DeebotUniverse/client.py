@@ -208,14 +208,6 @@ class MapV2:
         self._positions: list[Position] = []
         self._traces: list[dict[str, int]] = []
 
-        async def on_major_map(event: MajorMapEvent) -> None:
-            if self._capabilities.map_info:
-                await self._execute_command(
-                    self._capabilities.map_info.execute(event.map_id)
-                )
-
-        self._unsubscribers.append(event_bus.subscribe(MajorMapEvent, on_major_map))
-
         async def on_map_info_v2(event: MapInfoV2Event) -> None:
             rooms = {}
             for room in event.coordinates_map[0][1:]:

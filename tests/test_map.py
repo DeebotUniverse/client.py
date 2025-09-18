@@ -21,6 +21,7 @@ from deebot_client.events.map import (
 from deebot_client.map import (
     Map,
     MapData,
+    MapV2,
 )
 from deebot_client.models import Room, StaticDeviceInfo
 from deebot_client.rs.map import PositionType
@@ -134,13 +135,14 @@ async def test_Map_subscriptions(
 
 async def setup_map(
     execute_mock: AsyncMock, event_bus: EventBus, static_device_info: StaticDeviceInfo
-) -> Map:
+) -> Map | MapV2:
     async def on_change(_: MapChangedEvent) -> None:
         pass
 
     capabilities_map = static_device_info.capabilities.map
     assert capabilities_map is not None
-    map_obj = Map(execute_mock, event_bus, capabilities_map)
+    map_type = Map if not capabilities_map.info else MapV2
+    map_obj = map_type(execute_mock, event_bus, capabilities_map)
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
     return map_obj
