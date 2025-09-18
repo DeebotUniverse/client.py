@@ -188,11 +188,13 @@ def test_CleanedPos(position: tuple[int, int, int]) -> None:
 
 @pytest.mark.parametrize(
     "xml_message",
-    {
-        '<ctl ts="1744467393682" td="CleanedPos" t="p" a="89" csid="1134230540" />',
-        '<ctl ts="1744467393682" td="CleanedPos" t="??" p="0,0" a="89" csid="1134230540@" />',
-        "<ctl />",
-    },
+    sorted(
+        {
+            '<ctl ts="1744467393682" td="CleanedPos" t="p" a="89" csid="1134230540" />',
+            '<ctl ts="1744467393682" td="CleanedPos" t="??" p="0,0" a="89" csid="1134230540@" />',
+            "<ctl />",
+        }
+    ),
 )
 def test_CleanedPos_error(xml_message: str) -> None:
     assert_message_failure(CleanedPos, xml_message, HandlingState.ANALYSE_LOGGED)

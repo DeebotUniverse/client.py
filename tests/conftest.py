@@ -171,7 +171,7 @@ def execute_mock() -> AsyncMock:
 
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
-    return EventBus(execute_mock, device_info.static.capabilities.get_refresh_commands)
+    return EventBus(execute_mock, device_info.static.capabilities)
 
 
 @pytest.fixture

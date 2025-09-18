@@ -7,6 +7,7 @@ from unittest.mock import AsyncMock, Mock, call
 from deebot_client.authentication import Authenticator
 from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
+from deebot_client.hardware import get_static_device_info
 from deebot_client.models import (
     ApiDeviceInfo,
     Credentials,
@@ -49,11 +50,15 @@ async def assert_command(
     json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
     expected_events: Event | None | Sequence[Event],
     *,
+    device_class: str,
     command_result: CommandResult | None = None,
     expected_raw_response: dict[str, Any] | None = None,
 ) -> None:
     command_result = command_result or CommandResult.success()
     event_bus = Mock(spec_set=EventBus)
+    static_device_info = await get_static_device_info(device_class)
+    assert static_device_info is not None, f"Unknown device class: {device_class}"
+    event_bus.capabilities = static_device_info.capabilities
     authenticator = Mock(spec_set=Authenticator)
     authenticator.authenticate = AsyncMock(
         return_value=Credentials("token", "user_id", 9999)

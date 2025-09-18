@@ -176,15 +176,14 @@ async def test_getMapSubSet_living_room() -> None:
 
 
 @pytest.mark.parametrize(
-    ("command", "map_set_type"),
+    ("device_class", "map_set_type"),
     [
-        (GetCachedMapInfo(), GetMapSet),
-        (GetCachedMapInfo(version=1), GetMapSet),
-        (GetCachedMapInfo(version=2), GetMapSetV2),
+        ("yna5xi", GetMapSet),
+        ("kr0277", GetMapSetV2),
     ],
 )
 async def test_getCachedMapInfo(
-    command: GetCachedMapInfo, map_set_type: type[GetMapSet | GetMapSetV2]
+    device_class: str, map_set_type: type[GetMapSet | GetMapSetV2]
 ) -> None:
     expected_mid = "199390082"
     expected_name = "Erdgeschoss"
@@ -214,7 +213,7 @@ async def test_getCachedMapInfo(
         )
     )
     await assert_command(
-        command,
+        GetCachedMapInfo(),
         json,
         [
             firmware_event,
@@ -226,6 +225,7 @@ async def test_getCachedMapInfo(
             {"map_id": expected_mid},
             [map_set_type(expected_mid, entry) for entry in MapSetType],
         ),
+        device_class=device_class,
     )
 
 

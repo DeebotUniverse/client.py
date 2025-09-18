@@ -20,12 +20,14 @@ def test_MapP(pid: int, data: str) -> None:
 
 @pytest.mark.parametrize(
     "xml_message",
-    {
-        "<ctl td='MapP' i='1245233875' pid='XXX' p='base64data'/>",
-        "<ctl td='MapP' i='1245233875' p='base64data'/>",
-        "<ctl td='MapP' i='1245233875' pid='42' />",
-        "<ctl td='MapP' i='1245233875' />",
-    },
+    sorted(
+        {
+            "<ctl td='MapP' i='1245233875' pid='XXX' p='base64data'/>",
+            "<ctl td='MapP' i='1245233875' p='base64data'/>",
+            "<ctl td='MapP' i='1245233875' pid='42' />",
+            "<ctl td='MapP' i='1245233875' />",
+        }
+    ),
 )
 def test_MapP_error(xml_message: str) -> None:
     assert_message_failure(MapP, xml_message, HandlingState.ANALYSE_LOGGED)
@@ -43,14 +45,16 @@ def test_Trace(tf: int, tt: int, tr: str) -> None:
 
 @pytest.mark.parametrize(
     "xml_message",
-    {
-        "<ctl td='trace' trid='631369' tt='17' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
-        "<ctl td='trace' trid='631369' tf='XXX' tt='17' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
-        "<ctl td='trace' trid='631369' tf='16' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
-        "<ctl td='trace' trid='631369' tf='16' tt='XXX' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
-        "<ctl td='trace' trid='631369' tf='16' tt='16' />",
-        "<ctl td='trace' trid='631369' />",
-    },
+    sorted(
+        {
+            "<ctl td='trace' trid='631369' tt='17' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
+            "<ctl td='trace' trid='631369' tf='XXX' tt='17' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
+            "<ctl td='trace' trid='631369' tf='16' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
+            "<ctl td='trace' trid='631369' tf='16' tt='XXX' tr='XQAABAAKAAAAAG0/wEAAA2cAS5AAAA=='/>",
+            "<ctl td='trace' trid='631369' tf='16' tt='16' />",
+            "<ctl td='trace' trid='631369' />",
+        }
+    ),
 )
 def test_Trace_error(xml_message: str) -> None:
     assert_message_failure(Trace, xml_message, HandlingState.ANALYSE_LOGGED)

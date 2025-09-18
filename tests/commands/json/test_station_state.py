@@ -15,7 +15,7 @@ from . import assert_command
     ("state", "additional_content", "expected"),
     [
         (0, {"type": 0}, State.IDLE),
-        (1, {"type": 1, "motionState": 1}, State.EMPTYING),
+        (1, {"type": 1, "motionState": 1}, State.EMPTYING_DUSTBIN),
     ],
 )
 async def test_GetStationState(

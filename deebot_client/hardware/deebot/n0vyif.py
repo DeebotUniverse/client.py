@@ -34,11 +34,7 @@ from deebot_client.commands.json.carpet import (
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
-from deebot_client.commands.json.clean import (
-    CleanAreaV2,
-    CleanV2,
-    GetCleanInfoV2,
-)
+from deebot_client.commands.json.clean import CleanAreaV2, CleanV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
@@ -57,6 +53,7 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapSetV2,
     GetMapTrace,
     GetMinorMap,
 )
@@ -69,7 +66,6 @@ from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
-from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
@@ -80,6 +76,7 @@ from deebot_client.commands.json.voice_assistant_state import (
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
+from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -202,9 +199,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             reset=ResetLifeSpan,
         ),
         map=CapabilityMap(
-            cached_info=CapabilityEvent(
-                CachedMapInfoEvent, [GetCachedMapInfo(version=2)]
-            ),
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
             minor=CapabilityExecute(GetMinorMap),
@@ -213,7 +208,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
-            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo(version=2)]),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            set=CapabilityExecute(GetMapSetV2),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
@@ -253,7 +249,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ),
             volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
         ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+        state=CapabilityEvent(StateEvent, [GetChargeState(), GetWorkState()]),
         station=CapabilityStation(
             action=CapabilityExecuteTypes(
                 station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
@@ -267,7 +263,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
                     auto_empty.Frequency.SMART,
                 ),
             ),
-            state=CapabilityEvent(StationEvent, [GetStationState()]),
+            state=CapabilityEvent(StationEvent, [GetWorkState()]),
         ),
         stats=CapabilityStats(
             clean=CapabilityEvent(StatsEvent, [GetStats()]),

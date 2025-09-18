@@ -20,8 +20,9 @@ from deebot_client.events import (
     MinorMapEvent,
 )
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
 from tests.commands.xml import get_request_xml
+
+from . import assert_command
 
 
 @pytest.mark.parametrize(

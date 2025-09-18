@@ -31,6 +31,7 @@ from deebot_client.events import (
     LifeSpanEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapSetType,
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
@@ -182,6 +183,7 @@ class CapabilityMap:
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
+    set: CapabilityExecute[[str, MapSetType]]
     trace: CapabilityEvent[MapTraceEvent]
 
 

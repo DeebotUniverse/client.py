@@ -77,7 +77,7 @@ async def test_available_check_and_teardown(
         received_statuses.put_nowait(event)
 
     async def assert_received_status(*, expected: bool) -> None:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0)
         assert received_statuses.get_nowait().available is expected
 
     # prepare mocks
@@ -96,10 +96,11 @@ async def test_available_check_and_teardown(
     mqtt_client.subscribe.return_value = unsubscribe_mock
     await bot.initialize(mqtt_client)
 
-    # deactivate refresh event subscribe refresh calls
-    bot.events._get_refresh_commands = lambda _: []
-
     bot.events.subscribe(AvailabilityEvent, on_status)
+    await asyncio.sleep(0)  # let refresh task of event bus be processed
+    execute_mock.assert_awaited_once()
+    execute_mock.reset_mock()
+    await assert_received_status(expected=True)
 
     # verify mqtt was subscribed and available task was started
     mqtt_client.subscribe.assert_called_once()
@@ -140,7 +141,7 @@ async def test_available_check_and_teardown(
 
     # teardown bot and verify that bot was unsubscribed from mqtt and available task was canceled.
     await bot.teardown()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0)
 
     unsubscribe_mock.assert_called()
     assert bot._available_task.done()
@@ -148,12 +149,15 @@ async def test_available_check_and_teardown(
 
 
 async def test_mac_address(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
 ) -> None:
     """Test that the mac address is change on NetworkInfoEvent."""
+    device_info = DeviceInfo(
+        api_device_info,
+        mock_static_device_info({AvailabilityEvent: []}, DataType.JSON),
+    )
     device = Device(device_info, authenticator)
-    # deactivate refresh event subscribe refresh calls
-    device.events._get_refresh_commands = lambda _: []
 
     assert device.mac is None
 
@@ -264,9 +268,6 @@ async def test_device_handle_message_behaviour(
     unsubscribe_mock = Mock(spec=Callable[[], None])
     mqtt_client.subscribe.return_value = unsubscribe_mock
     await bot.initialize(mqtt_client)
-
-    # deactivate refresh event subscribe refresh calls
-    bot.events._get_refresh_commands = lambda _: []
 
     bot.events.subscribe(AvailabilityEvent, on_status)
 
