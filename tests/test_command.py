@@ -111,5 +111,5 @@ async def test_execute_api_timeout_error(
     assert (
         "deebot_client.command",
         logging.WARNING,
-        "Could not execute command TestCommand: Timeout reached",
+        "Could not execute command TestCommand for get_class: Timeout reached",
     ) in caplog.record_tuples

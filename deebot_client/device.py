@@ -5,7 +5,7 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable, Coroutine
 from contextlib import suppress
-from datetime import datetime
+from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
@@ -57,15 +57,13 @@ class Device:
 
         self._semaphore = asyncio.Semaphore(3)
         self._state: StateEvent | None = None
-        self._last_time_available: datetime = datetime.now()
+        self._last_time_available: datetime = datetime.now(tz=UTC)
         self._available_task: asyncio.Task[Any] | None = None
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
         self.mac: str | None = None
-        self.events: Final[EventBus] = EventBus(
-            self.execute_command, self.capabilities.get_refresh_commands
-        )
+        self.events: Final[EventBus] = EventBus(self.execute_command, self.capabilities)
 
         self.map: Final[Map | None] = (
             Map(self.execute_command, self.events, self.capabilities.map)
@@ -157,7 +155,7 @@ class Device:
 
     async def _available_task_worker(self) -> None:
         while True:
-            if (datetime.now() - self._last_time_available).total_seconds() > (
+            if (datetime.now(tz=UTC) - self._last_time_available).total_seconds() > (
                 _AVAILABLE_CHECK_INTERVAL - 1
             ):
                 tasks: set[asyncio.Future[Any]] = set()
@@ -169,7 +167,7 @@ class Device:
 
                     result = await asyncio.gather(*tasks)
                     self._set_available(available=all(r.device_reached for r in result))
-                except Exception:  # pylint: disable=broad-exception-caught
+                except Exception:
                     _LOGGER.debug(
                         "An exception occurred during the available check",
                         exc_info=True,
@@ -194,7 +192,7 @@ class Device:
     def _set_available(self, *, available: bool) -> None:
         """Set available."""
         if available:
-            self._last_time_available = datetime.now()
+            self._last_time_available = datetime.now(tz=UTC)
 
         self.events.notify(AvailabilityEvent(available=available))
 
@@ -214,5 +212,5 @@ class Device:
 
             if message := get_message(message_name, self._device_info.static.data_type):
                 message.handle(self.events, message_data)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception("An exception occurred during handling message")

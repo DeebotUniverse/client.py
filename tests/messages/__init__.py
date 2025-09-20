@@ -35,10 +35,18 @@ def assert_message_failure(
     message: type[Message],
     data: MessagePayloadType,
     expected_result_state: HandlingState,
+    expected_events: Event | None | Sequence[Event] = None,
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)
 
     assert result.state == expected_result_state
-    event_bus.notify.assert_not_called()
+    if expected_events:
+        if isinstance(expected_events, Sequence):
+            event_bus.notify.assert_has_calls([call(x) for x in expected_events])
+            assert event_bus.notify.call_count == len(expected_events)
+        else:
+            event_bus.notify.assert_called_once_with(expected_events)
+    else:
+        event_bus.notify.assert_not_called()

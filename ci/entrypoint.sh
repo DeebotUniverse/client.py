@@ -8,4 +8,4 @@ rm -rf deebot_client
 
 uv pip install --no-progress --system --force-reinstall dist/deebot_client-*.whl
 # Disable tests, which require docker for now
-pytest tests -v -m "not docker"
+pytest tests -n auto -v -m "not docker"

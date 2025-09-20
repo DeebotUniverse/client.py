@@ -5,9 +5,8 @@ import pytest
 from deebot_client.command import CommandResult
 from deebot_client.commands.xml.charge import Charge
 from deebot_client.message import HandlingState
-from tests.commands import assert_command
 
-from . import get_request_xml
+from . import assert_command, get_request_xml
 
 
 @pytest.mark.parametrize(

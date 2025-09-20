@@ -11,6 +11,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityLifeSpan,
     CapabilityMap,
+    CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -45,6 +46,7 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapSet,
     GetMapTrace,
     GetMinorMap,
 )
@@ -165,6 +167,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             position=CapabilityEvent(PositionsEvent, [GetPos()]),
             relocation=CapabilityExecute(SetRelocationState),
             rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            set=CapabilityExecute(GetMapSet),
             trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
@@ -190,16 +193,12 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
         ),
         water=CapabilityWater(
-            amount=CapabilitySetTypes(
-                event=water_info.WaterAmountEvent,
+            amount=CapabilityNumber(
+                event=water_info.WaterCustomAmountEvent,
                 get=[GetWaterInfo()],
-                set=SetWaterInfo,
-                types=(
-                    water_info.WaterAmount.LOW,
-                    water_info.WaterAmount.MEDIUM,
-                    water_info.WaterAmount.HIGH,
-                    water_info.WaterAmount.ULTRAHIGH,
-                ),
+                set=lambda custom_amount: SetWaterInfo(custom_amount=custom_amount),
+                min=0,
+                max=50,
             ),
             mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
         ),

@@ -126,8 +126,14 @@ async def test_mqtt_client(
 
 
 @pytest.fixture
-async def static_device_info() -> StaticDeviceInfo:
-    info = await get_static_device_info("yna5xi")
+def device_class() -> str:
+    """Fixture to return a device class."""
+    return "yna5xi"
+
+
+@pytest.fixture
+async def static_device_info(device_class: str) -> StaticDeviceInfo:
+    info = await get_static_device_info(device_class)
     assert info is not None
     assert info.capabilities.map is not None
     return info
@@ -165,7 +171,7 @@ def execute_mock() -> AsyncMock:
 
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
-    return EventBus(execute_mock, device_info.static.capabilities.get_refresh_commands)
+    return EventBus(execute_mock, device_info.static.capabilities)
 
 
 @pytest.fixture

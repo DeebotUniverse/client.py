@@ -33,22 +33,6 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get cached map info command."""
 
     NAME = "getCachedMapInfo"
-    # version definition for using type of getMapSet v1 or v2
-    _map_set_command: type[GetMapSet | GetMapSetV2]
-
-    def __init__(
-        self, args: dict[str, Any] | list[Any] | None = None, version: int = 1
-    ) -> None:
-        match version:
-            case 1:
-                self._map_set_command = GetMapSet
-            case 2:
-                self._map_set_command = GetMapSetV2
-            case _:
-                error_wrong_version = f"version={version} is not supported"
-                raise ValueError(error_wrong_version)
-
-        super().__init__(args)
 
     @classmethod
     def _handle_body_data_dict(
@@ -79,13 +63,18 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
+            commands: list[Command] = []
+
+            if map_obj := event_bus.capabilities.map:
+                map_id = result.args["map_id"]
+                commands.extend(
+                    map_obj.set.execute(map_id, entry) for entry in MapSetType
+                )
+
             return CommandResult(
                 result.state,
                 result.args,
-                [
-                    self._map_set_command(result.args["map_id"], entry)
-                    for entry in MapSetType
-                ],
+                commands,
             )
 
         return result
@@ -104,7 +93,7 @@ class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        values = [int(value) for value in data["value"].split(",")]
+        values = [int(value) for value in data["value"].split(",") if value]
         map_id = data["mid"]
 
         return HandlingResult(
@@ -140,11 +129,10 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     def __init__(
         self,
         mid: str,
-        # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         super().__init__({"mid": mid, "type": type})
 
@@ -230,11 +218,10 @@ class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         mid: str | int,
         mssid: str | int,
         msid: str | int | None = None,
-        # pylint: disable=redefined-builtin
-        type: (MapSetType | str) = MapSetType.ROOMS,
+        type: (MapSetType | str) = MapSetType.ROOMS,  # noqa: A002
     ) -> None:
         if isinstance(type, MapSetType):
-            type = type.value
+            type = type.value  # noqa: A001
 
         if msid is None and type == MapSetType.ROOMS.value:
             error_msid_type = f"msid is required when type='{MapSetType.ROOMS.value}'"
@@ -360,7 +347,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         start = int(data["traceStart"])
 
         if "traceValue" not in data:
-            # TODO verify that this is legit pylint: disable=fixme
+            # TODO verify that this is legit
             return HandlingResult.analyse()
 
         event_bus.notify(

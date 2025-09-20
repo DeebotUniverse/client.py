@@ -11,6 +11,7 @@ __all__ = [
     "SweepType",
     "WaterAmount",
     "WaterAmountEvent",
+    "WaterCustomAmountEvent",
     "WaterSweepTypeEvent",
 ]
 
@@ -35,6 +36,10 @@ class SweepType(IntEnum):
 
 class WaterAmountEvent(ValueEvent[WaterAmount]):
     """Water amount event."""
+
+
+class WaterCustomAmountEvent(ValueEvent[int]):
+    """Water custom amount event."""
 
 
 class WaterSweepTypeEvent(ValueEvent[SweepType]):

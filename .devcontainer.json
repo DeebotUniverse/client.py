@@ -44,7 +44,9 @@
   },
   // Add the IDs of extensions you want installed when the container is created.
   "features": {
-    "ghcr.io/devcontainers/features/docker-in-docker:2": {},
+    "ghcr.io/devcontainers/features/docker-in-docker:2": {
+      "moby": false
+    },
     "ghcr.io/devcontainers/features/rust:1": {}
   },
   "image": "mcr.microsoft.com/devcontainers/python:3",

@@ -31,6 +31,7 @@ from deebot_client.events import (
     LifeSpanEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapSetType,
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
@@ -126,6 +127,14 @@ class CapabilitySetTypes[E: Event, **P, T](CapabilitySet[E, P], CapabilityTypes[
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityNumber[E: Event, **P](CapabilitySet[E, P]):
+    """Capability for a number entity with min and max."""
+
+    min: int
+    max: int
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityCleanAction:
     """Capabilities for clean action."""
 
@@ -174,6 +183,7 @@ class CapabilityMap:
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
+    set: CapabilityExecute[[str, MapSetType]]
     trace: CapabilityEvent[MapTraceEvent]
 
 
@@ -228,11 +238,14 @@ class CapabilityStation:
 class CapabilityWater:
     """Capabilities for water."""
 
-    amount: CapabilitySetTypes[
-        water_info.WaterAmountEvent,
-        [water_info.WaterAmount | str],
-        water_info.WaterAmount,
-    ]
+    amount: (
+        CapabilitySetTypes[
+            water_info.WaterAmountEvent,
+            [water_info.WaterAmount | str],
+            water_info.WaterAmount,
+        ]
+        | CapabilityNumber[water_info.WaterCustomAmountEvent, [int]]
+    )
     mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
 
 

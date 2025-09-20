@@ -39,6 +39,7 @@ from deebot_client.commands.xml import (
     SetCleanSpeed,
 )
 from deebot_client.commands.xml.charge_state import GetChargeState
+from deebot_client.commands.xml.map import GetMapSet
 from deebot_client.commands.xml.stats import GetCleanSum
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -111,6 +112,7 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             minor=CapabilityExecute(PullMP),
             position=CapabilityEvent(PositionsEvent, [GetPos(), GetChargerPos()]),
             rooms=CapabilityEvent(RoomsEvent, [GetMapSt()]),
+            set=CapabilityExecute(lambda _, set_type: GetMapSet(set_type)),
             trace=CapabilityEvent(MapTraceEvent, [GetTrM()]),
         ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
