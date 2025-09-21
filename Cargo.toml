@@ -22,6 +22,8 @@ pyo3 = "0.26.0"
 pyo3-log = "*"
 svg = "0.18.0"
 zstd = "0.13.3"
+serde = { version = "1.0", features = ["derive"] }
+serde_json = "1.0"
 
 [dev-dependencies]
 rstest = "0.26.0"

@@ -177,8 +177,9 @@ class CapabilityMap:
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
-    major: CapabilityEvent[MajorMapEvent]
-    minor: CapabilityExecute[[int, str]]
+    info: CapabilityExecute[[str]] | None = None
+    major: CapabilityEvent[MajorMapEvent] | None = None
+    minor: CapabilityExecute[[int, str]] | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None

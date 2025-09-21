@@ -10,6 +10,7 @@ from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .events import (
     MajorMapEvent,
+    MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -102,6 +103,7 @@ class Map:
                     if (
                         self._map_data.map_piece_crc32_indicates_update(idx, value)
                         and event.requested
+                        and self._capabilities.minor is not None
                     ):
                         tg.create_task(
                             self._execute_command(
@@ -158,6 +160,87 @@ class Map:
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
+
+    def get_svg_map(self) -> str | None:
+        """Return map as SVG string."""
+        if not self._unsubscribers:
+            raise MapError("Please enable the map first")
+
+        if self._last_image and not self._map_data.changed:
+            _LOGGER.debug("[get_svg_map] No need to update")
+            return self._last_image
+
+        _LOGGER.debug("[get_svg_map] Begin")
+
+        # Reset change before starting to build the SVG
+        self._map_data.reset_changed()
+
+        self._last_image = self._map_data.generate_svg()
+        _LOGGER.debug("[get_svg_map] Finish")
+        return self._last_image
+
+    async def teardown(self) -> None:
+        """Teardown map."""
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()
+
+
+class MapV2:
+    """Map V2 representation."""
+
+    def __init__(
+        self,
+        execute_command: DeviceCommandExecute,
+        event_bus: EventBus,
+        capabilities: CapabilityMap,
+    ) -> None:
+        self._execute_command = execute_command
+        self._event_bus = event_bus
+
+        self._capabilities = capabilities
+        self._map_data: Final[MapData] = MapData(event_bus)
+        self._amount_rooms: int = 0
+        self._last_image: str | None = None
+        self._unsubscribers: list[Callable[[], None]] = []
+
+        async def on_map_info(event: MapInfoEvent) -> None:
+            self._map_data.set_map_info(event.info)
+
+        self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
+
+        async def on_position(event: PositionsEvent) -> None:
+            self._map_data.update_positions(event.positions)
+
+        self._unsubscribers.append(event_bus.subscribe(PositionsEvent, on_position))
+
+        async def on_map_trace(event: MapTraceEvent) -> None:
+            if event.start == 0:
+                self._map_data.clear_trace_points()
+
+            if data := event.data.strip():
+                self._map_data.add_trace_points(data)
+
+        self._unsubscribers.append(
+            self._event_bus.subscribe(MapTraceEvent, on_map_trace)
+        )
+
+        async def on_cached_info(event: CachedMapInfoEvent) -> None:
+            self._map_data.set_rotation_deg(event.angle)
+
+        self._unsubscribers.append(
+            self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
+        )
+
+    def refresh(self) -> None:
+        """Manually refresh map."""
+        if not self._unsubscribers:
+            raise MapError("Please enable the map first")
+
+        # TODO make it nice
+        self._event_bus.request_refresh(PositionsEvent)
+        self._event_bus.request_refresh(MapTraceEvent)
+        self._event_bus.request_refresh(MapInfoEvent)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""
@@ -248,3 +331,13 @@ class MapData:
         return self._data.generate_svg(
             list(self._map_subsets.values()), self._positions
         )
+
+    def set_map_info(self, base64_info: str) -> None:
+        """Set compressed map info (parsing happens in Rust)."""
+        self._data.set_map_info(base64_info)
+        self._on_change()
+
+    def set_rotation_deg(self, angle_deg: float) -> None:
+        """Set clockwise rotation angle in degrees for the SVG output."""
+        self._data.set_rotation_deg(angle_deg)
+        self._on_change()

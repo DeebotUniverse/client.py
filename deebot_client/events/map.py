@@ -41,6 +41,14 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MapInfoEvent(Event):
+    """Map info event representation."""
+
+    map_id: str
+    info: str
+
+
+@dataclass(frozen=True)
 class MajorMapEvent(Event):
     """Major map event."""
 
@@ -95,6 +103,7 @@ class CachedMapInfoEvent(Event):
 
     name: str
     active: bool = field(kw_only=True)
+    angle: int = field(default=0, kw_only=True)
 
 
 @dataclass(frozen=True)

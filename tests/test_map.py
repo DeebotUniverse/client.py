@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import asyncio
 import os
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
@@ -21,6 +21,7 @@ from deebot_client.events.map import (
 from deebot_client.map import (
     Map,
     MapData,
+    MapV2,
 )
 from deebot_client.models import Room, StaticDeviceInfo
 from deebot_client.rs.map import PositionType
@@ -134,13 +135,14 @@ async def test_Map_subscriptions(
 
 async def setup_map(
     execute_mock: AsyncMock, event_bus: EventBus, static_device_info: StaticDeviceInfo
-) -> Map:
+) -> Map | MapV2:
     async def on_change(_: MapChangedEvent) -> None:
         pass
 
     capabilities_map = static_device_info.capabilities.map
     assert capabilities_map is not None
-    map_obj = Map(execute_mock, event_bus, capabilities_map)
+    map_type = Map if not capabilities_map.info else MapV2
+    map_obj = map_type(execute_mock, event_bus, capabilities_map)
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
     return map_obj
@@ -175,10 +177,12 @@ async def test_invalid_map_piece_index(
     with pytest.raises(exception_class) as ex:
         await block_till_done(event_bus)
 
-    exceptions = ex.value.exceptions if isinstance(ex.value, ExceptionGroup) else [ex]
+    exceptions = (
+        ex.value.exceptions if isinstance(ex.value, ExceptionGroup) else [ex.value]
+    )
 
-    for ex in exceptions:
-        assert "Index out of bounds" in str(ex)
+    for err in exceptions:
+        assert "Index out of bounds" in str(err)
 
 
 async def test_get_svg_map_empty(
@@ -201,7 +205,7 @@ async def test_empty_maptrace(
         map_obj = await setup_map(execute_mock, event_bus, static_device_info)
         event_bus.notify(MapTraceEvent(0, 0, ""))
         await block_till_done(event_bus)
-        map_obj._map_data.add_trace_points.assert_not_called()
+        cast("Mock", map_obj._map_data.add_trace_points).assert_not_called()
 
 
 def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:

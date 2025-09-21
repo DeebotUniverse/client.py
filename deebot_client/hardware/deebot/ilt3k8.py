@@ -11,6 +11,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityExecuteTypes,
     CapabilityLifeSpan,
+    CapabilityMap,
     CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
@@ -50,9 +51,16 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode, SetEfficie
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMapInfoV2,
+    GetMapSetV2,
+    GetMapTrace,
+)
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
+from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.voice_assistant_state import (
@@ -80,9 +88,11 @@ from deebot_client.events import (
     FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
+    MapChangedEvent,
     NetworkInfoEvent,
     OtaEvent,
     ReportStatsEvent,
+    RoomsEvent,
     StateEvent,
     StationEvent,
     StatsEvent,
@@ -97,6 +107,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
+from deebot_client.events.map import CachedMapInfoEvent, MapTraceEvent, PositionsEvent
 from deebot_client.models import StaticDeviceInfo
 from deebot_client.util import short_name
 
@@ -180,7 +191,15 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             ],
             reset=ResetLifeSpan,
         ),
-        # TODO: add map once we get a working implementation
+        map=CapabilityMap(
+            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+            changed=CapabilityEvent(MapChangedEvent, []),
+            info=CapabilityExecute(GetMapInfoV2),
+            position=CapabilityEvent(PositionsEvent, [GetPos()]),
+            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+            set=CapabilityExecute(GetMapSetV2),
+            trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
+        ),
         network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
         play_sound=CapabilityExecute(PlaySound),
         settings=CapabilitySettings(

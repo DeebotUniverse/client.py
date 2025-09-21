@@ -15,7 +15,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MinorMapEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
+from deebot_client.events.map import CachedMapInfoEvent, MapInfoEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.rs.util import decompress_base64_data
@@ -45,7 +45,11 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         for map_status in data["info"]:
             if map_status["using"] == 1:
                 event_bus.notify(
-                    CachedMapInfoEvent(name=map_status.get("name", ""), active=True)
+                    CachedMapInfoEvent(
+                        name=map_status.get("name", ""),
+                        active=True,
+                        angle=map_status.get("angle", 0),
+                    )
                 )
 
                 return HandlingResult(
@@ -70,6 +74,9 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 commands.extend(
                     map_obj.set.execute(map_id, entry) for entry in MapSetType
                 )
+
+                if map_obj.info:
+                    commands.append(map_obj.info.execute(map_id))
 
             return CommandResult(
                 result.state,
@@ -393,3 +400,24 @@ class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
             return HandlingResult.success()
 
         return HandlingResult.analyse()
+
+
+class GetMapInfoV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get map info v2 command."""
+
+    NAME = "getMapInfo_V2"
+
+    def __init__(self, map_id: str = "") -> None:
+        super().__init__({"mid": map_id, "type": "0"})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        event_bus.notify(
+            MapInfoEvent(
+                map_id=data["mid"],
+                info=data["info"],
+            )
+        )
+        return HandlingResult.success()

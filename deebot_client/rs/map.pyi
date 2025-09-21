@@ -15,6 +15,12 @@ class MapData:
     def clear_trace_points(self) -> None:
         """Clear trace points."""
 
+    def set_map_info(self, base64_info: str) -> None:
+        """Set map info (base64-compressed JSON)."""
+
+    def set_rotation_deg(self, angle_deg: float) -> None:
+        """Set clockwise rotation angle in degrees for the SVG output."""
+
     def update_map_piece(self, index: int, base64_data: str) -> bool:
         """Update map piece."""
 

@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from testfixtures import LogCapture
 
-from deebot_client.command import CommandResult
+from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -13,10 +13,11 @@ from deebot_client.commands.json import (
     GetMapSubSet,
     GetMapTrace,
 )
-from deebot_client.commands.json.map import GetMapSetV2
+from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
 from deebot_client.events import (
     FirmwareEvent,
     MajorMapEvent,
+    MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -176,14 +177,17 @@ async def test_getMapSubSet_living_room() -> None:
 
 
 @pytest.mark.parametrize(
-    ("device_class", "map_set_type"),
+    ("device_class", "map_set_type", "additional_commands"),
     [
-        ("yna5xi", GetMapSet),
-        ("kr0277", GetMapSetV2),
+        ("yna5xi", GetMapSet, []),
+        ("kr0277", GetMapSetV2, []),
+        ("lwmdoj", GetMapSetV2, [GetMapInfoV2]),
     ],
 )
 async def test_getCachedMapInfo(
-    device_class: str, map_set_type: type[GetMapSet | GetMapSetV2]
+    device_class: str,
+    map_set_type: type[GetMapSet | GetMapSetV2],
+    additional_commands: list[type[Command]],
 ) -> None:
     expected_mid = "199390082"
     expected_name = "Erdgeschoss"
@@ -218,12 +222,16 @@ async def test_getCachedMapInfo(
         [
             firmware_event,
             CachedMapInfoEvent(expected_name, active=True),
-            *[firmware_event for _ in MapSetType],
+            *[
+                firmware_event
+                for _ in range(len(MapSetType) + len(additional_commands))
+            ],
         ],
         command_result=CommandResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
-            [map_set_type(expected_mid, entry) for entry in MapSetType],
+            [map_set_type(expected_mid, entry) for entry in MapSetType]
+            + [command(expected_mid) for command in additional_commands],
         ),
         device_class=device_class,
     )
@@ -557,4 +565,25 @@ async def test_getMapTrace() -> None:
         command_result=CommandResult(
             HandlingState.SUCCESS, {"start": start, "total": total}, []
         ),
+    )
+
+
+async def test_getMapInfoV2() -> None:
+    mid = "98100521"
+    info = "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4="
+    (
+        json,
+        firmware_event,
+    ) = get_request_json(
+        get_success_body(
+            {
+                "mid": mid,
+                "info": info,
+            }
+        )
+    )
+    await assert_command(
+        GetMapInfoV2(mid),
+        json,
+        (firmware_event, MapInfoEvent(mid, info)),
     )
