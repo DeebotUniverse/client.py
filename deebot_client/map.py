@@ -99,27 +99,27 @@ class Map:
     # ---------------------------- METHODS ----------------------------
 
     async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
-        if self._capabilities.major and (minor := self._capabilities.minor):
+        if not self._capabilities.major or not (minor := self._capabilities.minor):
+            return []
 
-            async def on_major_map(event: MajorMapEvent) -> None:
-                async with asyncio.TaskGroup() as tg:
-                    for idx, value in enumerate(event.values):
-                        if (
-                            self._map_data.map_piece_crc32_indicates_update(idx, value)
-                            and event.requested
-                        ):
-                            tg.create_task(
-                                self._execute_command(minor.execute(idx, event.map_id))
-                            )
+        async def on_major_map(event: MajorMapEvent) -> None:
+            async with asyncio.TaskGroup() as tg:
+                for idx, value in enumerate(event.values):
+                    if (
+                        self._map_data.map_piece_crc32_indicates_update(idx, value)
+                        and event.requested
+                    ):
+                        tg.create_task(
+                            self._execute_command(minor.execute(idx, event.map_id))
+                        )
 
-            async def on_minor_map(event: MinorMapEvent) -> None:
-                self._map_data.update_map_piece(event.index, event.value)
+        async def on_minor_map(event: MinorMapEvent) -> None:
+            self._map_data.update_map_piece(event.index, event.value)
 
-            return [
-                self._event_bus.subscribe(MajorMapEvent, on_major_map),
-                self._event_bus.subscribe(MinorMapEvent, on_minor_map),
-            ]
-        return []
+        return [
+            self._event_bus.subscribe(MajorMapEvent, on_major_map),
+            self._event_bus.subscribe(MinorMapEvent, on_minor_map),
+        ]
 
     async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
         """On first MapChanged subscription."""
