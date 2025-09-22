@@ -26,7 +26,7 @@ from .events import (
     TotalStatsEvent,
 )
 from .logging_filter import get_logger
-from .map import Map, MapV2
+from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
 from .rs.map import PositionType
@@ -65,12 +65,10 @@ class Device:
         self.mac: str | None = None
         self.events: Final[EventBus] = EventBus(self.execute_command, self.capabilities)
 
-        self.map: Final[Map | MapV2 | None] = (
-            None
-            if not self.capabilities.map
-            else MapV2(self.execute_command, self.events, self.capabilities.map)
-            if self.capabilities.map.info
-            else Map(self.execute_command, self.events, self.capabilities.map)
+        self.map: Final[Map | None] = (
+            Map(self.execute_command, self.events, self.capabilities.map)
+            if self.capabilities.map
+            else None
         )
 
         async def on_pos(event: PositionsEvent) -> None:
