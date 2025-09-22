@@ -1,4 +1,4 @@
-"""Hardware deebot module."""
+"""Hardware module."""
 
 from __future__ import annotations
 
