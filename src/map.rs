@@ -463,7 +463,7 @@ impl MapData {
         let mut document = Document::new().add(defs);
         let (viewbox_opt, bg_img): (Option<ViewBox>, Option<String>) =
             if let Some((base64_image, viewbox)) = background {
-                document = document.set("viewBox", viewbox.to_svg_viewbox());
+                document = document.set("viewBox", viewbox.to_svg_viewbox(self.rotation_deg));
                 (Some(viewbox), Some(base64_image))
             } else if !self.outlines.is_empty()
                 || !self.areas.is_empty()
@@ -472,7 +472,7 @@ impl MapData {
                 if let Some(vb) =
                     viewbox_from_shapes(&self.outlines, &self.areas, &self.block_lines)
                 {
-                    document = document.set("viewBox", vb.to_svg_viewbox());
+                    document = document.set("viewBox", vb.to_svg_viewbox(self.rotation_deg));
                     (Some(vb), None)
                 } else {
                     return Ok(None);
@@ -570,10 +570,49 @@ impl ViewBox {
         }
     }
 
-    fn to_svg_viewbox(&self) -> String {
+    fn to_svg_viewbox(&self, rotation_deg: f32) -> String {
+        if rotation_deg == 0.0 {
+            return format!(
+                "{} {} {} {}",
+                self.min_x, self.min_y, self.width, self.height
+            );
+        }
+
+        let theta = rotation_deg.to_radians();
+        let (cos_t, sin_t) = (theta.cos(), theta.sin());
+        let (cx, cy) = (
+            self.min_x as f32 + self.width as f32 / 2.0,
+            self.min_y as f32 + self.height as f32 / 2.0,
+        );
+
+        let (mut min_x, mut min_y, mut max_x, mut max_y) = (
+            f32::INFINITY,
+            f32::INFINITY,
+            f32::NEG_INFINITY,
+            f32::NEG_INFINITY,
+        );
+
+        for &(x, y) in &[
+            (self.min_x as f32, self.min_y as f32),
+            (self.max_x as f32, self.min_y as f32),
+            (self.max_x as f32, self.max_y as f32),
+            (self.min_x as f32, self.max_y as f32),
+        ] {
+            let (dx, dy) = (x - cx, y - cy);
+            let (rx, ry) = (cos_t * dx - sin_t * dy + cx, sin_t * dx + cos_t * dy + cy);
+
+            min_x = min_x.min(rx);
+            min_y = min_y.min(ry);
+            max_x = max_x.max(rx);
+            max_y = max_y.max(ry);
+        }
+
         format!(
             "{} {} {} {}",
-            self.min_x, self.min_y, self.width, self.height
+            min_x.round() as i16,
+            min_y.round() as i16,
+            (max_x - min_x).round().max(1.0) as u16,
+            (max_y - min_y).round().max(1.0) as u16
         )
     }
 }
@@ -619,10 +658,10 @@ fn viewbox_from_shapes(
     }
 
     let (min_x_f, min_y_f, max_x_f, max_y_f) = bounds?;
-    let min_x = min_x_f.floor() as i16;
-    let min_y = min_y_f.floor() as i16;
-    let max_x = max_x_f.ceil() as i16;
-    let max_y = max_y_f.ceil() as i16;
+    let min_x = min_x_f.round() as i16;
+    let min_y = min_y_f.round() as i16;
+    let max_x = max_x_f.round() as i16;
+    let max_y = max_y_f.round() as i16;
     let width = (max_x - min_x).max(1) as u16;
     let height = (max_y - min_y).max(1) as u16;
 
@@ -1228,5 +1267,24 @@ mod tests {
         assert_eq!(map_piece.crc32, NOT_INUSE_CRC32);
         assert!(map_piece.pixels_indexed.is_none());
         assert!(!map_piece.update_points(data).unwrap());
+    }
+
+    #[rstest]
+    #[case(0.0, "-150 -100 300 200")]
+    #[case(90.0, "-100 -150 200 300")]
+    #[case(45.0, "-177 -177 354 354")]
+    #[case(180.0, "-150 -100 300 200")]
+    #[case(270.0, "-100 -150 200 300")]
+    fn test_viewbox_rotation(#[case] rotation_deg: f32, #[case] expected_viewbox: &str) {
+        let viewbox = ViewBox {
+            min_x: -150,
+            min_y: -100,
+            max_x: 150,
+            max_y: 100,
+            width: 300,
+            height: 200,
+        };
+
+        assert_eq!(viewbox.to_svg_viewbox(rotation_deg), expected_viewbox);
     }
 }
