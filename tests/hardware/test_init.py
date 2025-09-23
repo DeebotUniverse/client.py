@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 
 import pytest
 
+from deebot_client import hardware
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty
@@ -83,7 +84,6 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
-from deebot_client.hardware import deebot as hardware_deebot, get_static_device_info
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -97,14 +97,14 @@ if TYPE_CHECKING:
     ("class_", "expected"),
     [
         ("not_specified", lambda: None),
-        ("yna5xi", lambda: hardware_deebot.DEVICES["yna5xi"]),
+        ("yna5xi", lambda: hardware.DEVICES["yna5xi"]),
     ],
 )
 async def test_get_static_device_info(
     class_: str, expected: Callable[[], StaticDeviceInfo]
 ) -> None:
     """Test get_static_device_info."""
-    static_device_info = await get_static_device_info(class_)
+    static_device_info = await hardware.get_static_device_info(class_)
     assert static_device_info == expected()
 
 
@@ -244,7 +244,7 @@ async def test_get_static_device_info(
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    info = await get_static_device_info(class_)
+    info = await hardware.get_static_device_info(class_)
     assert info is not None
     capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
@@ -256,9 +256,9 @@ async def test_capabilities_event_extraction(
 
 def test_all_models_loaded() -> None:
     """Test that all models are loaded."""
-    hardware_deebot._load()
-    folder = Path(hardware_deebot.__file__).parent
-    assert list(hardware_deebot.DEVICES) == sorted(
+    hardware._load()
+    folder = Path(hardware.__file__).parent
+    assert list(hardware.DEVICES) == sorted(
         [
             file.name.removesuffix(".py")
             for file in folder.iterdir()

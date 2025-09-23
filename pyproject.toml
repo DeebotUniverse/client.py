@@ -141,7 +141,7 @@ required-imports = ["from __future__ import annotations"]
     "SLF001",  # Private member accessed: {access}
     "T201",    # print found
 ]
-"deebot_client/hardware/deebot/*" = [
+"deebot_client/hardware/*" = [
     "N999", # Invalid module name
 ]
 "deebot_client/rs/*.pyi" = [

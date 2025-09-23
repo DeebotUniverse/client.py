@@ -13,7 +13,7 @@ import aiohttp
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
-from deebot_client.hardware.deebot import DEVICES, _load
+from deebot_client.hardware import DEVICES, _load
 from deebot_client.util import md5
 
 
@@ -44,7 +44,7 @@ def _add_models_by_similarity(models: list[str]) -> None:
                 os.symlink(
                     f"{model_to_link}.py",
                     f"{model}.py",
-                    dir_fd=os.open("deebot_client/hardware/deebot", os.O_RDONLY),
+                    dir_fd=os.open("deebot_client/hardware", os.O_RDONLY),
                 )
 
 
