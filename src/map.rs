@@ -81,6 +81,7 @@ fn round(value: f32, digits: usize) -> f32 {
 enum SvgPathCommand {
     // To means absolute, by means relative
     MoveTo,
+    MoveBy,
     LineBy,
     HorizontalLineBy,
     VerticalLineBy,
@@ -110,9 +111,9 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
         }
 
         if !p.connected {
-            let space = if 0.0 < p.y { " " } else { "" };
-            let _ = write!(svg_path, "M{}{}{}", p.x, space, p.y);
-            last_command = SvgPathCommand::MoveTo;
+            let space = if 0.0 <= y { " " } else { "" };
+            let _ = write!(svg_path, "m{x}{space}{y}");
+            last_command = SvgPathCommand::MoveBy;
         } else if x == 0.0 {
             if last_command != SvgPathCommand::VerticalLineBy {
                 svg_path.push('v');
@@ -310,16 +311,6 @@ struct Position {
     position_type: PositionType,
     x: i32,
     y: i32,
-}
-
-#[cfg(test)]
-fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox) -> Point {
-    let point = calc_point(x as f32, y as f32);
-    Point {
-        x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
-        y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
-        connected: false,
-    }
 }
 
 #[derive(FromPyObject, Debug)]
@@ -544,7 +535,7 @@ impl MapData {
             map_layer.append(trace);
         }
         if let Some(vb) = viewbox_opt.as_ref() {
-            for position in get_svg_positions_rotated(&positions, vb, self.rotation_deg) {
+            for position in get_svg_positions(&positions, vb, self.rotation_deg) {
                 ui_layer.append(position);
             }
         }
@@ -812,28 +803,7 @@ impl MapData {
     }
 }
 
-#[cfg(test)]
-fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
-    let mut positions: Vec<&'a Position> = positions.iter().collect();
-    positions.sort_by_key(|d| d.position_type.order());
-    debug!("Adding positions: {positions:?}");
-
-    let mut svg_positions = Vec::with_capacity(positions.len());
-
-    for position in positions {
-        let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
-
-        svg_positions.push(
-            Use::new()
-                .set("href", format!("#{}", position.position_type.svg_use_id()))
-                .set("x", pos.x)
-                .set("y", pos.y),
-        );
-    }
-    svg_positions
-}
-
-fn get_svg_positions_rotated<'a>(
+fn get_svg_positions<'a>(
     positions: &'a [Position],
     viewbox: &ViewBox,
     rotation_deg: f32,
@@ -967,21 +937,6 @@ mod tests {
         assert_eq!(result, expected);
     }
 
-    #[rstest]
-    #[case(100, 100, (-100, -100, 200, 150), Point { x: 2.0, y: -2.0, connected: false })]
-    #[case(-64000, -64000, (0, 0, 1000, 1000), Point { x: 0.0, y: 1000.0, connected: false })]
-    #[case(64000, 64000, (0, 0, 1000, 1000), Point { x: 1000.0, y: 0.0, connected: false })]
-    #[case(0, 1000, (-500, -500, 1000, 1000), Point { x: 0.0, y: -20.0, connected: false })]
-    fn test_calc_point_in_viewbox(
-        #[case] x: i32,
-        #[case] y: i32,
-        #[case] viewbox: (i16, i16, u16, u16),
-        #[case] expected: Point,
-    ) {
-        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox));
-        assert_eq!(result, expected);
-    }
-
     #[test]
     fn test_get_trace_points_path() {
         assert!(get_trace_path(&[]).is_none());
@@ -999,7 +954,7 @@ mod tests {
         TracePoint{x:-227, y:-70, connected:true},
         TracePoint{x:-256, y:-69, connected:false},
         TracePoint{x:-260, y:-80, connected:true},
-    ], "<path d=\"M-215-70l3-3h-1l-14 1v2M-256-69l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    ], "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
     fn test_get_trace_path(#[case] points: Vec<TracePoint>, #[case] expected: String) {
         let trace = get_trace_path(&points);
         assert_eq!(trace.unwrap().to_string(), expected);
@@ -1017,7 +972,7 @@ mod tests {
         Point{x:-227.0, y:-70.0, connected:true},
         Point{x:-256.0, y:-69.0, connected:false},
         Point{x:-260.0, y:-80.0, connected:true},
-    ], Some("M-215-70l3-3h-1l-14 1v2M-256-69l-4-11".to_string()))]
+    ], Some("M-215-70l3-3h-1l-14 1v2m-29 1l-4-11".to_string()))]
     #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], Some("M45.58 176.12l-26.8-0.18".to_string()))]
     #[case(vec![], None)]
     fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: Option<String>) {
@@ -1032,7 +987,7 @@ mod tests {
     #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
     fn test_get_svg_positions(#[case] positions: &[Position], #[case] expected: String) {
         let viewbox = (-500, -500, 1000, 1000);
-        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
+        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox), 0.0)
             .iter()
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
