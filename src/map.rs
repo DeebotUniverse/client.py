@@ -182,7 +182,7 @@ impl From<&TracePoint> for Point {
     }
 }
 
-fn add_polygons_to_group(mut group: Group, polygons: &Vec<Vec<Point>>, fill_color: &str) -> Group {
+fn add_polygons_to_svg(document: &mut svg::Document, polygons: &Vec<Vec<Point>>, fill_color: &str) {
     for polygon in polygons {
         if polygon.len() >= 3 {
             let mut coords: Vec<f32> = Vec::with_capacity(polygon.len() * 2);
@@ -190,10 +190,9 @@ fn add_polygons_to_group(mut group: Group, polygons: &Vec<Vec<Point>>, fill_colo
                 coords.push(point.x);
                 coords.push(point.y);
             }
-            group = group.add(Polygon::new().set("fill", fill_color).set("points", coords));
+            document.append(Polygon::new().set("fill", fill_color).set("points", coords));
         }
     }
-    group
 }
 
 fn calc_point(x: f32, y: f32) -> Point {
@@ -313,6 +312,15 @@ struct Position {
     y: i32,
 }
 
+fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox) -> Point {
+    let point = calc_point(x as f32, y as f32);
+    Point {
+        x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
+        y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
+        connected: false,
+    }
+}
+
 #[derive(FromPyObject, Debug)]
 /// Map subset event
 struct MapSubset {
@@ -323,7 +331,6 @@ struct MapSubset {
 
 #[pyclass]
 struct MapData {
-    rotation_deg: f32,
     trace_points: Vec<TracePoint>,
     map_pieces: [MapPiece; 64],
     outlines: Vec<Vec<Point>>,
@@ -336,7 +343,6 @@ impl MapData {
     #[new]
     fn new() -> Self {
         MapData {
-            rotation_deg: 0.0,
             trace_points: Vec::new(),
             map_pieces: core::array::from_fn(|_| MapPiece::new()),
             outlines: Vec::new(),
@@ -356,10 +362,6 @@ impl MapData {
 
     fn clear_trace_points(&mut self) {
         self.trace_points.clear();
-    }
-
-    fn set_rotation_deg(&mut self, angle_deg: f32) {
-        self.rotation_deg = angle_deg;
     }
 
     fn set_map_info(&mut self, base64_info: String) -> PyResult<()> {
@@ -455,70 +457,46 @@ impl MapData {
                     ),
             );
 
-        // Determine background/viewbox
-        let background = self
+        // Add image or generate viewbox from outline if no image data exists
+        let (base64_image_opt, viewbox) = match self
             .generate_background_image()
-            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+            .map_err(|err| PyValueError::new_err(err.to_string()))?
+        {
+            Some(data) => (Some(data.0), data.1),
+            None => match self.viewbox_from_outlines() {
+                Some(vb) => (None, vb),
+                None => return Ok(None),
+            },
+        };
 
-        let mut document = Document::new().add(defs);
-        let (viewbox_opt, bg_img): (Option<ViewBox>, Option<String>) =
-            if let Some((base64_image, viewbox)) = background {
-                document = document.set("viewBox", viewbox.to_svg_viewbox(self.rotation_deg));
-                (Some(viewbox), Some(base64_image))
-            } else if !self.outlines.is_empty()
-                || !self.areas.is_empty()
-                || !self.block_lines.is_empty()
-            {
-                if let Some(vb) =
-                    viewbox_from_shapes(&self.outlines, &self.areas, &self.block_lines)
-                {
-                    document = document.set("viewBox", vb.to_svg_viewbox(self.rotation_deg));
-                    (Some(vb), None)
-                } else {
-                    return Ok(None);
-                }
-            } else {
-                return Ok(None);
-            };
+        let mut document = Document::new()
+            .set("viewBox", viewbox.to_svg_viewbox())
+            .add(defs);
 
-        // Create layers: map_layer (rotated), ui_layer (not rotated)
-        let mut map_layer = Group::new();
-        let mut ui_layer = Group::new();
-        if let Some(vb) = viewbox_opt.as_ref() {
-            if self.rotation_deg != 0.0 {
-                let cx = vb.min_x as f32 + (vb.width as f32 / 2.0);
-                let cy = vb.min_y as f32 + (vb.height as f32 / 2.0);
-                map_layer = map_layer.set(
-                    "transform",
-                    format!("rotate({} {} {})", self.rotation_deg, cx, cy),
-                );
-            }
-        }
-
-        // If we had a background image, add it to the map_layer (so it rotates too)
-        if let (Some(base64_image), Some(vb)) = (bg_img.as_ref(), viewbox_opt.as_ref()) {
+        // Add background image only if it exists
+        if let Some(base64_image) = base64_image_opt {
             let image = Image::new()
-                .set("x", vb.min_x)
-                .set("y", vb.min_y)
-                .set("width", vb.width)
-                .set("height", vb.height)
+                .set("x", viewbox.min_x)
+                .set("y", viewbox.min_y)
+                .set("width", viewbox.width)
+                .set("height", viewbox.height)
                 .set("style", "image-rendering: pixelated")
                 .set("href", format!("data:image/png;base64,{base64_image}"));
-            map_layer = map_layer.add(image);
+            document.append(image);
         }
 
         // Draw entire rooms as unreachable and overlay reachable sections
-        map_layer = add_polygons_to_group(map_layer, &self.areas, POSSIBLE_OBSTACLE_FILL_COLOR);
-        map_layer = add_polygons_to_group(map_layer, &self.block_lines, FLOOR_FILL_COLOR);
+        add_polygons_to_svg(&mut document, &self.areas, POSSIBLE_OBSTACLE_FILL_COLOR);
+        add_polygons_to_svg(&mut document, &self.block_lines, FLOOR_FILL_COLOR);
 
         for subset in &subsets {
-            map_layer.append(get_svg_subset(subset)?);
+            document.append(get_svg_subset(subset)?);
         }
 
         // Draw map outline on top
         for outline in &self.outlines {
             if let Some(d) = points_to_svg_path(outline) {
-                map_layer = map_layer.add(
+                document.append(
                     Path::new()
                         .set("fill", "none")
                         .set("stroke", WALL_STROKE_COLOR)
@@ -532,14 +510,11 @@ impl MapData {
         }
 
         if let Some(trace) = get_trace_path(&self.trace_points) {
-            map_layer.append(trace);
+            document.append(trace);
         }
-        if let Some(vb) = viewbox_opt.as_ref() {
-            for position in get_svg_positions(&positions, vb, self.rotation_deg) {
-                ui_layer.append(position);
-            }
+        for position in get_svg_positions(&positions, &viewbox) {
+            document.append(position);
         }
-        document = document.add(map_layer).add(ui_layer);
         Ok(Some(document.to_string().replace('\n', "")))
     }
 }
@@ -570,49 +545,10 @@ impl ViewBox {
         }
     }
 
-    fn to_svg_viewbox(&self, rotation_deg: f32) -> String {
-        if rotation_deg == 0.0 {
-            return format!(
-                "{} {} {} {}",
-                self.min_x, self.min_y, self.width, self.height
-            );
-        }
-
-        let theta = rotation_deg.to_radians();
-        let (cos_t, sin_t) = (theta.cos(), theta.sin());
-        let (cx, cy) = (
-            self.min_x as f32 + self.width as f32 / 2.0,
-            self.min_y as f32 + self.height as f32 / 2.0,
-        );
-
-        let (mut min_x, mut min_y, mut max_x, mut max_y) = (
-            f32::INFINITY,
-            f32::INFINITY,
-            f32::NEG_INFINITY,
-            f32::NEG_INFINITY,
-        );
-
-        for &(x, y) in &[
-            (self.min_x as f32, self.min_y as f32),
-            (self.max_x as f32, self.min_y as f32),
-            (self.max_x as f32, self.max_y as f32),
-            (self.min_x as f32, self.max_y as f32),
-        ] {
-            let (dx, dy) = (x - cx, y - cy);
-            let (rx, ry) = (cos_t * dx - sin_t * dy + cx, sin_t * dx + cos_t * dy + cy);
-
-            min_x = min_x.min(rx);
-            min_y = min_y.min(ry);
-            max_x = max_x.max(rx);
-            max_y = max_y.max(ry);
-        }
-
+    fn to_svg_viewbox(&self) -> String {
         format!(
             "{} {} {} {}",
-            min_x.round() as i16,
-            min_y.round() as i16,
-            (max_x - min_x).round().max(1.0) as u16,
-            (max_y - min_y).round().max(1.0) as u16
+            self.min_x, self.min_y, self.width, self.height
         )
     }
 }
@@ -622,57 +558,16 @@ fn minmax_points<'a, I: Iterator<Item = &'a Point>>(
     bounds: &mut Option<(f32, f32, f32, f32)>,
 ) {
     for p in iter {
-        if let Some((ref mut min_x, ref mut min_y, ref mut max_x, ref mut max_y)) = bounds {
-            if p.x < *min_x {
-                *min_x = p.x;
+        match bounds {
+            Some((min_x, min_y, max_x, max_y)) => {
+                *min_x = min_x.min(p.x);
+                *min_y = min_y.min(p.y);
+                *max_x = max_x.max(p.x);
+                *max_y = max_y.max(p.y);
             }
-            if p.y < *min_y {
-                *min_y = p.y;
-            }
-            if p.x > *max_x {
-                *max_x = p.x;
-            }
-            if p.y > *max_y {
-                *max_y = p.y;
-            }
-        } else {
-            *bounds = Some((p.x, p.y, p.x, p.y));
+            None => *bounds = Some((p.x, p.y, p.x, p.y)),
         }
     }
-}
-
-fn viewbox_from_shapes(
-    outlines: &Vec<Vec<Point>>,
-    areas: &Vec<Vec<Point>>,
-    block_lines: &Vec<Vec<Point>>,
-) -> Option<ViewBox> {
-    let mut bounds: Option<(f32, f32, f32, f32)> = None;
-    for path in outlines {
-        minmax_points(path.iter(), &mut bounds);
-    }
-    for poly in areas {
-        minmax_points(poly.iter(), &mut bounds);
-    }
-    for poly in block_lines {
-        minmax_points(poly.iter(), &mut bounds);
-    }
-
-    let (min_x_f, min_y_f, max_x_f, max_y_f) = bounds?;
-    let min_x = min_x_f.round() as i16;
-    let min_y = min_y_f.round() as i16;
-    let max_x = max_x_f.round() as i16;
-    let max_y = max_y_f.round() as i16;
-    let width = (max_x - min_x).max(1) as u16;
-    let height = (max_y - min_y).max(1) as u16;
-
-    Some(ViewBox {
-        min_x,
-        min_y,
-        max_x,
-        max_y,
-        width,
-        height,
-    })
 }
 
 type ImageGenrationType = Option<(String, ViewBox)>;
@@ -762,72 +657,63 @@ impl MapData {
     }
 
     fn parse_map_info(&mut self, info: MapV2Info) {
-        let mut outlines: Vec<Vec<Point>> = Vec::new();
-        let mut areas: Vec<Vec<Point>> = Vec::new();
-        let mut block_lines: Vec<Vec<Point>> = Vec::new();
+        let parse_coords = |s: &str| -> Option<(f32, f32)> {
+            let mut it = s.splitn(2, ',');
+            let x = it.next()?.parse::<f32>().ok()?;
+            let y = it.next()?.parse::<f32>().ok()?;
+            Some((x, y))
+        };
+
+        let mut outlines = Vec::new();
+        let mut areas = Vec::new();
+        let mut block_lines = Vec::new();
 
         for group in &info {
-            match group.first().map(|s| s.as_str()) {
-                Some("1") => {
-                    for entry in group.iter().skip(1) {
-                        if entry.is_empty() {
-                            continue;
-                        }
-                        let mut parts = entry.split(';').filter(|s| !s.is_empty());
-                        let _segment_id = parts.next();
-                        let mut path_points: Vec<Point> = Vec::new();
+            let Some(first) = group.first() else { continue };
+            match first.as_str() {
+                "1" => {
+                    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
+                        let parts = entry.split(';').filter(|s| !s.is_empty()).skip(1);
+                        let mut path_points = Vec::new();
+
                         for spec in parts {
-                            let mut it = spec.splitn(3, ',');
-                            let x = it.next().and_then(|v| v.parse::<i32>().ok());
-                            let y = it.next().and_then(|v| v.parse::<i32>().ok());
-                            let t = it.next().unwrap_or("1").trim().to_string();
-                            if let (Some(x), Some(y)) = (x, y) {
-                                let mut p = calc_point(x as f32, y as f32);
-                                p.connected = t != "3-1-0";
-                                path_points.push(p);
+                            let mut coords = spec.splitn(3, ',');
+                            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
+                                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
+                                {
+                                    let mut p = calc_point(x, y);
+                                    p.connected = coords.next().unwrap_or("1").trim() != "3-1-0";
+                                    path_points.push(p);
+                                }
                             }
                         }
-                        if path_points.len() >= 3 {
-                            let close_coords = match path_points.first() {
-                                Some(p) if p.connected => Some((p.x, p.y)),
-                                _ => None,
-                            };
-                            if let Some((fx, fy)) = close_coords {
-                                let close_p = Point {
-                                    x: fx,
-                                    y: fy,
-                                    connected: true,
-                                };
-                                path_points.push(close_p);
-                            }
+
+                        if let Some(first) = path_points.first().filter(|p| p.connected) {
+                            path_points.push(Point {
+                                x: first.x,
+                                y: first.y,
+                                connected: true,
+                            });
                         }
-                        if !path_points.is_empty() {
-                            outlines.push(path_points);
-                        }
+                        outlines.push(path_points);
                     }
                 }
-                Some("2") | Some("6") => {
-                    let dest: &mut Vec<Vec<Point>> = if group[0] == "2" {
+                "2" | "6" => {
+                    let dest = if group[0] == "2" {
                         &mut areas
                     } else {
                         &mut block_lines
                     };
-                    for entry in group.iter().skip(1) {
-                        if entry.is_empty() {
-                            continue;
-                        }
-                        let mut parts = entry.split(';').filter(|s| !s.is_empty());
-                        let _segment_id = parts.next();
-                        let mut poly_points: Vec<Point> = Vec::new();
-                        for spec in parts {
-                            let mut it = spec.splitn(2, ',');
-                            let x = it.next().and_then(|v| v.parse::<i32>().ok());
-                            let y = it.next().and_then(|v| v.parse::<i32>().ok());
-                            if let (Some(x), Some(y)) = (x, y) {
-                                let p = calc_point(x as f32, y as f32);
-                                poly_points.push(p);
-                            }
-                        }
+
+                    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
+                        let poly_points: Vec<Point> = entry
+                            .split(';')
+                            .filter(|s| !s.is_empty())
+                            .skip(1)
+                            .filter_map(parse_coords)
+                            .map(|(x, y)| calc_point(x, y))
+                            .collect();
+
                         if poly_points.len() >= 3 {
                             dest.push(poly_points);
                         }
@@ -836,46 +722,49 @@ impl MapData {
                 _ => {}
             }
         }
+
         self.outlines = outlines;
         self.areas = areas;
         self.block_lines = block_lines;
     }
+
+    fn viewbox_from_outlines(&self) -> Option<ViewBox> {
+        let mut bounds = None;
+        self.outlines
+            .iter()
+            .for_each(|path| minmax_points(path.iter(), &mut bounds));
+
+        let (min_x_f, min_y_f, max_x_f, max_y_f) = bounds?;
+        let (min_x, min_y) = (min_x_f.round() as i16, min_y_f.round() as i16);
+        let (max_x, max_y) = (max_x_f.round() as i16, max_y_f.round() as i16);
+        let (width, height) = ((max_x - min_x).max(1) as u16, (max_y - min_y).max(1) as u16);
+
+        Some(ViewBox {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
+            width,
+            height,
+        })
+    }
 }
 
-fn get_svg_positions<'a>(
-    positions: &'a [Position],
-    viewbox: &ViewBox,
-    rotation_deg: f32,
-) -> Vec<Use> {
+fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
     let mut positions: Vec<&'a Position> = positions.iter().collect();
     positions.sort_by_key(|d| d.position_type.order());
-
-    let theta = rotation_deg.to_radians();
-    let cos_t = theta.cos();
-    let sin_t = theta.sin();
-    let cx = viewbox.min_x as f32 + (viewbox.width as f32 / 2.0);
-    let cy = viewbox.min_y as f32 + (viewbox.height as f32 / 2.0);
+    debug!("Adding positions: {positions:?}");
 
     let mut svg_positions = Vec::with_capacity(positions.len());
 
     for position in positions {
-        // Compute base position in map coord space (no clamping)
-        let base = calc_point(position.x as f32, position.y as f32);
-        let dx = base.x - cx;
-        let dy = base.y - cy;
-        // Equivalent to rotating the map clockwise in SVG (y-down):
-        // apply counterclockwise rotation in our y-up coordinates
-        let mut x_r = cos_t * dx - sin_t * dy + cx;
-        let mut y_r = sin_t * dx + cos_t * dy + cy;
-        // Clamp to viewbox after rotation
-        x_r = x_r.max(viewbox.min_x as f32).min(viewbox.max_x as f32);
-        y_r = y_r.max(viewbox.min_y as f32).min(viewbox.max_y as f32);
+        let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
 
         svg_positions.push(
             Use::new()
                 .set("href", format!("#{}", position.position_type.svg_use_id()))
-                .set("x", x_r)
-                .set("y", y_r),
+                .set("x", pos.x)
+                .set("y", pos.y),
         );
     }
     svg_positions
@@ -976,6 +865,21 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[rstest]
+    #[case(100, 100, (-100, -100, 200, 150), Point { x: 2.0, y: -2.0, connected: false })]
+    #[case(-64000, -64000, (0, 0, 1000, 1000), Point { x: 0.0, y: 1000.0, connected: false })]
+    #[case(64000, 64000, (0, 0, 1000, 1000), Point { x: 1000.0, y: 0.0, connected: false })]
+    #[case(0, 1000, (-500, -500, 1000, 1000), Point { x: 0.0, y: -20.0, connected: false })]
+    fn test_calc_point_in_viewbox(
+        #[case] x: i32,
+        #[case] y: i32,
+        #[case] viewbox: (i16, i16, u16, u16),
+        #[case] expected: Point,
+    ) {
+        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox));
+        assert_eq!(result, expected);
+    }
+
     #[test]
     fn test_get_trace_points_path() {
         assert!(get_trace_path(&[]).is_none());
@@ -1026,7 +930,7 @@ mod tests {
     #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
     fn test_get_svg_positions(#[case] positions: &[Position], #[case] expected: String) {
         let viewbox = (-500, -500, 1000, 1000);
-        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox), 0.0)
+        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
             .iter()
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
@@ -1267,24 +1171,5 @@ mod tests {
         assert_eq!(map_piece.crc32, NOT_INUSE_CRC32);
         assert!(map_piece.pixels_indexed.is_none());
         assert!(!map_piece.update_points(data).unwrap());
-    }
-
-    #[rstest]
-    #[case(0.0, "-150 -100 300 200")]
-    #[case(90.0, "-100 -150 200 300")]
-    #[case(45.0, "-177 -177 354 354")]
-    #[case(180.0, "-150 -100 300 200")]
-    #[case(270.0, "-100 -150 200 300")]
-    fn test_viewbox_rotation(#[case] rotation_deg: f32, #[case] expected_viewbox: &str) {
-        let viewbox = ViewBox {
-            min_x: -150,
-            min_y: -100,
-            max_x: 150,
-            max_y: 100,
-            width: 300,
-            height: 200,
-        };
-
-        assert_eq!(viewbox.to_svg_viewbox(rotation_deg), expected_viewbox);
     }
 }

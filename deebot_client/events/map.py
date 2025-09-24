@@ -103,7 +103,6 @@ class CachedMapInfoEvent(Event):
 
     name: str
     active: bool = field(kw_only=True)
-    angle: int = field(default=0, kw_only=True)
 
 
 @dataclass(frozen=True)

@@ -125,8 +125,10 @@ class Map:
         """On first MapChanged subscription."""
         unsubscribers = await self._subscribe_minor_major_map_events()
 
-        async def on_cached_info(event: CachedMapInfoEvent) -> None:
-            self._map_data.set_rotation_deg(event.angle)
+        async def on_cached_info(_: CachedMapInfoEvent) -> None:
+            # We need to subscribe to it, otherwise it could happen
+            # that the required MapSet Events are not get
+            pass
 
         cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
         unsubscribers.append(
@@ -261,9 +263,4 @@ class MapData:
     def set_map_info(self, base64_info: str) -> None:
         """Set compressed map info (parsing happens in Rust)."""
         self._data.set_map_info(base64_info)
-        self._on_change()
-
-    def set_rotation_deg(self, angle_deg: float) -> None:
-        """Set clockwise rotation angle in degrees for the SVG output."""
-        self._data.set_rotation_deg(angle_deg)
         self._on_change()

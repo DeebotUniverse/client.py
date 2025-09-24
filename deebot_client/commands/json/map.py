@@ -48,7 +48,6 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
                     CachedMapInfoEvent(
                         name=map_status.get("name", ""),
                         active=True,
-                        angle=map_status.get("angle", 0),
                     )
                 )
 
