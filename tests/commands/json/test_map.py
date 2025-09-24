@@ -486,7 +486,7 @@ async def test_getMapSetV2_rooms() -> None:
 
 
 @pytest.mark.parametrize(
-    ("request_data", "expected"),
+    ("data", "expected_walls"),
     [
         (
             {
@@ -558,7 +558,7 @@ async def test_getMapSetV2_rooms() -> None:
     ],
 )
 async def test_getMapSetV2_virtual_walls(
-    request_data: dict[str, Any], expected: list[dict[str, str | int]]
+    data: dict[str, Any], expected_walls: list[dict[str, str | int]]
 ) -> None:
     mid = "199390082"
     set_type = MapSetType.VIRTUAL_WALLS
@@ -571,7 +571,7 @@ async def test_getMapSetV2_virtual_walls(
                 "serial": 1,
                 "index": 1,
             }
-            | request_data
+            | data
         )
     )
 
@@ -582,7 +582,7 @@ async def test_getMapSetV2_virtual_walls(
             firmware_event,
             *[
                 MapSubsetEvent(int(subs["mssid"]), set_type, str(subs["coordinates"]))
-                for subs in expected
+                for subs in expected_walls
             ],
         ),
     )
