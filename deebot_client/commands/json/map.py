@@ -309,8 +309,10 @@ class GetMapSetV2(GetMapSet):
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
                 for subset in subsets:
-                    mssid = subset[0]  # first entry in list is mssid
-                    coordinates = str(subset[1:])  # all other in list are coordinates
+                    mssid = subset.pop(0)  # first entry in list is mssid
+                    if len(subset) % 2 != 0:
+                        _ = subset.pop(0)  # second entry, if exists, always "1"
+                    coordinates = str(subset)  # all other in list are coordinates
 
                     event_bus.notify(
                         MapSubsetEvent(

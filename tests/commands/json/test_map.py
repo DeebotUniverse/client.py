@@ -532,6 +532,47 @@ async def test_getMapSetV2_virtual_walls() -> None:
     )
 
 
+async def test_getMapSetV2_virtual_walls_new_zstd_with_extra_entry() -> None:
+    mid = "199390082"
+    set_type = MapSetType.VIRTUAL_WALLS
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "batid": "gheijg",
+                "subsets": "KLUv/SBvBQIAIoQLD7ClOUgeYW23kLUHq0+mKqXciplXrVfzUtWcCMuwoGY+xF3QANDcaNjMaR4mJAUAMVIPfD2qwcr0iTHmGA==",
+                "infoSize": 111,
+            }
+        )
+    )
+
+    expected_walls: list[dict[str, str | int]] = [
+        {
+            "mssid": 0,
+            "coordinates": str(
+                ["-4814", "12059", "-4814", "7768", "-3948", "7768", "-3948", "12059"]
+            ),
+        },
+        {
+            "mssid": 1,
+            "coordinates": str(["3315", "3754", "3353", "-655"]),
+        },
+    ]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        (
+            firmware_event,
+            *[
+                MapSubsetEvent(int(subs["mssid"]), set_type, str(subs["coordinates"]))
+                for subs in expected_walls
+            ],
+        ),
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160
