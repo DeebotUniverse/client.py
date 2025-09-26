@@ -312,7 +312,7 @@ class GetMapSetV2(GetMapSet):
         # subset is based64 7z compressed
         subsets = json.loads(decompress_base64_data(data["subsets"]).decode())
 
-        match map_type := MapSetType(data["type"]):
+        match map_type := data["type"]:
             case MapSetType.ROOMS:
                 return cls._handle_rooms_subsets(event_bus, data, subsets)
 
@@ -326,7 +326,7 @@ class GetMapSetV2(GetMapSet):
                     event_bus.notify(
                         MapSubsetEvent(
                             id=int(mssid),
-                            type=map_type,
+                            type=MapSetType(map_type),
                             coordinates=coordinates,
                         )
                     )
