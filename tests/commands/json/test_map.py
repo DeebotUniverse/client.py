@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import pytest
 from testfixtures import LogCapture
@@ -27,6 +27,9 @@ from deebot_client.message import HandlingState
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
+
+if TYPE_CHECKING:
+    from deebot_client.events.base import Event
 
 
 @pytest.mark.parametrize(
@@ -519,9 +522,10 @@ async def test_getMapSetV2_rooms_v2() -> None:
             }
         )
     )
-    events = [firmware_event, MapSetEvent(MapSetType(set_type), subsets)]
+    events: list[Event] = [firmware_event]
     for subset, room_name in zip(subsets, rooms_names, strict=False):
         events.append(MapSubsetEvent(subset, set_type, "", room_name))
+    events.append(MapSetEvent(MapSetType(set_type), subsets))
 
     await assert_command(
         GetMapSetV2(mid, set_type),
