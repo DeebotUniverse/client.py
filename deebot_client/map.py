@@ -186,7 +186,6 @@ class MapData:
         self._on_change = on_change
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: list[Position] = []
-        self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
 
@@ -199,11 +198,6 @@ class MapData:
     def map_subsets(self) -> dict[int, MapSubsetEvent]:
         """Return map subsets."""
         return self._map_subsets
-
-    @property
-    def rooms(self) -> dict[int, Room]:
-        """Return rooms."""
-        return self._rooms
 
     def reset_changed(self) -> None:
         """Reset changed value."""
