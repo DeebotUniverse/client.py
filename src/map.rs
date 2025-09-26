@@ -182,17 +182,18 @@ impl From<&TracePoint> for Point {
     }
 }
 
-fn add_polygons_to_svg(document: &mut svg::Document, polygons: &Vec<Vec<Point>>, fill_color: &str) {
-    for polygon in polygons {
-        if polygon.len() >= 3 {
-            let mut coords: Vec<f32> = Vec::with_capacity(polygon.len() * 2);
-            for point in polygon {
-                coords.push(point.x);
-                coords.push(point.y);
-            }
-            document.append(Polygon::new().set("fill", fill_color).set("points", coords));
+fn add_polygons_to_svg<'a>(
+    polygons: &'a [Vec<Point>],
+    fill_color: &'static str,
+) -> impl Iterator<Item = Polygon> + 'a {
+    polygons.iter().filter_map(move |p| {
+        if p.len() >= 3 {
+            let coords: Vec<f32> = p.iter().flat_map(|p| vec![p.x, p.y]).collect();
+            Some(Polygon::new().set("fill", fill_color).set("points", coords))
+        } else {
+            None
         }
-    }
+    })
 }
 
 fn calc_point(x: f32, y: f32) -> Point {
@@ -457,37 +458,40 @@ impl MapData {
                     ),
             );
 
+        let mut document = Document::new().add(defs);
+
         // Add image or generate viewbox from outline if no image data exists
-        let (base64_image_opt, viewbox) = match self
+        let viewbox = match self
             .generate_background_image()
             .map_err(|err| PyValueError::new_err(err.to_string()))?
         {
-            Some(data) => (Some(data.0), data.1),
+            Some((base64_image, viewbox)) => {
+                let image = Image::new()
+                    .set("x", viewbox.min_x)
+                    .set("y", viewbox.min_y)
+                    .set("width", viewbox.width)
+                    .set("height", viewbox.height)
+                    .set("style", "image-rendering: pixelated")
+                    .set("href", format!("data:image/png;base64,{base64_image}"));
+                document.append(image);
+                viewbox
+            }
             None => match self.viewbox_from_outlines() {
-                Some(vb) => (None, vb),
+                Some(vb) => vb,
                 None => return Ok(None),
             },
         };
 
-        let mut document = Document::new()
-            .set("viewBox", viewbox.to_svg_viewbox())
-            .add(defs);
-
-        // Add background image only if it exists
-        if let Some(base64_image) = base64_image_opt {
-            let image = Image::new()
-                .set("x", viewbox.min_x)
-                .set("y", viewbox.min_y)
-                .set("width", viewbox.width)
-                .set("height", viewbox.height)
-                .set("style", "image-rendering: pixelated")
-                .set("href", format!("data:image/png;base64,{base64_image}"));
-            document.append(image);
-        }
+        document = document.set("viewBox", viewbox.to_svg_viewbox());
 
         // Draw entire rooms as unreachable and overlay reachable sections
-        add_polygons_to_svg(&mut document, &self.areas, POSSIBLE_OBSTACLE_FILL_COLOR);
-        add_polygons_to_svg(&mut document, &self.block_lines, FLOOR_FILL_COLOR);
+        add_polygons_to_svg(&self.areas, POSSIBLE_OBSTACLE_FILL_COLOR).for_each(|p| {
+            document.append(p);
+        });
+
+        add_polygons_to_svg(&self.block_lines, FLOOR_FILL_COLOR).for_each(|p| {
+            document.append(p);
+        });
 
         for subset in &subsets {
             document.append(get_svg_subset(subset)?);
