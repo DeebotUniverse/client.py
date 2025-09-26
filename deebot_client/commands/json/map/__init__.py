@@ -7,8 +7,8 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import Command, CommandResult
+from deebot_client.commands.json.common import JsonCommandWithMessageHandling
 from deebot_client.events import (
-    MajorMapEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -20,11 +20,21 @@ from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.rs.util import decompress_base64_data
 
-from .common import JsonCommandWithMessageHandling
+from .major_map import GetMajorMap, SetMajorMap
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
+__all__ = [
+    "GetCachedMapInfo",
+    "GetMajorMap",
+    "GetMapSet",
+    "GetMapSetV2",
+    "GetMapSubSet",
+    "GetMapTrace",
+    "GetMinorMap",
+    "SetMajorMap",
+]
 
 _LOGGER = get_logger(__name__)
 
@@ -76,42 +86,6 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 result.args,
                 commands,
             )
-
-        return result
-
-
-class GetMajorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get major map command."""
-
-    NAME = "getMajorMap"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, _: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        values = [int(value) for value in data["value"].split(",") if value]
-        map_id = data["mid"]
-
-        return HandlingResult(
-            HandlingState.SUCCESS,
-            {"map_id": map_id, "values": values},
-        )
-
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            event_bus.notify(MajorMapEvent(requested=True, **result.args))
-            return CommandResult.success()
 
         return result
 

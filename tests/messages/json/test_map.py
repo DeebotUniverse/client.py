@@ -5,9 +5,12 @@ from unittest.mock import Mock
 import pytest
 
 from deebot_client.event_bus import EventBus
-from deebot_client.events.map import MapSetType
+from deebot_client.events import FirmwareEvent
+from deebot_client.events.map import MajorMapEvent, MapSetType
 from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
+from deebot_client.messages.json.map import OnMajorMap
+from tests.messages import assert_message
 
 
 @pytest.mark.parametrize(
@@ -35,3 +38,104 @@ def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
     event_bus = Mock(spec_set=EventBus)
     result = OnMapSetV2.handle(event_bus, data)
     assert result.state == HandlingState.SUCCESS
+
+
+def test_onMajorMap() -> None:
+    """Test onMajorMap message."""
+    map_id = "1132127808"
+    values = [
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        817288174,
+        3571566673,
+        2120918229,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        4119863044,
+        3345372489,
+        1125149782,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        2826859129,
+        3628293953,
+        1436915986,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        3857336909,
+        2692517274,
+        3424129059,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        1295764014,
+        2514771601,
+        2675258590,
+        3347634930,
+        1295764014,
+        1295764014,
+        1295764014,
+    ]
+    data = {
+        "header": {
+            "pri": 1,
+            "tzm": 60,
+            "ts": "1758910287614",
+            "ver": "0.0.1",
+            "fwVer": "1.34.0",
+            "hwVer": "0.1.1",
+            "wkVer": "0.1.54",
+        },
+        "body": {
+            "data": {
+                "mid": map_id,
+                "pieceWidth": 100,
+                "pieceHeight": 100,
+                "cellWidth": 8,
+                "cellHeight": 8,
+                "pixel": 50,
+                "value": ",".join(map(str, values)),
+                "type": "ol",
+            }
+        },
+    }
+
+    result = assert_message(
+        OnMajorMap,
+        data,
+        (FirmwareEvent("1.34.0"), MajorMapEvent(map_id, values, requested=False)),
+    )
+    assert result.args == {"map_id": map_id, "values": values}

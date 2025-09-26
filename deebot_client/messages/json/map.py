@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.map import MapSetType
+from deebot_client.events.map import MajorMapEvent, MapSetType
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -33,4 +33,28 @@ class OnMapSetV2(MessageBodyDataDict):
         #       messages current cannot call commands again
         return HandlingResult(
             HandlingState.SUCCESS, {"mid": data["mid"], "type": data["type"]}
+        )
+
+
+class OnMajorMap(MessageBodyDataDict):
+    """On major map command."""
+
+    NAME = "onMajorMap"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        values = [int(value) for value in data["value"].split(",") if value]
+        map_id = data["mid"]
+
+        event_bus.notify(MajorMapEvent(map_id, values, requested=False))
+
+        return HandlingResult(
+            HandlingState.SUCCESS,
+            {"map_id": map_id, "values": values},
         )

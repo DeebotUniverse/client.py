@@ -5,7 +5,12 @@ from typing import TYPE_CHECKING
 from unittest.mock import Mock, call
 
 from deebot_client.event_bus import EventBus
-from deebot_client.message import HandlingState, Message, MessagePayloadType
+from deebot_client.message import (
+    HandlingResult,
+    HandlingState,
+    Message,
+    MessagePayloadType,
+)
 
 if TYPE_CHECKING:
     from deebot_client.events import Event
@@ -15,7 +20,7 @@ def assert_message(
     message: type[Message],
     data: MessagePayloadType,
     expected_events: Event | None | Sequence[Event],
-) -> None:
+) -> HandlingResult:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)
@@ -29,6 +34,8 @@ def assert_message(
             event_bus.notify.assert_called_once_with(expected_events)
     else:
         event_bus.notify.assert_not_called()
+
+    return result
 
 
 def assert_message_failure(
