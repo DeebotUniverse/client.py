@@ -296,16 +296,7 @@ class GetMapSetV2(GetMapSet):
 
         match data["type"]:
             case MapSetType.ROOMS:
-                # subset values
-                # 1 -> id
-                # 2 -> unknown
-                # 3 -> unknown
-                # 4 -> room clean order
-                # 5 -> room center x
-                # 6 -> room center y
-                # 7 -> room clean configs as '<count>-<speed>-<water>'
-                # 8 -> named all as 'settingName1'
-                return [int(subset[0]) for subset in subsets]
+                return cls._handle_rooms_subsets(event_bus, data, subsets)
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
                 for subset in subsets:
@@ -322,6 +313,49 @@ class GetMapSetV2(GetMapSet):
                         )
                     )
 
+        return None
+
+    @classmethod
+    def _handle_rooms_subsets(
+        cls, event_bus: EventBus, data: dict[str, Any], subsets: list[list[str]]
+    ) -> list[int] | None:
+        subset_ids = [int(subset[0]) for subset in subsets]
+        # there are two versions of this message, depending on the number of values
+        if not subsets or len(subsets[0]) != 10:
+            # subset values
+            # 1 -> id
+            # 2 -> unknown
+            # 3 -> unknown
+            # 4 -> room clean order
+            # 5 -> room center x
+            # 6 -> room center y
+            # 7 -> room clean configs as '<count>-<speed>-<water>'
+            # 8 -> named all as 'settingName1'
+            # return the subset ids to trigger GetMapSubSet for each one
+            return subset_ids
+
+        # subset values
+        # 1 -> id
+        # 2 -> name
+        # 3 -> icon number
+        # 4 -> unknown
+        # 5 -> unknown
+        # 6 -> room center x
+        # 7 -> room center y
+        # 8 -> room clean configs as '<count>-<speed>-<water>'
+        # 9 -> unknown
+        # 10 -> floor type
+        # GetMapSubSet isn't supported for this robot, just publish the subset events
+        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subset_ids))
+        for subset in subsets:
+            event_bus.notify(
+                MapSubsetEvent(
+                    id=int(subset[0]),
+                    type=MapSetType(data["type"]),
+                    coordinates="",  # coordinates are sent in the MapInfo_V2 message
+                    name=subset[1],
+                )
+            )
         return None
 
 
