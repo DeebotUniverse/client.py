@@ -3,6 +3,7 @@ from __future__ import annotations
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
+    Map,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -92,7 +93,22 @@ EVENTS = [
         ],
         requested=True,
     ),
-    CachedMapInfoEvent(name="Erdgeschoss", active=True),
+    CachedMapInfoEvent(
+        {
+            Map(
+                id="1132127808",
+                name="Erdgeschoss",
+                using=True,
+                built=True,
+            ),
+            Map(
+                id="722607162",
+                name="NO_NAME",
+                using=False,
+                built=False,
+            ),
+        }
+    ),
     MapTraceEvent(
         start=0,
         total=4739,

@@ -6,7 +6,7 @@ from typing import TYPE_CHECKING
 
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
-from .map import OnMajorMap, OnMapSetV2
+from .map import OnCachedMapInfo, OnMajorMap, OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -16,9 +16,11 @@ if TYPE_CHECKING:
 
 __all__ = [
     "OnBattery",
+    "OnCachedMapInfo",
     "OnMajorMap",
     "OnMapSetV2",
     "OnStats",
+    "OnWorkState",
     "ReportStats",
 ]
 
@@ -29,6 +31,7 @@ _MESSAGES: list[type[Message]] = [
 
     OnBattery,
 
+    OnCachedMapInfo,
     OnMajorMap,
     OnMapSetV2,
 

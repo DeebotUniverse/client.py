@@ -21,7 +21,6 @@ MESSAGES = {
 _LEGACY_USE_GET_COMMAND = [
     "getAdvancedMode",
     "getBreakPoint",
-    "getCachedMapInfo",
     "getCarpertPressure",
     "getChargeState",
     "getCleanCount",
