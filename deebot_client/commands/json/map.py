@@ -14,10 +14,12 @@ from deebot_client.events import (
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
+    RoomsEvent,
 )
 from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.models import Room
 from deebot_client.rs.util import decompress_base64_data
 
 from .common import JsonCommandWithMessageHandling
@@ -176,11 +178,6 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
             },
         )
 
-    @classmethod
-    def _get_subset_ids(cls, _: EventBus, data: dict[str, Any]) -> list[int] | None:
-        """Return subset ids."""
-        return [int(subset["mssid"]) for subset in data["subsets"]]
-
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
     ) -> CommandResult:
@@ -317,7 +314,7 @@ class GetMapSetV2(GetMapSet):
 
         match map_type := MapSetType(data["type"]):
             case MapSetType.ROOMS:
-                return cls._handle_rooms_subsets(event_bus, data, map_type, subsets)
+                return cls._handle_rooms_subsets(event_bus, data, subsets)
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
                 for subset in subsets:
@@ -333,7 +330,8 @@ class GetMapSetV2(GetMapSet):
                             coordinates=coordinates,
                         )
                     )
-                    return HandlingResult.success()
+
+                return HandlingResult.success()
 
         return HandlingResult.analyse()
 
@@ -342,14 +340,10 @@ class GetMapSetV2(GetMapSet):
         cls,
         event_bus: EventBus,
         data: dict[str, Any],
-        map_type: MapSetType,
         subsets: list[list[str]],
     ) -> HandlingResult:
-        subset_ids = [int(subset[0]) for subset in subsets]
-        result = cls._get_handling_success_with_subset_command_args(data, subset_ids)
-
         # there are two versions of this message, depending on the number of values
-        if len(subsets[0]) == 10:
+        if subsets and len(subsets[0]) == 10:
             # subset values
             # 1 -> id
             # 2 -> name
@@ -361,18 +355,14 @@ class GetMapSetV2(GetMapSet):
             # 8 -> room clean configs as '<count>-<speed>-<water>'
             # 9 -> unknown
             # 10 -> floor type
-            for subset in subsets:
-                event_bus.notify(
-                    MapSubsetEvent(
-                        id=int(subset[0]),
-                        type=map_type,
-                        coordinates="",  # coordinates are sent in the MapInfo_V2 message
-                        name=subset[1],
-                    )
-                )
 
-            # GetMapSubSet isn't supported for this robot
-            result = HandlingResult.success()
+            # coordinates are sent in the MapInfo_V2 message
+            event_bus.notify(
+                RoomsEvent([Room(subset[1], int(subset[0]), "") for subset in subsets])
+            )
+
+            # GetMapSubSet isn't supported for this robot and not needed
+            return HandlingResult.success()
 
         # subset values
         # 1 -> id
@@ -384,8 +374,9 @@ class GetMapSetV2(GetMapSet):
         # 7 -> room clean configs as '<count>-<speed>-<water>'
         # 8 -> named all as 'settingName1'
         # return the subset ids to trigger GetMapSubSet for each one
-        event_bus.notify(MapSetEvent(map_type, subset_ids))
-        return result
+        subset_ids = [int(subset[0]) for subset in subsets]
+        event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids))
+        return cls._get_handling_success_with_subset_command_args(data, subset_ids)
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
