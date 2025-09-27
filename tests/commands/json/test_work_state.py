@@ -4,11 +4,10 @@ from typing import TYPE_CHECKING, Any
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.events import StateEvent
 from deebot_client.events.station import State as StationState, StationEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import State as RobotState
 from tests.helpers import get_request_json, get_success_body
 
@@ -169,5 +168,5 @@ async def test_GetWorkState_edge_cases(request_data: dict[str, Any]) -> None:
         GetWorkState(),
         json,
         firmware_event,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

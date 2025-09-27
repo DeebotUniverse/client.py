@@ -5,10 +5,9 @@ from typing import Any
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.json import GetCleanLogs
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 
 from . import assert_command
 
@@ -129,7 +128,7 @@ async def test_GetCleanLogs_analyse_logged(
         GetCleanLogs(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
     assert (
@@ -144,7 +143,7 @@ async def test_GetCleanLogs_handle_error(caplog: pytest.LogCaptureFixture) -> No
         GetCleanLogs(),
         {},
         None,
-        command_result=CommandResult(HandlingState.ERROR),
+        handling_result=HandlingResult(HandlingState.ERROR),
     )
 
     assert (

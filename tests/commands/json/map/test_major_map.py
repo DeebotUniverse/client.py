@@ -11,6 +11,7 @@ from deebot_client.commands.json.map.major_map import SetMajorMap
 from deebot_client.events import (
     MajorMapEvent,
 )
+from deebot_client.message import HandlingResult, HandlingState
 from tests.commands.json import assert_command, assert_set_command
 from tests.helpers import get_request_json, get_success_body
 
@@ -127,6 +128,10 @@ async def test_getMajorMap(
             MajorMapEvent(expected.map_id, expected.values, requested=False),
             expected,
         ],
+        handling_result=HandlingResult(
+            HandlingState.SUCCESS,
+            args={"map_id": expected.map_id, "values": expected.values},
+        ),
     )
 
 

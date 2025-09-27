@@ -18,12 +18,13 @@ from deebot_client.messages.xml import CleanReportServer
 from deebot_client.messages.xml.clean import CleanedPos, CleanReport, CleanSt
 from deebot_client.models import State
 from deebot_client.rs.map import PositionType
-from tests.messages import assert_message, assert_message_failure
+from tests.messages import assert_message_failure
+from tests.messages.xml import assert_message
 
 
-def test_CleanSt() -> None:
+async def test_CleanSt() -> None:
     xml_message = "<ctl td='CleanSt' a='21' s='1743945874' l='1595' t='' type='auto'/>"
-    assert_message(CleanSt, xml_message, None)
+    await assert_message(CleanSt, xml_message, None)
 
 
 @pytest.mark.parametrize(
@@ -63,12 +64,12 @@ def test_CleanSt() -> None:
         "fanspeed_only",
     ],
 )
-def test_CleanReport(
+async def test_CleanReport(
     params: str,
     expected_events: list[Event],
 ) -> None:
     xml_message = f"<ctl ts='1744467249311' td='CleanReport'><clean type='auto' {params} rsn='a' a='' l='' sts=''/></ctl>"
-    assert_message(
+    await assert_message(
         CleanReport,
         xml_message,
         expected_events,
@@ -133,9 +134,9 @@ def test_CleanReport(
         ),
     ],
 )
-def test_CleanReportServer(params: str, expected_events: list[Event]) -> None:
+async def test_CleanReportServer(params: str, expected_events: list[Event]) -> None:
     xml_message = f"<ctl ts='1744467393682' td='CleanReportServer' {params} />"
-    assert_message(
+    await assert_message(
         CleanReportServer,
         xml_message,
         expected_events,
@@ -175,11 +176,11 @@ def test_CleanReport_error(xml: str) -> None:
 
 
 @pytest.mark.parametrize("position", [(-9, 15, 89)])
-def test_CleanedPos(position: tuple[int, int, int]) -> None:
+async def test_CleanedPos(position: tuple[int, int, int]) -> None:
     x, y, a = position
     xml_message = f"<ctl ts='1744467393682' td='CleanedPos' t='p' p='{x},{y}' a='{a}' csid='1134230540'/>"
 
-    assert_message(
+    await assert_message(
         CleanedPos,
         xml_message,
         PositionsEvent([Position(type=PositionType.DEEBOT, x=x, y=y, a=a)]),

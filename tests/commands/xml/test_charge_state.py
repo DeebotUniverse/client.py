@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetChargeState
 from deebot_client.events import StateEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import State
 
 from . import assert_command, get_request_xml
@@ -45,5 +44,5 @@ async def test_get_charge_state_error(xml: str) -> None:
         GetChargeState(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

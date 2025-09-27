@@ -11,7 +11,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.map.cached_map_info import OnCachedMapInfo
-from tests.messages import assert_message
+from tests.messages.json import assert_message
 
 
 @pytest.mark.parametrize(
@@ -135,7 +135,7 @@ from tests.messages import assert_message
         ),
     ],
 )
-def test_onCachedMapInfo(
+async def test_onCachedMapInfo(
     info: list[dict[str, Any]],
     expected_event: CachedMapInfoEvent,
     expected_args: dict[str, Any],
@@ -158,7 +158,7 @@ def test_onCachedMapInfo(
         },
     }
 
-    result = assert_message(
+    result = await assert_message(
         OnCachedMapInfo,
         data,
         (
@@ -183,7 +183,7 @@ def test_onCachedMapInfo(
         ("0", []),
     ],
 )
-def test_onCachedMapInfo_no_using_map(
+async def test_onCachedMapInfo_no_using_map(
     first_map_id: str, expected_events: list[CachedMapInfoEvent]
 ) -> None:
     """Test onCachedMapInfo message."""
@@ -248,7 +248,7 @@ def test_onCachedMapInfo_no_using_map(
         },
     }
 
-    result = assert_message(
+    result = await assert_message(
         OnCachedMapInfo,
         data,
         (

@@ -6,7 +6,8 @@ from typing import TYPE_CHECKING
 from deebot_client.events import Event
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.xml.common import XmlMessage
-from tests.messages import assert_message, assert_message_failure
+from tests.messages import assert_message_failure
+from tests.messages.xml import assert_message
 
 if TYPE_CHECKING:
     from xml.etree.ElementTree import Element
@@ -30,8 +31,8 @@ class _TestXmlMessage(XmlMessage):
         return HandlingResult.analyse()
 
 
-def test_XmlMessageDecoding() -> None:
-    assert_message(
+async def test_XmlMessageDecoding() -> None:
+    await assert_message(
         _TestXmlMessage, '<ctl ret="ok" payload="test" />', _TestEvent("test")
     )
 

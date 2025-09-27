@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetBatteryInfo
 from deebot_client.events import BatteryEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 
 from . import assert_command, get_request_xml
 
@@ -52,5 +51,5 @@ async def test_get_battery_info_error(payload: str) -> None:
         GetBatteryInfo(),
         xml_message,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

@@ -5,10 +5,9 @@ from typing import Any
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.json import Charge
 from deebot_client.events import FirmwareEvent, StateEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import State
 from tests.helpers import get_request_json, get_success_body
 
@@ -46,7 +45,7 @@ async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:
         Charge(),
         json,
         firmware_event,
-        command_result=CommandResult(HandlingState.FAILED),
+        handling_result=HandlingResult(HandlingState.FAILED),
     )
 
     assert (

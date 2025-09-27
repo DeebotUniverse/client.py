@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json import (
     GetCachedMapInfo,
     GetMapInfoV2,
@@ -11,9 +12,12 @@ from deebot_client.commands.json import (
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import MapSetType
 from deebot_client.events.map import CachedMapInfoEvent, Map
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
+
+if TYPE_CHECKING:
+    from deebot_client.command import Command
 
 
 @pytest.mark.parametrize(
@@ -95,7 +99,7 @@ async def test_getCachedMapInfo(
                 for _ in range(len(MapSetType) + len(additional_commands))
             ],
         ],
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
             [map_set_type(expected_mid, entry) for entry in MapSetType]

@@ -26,7 +26,7 @@ class OnMapSetV2(MessageBodyDataDict):
 
     @classmethod
     def _handle_body_data_dict(
-        cls, _: EventBus, data: dict[str, Any]
+        cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
@@ -36,12 +36,11 @@ class OnMapSetV2(MessageBodyDataDict):
         if not MapSetType.has_value(data["type"]) or not data.get("mid"):
             return HandlingResult.analyse()
 
-        # NOTE: here would be needed to call 'GetMapSetV2' again with 'mid' and 'type',
-        #       that on event will update the map set changes,
-        #       messages current cannot call commands again
-        return HandlingResult(
-            HandlingState.SUCCESS, {"mid": data["mid"], "type": data["type"]}
-        )
+        commands = []
+        if map_cap := event_bus.capabilities.map:
+            commands.append(map_cap.set.execute(data["mid"], MapSetType(data["type"])))
+
+        return HandlingResult(HandlingState.SUCCESS, requested_commands=commands)
 
 
 class OnMajorMap(MessageBodyDataDict):
