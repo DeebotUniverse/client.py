@@ -75,7 +75,7 @@ _LEGACY_USE_GET_COMMAND = [
 ]
 
 
-def get_legcacy_message(message_name: str, converted_name: str) -> type[Message] | None:
+def get_legacy_message(message_name: str, converted_name: str) -> type[Message] | None:
     """Try to find the message for the given name using legacy way."""
     # Handle message starting with "on","off","report" the same as "get" commands
     converted_name = re.sub(

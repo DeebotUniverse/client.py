@@ -7,7 +7,7 @@ from typing import TYPE_CHECKING
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
 
-from .json import MESSAGES as JSON_MESSAGES, get_legcacy_message
+from .json import MESSAGES as JSON_MESSAGES, get_legacy_message
 from .xml import MESSAGES as XML_MESSAGES
 
 if TYPE_CHECKING:
@@ -42,7 +42,7 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
         return message_type
 
     if data_type == DataType.JSON and (
-        found_message := get_legcacy_message(message_name, converted_name)
+        found_message := get_legacy_message(message_name, converted_name)
     ):
         return found_message
 
