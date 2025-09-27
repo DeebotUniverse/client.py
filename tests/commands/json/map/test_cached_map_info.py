@@ -9,7 +9,7 @@ from deebot_client.commands.json import (
 )
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import MapSetType
-from deebot_client.events.map import CachedMapInfoEvent, Map, PredefinedMapNames
+from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.message import HandlingState
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
@@ -47,6 +47,14 @@ async def test_getCachedMapInfo(
                         "built": 0,
                         "name": "",
                     },
+                    {
+                        "mid": "722607178",
+                        "index": 3,
+                        "status": 0,
+                        "using": 0,
+                        "built": 1,
+                        "name": "",
+                    },
                 ],
             }
         )
@@ -66,9 +74,15 @@ async def test_getCachedMapInfo(
                     ),
                     Map(
                         id="722607162",
-                        name=PredefinedMapNames.NOT_FINISHED,
+                        name="",
                         using=False,
                         built=False,
+                    ),
+                    Map(
+                        id="722607178",
+                        name="",
+                        using=False,
+                        built=True,
                     ),
                 }
             ),

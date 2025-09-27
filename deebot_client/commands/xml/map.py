@@ -10,7 +10,6 @@ from deebot_client.events.map import (
     CachedMapInfoEvent,
     Map,
     MapSubsetEvent,
-    PredefinedMapNames,
 )
 from deebot_client.message import HandlingResult, HandlingState
 
@@ -44,9 +43,8 @@ class GetMapSt(XmlCommandWithMessageHandling):
             return HandlingResult.analyse()
 
         built = st == "built"
-        name = PredefinedMapNames.NO_NAME if built else PredefinedMapNames.NOT_FINISHED
         event_bus.notify(
-            CachedMapInfoEvent({Map(id="", name=name, using=True, built=built)})
+            CachedMapInfoEvent({Map(id="", name="", using=True, built=built)})
         )
         return HandlingResult.success()
 

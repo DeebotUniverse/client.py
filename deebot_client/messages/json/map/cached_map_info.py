@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.map import CachedMapInfoEvent, Map, PredefinedMapNames
+from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
@@ -35,17 +35,11 @@ class OnCachedMapInfo(MessageBodyDataDict):
                 _LOGGER.debug("Ignoring map with id 0")
                 continue
 
-            map_name: str | PredefinedMapNames = map_info.get("name", "")
-            if not (built := (map_info.get("built") == 1)):
-                map_name = PredefinedMapNames.NOT_FINISHED
-            elif not map_name:
-                map_name = PredefinedMapNames.NO_NAME
-
             map_obj = Map(
                 id=map_id,
-                name=map_name,
+                name=map_info.get("name", ""),
                 using=map_info["using"] == 1,
-                built=built,
+                built=map_info["built"] == 1,
             )
             maps.add(map_obj)
             if map_obj.using:

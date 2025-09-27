@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, StrEnum, unique
+from enum import Enum, unique
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import Event
@@ -89,20 +89,12 @@ class MapSubsetEvent(Event):
     name: str | None = None
 
 
-@unique
-class PredefinedMapNames(StrEnum):
-    """Predefined map names."""
-
-    NOT_FINISHED = "NOT_FINISHED"
-    NO_NAME = "NO_NAME"
-
-
 @dataclass(frozen=True)
 class Map:
     """Map representation."""
 
     id: str
-    name: str | PredefinedMapNames
+    name: str
     using: bool
     built: bool
 
