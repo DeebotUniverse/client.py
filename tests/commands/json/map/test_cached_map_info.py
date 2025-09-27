@@ -9,7 +9,7 @@ from deebot_client.commands.json import (
 )
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import MapSetType
-from deebot_client.events.map import CachedMapInfoEvent, Map
+from deebot_client.events.map import CachedMapInfoEvent, Map, PredefinedMapNames
 from deebot_client.message import HandlingState
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
@@ -66,7 +66,7 @@ async def test_getCachedMapInfo(
                     ),
                     Map(
                         id="722607162",
-                        name="NO_NAME",
+                        name=PredefinedMapNames.NOT_FINISHED,
                         using=False,
                         built=False,
                     ),

@@ -29,19 +29,15 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, OnCachedMapInfo):
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = []
-
-            if map_obj := event_bus.capabilities.map:
-                map_id = result.args["map_id"]
-                commands.extend(
-                    map_obj.set.execute(map_id, entry) for entry in MapSetType
-                )
-
-            return CommandResult(
-                result.state,
-                result.args,
-                commands,
-            )
+        if (
+            result.state == HandlingState.SUCCESS
+            and result.args
+            and (map_obj := event_bus.capabilities.map)
+        ):
+            map_id = result.args["map_id"]
+            commands: list[Command] = [
+                map_obj.set.execute(map_id, entry) for entry in MapSetType
+            ]
+            return CommandResult(result.state, result.args, commands)
 
         return result
