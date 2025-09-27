@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import re
+from typing import TYPE_CHECKING
 
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import Message
 
-from .json import MESSAGES as JSON_MESSAGES
+from .json import MESSAGES as JSON_MESSAGES, get_legacy_message
 from .xml import MESSAGES as XML_MESSAGES
+
+if TYPE_CHECKING:
+    from deebot_client.message import Message
 
 _LOGGER = get_logger(__name__)
 
@@ -17,35 +19,6 @@ MESSAGES = {
     DataType.JSON: JSON_MESSAGES,
     DataType.XML: XML_MESSAGES,
 }
-
-_LEGACY_USE_GET_COMMAND = [
-    "getAdvancedMode",
-    "getBreakPoint",
-    "getCachedMapInfo",
-    "getCarpertPressure",
-    "getChargeState",
-    "getCleanCount",
-    "getCleanInfo",
-    "getCleanPreference",
-    "getEfficiency",
-    "getError",
-    "getLifeSpan",
-    "getMapSet",
-    "getMapSubSet",
-    "getMapTrace",
-    "getMinorMap",
-    "getMultiMapState",
-    "getNetInfo",
-    "getPos",
-    "getSpeed",
-    "getSweepMode",
-    "getTotalStats",
-    "getTrueDetect",
-    "getVoiceAssistantState",
-    "getVolume",
-    "getWaterInfo",
-    "getWorkMode",
-]
 
 
 def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
@@ -68,28 +41,10 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     if message_type := messages.get(converted_name, None):
         return message_type
 
-    # Handle message starting with "on","off","report" the same as "get" commands
-    converted_name = re.sub(
-        "^((on)|(off)|(report))",
-        "get",
-        converted_name,
-    )
+    if data_type == DataType.JSON and (
+        found_message := get_legacy_message(message_name, converted_name)
+    ):
+        return found_message
 
-    if converted_name not in _LEGACY_USE_GET_COMMAND:
-        _LOGGER.debug('Unknown message "%s"', message_name)
-        return None
-
-    from deebot_client.commands import (  # noqa: PLC0415
-        COMMANDS,
-    )
-
-    if found_command := COMMANDS.get(data_type, {}).get(converted_name, None):
-        if issubclass(found_command, Message):
-            _LOGGER.debug("Falling back to legacy way for %s", message_name)
-            return found_command
-
-        _LOGGER.debug('Command "%s" doesn\'t support message handling', converted_name)
-    else:
-        _LOGGER.debug('Unknown message "%s"', message_name)
-
+    _LOGGER.debug('Unknown message "%s"', message_name)
     return None

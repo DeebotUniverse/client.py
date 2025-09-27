@@ -1,4 +1,4 @@
-"""Map set v2 messages."""
+"""Map messages."""
 
 from __future__ import annotations
 
@@ -7,8 +7,16 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.events.map import MajorMapEvent, MapSetType
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
+from .cached_map_info import OnCachedMapInfo
+
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
+
+__all__ = [
+    "OnCachedMapInfo",
+    "OnMajorMap",
+    "OnMapSetV2",
+]
 
 
 class OnMapSetV2(MessageBodyDataDict):
@@ -37,7 +45,7 @@ class OnMapSetV2(MessageBodyDataDict):
 
 
 class OnMajorMap(MessageBodyDataDict):
-    """On major map command."""
+    """On major map message."""
 
     NAME = "onMajorMap"
 

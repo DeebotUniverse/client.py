@@ -6,7 +6,11 @@ from typing import TYPE_CHECKING
 
 from deebot_client.command import Command, CommandResult
 from deebot_client.events import MajorMapEvent, MapSetEvent, MapSetType, MinorMapEvent
-from deebot_client.events.map import CachedMapInfoEvent, MapSubsetEvent
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    Map,
+    MapSubsetEvent,
+)
 from deebot_client.message import HandlingResult, HandlingState
 
 from .common import XmlCommandWithMessageHandling
@@ -39,7 +43,9 @@ class GetMapSt(XmlCommandWithMessageHandling):
             return HandlingResult.analyse()
 
         built = st == "built"
-        event_bus.notify(CachedMapInfoEvent(name="", active=built))
+        event_bus.notify(
+            CachedMapInfoEvent({Map(id="", name="", using=True, built=built)})
+        )
         return HandlingResult.success()
 
     def _handle_response(

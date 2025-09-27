@@ -20,12 +20,13 @@ def assert_message(
     message: type[Message],
     data: MessagePayloadType,
     expected_events: Event | None | Sequence[Event],
+    expected_state: HandlingState = HandlingState.SUCCESS,
 ) -> HandlingResult:
     event_bus = Mock(spec_set=EventBus)
 
     result = message.handle(event_bus, data)
 
-    assert result.state == HandlingState.SUCCESS
+    assert result.state == expected_state
     if expected_events:
         if isinstance(expected_events, Sequence):
             event_bus.notify.assert_has_calls([call(x) for x in expected_events])
