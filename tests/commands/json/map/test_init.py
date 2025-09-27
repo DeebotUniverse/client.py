@@ -7,7 +7,6 @@ from testfixtures import LogCapture
 
 from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
-    GetCachedMapInfo,
     GetMapSet,
     GetMapSubSet,
     GetMapTrace,
@@ -20,7 +19,6 @@ from deebot_client.events import (
     MapSubsetEvent,
     MapTraceEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.message import HandlingState
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
@@ -169,60 +167,6 @@ async def test_getMapSubSet_living_room() -> None:
         GetMapSubSet(mid="199390082", mssid="7", msid="1"),
         json,
         [firmware_event, MapSubsetEvent(7, MapSetType.ROOMS, value, "Living Room")],
-    )
-
-
-@pytest.mark.parametrize(
-    ("device_class", "map_set_type"),
-    [
-        ("yna5xi", GetMapSet),
-        ("kr0277", GetMapSetV2),
-    ],
-)
-async def test_getCachedMapInfo(
-    device_class: str, map_set_type: type[GetMapSet | GetMapSetV2]
-) -> None:
-    expected_mid = "199390082"
-    expected_name = "Erdgeschoss"
-    json, firmware_event = get_request_json(
-        get_success_body(
-            {
-                "enable": 1,
-                "info": [
-                    {
-                        "mid": expected_mid,
-                        "index": 0,
-                        "status": 1,
-                        "using": 1,
-                        "built": 1,
-                        "name": expected_name,
-                    },
-                    {
-                        "mid": "722607162",
-                        "index": 3,
-                        "status": 0,
-                        "using": 0,
-                        "built": 0,
-                        "name": "",
-                    },
-                ],
-            }
-        )
-    )
-    await assert_command(
-        GetCachedMapInfo(),
-        json,
-        [
-            firmware_event,
-            CachedMapInfoEvent(expected_name, active=True),
-            *[firmware_event for _ in MapSetType],
-        ],
-        command_result=CommandResult(
-            HandlingState.SUCCESS,
-            {"map_id": expected_mid},
-            [map_set_type(expected_mid, entry) for entry in MapSetType],
-        ),
-        device_class=device_class,
     )
 
 

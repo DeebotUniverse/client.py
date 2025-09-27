@@ -15,11 +15,11 @@ from deebot_client.events import (
     MapTraceEvent,
     MinorMapEvent,
 )
-from deebot_client.events.map import CachedMapInfoEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.rs.util import decompress_base64_data
 
+from .cached_map_info import GetCachedMapInfo
 from .major_map import GetMajorMap, SetMajorMap
 
 if TYPE_CHECKING:
@@ -37,57 +37,6 @@ __all__ = [
 ]
 
 _LOGGER = get_logger(__name__)
-
-
-class GetCachedMapInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get cached map info command."""
-
-    NAME = "getCachedMapInfo"
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        for map_status in data["info"]:
-            if map_status["using"] == 1:
-                event_bus.notify(
-                    CachedMapInfoEvent(name=map_status.get("name", ""), active=True)
-                )
-
-                return HandlingResult(
-                    HandlingState.SUCCESS, {"map_id": map_status["mid"]}
-                )
-
-        return HandlingResult.analyse()
-
-    def _handle_response(
-        self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
-        """Handle response from a command.
-
-        :return: A message response
-        """
-        result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = []
-
-            if map_obj := event_bus.capabilities.map:
-                map_id = result.args["map_id"]
-                commands.extend(
-                    map_obj.set.execute(map_id, entry) for entry in MapSetType
-                )
-
-            return CommandResult(
-                result.state,
-                result.args,
-                commands,
-            )
-
-        return result
 
 
 class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):

@@ -19,6 +19,7 @@ from deebot_client.events import (
     MapSubsetEvent,
     MinorMapEvent,
 )
+from deebot_client.events.map import Map
 from deebot_client.message import HandlingState
 from tests.commands.xml import get_request_xml
 
@@ -26,16 +27,19 @@ from . import assert_command
 
 
 @pytest.mark.parametrize(
-    ("built_flag", "expected_result"),
-    [("built", True), ("not built", False)],
+    ("built_flag", "expected_built"),
+    [
+        ("built", True),
+        ("not built", False),
+    ],
     ids=["built", "not_built"],
 )
-async def test_GetMapSt(built_flag: str, expected_result: bool) -> None:
+async def test_GetMapSt(built_flag: str, expected_built: bool) -> None:
     json = get_request_xml(f"<ctl ret='ok' st='{built_flag}' method='auto'/>")
     await assert_command(
         GetMapSt(),
         json,
-        CachedMapInfoEvent(name="", active=expected_result),
+        CachedMapInfoEvent({Map("", "", using=True, built=expected_built)}),
         command_result=CommandResult(
             HandlingState.SUCCESS, None, [GetMapSet(t) for t in MapSetType]
         ),

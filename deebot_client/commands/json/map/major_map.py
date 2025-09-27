@@ -1,4 +1,4 @@
-"""Major map command."""
+"""Major map commands."""
 
 from __future__ import annotations
 

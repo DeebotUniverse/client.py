@@ -9,7 +9,7 @@ from deebot_client.message import Message
 
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
-from .map import OnMajorMap, OnMapSetV2
+from .map import OnCachedMapInfo, OnMajorMap, OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -18,9 +18,11 @@ _LOGGER = get_logger(__name__)
 
 __all__ = [
     "OnBattery",
+    "OnCachedMapInfo",
     "OnMajorMap",
     "OnMapSetV2",
     "OnStats",
+    "OnWorkState",
     "ReportStats",
 ]
 
@@ -31,6 +33,7 @@ _MESSAGES: list[type[Message]] = [
 
     OnBattery,
 
+    OnCachedMapInfo,
     OnMajorMap,
     OnMapSetV2,
 
