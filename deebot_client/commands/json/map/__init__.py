@@ -240,6 +240,7 @@ class GetMapSetV2(GetMapSet):
                 return cls._handle_rooms_subsets(event_bus, data, subsets)
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
+                subset_ids = []
                 for subset in subsets:
                     mssid = subset.pop(0)  # first entry in list is mssid
                     if len(subset) % 2 != 0:
@@ -253,7 +254,9 @@ class GetMapSetV2(GetMapSet):
                             coordinates=coordinates,
                         )
                     )
+                    subset_ids.append(int(mssid))
 
+                event_bus.notify(MapSetEvent(MapSetType(map_type), subset_ids))
                 return HandlingResult.success()
 
         return HandlingResult.analyse()

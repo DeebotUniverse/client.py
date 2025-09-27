@@ -34,6 +34,7 @@ EVENTS = [
         coordinates="['2120', '-4581', '2106', '-6271']",
         name=None,
     ),
+    MapSetEvent(type=MapSetType.VIRTUAL_WALLS, subsets=[0, 1]),
     MapSubsetEvent(
         id=2,
         type=MapSetType.NO_MOP_ZONES,
