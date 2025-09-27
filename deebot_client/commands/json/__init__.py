@@ -32,6 +32,7 @@ from .map import (
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 )
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
@@ -113,6 +114,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetMajorMap",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
@@ -191,6 +193,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 
     GetMoveUpWarning,
     SetMoveUpWarning,

@@ -30,7 +30,6 @@ _LEGACY_USE_GET_COMMAND = [
     "getEfficiency",
     "getError",
     "getLifeSpan",
-    "getMajorMap",
     "getMapSet",
     "getMapSubSet",
     "getMapTrace",
