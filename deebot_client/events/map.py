@@ -98,11 +98,20 @@ class MapSubsetEvent(Event):
 
 
 @dataclass(frozen=True)
+class Map:
+    """Map representation."""
+
+    id: str
+    name: str
+    using: bool
+    built: bool
+
+
+@dataclass(frozen=True)
 class CachedMapInfoEvent(Event):
     """Cached map info event."""
 
-    name: str
-    active: bool = field(kw_only=True)
+    maps: set[Map]
 
 
 @dataclass(frozen=True)

@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.1
+    rev: v0.13.2
     hooks:
       - id: ruff-check
         args:
@@ -19,9 +19,9 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=deebot,MapP
-          - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
           - --exclude-file=deebot_client/util/continents.py
+          - --exclude-file=tests/data/map/test_2.py
         exclude_types:
           - csv
           - json

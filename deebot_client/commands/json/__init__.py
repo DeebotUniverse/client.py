@@ -27,11 +27,13 @@ from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 )
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
@@ -80,6 +82,7 @@ __all__ = [
     "GetFanSpeed",
     "GetLifeSpan",
     "GetMajorMap",
+    "GetMapInfoV2",
     "GetMapSet",
     "GetMapSetV2",
     "GetMapSubSet",
@@ -113,6 +116,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetMajorMap",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
@@ -186,11 +190,13 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 
     GetMoveUpWarning,
     SetMoveUpWarning,
