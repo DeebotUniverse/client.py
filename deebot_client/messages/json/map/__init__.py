@@ -37,8 +37,8 @@ class OnMapSetV2(MessageBodyDataDict):
             return HandlingResult.analyse()
 
         commands = []
-        if (map_cap := event_bus.capabilities.map) and (map_set := map_cap.set):
-            commands.append(map_set.execute(data["mid"], MapSetType(data["type"])))
+        if map_cap := event_bus.capabilities.map:
+            commands.append(map_cap.set.execute(data["mid"], MapSetType(data["type"])))
 
         return HandlingResult(HandlingState.SUCCESS, requested_commands=commands)
 
