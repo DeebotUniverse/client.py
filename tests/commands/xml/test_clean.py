@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import Clean, CleanArea, GetCleanState
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel, StateEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import CleanAction, CleanMode, State
 
 from . import assert_command, get_request_xml
@@ -26,7 +25,7 @@ if TYPE_CHECKING:
 async def test_Clean(command: Clean) -> None:
     json = get_request_xml("<ctl ret='ok'/>")
     await assert_command(
-        command, json, None, command_result=CommandResult(HandlingState.SUCCESS)
+        command, json, None, handling_result=HandlingResult(HandlingState.SUCCESS)
     )
 
 
@@ -40,7 +39,7 @@ async def test_Clean(command: Clean) -> None:
 async def test_CleanArea(command: CleanArea) -> None:
     json = get_request_xml("<ctl ret='ok'/>")
     await assert_command(
-        command, json, None, command_result=CommandResult(HandlingState.SUCCESS)
+        command, json, None, handling_result=HandlingResult(HandlingState.SUCCESS)
     )
 
 
@@ -106,5 +105,5 @@ async def test_get_clean_state_error(xml: str) -> None:
         GetCleanState(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

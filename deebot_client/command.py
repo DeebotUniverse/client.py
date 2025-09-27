@@ -29,23 +29,6 @@ _LOGGER = get_logger(__name__)
 
 
 @dataclass(frozen=True)
-class CommandResult(HandlingResult):
-    """Command result object."""
-
-    requested_commands: list[Command] = field(default_factory=list)
-
-    @classmethod
-    def success(cls) -> CommandResult:
-        """Create result with handling success."""
-        return CommandResult(HandlingState.SUCCESS)
-
-    @classmethod
-    def analyse(cls) -> CommandResult:
-        """Create result with handling analyse."""
-        return CommandResult(HandlingState.ANALYSE)
-
-
-@dataclass(frozen=True)
 class DeviceCommandResult:
     """Device command result object.
 
@@ -121,7 +104,7 @@ class Command(ABC):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
+    ) -> tuple[HandlingResult, dict[str, Any]]:
         """Execute command."""
         try:
             response = await self._execute_api_request(authenticator, device_info)
@@ -131,7 +114,7 @@ class Command(ABC):
                 self.NAME,
                 device_info["class"],
             )
-            return CommandResult(HandlingState.ERROR), {}
+            return HandlingResult(HandlingState.ERROR), {}
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
@@ -142,7 +125,7 @@ class Command(ABC):
                 response,
             )
             return (
-                CommandResult(
+                HandlingResult(
                     HandlingState.ANALYSE_LOGGED,
                     result.args,
                     result.requested_commands,
@@ -191,7 +174,7 @@ class Command(ABC):
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -205,13 +188,13 @@ class Command(ABC):
                 response,
                 exc_info=True,
             )
-            return CommandResult(HandlingState.ERROR)
+            return HandlingResult(HandlingState.ERROR)
         else:
             if result.state == HandlingState.ANALYSE:
                 _LOGGER.debug(
                     "ANALYSE: Could not handle command: %s with %s", self.NAME, response
                 )
-                return CommandResult(
+                return HandlingResult(
                     HandlingState.ANALYSE_LOGGED,
                     result.args,
                     result.requested_commands,
@@ -221,7 +204,7 @@ class Command(ABC):
     @abstractmethod
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -244,7 +227,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -252,7 +235,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             result = self.handle(event_bus, data)
-            return CommandResult(result.state, result.args)
+            return HandlingResult(result.state, result.args)
 
         if errno := response.get("errno"):
             match errno:
@@ -262,7 +245,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
                         'Device is offline. Could not execute command "%s"', self.NAME
                     )
                     event_bus.notify(AvailabilityEvent(available=False))
-                    return CommandResult(HandlingState.FAILED)
+                    return HandlingResult(HandlingState.FAILED)
                 case 500:
                     if self._is_available_check:
                         _LOGGER.info(
@@ -274,10 +257,10 @@ class CommandWithMessageHandling(Command, Message, ABC):
                             'No response received for command "%s". This can happen if the device has network issues or does not support the command',
                             self.NAME,
                         )
-                    return CommandResult(HandlingState.FAILED)
+                    return HandlingResult(HandlingState.FAILED)
 
         _LOGGER.warning('Command "%s" was not successfully.', self.NAME)
-        return CommandResult(HandlingState.ANALYSE)
+        return HandlingResult(HandlingState.ANALYSE)
 
 
 @dataclass

@@ -5,7 +5,6 @@ from __future__ import annotations
 from enum import StrEnum, unique
 from typing import TYPE_CHECKING, Self
 
-from deebot_client.command import CommandResult
 from deebot_client.events import (
     CleanJobStatus,
     CleanLogEntry,
@@ -102,4 +101,4 @@ class GetCleanLogs(XmlCommandWithMessageHandling):
             except Exception:
                 _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
         event_bus.notify(CleanLogEvent(logs))
-        return CommandResult.success()
+        return HandlingResult.success()

@@ -4,10 +4,9 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetCleanSum
 from deebot_client.events import TotalStatsEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 
 from . import assert_command, get_request_xml
 
@@ -39,5 +38,5 @@ async def test_get_clean_sum_error(xml: str) -> None:
         GetCleanSum(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

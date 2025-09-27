@@ -7,13 +7,13 @@ from unittest.mock import Mock, call
 
 from testfixtures import LogCapture
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from tests.commands import assert_command as assert_command_base
 from tests.helpers import get_message_json, get_request_json, get_success_body
 
 if TYPE_CHECKING:
+    from deebot_client.command import Command
     from deebot_client.commands.json.common import (
         ExecuteCommand,
         JsonSetCommand,
@@ -35,7 +35,7 @@ async def assert_command(
     expected_events: Event | None | Sequence[Event],
     *,
     device_class: str = "kr0277",
-    command_result: CommandResult | None = None,
+    handling_result: HandlingResult | None = None,
     expected_raw_response: dict[str, Any] | None = None,
 ) -> None:
     await assert_command_base(
@@ -43,7 +43,7 @@ async def assert_command(
         json_api_response,
         expected_events,
         device_class=device_class,
-        command_result=command_result,
+        handling_result=handling_result,
         expected_raw_response=expected_raw_response,
     )
 
@@ -66,7 +66,7 @@ async def assert_execute_command(
             command,
             json,
             firmware_event,
-            command_result=CommandResult(HandlingState.FAILED),
+            handling_result=HandlingResult(HandlingState.FAILED),
         )
 
         log.check_present(

@@ -8,9 +8,10 @@ from typing import TYPE_CHECKING, Any
 from aiohttp import ClientTimeout
 import pytest
 
-from deebot_client.command import Command, CommandResult, InitParam
+from deebot_client.command import Command, InitParam
 from deebot_client.commands.json.common import JsonCommandMqttP2P
 from deebot_client.exceptions import ApiTimeoutError, DeebotError
+from deebot_client.message import HandlingResult
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -38,8 +39,8 @@ class _TestCommand(JsonCommandMqttP2P):
         self,
         _: EventBus,
         response: dict[str, Any],  # noqa: ARG002
-    ) -> CommandResult:
-        return CommandResult.analyse()
+    ) -> HandlingResult:
+        return HandlingResult.analyse()
 
 
 def test_CommandMqttP2P_no_mqtt_params() -> None:

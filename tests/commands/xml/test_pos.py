@@ -2,11 +2,10 @@ from __future__ import annotations
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetPos
 from deebot_client.commands.xml.pos import GetChargerPos
 from deebot_client.events import Position, PositionsEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.rs.map import PositionType
 
 from . import assert_command, get_request_xml
@@ -36,7 +35,7 @@ async def test_get_pos_error(xml: str) -> None:
         GetPos(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -59,5 +58,5 @@ async def test_get_charger_pos_error(xml: str) -> None:
         GetChargerPos(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

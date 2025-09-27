@@ -6,13 +6,13 @@ from xml.etree.ElementTree import Element, SubElement
 from defusedxml import ElementTree  # type: ignore[import-untyped]
 from testfixtures import LogCapture
 
-from deebot_client.command import Command, CommandResult
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from tests.commands import assert_command as assert_command_base
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
 
+    from deebot_client.command import Command
     from deebot_client.commands.xml.common import ExecuteCommand
     from deebot_client.events import Event
 
@@ -23,7 +23,7 @@ async def assert_command(
     expected_events: Event | None | Sequence[Event],
     *,
     device_class: str = "2pv572",
-    command_result: CommandResult | None = None,
+    handling_result: HandlingResult | None = None,
     expected_raw_response: dict[str, Any] | None = None,
 ) -> None:
     await assert_command_base(
@@ -31,7 +31,7 @@ async def assert_command(
         json_api_response,
         expected_events,
         device_class=device_class,
-        command_result=command_result,
+        handling_result=handling_result,
         expected_raw_response=expected_raw_response,
     )
 
@@ -72,7 +72,7 @@ async def assert_execute_command(
         body = get_failure_body()
         xml = get_request_xml(body)
         await assert_command(
-            command, xml, None, command_result=CommandResult(HandlingState.FAILED)
+            command, xml, None, handling_result=HandlingResult(HandlingState.FAILED)
         )
 
         log.check_present(

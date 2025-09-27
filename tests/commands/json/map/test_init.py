@@ -5,7 +5,6 @@ from typing import Any
 import pytest
 from testfixtures import LogCapture
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.json import (
     GetMapSet,
     GetMapSubSet,
@@ -21,7 +20,7 @@ from deebot_client.events import (
     MapTraceEvent,
     RoomsEvent,
 )
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
@@ -127,7 +126,7 @@ async def test_getMapSubSet_invalid(
             GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
             json,
             firmware_event,
-            command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+            handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
         )
 
         log.check_present(
@@ -218,7 +217,7 @@ async def test_getMapSet() -> None:
         GetMapSet(mid),
         json,
         events,
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS,
             {"id": mid, "set_id": msid, "type": MapSetType.ROOMS, "subsets": subsets},
             [
@@ -403,7 +402,7 @@ async def test_getMapSetV2_rooms() -> None:
         GetMapSetV2(mid, set_type),
         json,
         events,
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS,
             {
                 "id": mid,
@@ -485,7 +484,7 @@ async def test_getMapTrace() -> None:
         GetMapTrace(start),
         json,
         (firmware_event, MapTraceEvent(start=start, total=total, data=trace_value)),
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS, {"start": start, "total": total}, []
         ),
     )

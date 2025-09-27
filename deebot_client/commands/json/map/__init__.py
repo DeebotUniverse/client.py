@@ -6,7 +6,6 @@ import json
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json.common import JsonCommandWithMessageHandling
 from deebot_client.events import (
     MapSetEvent,
@@ -103,23 +102,24 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = [
-                GetMapSubSet(
-                    mid=result.args[self._ARGS_ID],
-                    msid=result.args[self._ARGS_SET_ID],
-                    type=result.args[self._ARGS_TYPE],
-                    mssid=subset,
-                )
-                for subset in result.args[self._ARGS_SUBSETS]
-            ]
-            return CommandResult(result.state, result.args, commands)
+            result.requested_commands.extend(
+                [
+                    GetMapSubSet(
+                        mid=result.args[self._ARGS_ID],
+                        msid=result.args[self._ARGS_SET_ID],
+                        type=result.args[self._ARGS_TYPE],
+                        mssid=subset,
+                    )
+                    for subset in result.args[self._ARGS_SUBSETS]
+                ]
+            )
 
         return result
 
@@ -339,7 +339,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -348,7 +348,7 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if result.state == HandlingState.SUCCESS and result.args:
             start = result.args["start"] + self._TRACE_POINT_COUNT
             if start < result.args["total"]:
-                return CommandResult(result.state, result.args, [GetMapTrace(start)])
+                result.requested_commands.append(GetMapTrace(start))
 
         return result
 

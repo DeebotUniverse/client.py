@@ -1,8 +1,9 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.commands.xml import (
     GetMapM,
     GetMapSet,
@@ -20,10 +21,13 @@ from deebot_client.events import (
     MinorMapEvent,
 )
 from deebot_client.events.map import Map
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from tests.commands.xml import get_request_xml
 
 from . import assert_command
+
+if TYPE_CHECKING:
+    from deebot_client.command import Command
 
 
 @pytest.mark.parametrize(
@@ -40,7 +44,7 @@ async def test_GetMapSt(built_flag: str, expected_built: bool) -> None:
         GetMapSt(),
         json,
         CachedMapInfoEvent({Map("", "", using=True, built=expected_built)}),
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS, None, [GetMapSet(t) for t in MapSetType]
         ),
     )
@@ -57,7 +61,7 @@ async def test_GetMapSt_error(xml: str) -> None:
         GetMapSt(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -101,7 +105,7 @@ async def test_GetMapSet(
             map_type if isinstance(map_type, MapSetType) else MapSetType(map_type),
             subsets=subsets,
         ),
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS,
             args={
                 GetMapSet._ARGS_MSID: "1",
@@ -130,7 +134,7 @@ async def test_GetMapSet_error(xml: str) -> None:
         GetMapSet("unused"),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -167,7 +171,7 @@ async def test_GetMapM_error(xml: str) -> None:
         GetMapM(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -192,7 +196,7 @@ async def test_PullM(coordinates: str, map_type: MapSetType | str) -> None:
         PullM(mid=1, msid=2, type=map_type),
         json,
         expected_event,
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS, {PullM._ARG_COORDS: expected_event.coordinates}
         ),
     )
@@ -212,7 +216,7 @@ async def test_PullM_error(xml: str) -> None:
         PullM(mid=1, msid=1),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -227,7 +231,7 @@ async def test_PullMP(xml: str, expected_event: MinorMapEvent) -> None:
         PullMP(piece_index=1),
         json,
         expected_event,
-        command_result=CommandResult(
+        handling_result=HandlingResult(
             HandlingState.SUCCESS, {PullMP._ARG_PIECE: expected_event.value}
         ),
     )
@@ -247,7 +251,7 @@ async def test_PullMP_error(xml: str) -> None:
         PullMP(piece_index=1),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
@@ -276,5 +280,5 @@ async def test_GetTrM_error(xml: str) -> None:
         GetTrM(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

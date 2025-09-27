@@ -5,7 +5,7 @@ from __future__ import annotations
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandResult, InitParam
+from deebot_client.command import InitParam
 from deebot_client.commands.json.common import (
     JsonGetCommand,
     JsonSetCommand,
@@ -27,7 +27,7 @@ class GetMajorMap(JsonGetCommand, OnMajorMap):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -35,7 +35,6 @@ class GetMajorMap(JsonGetCommand, OnMajorMap):
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
             event_bus.notify(MajorMapEvent(requested=True, **result.args))
-            return CommandResult.success()
 
         return result
 

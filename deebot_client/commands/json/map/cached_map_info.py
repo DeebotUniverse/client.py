@@ -4,12 +4,11 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.commands.json.common import JsonCommandWithMessageHandling
 from deebot_client.events import (
     MapSetType,
 )
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.json.map.cached_map_info import OnCachedMapInfo
 
 if TYPE_CHECKING:
@@ -23,7 +22,7 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, OnCachedMapInfo):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -35,9 +34,8 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, OnCachedMapInfo):
             and (map_obj := event_bus.capabilities.map)
         ):
             map_id = result.args["map_id"]
-            commands: list[Command] = [
-                map_obj.set.execute(map_id, entry) for entry in MapSetType
-            ]
-            return CommandResult(result.state, result.args, commands)
+            result.requested_commands.extend(
+                [map_obj.set.execute(map_id, entry) for entry in MapSetType]
+            )
 
         return result
