@@ -1,16 +1,13 @@
 from __future__ import annotations
 
-from unittest.mock import Mock
-
 import pytest
 
-from deebot_client.event_bus import EventBus
+from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import FirmwareEvent
 from deebot_client.events.map import MajorMapEvent, MapSetType
-from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
 from deebot_client.messages.json.map import OnMajorMap
-from tests.messages import assert_message
+from tests.messages.json import assert_message
 
 
 @pytest.mark.parametrize(
@@ -21,7 +18,7 @@ from tests.messages import assert_message
         ("199390082", MapSetType.VIRTUAL_WALLS),
     ],
 )
-def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
+async def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -34,13 +31,15 @@ def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
         "body": {"data": {"mid": mid, "type": set_type.value}},
     }
 
-    # NOTE: this needs to be updated when OnMapSetV2 can call commands
-    event_bus = Mock(spec_set=EventBus)
-    result = OnMapSetV2.handle(event_bus, data)
-    assert result.state == HandlingState.SUCCESS
+    result = await assert_message(
+        OnMapSetV2,
+        data,
+        (FirmwareEvent("1.8.2"),),
+    )
+    assert result.requested_commands == [GetMapSetV2(mid, set_type)]
 
 
-def test_onMajorMap() -> None:
+async def test_onMajorMap() -> None:
     """Test onMajorMap message."""
     map_id = "1132127808"
     values = [
@@ -133,7 +132,7 @@ def test_onMajorMap() -> None:
         },
     }
 
-    result = assert_message(
+    result = await assert_message(
         OnMajorMap,
         data,
         (FirmwareEvent("1.34.0"), MajorMapEvent(map_id, values, requested=False)),

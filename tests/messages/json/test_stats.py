@@ -11,7 +11,7 @@ from deebot_client.events import (
     StatsEvent,
 )
 from deebot_client.messages.json import OnStats, ReportStats
-from tests.messages import assert_message
+from tests.messages.json import assert_message
 
 
 @pytest.mark.parametrize(
@@ -52,7 +52,7 @@ from tests.messages import assert_message
         ),
     ],
 )
-def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
+async def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -65,7 +65,7 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
         "body": {"data": data},
     }
 
-    assert_message(ReportStats, data, (FirmwareEvent("1.8.2"), expected))
+    await assert_message(ReportStats, data, (FirmwareEvent("1.8.2"), expected))
 
 
 @pytest.mark.parametrize(
@@ -119,7 +119,7 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
         ),
     ],
 )
-def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
+async def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -132,4 +132,4 @@ def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
         "body": {"data": data},
     }
 
-    assert_message(OnStats, data, (FirmwareEvent("1.8.2"), expected))
+    await assert_message(OnStats, data, (FirmwareEvent("1.8.2"), expected))

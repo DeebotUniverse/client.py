@@ -6,14 +6,15 @@ from deebot_client.events import Position, PositionsEvent
 from deebot_client.message import HandlingState
 from deebot_client.messages.xml import Pos
 from deebot_client.rs.map import PositionType
-from tests.messages import assert_message, assert_message_failure
+from tests.messages import assert_message_failure
+from tests.messages.xml import assert_message
 
 
 @pytest.mark.parametrize("position", [(-9, 15, 89)])
-def test_Pos(position: tuple[int, int, int]) -> None:
+async def test_Pos(position: tuple[int, int, int]) -> None:
     x, y, a = position
     xml_message = f'<ctl td="Pos" t="p" p="{x},{y}" a="{a}" valid="1" />'
-    assert_message(
+    await assert_message(
         Pos,
         xml_message,
         PositionsEvent([Position(type=PositionType.DEEBOT, x=x, y=y, a=a)]),
