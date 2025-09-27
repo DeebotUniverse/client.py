@@ -169,7 +169,23 @@ def test_onCachedMapInfo(
     assert result.args == expected_args
 
 
-def test_onCachedMapInfo_no_using_map() -> None:
+@pytest.mark.parametrize(
+    ("first_map_id", "expected_events"),
+    [
+        (
+            "1048154397",
+            [
+                CachedMapInfoEvent(
+                    {Map(id="1048154397", name="", using=False, built=False)}
+                )
+            ],
+        ),
+        ("0", []),
+    ],
+)
+def test_onCachedMapInfo_no_using_map(
+    first_map_id: str, expected_events: list[CachedMapInfoEvent]
+) -> None:
     """Test onCachedMapInfo message."""
     data = {
         "header": {
@@ -188,7 +204,7 @@ def test_onCachedMapInfo_no_using_map() -> None:
                 "enable": 1,
                 "info": [
                     {
-                        "mid": "1048154397",
+                        "mid": first_map_id,
                         "backupId": "0",
                         "status": 1,
                         "index": 3,
@@ -237,16 +253,7 @@ def test_onCachedMapInfo_no_using_map() -> None:
         data,
         (
             FirmwareEvent("1.34.0"),
-            CachedMapInfoEvent(
-                {
-                    Map(
-                        id="1048154397",
-                        name="",
-                        using=False,
-                        built=False,
-                    )
-                }
-            ),
+            *expected_events,
         ),
         expected_state=HandlingState.ANALYSE_LOGGED,
     )
