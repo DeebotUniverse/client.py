@@ -6,8 +6,9 @@ from abc import ABC, abstractmethod
 from dataclasses import dataclass, field
 from enum import IntEnum, auto
 import functools
-import json
 from typing import TYPE_CHECKING, Any, final
+
+import orjson
 
 from deebot_client.events import FirmwareEvent
 from deebot_client.util import verify_required_class_variables_exists
@@ -185,7 +186,7 @@ class MessageDictOrJson(Message, ABC):
         data = message
         if not isinstance(message, dict):
             try:
-                data = json.loads(message)
+                data = orjson.loads(message)
             except Exception:
                 _LOGGER.debug(
                     "Could not decode message %s payload %s as JSON",

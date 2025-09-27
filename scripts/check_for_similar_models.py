@@ -3,13 +3,13 @@
 from __future__ import annotations
 
 import asyncio
-import json
 import logging
 import os
 from pathlib import Path
 import time
 
 import aiohttp
+import orjson
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
@@ -22,7 +22,7 @@ def _save_file(name: str, data: dict[str, list[str]]) -> None:
     path = Path("similarity_output")
     path.mkdir(exist_ok=True)
     with path.joinpath(name).open("w") as f:
-        f.write(json.dumps(data, indent=4))
+        f.write(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode("utf-8"))
 
 
 def _add_models_by_similarity(models: list[str]) -> None:

@@ -2,9 +2,10 @@
 
 from __future__ import annotations
 
-import json
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
+
+import orjson
 
 from deebot_client.commands.json.common import JsonCommandWithMessageHandling
 from deebot_client.events import (
@@ -233,7 +234,7 @@ class GetMapSetV2(GetMapSet):
         :return: A message response
         """
         # subset is based64 7z compressed
-        subsets = json.loads(decompress_base64_data(data["subsets"]).decode())
+        subsets = orjson.loads(decompress_base64_data(data["subsets"]).decode())
 
         match map_type := data["type"]:
             case MapSetType.ROOMS:
