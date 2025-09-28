@@ -6,7 +6,7 @@
 ## Installation
 
 If you have a recent version of Python 3, you should be able to
-do `pip install deebot-client` to get the most recently released version of
+do `pip install deebot-client-t80` to get the most recently released version of
 this.
 
 ## Usage
