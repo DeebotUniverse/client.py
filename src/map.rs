@@ -19,6 +19,9 @@ const ROUND_TO_DIGITS: usize = 3;
 const NOT_INUSE_CRC32: u32 = 1295764014;
 const MAP_TRANSPARENT_INDEX: u8 = 0;
 const MAP_FLOOR_INDEX: u8 = 1;
+const MAP_INFO_TYPE_OUTLINE: &str = "1";
+const MAP_INFO_TYPE_AREA: &str = "2";
+const MAP_INFO_TYPE_BLOCK_LINE: &str = "6";
 
 // when updating palette, update MAP_IMAGE_PALETTE_LEN and MAP_IMAGE_PALETTE_TRANSPARENCY
 const MAP_IMAGE_PALETTE: &[u8] = &[
@@ -202,6 +205,65 @@ fn calc_point(x: f32, y: f32) -> Point {
         y: round((-y) / PIXEL_WIDTH, ROUND_TO_DIGITS),
         connected: true,
     }
+}
+
+fn process_map_info_outline_entries(group: &[String]) -> Vec<Vec<Point>> {
+    let mut outlines = Vec::new();
+
+    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
+        let parts = entry.split(';').filter(|s| !s.is_empty()).skip(1); // skip the outline ID
+        let mut path_points = Vec::new();
+
+        for spec in parts {
+            let mut coords = spec.splitn(3, ','); // coordinates are "x,y,type"
+            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
+                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>()) {
+                    let mut p = calc_point(x, y);
+                    p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
+                    path_points.push(p);
+                }
+            }
+        }
+
+        // close the path back to the first point, if it should be connected
+        if let Some(first) = path_points.first().filter(|p| p.connected) {
+            path_points.push(Point {
+                x: first.x,
+                y: first.y,
+                connected: true,
+            });
+        }
+        outlines.push(path_points);
+    }
+
+    outlines
+}
+
+fn parse_coords(s: &str) -> Option<(f32, f32)> {
+    let mut it = s.splitn(2, ',');
+    let x = it.next()?.parse::<f32>().ok()?;
+    let y = it.next()?.parse::<f32>().ok()?;
+    Some((x, y))
+}
+
+fn process_map_info_polygon_entries(group: &[String]) -> Vec<Vec<Point>> {
+    let mut polygons = Vec::new();
+
+    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
+        let poly_points: Vec<Point> = entry
+            .split(';')
+            .filter(|s| !s.is_empty())
+            .skip(1) // skip the area ID
+            .filter_map(parse_coords)
+            .map(|(x, y)| calc_point(x, y))
+            .collect();
+
+        if poly_points.len() >= 3 {
+            polygons.push(poly_points);
+        }
+    }
+
+    polygons
 }
 
 fn get_color(set_type: &str) -> PyResult<&'static str> {
@@ -661,13 +723,6 @@ impl MapData {
     }
 
     fn parse_map_info(&mut self, info: MapV2Info) {
-        let parse_coords = |s: &str| -> Option<(f32, f32)> {
-            let mut it = s.splitn(2, ',');
-            let x = it.next()?.parse::<f32>().ok()?;
-            let y = it.next()?.parse::<f32>().ok()?;
-            Some((x, y))
-        };
-
         let mut outlines = Vec::new();
         let mut areas = Vec::new();
         let mut block_lines = Vec::new();
@@ -675,53 +730,10 @@ impl MapData {
         for group in &info {
             let Some(first) = group.first() else { continue };
             match first.as_str() {
-                "1" => {
-                    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
-                        let parts = entry.split(';').filter(|s| !s.is_empty()).skip(1);
-                        let mut path_points = Vec::new();
-
-                        for spec in parts {
-                            let mut coords = spec.splitn(3, ',');
-                            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
-                                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
-                                {
-                                    let mut p = calc_point(x, y);
-                                    p.connected = coords.next().unwrap_or("1").trim() != "3-1-0";
-                                    path_points.push(p);
-                                }
-                            }
-                        }
-
-                        if let Some(first) = path_points.first().filter(|p| p.connected) {
-                            path_points.push(Point {
-                                x: first.x,
-                                y: first.y,
-                                connected: true,
-                            });
-                        }
-                        outlines.push(path_points);
-                    }
-                }
-                "2" | "6" => {
-                    let dest = if group[0] == "2" {
-                        &mut areas
-                    } else {
-                        &mut block_lines
-                    };
-
-                    for entry in group.iter().skip(1).filter(|e| !e.is_empty()) {
-                        let poly_points: Vec<Point> = entry
-                            .split(';')
-                            .filter(|s| !s.is_empty())
-                            .skip(1)
-                            .filter_map(parse_coords)
-                            .map(|(x, y)| calc_point(x, y))
-                            .collect();
-
-                        if poly_points.len() >= 3 {
-                            dest.push(poly_points);
-                        }
-                    }
+                MAP_INFO_TYPE_OUTLINE => outlines.extend(process_map_info_outline_entries(group)),
+                MAP_INFO_TYPE_AREA => areas.extend(process_map_info_polygon_entries(group)),
+                MAP_INFO_TYPE_BLOCK_LINE => {
+                    block_lines.extend(process_map_info_polygon_entries(group));
                 }
                 _ => {}
             }

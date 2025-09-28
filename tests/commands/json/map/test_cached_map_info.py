@@ -12,6 +12,7 @@ from deebot_client.commands.json import (
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import MapSetType
 from deebot_client.events.map import CachedMapInfoEvent, Map
+from deebot_client.hardware import get_static_device_info
 from deebot_client.message import HandlingResult, HandlingState
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
@@ -21,19 +22,21 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.parametrize(
-    ("device_class", "map_set_type", "additional_commands"),
+    ("device_class", "map_set_type"),
     [
-        ("yna5xi", GetMapSet, []),
-        ("kr0277", GetMapSetV2, []),
-        ("lwmdoj", GetMapSetV2, [GetMapInfoV2]),
+        ("yna5xi", GetMapSet),
+        ("kr0277", GetMapSetV2),
+        ("lwmdoj", GetMapSetV2),
     ],
 )
 async def test_getCachedMapInfo(
     device_class: str,
     map_set_type: type[GetMapSet | GetMapSetV2],
-    additional_commands: list[type[Command]],
 ) -> None:
     expected_mid = "199390082"
+    static_device_info = await get_static_device_info(device_class)
+    assert static_device_info
+    assert static_device_info.capabilities.map
     json, firmware_event = get_request_json(
         get_success_body(
             {
@@ -67,6 +70,11 @@ async def test_getCachedMapInfo(
             }
         )
     )
+    expected_commands: list[Command] = [
+        map_set_type(expected_mid, entry) for entry in MapSetType
+    ]
+    if static_device_info.capabilities.map.info:
+        expected_commands.append(GetMapInfoV2(expected_mid))
     await assert_command(
         GetCachedMapInfo(),
         json,
@@ -94,16 +102,12 @@ async def test_getCachedMapInfo(
                     ),
                 }
             ),
-            *[
-                firmware_event
-                for _ in range(len(MapSetType) + len(additional_commands))
-            ],
+            *[firmware_event for _ in range(len(expected_commands))],
         ],
         handling_result=HandlingResult(
             HandlingState.SUCCESS,
             {"map_id": expected_mid},
-            [map_set_type(expected_mid, entry) for entry in MapSetType]
-            + [command(expected_mid) for command in additional_commands],
+            expected_commands,
         ),
         device_class=device_class,
     )

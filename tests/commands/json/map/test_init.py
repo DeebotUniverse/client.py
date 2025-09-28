@@ -494,10 +494,7 @@ async def test_getMapTrace() -> None:
 async def test_getMapInfoV2() -> None:
     mid = "98100521"
     info = "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4="
-    (
-        json,
-        firmware_event,
-    ) = get_request_json(
+    json, firmware_event = get_request_json(
         get_success_body(
             {
                 "mid": mid,
