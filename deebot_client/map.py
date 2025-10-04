@@ -88,9 +88,6 @@ class Map:
     # ---------------------------- METHODS ----------------------------
 
     async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
-        if not self._capabilities.major or not (minor := self._capabilities.minor):
-            return []
-
         async def on_major_map(event: MajorMapEvent) -> None:
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
@@ -99,7 +96,9 @@ class Map:
                         and event.requested
                     ):
                         tg.create_task(
-                            self._execute_command(minor.execute(idx, event.map_id))
+                            self._execute_command(
+                                self._capabilities.minor.execute(idx, event.map_id)
+                            )
                         )
 
         async def on_minor_map(event: MinorMapEvent) -> None:
@@ -156,8 +155,7 @@ class Map:
         self._event_bus.request_refresh(CachedMapInfoEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
-        if self._capabilities.major:
-            self._event_bus.request_refresh(MajorMapEvent)
+        self._event_bus.request_refresh(MajorMapEvent)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""

@@ -52,9 +52,12 @@ from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
+    GetMajorMap,
     GetMapInfoV2,
     GetMapSetV2,
     GetMapTrace,
+    GetMinorMap,
+    SetMajorMap,
 )
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
@@ -95,6 +98,7 @@ from deebot_client.events import (
     FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
+    MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
     MultimapStateEvent,
@@ -200,6 +204,8 @@ DEVICES[short_name(__name__)] = StaticDeviceInfo(
             cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
             changed=CapabilityEvent(MapChangedEvent, []),
             info=CapabilityExecute(GetMapInfoV2),
+            major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
+            minor=CapabilityExecute(GetMinorMap),
             multi_state=CapabilitySetEnable(
                 MultimapStateEvent, [GetMultimapState()], SetMultimapState
             ),
