@@ -2,10 +2,10 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-import json
 from typing import TYPE_CHECKING
 from unittest.mock import Mock, patch
 
+import orjson
 import pytest
 
 from deebot_client.command import Command, DeviceCommandResult
@@ -46,7 +46,7 @@ def json_battery_message_payload(expected_version: str | None = "1.8.2") -> str:
         "header": header,
         "body": {"data": {"value": 100, "isLow": 0}},
     }
-    return json.dumps(data)
+    return orjson.dumps(data).decode("utf-8")
 
 
 def xml_battery_message_payload() -> str:

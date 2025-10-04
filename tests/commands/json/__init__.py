@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-import json
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock, call
 
+import orjson
 from testfixtures import LogCapture
 
 from deebot_client.event_bus import EventBus
@@ -94,13 +94,13 @@ async def assert_set_command(
             "msg": "fail",
         }
     )
-    command.handle_mqtt_p2p(event_bus, json.dumps(json_data))
+    command.handle_mqtt_p2p(event_bus, orjson.dumps(json_data))
     event_bus.notify.assert_called_once_with(firmware_event)
 
     event_bus.reset_mock()
     # Success
     data, firmware_event = get_message_json(get_success_body())
-    command.handle_mqtt_p2p(event_bus, json.dumps(data))
+    command.handle_mqtt_p2p(event_bus, orjson.dumps(data))
     if not isinstance(expected_get_command_events, Sequence):
         expected_events = [firmware_event, expected_get_command_events]
     else:
@@ -109,7 +109,7 @@ async def assert_set_command(
     event_bus.notify.assert_has_calls([call(x) for x in expected_events])
     assert event_bus.notify.call_count == len(expected_events)
 
-    payload = json.dumps({"body": {"data": args}})
+    payload = orjson.dumps({"body": {"data": args}})
     mqtt_command = command.create_from_mqtt(payload)
     assert mqtt_command == command
 

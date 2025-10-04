@@ -1,11 +1,11 @@
 from __future__ import annotations
 
-import json
 import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientTimeout
+import orjson
 import pytest
 
 from deebot_client.command import Command, InitParam
@@ -80,7 +80,7 @@ def test_CommandMqttP2P_create_from_mqtt_error(
     data: dict[str, str], expected: str
 ) -> None:
     with pytest.raises(DeebotError, match=expected):
-        _TestCommand.create_from_mqtt(json.dumps({"body": {"data": data}}))
+        _TestCommand.create_from_mqtt(orjson.dumps({"body": {"data": data}}))
 
 
 def test_CommandMqttP2P_create_from_mqtt_additional_fields(

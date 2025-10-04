@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import json
 import logging
 import ssl
 from typing import TYPE_CHECKING, Any
@@ -10,6 +9,7 @@ from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
+import orjson
 import pytest
 
 from deebot_client.commands.json.battery import GetBattery
@@ -97,7 +97,7 @@ async def _publish_p2p(
     *,
     is_request: bool,
 ) -> bytes:
-    data_bytes = json.dumps(data).encode("utf-8")
+    data_bytes = orjson.dumps(data)
     if is_request:
         topic = f"iot/p2p/{command_name}/test/test/test/{device_info['did']}/{device_info['class']}/{device_info['resource']}/q/{request_id}/{data_type}"
     else:
