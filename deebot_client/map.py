@@ -171,6 +171,7 @@ class Map:
         for unsubscribe in self._unsubscribers:
             unsubscribe()
         self._unsubscribers.clear()
+        self._map_data.teardown()
 
 
 class MapData:
@@ -235,6 +236,10 @@ class MapData:
             list(self._map_subsets.values()), self._positions
         )
 
+    def teardown(self) -> None:
+        """Teardown map data."""
+        self._room_handling.teardown()
+
 
 class MapRoomHandling:
     """Room handling."""
@@ -267,3 +272,9 @@ class MapRoomHandling:
                     event_bus.notify(RoomsEvent(list(self._rooms.values())))
 
         self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
+
+    def teardown(self) -> None:
+        """Teardown room handling."""
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()
