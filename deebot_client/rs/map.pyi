@@ -12,6 +12,15 @@ class BackgroundImage:
     def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
         """Return True if update is required."""
 
+class TracePoints:
+    """Trace points in rust."""
+
+    def add(self, value: str) -> None:
+        """Add trace points to the trace points object."""
+
+    def clear(self) -> None:
+        """Clear all trace points."""
+
 class MapData:
     """Map data in rust."""
 
@@ -21,6 +30,10 @@ class MapData:
     @property
     def background_image(self) -> BackgroundImage:
         """Return background image."""
+
+    @property
+    def trace_points(self) -> TracePoints:
+        """Return trace points."""
 
     def add_trace_points(self, value: str) -> None:
         """Add trace points to the map data."""

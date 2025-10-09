@@ -29,10 +29,10 @@ def test_MapData_add_trace_points_invalid(
     """Test invalid MapData.add_trace_points."""
     map_data = MapData()
     with pytest.raises(ValueError, match=expected_error), LogCapture() as log:
-        map_data.add_trace_points(value)
+        map_data.trace_points.add(value)
     log.check_present(
         (
-            "deebot_client.map",
+            "deebot_client.map.points",
             "ERROR",
             expected_log,
         )

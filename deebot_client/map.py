@@ -205,12 +205,12 @@ class MapData:
 
     def add_trace_points(self, value: str) -> None:
         """Add trace points to the map data."""
-        self._data.add_trace_points(value)
+        self._data.trace_points.add(value)
         self._on_change()
 
     def clear_trace_points(self) -> None:
         """Clear trace points."""
-        self._data.clear_trace_points()
+        self._data.trace_points.clear()
         self._on_change()
 
     def update_positions(self, value: list[Position]) -> None:
