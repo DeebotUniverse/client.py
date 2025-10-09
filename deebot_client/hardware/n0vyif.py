@@ -125,7 +125,7 @@ from deebot_client.models import StaticDeviceInfo
 
 
 def get_device_info() -> StaticDeviceInfo:
-    """Get device info for this hardware."""
+    """Get device info for this model."""
     return StaticDeviceInfo(
         DataType.JSON,
         Capabilities(
