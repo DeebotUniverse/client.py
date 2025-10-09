@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from deebot_client.const import DataType
@@ -21,6 +22,7 @@ MESSAGES = {
 }
 
 
+@lru_cache(maxsize=256)
 def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     """Try to find the message for the given name.
 
