@@ -35,12 +35,6 @@ class MapData:
     def trace_points(self) -> TracePoints:
         """Return trace points."""
 
-    def add_trace_points(self, value: str) -> None:
-        """Add trace points to the map data."""
-
-    def clear_trace_points(self) -> None:
-        """Clear trace points."""
-
     def generate_svg(
         self,
         subsets: list[MapSubsetEvent],
