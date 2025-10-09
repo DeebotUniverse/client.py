@@ -101,7 +101,7 @@ fn points_to_svg_path(points: &[Point]) -> Option<String> {
     let mut last_command = SvgPathCommand::MoveTo;
 
     let first_p = &points[0];
-    let space = if 0.0 < first_p.y { " " } else { "" };
+    let space = if 0.0 <= first_p.y { " " } else { "" };
     let _ = write!(svg_path, "M{}{}{}", first_p.x, space, first_p.y);
 
     for pair in points.windows(2) {
