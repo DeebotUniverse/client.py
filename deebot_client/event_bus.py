@@ -4,7 +4,6 @@ from __future__ import annotations
 
 import asyncio
 from datetime import UTC, datetime, timedelta
-import threading
 from typing import TYPE_CHECKING, Any, Final, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
@@ -69,7 +68,6 @@ class EventBus:
         capabilities: Capabilities,
     ) -> None:
         self._event_processing_dict: dict[type[Event], _EventProcessingData[Any]] = {}
-        self._lock = threading.Lock()
         self._tasks: set[asyncio.Future[Any]] = set()
 
         self._execute_command: Final = execute_command
@@ -208,16 +206,20 @@ class EventBus:
     def _get_or_create_event_processing_data(
         self, event_class: type[T]
     ) -> _EventProcessingData[T]:
-        with self._lock:
-            event_processing_data = self._event_processing_dict.get(event_class, None)
+        # Python's GIL protects dict.get() and dict.__setitem__() as atomic operations
+        # So we don't need a lock here - at worst we create the object twice
+        event_processing_data = self._event_processing_dict.get(event_class, None)
 
-            if event_processing_data is None:
-                event_processing_data = _EventProcessingData(
-                    self._capabilities.get_refresh_commands(event_class)
-                )
-                self._event_processing_dict[event_class] = event_processing_data
+        if event_processing_data is None:
+            event_processing_data = _EventProcessingData(
+                self._capabilities.get_refresh_commands(event_class)
+            )
+            # Use setdefault to handle race condition - only one will "win"
+            event_processing_data = self._event_processing_dict.setdefault(
+                event_class, event_processing_data
+            )
 
-            return event_processing_data
+        return event_processing_data
 
     def get_last_event(
         self,
