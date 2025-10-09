@@ -64,7 +64,7 @@ repos:
     hooks:
       - id: rust-fmt
         name: Rust format
-        entry: cargo fmt --all -- --check
+        entry: cargo fmt --all
         language: system
         types:
           - rust

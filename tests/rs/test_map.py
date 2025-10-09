@@ -68,10 +68,10 @@ def test_MapData_update_map_piece_invalid(
     """Test invalid MapData.update_map_piece."""
     map_data = MapData()
     with pytest.raises(ValueError, match=expected_error), LogCapture() as log:
-        map_data.update_map_piece(index, base64_data)
+        map_data.background_image.update_map_piece(index, base64_data)
     log.check_present(
         (
-            "deebot_client.map",
+            "deebot_client.map.background_image",
             "ERROR",
             expected_log,
         )
@@ -82,10 +82,10 @@ def test_MapData_map_piece_crc32_indicates_update_invalid() -> None:
     """Test invalid MapData.map_piece_crc32_indicates_update."""
     map_data = MapData()
     with pytest.raises(ValueError, match="Index out of bounds"), LogCapture() as log:
-        map_data.map_piece_crc32_indicates_update(1000, 1)
+        map_data.background_image.map_piece_crc32_indicates_update(1000, 1)
     log.check_present(
         (
-            "deebot_client.map",
+            "deebot_client.map.background_image",
             "ERROR",
             "Index out of bounds; index:1000, crc32:1",
         )

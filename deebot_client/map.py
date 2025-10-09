@@ -220,12 +220,14 @@ class MapData:
 
     def update_map_piece(self, index: int, base64_data: str) -> None:
         """Update map piece."""
-        if self._data.update_map_piece(index, base64_data):
+        if self._data.background_image.update_map_piece(index, base64_data):
             self._on_change()
 
     def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
         """Return True if update is required."""
-        return self._data.map_piece_crc32_indicates_update(index, crc32)
+        return self._data.background_image.map_piece_crc32_indicates_update(
+            index, crc32
+        )
 
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
