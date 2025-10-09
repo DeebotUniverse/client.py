@@ -102,7 +102,7 @@ async def test_getCachedMapInfo(
                     ),
                 }
             ),
-            *[firmware_event for _ in range(len(expected_commands))],
+            *[firmware_event for _ in expected_commands],
         ],
         handling_result=HandlingResult(
             HandlingState.SUCCESS,
