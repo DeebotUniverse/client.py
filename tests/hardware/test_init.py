@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -85,11 +86,11 @@ from deebot_client.events.map import (
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
+from deebot_client.models import StaticDeviceInfo
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
     from deebot_client.events.base import Event
-    from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
@@ -105,6 +106,12 @@ async def test_get_static_device_info(
     """Test get_static_device_info."""
     static_device_info = await hardware.get_static_device_info(class_)
     assert static_device_info == expected
+
+    # Test caching
+    with mock.patch("deebot_client.hardware.importlib.import_module") as mock_import:
+        static_device_info_cached = await hardware.get_static_device_info(class_)
+        assert static_device_info_cached == expected
+        mock_import.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -267,4 +274,6 @@ async def test_all_models_loaded() -> None:
     # Try to load each module
     for module_name in all_modules:
         device_info = await hardware.get_static_device_info(module_name)
-        assert device_info is not None, f"Failed to load device info for {module_name}"
+        assert isinstance(device_info, StaticDeviceInfo), (
+            f"Failed to load device info for {module_name}"
+        )
