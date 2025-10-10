@@ -140,8 +140,8 @@ class Device:
 
         if self._available_task is None or self._available_task.done():
             self._available_task = asyncio.create_task(self._available_task_worker())
-            self._available_task.add_done_callback(self._running_tasks.discard)
             self._running_tasks.add(self._available_task)
+            self._available_task.add_done_callback(self._running_tasks.discard)
 
     async def teardown(self) -> None:
         """Tear down bot including stopping task and unsubscribing."""
