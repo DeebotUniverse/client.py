@@ -6,10 +6,14 @@
 ## IMPORTANT: Contribution only
 
 This project is maintained in our spare time. Please be patient and respectful.
+
 It's not related to Ecovacs or Deebot and we don't get any support from them.
+
 As all is reverse engineered it might take some time to add new features and we can't guarantee that all features will be added.
+
 Unfortunately some people think we are paid to do this and get angry if things don't work as they expect.
 **As result of this, we decided that this project is in a contribution only mode.**
+
 This means, if you want something to be supported/added, you have to provide a fix yourself, wait for someone else to fix it or pay someone to do it.
 Members will still review and help on pull requests.
 
