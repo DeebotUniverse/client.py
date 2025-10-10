@@ -149,7 +149,7 @@ class Device:
             self._unsubscribe()
             self._unsubscribe = None
 
-        for task in self._running_tasks:
+        for task in self._running_tasks.copy():
             if task.cancel():
                 with suppress(asyncio.CancelledError):
                     await task
