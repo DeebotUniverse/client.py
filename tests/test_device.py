@@ -3,18 +3,20 @@ from __future__ import annotations
 import asyncio
 from collections.abc import Callable
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
 import orjson
 import pytest
+from testfixtures import LogCapture
 
 from deebot_client.command import Command, DeviceCommandResult
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.commands.xml import GetBatteryInfo
 from deebot_client.const import DataType
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent, StateEvent
-from deebot_client.events.map import Position, PositionsEvent
+from deebot_client.events.map import MapSetType, Position, PositionsEvent
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.hardware import get_static_device_info
 from deebot_client.messages.json import OnBattery
@@ -360,6 +362,68 @@ async def test_onPos_device_handling(
         event_bus_mock.request_refresh.assert_called_once_with(StateEvent)
     else:
         event_bus_mock.request_refresh.assert_not_called()
+
+    # teardown bot
+    await bot.teardown()
+
+
+@pytest.mark.parametrize("device_class", ["kr0277"])
+@pytest.mark.parametrize(
+    "set_type",
+    [
+        MapSetType.ROOMS,
+        MapSetType.NO_MOP_ZONES,
+        MapSetType.VIRTUAL_WALLS,
+    ],
+)
+async def test_message_requested_commands(
+    authenticator: Authenticator,
+    device_info: DeviceInfo,
+    event_bus_mock: Mock,
+    set_type: MapSetType,
+) -> None:
+    """Test that commands requested by messages are executed."""
+    execute_command_mock = AsyncMock()
+
+    with (
+        patch("deebot_client.device.EventBus", return_value=event_bus_mock),
+        patch.object(Device, "_execute_command", execute_command_mock),
+    ):
+        bot = Device(device_info, authenticator)
+        mqtt_client = Mock(spec=MqttClient)
+        unsubscribe_mock = Mock(spec=Callable[[], None])
+        mqtt_client.subscribe.return_value = unsubscribe_mock
+        await bot.initialize(mqtt_client)
+        mqtt_client.subscribe.assert_called_once()
+        sub_info: SubscriberInfo = mqtt_client.subscribe.call_args.args[0]
+
+        message_data = {
+            "header": {
+                "pri": 1,
+                "tzm": 480,
+                "ts": "1304637391896",
+                "ver": "0.0.1",
+                "fwVer": "1.8.2",
+                "hwVer": "0.1.1",
+            },
+            "body": {"data": {"mid": "199390082", "type": set_type.value}},
+        }
+        message_payload = orjson.dumps(message_data).decode("utf-8")
+        with LogCapture() as log:
+            sub_info.callback("onMapSet_V2", message_payload)
+            await asyncio.sleep(0)  # let tasks be processed
+
+        log.check_present(
+            (
+                "deebot_client.device",
+                "DEBUG",
+                (
+                    "Message onMapSet_V2 requested commands: "
+                    f"[<GetMapSetV2 args={{'mid': '199390082', 'type': '{set_type.value}'}}>]"
+                ),
+            )
+        )
+        execute_command_mock.assert_called_once_with(GetMapSetV2("199390082", set_type))
 
     # teardown bot
     await bot.teardown()

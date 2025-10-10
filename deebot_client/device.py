@@ -204,8 +204,6 @@ class Device:
 
     def _create_request_command_task(self, requested_commands: list[Command]) -> None:
         """Create a task to execute the requested commands."""
-        if not requested_commands:
-            return
 
         async def task_group_runner() -> None:
             async with asyncio.TaskGroup() as tg:

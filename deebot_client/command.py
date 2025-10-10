@@ -219,6 +219,9 @@ class Command(ABC):
     def __hash__(self) -> int:
         return hash(self.NAME) + hash(self._args)
 
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} args={self._args}>"
+
 
 class CommandWithMessageHandling(Command, Message, ABC):
     """Command, which handle response by itself."""
