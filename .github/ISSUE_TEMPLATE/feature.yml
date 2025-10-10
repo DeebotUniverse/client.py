@@ -1,5 +1,5 @@
-name: 💡 Suggest an feature/idea
-description: Suggest an feature/idea
+name: 💡 Suggest a feature/idea
+description: Suggest a feature/idea
 type: Feature
 body:
   - type: markdown
