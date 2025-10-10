@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
@@ -84,28 +85,33 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
+from deebot_client.models import StaticDeviceInfo
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from deebot_client.command import Command
     from deebot_client.events.base import Event
-    from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        ("not_specified", lambda: None),
-        ("yna5xi", lambda: hardware.DEVICES["yna5xi"]),
+        ("not_specified", None),
+        ("yna5xi", get_yna5xi_info()),
     ],
 )
 async def test_get_static_device_info(
-    class_: str, expected: Callable[[], StaticDeviceInfo]
+    class_: str, expected: StaticDeviceInfo | None
 ) -> None:
     """Test get_static_device_info."""
     static_device_info = await hardware.get_static_device_info(class_)
-    assert static_device_info == expected()
+    assert static_device_info == expected
+
+    # Test caching
+    with mock.patch("deebot_client.hardware.importlib.import_module") as mock_import:
+        static_device_info_cached = await hardware.get_static_device_info(class_)
+        assert static_device_info_cached == expected
+        mock_import.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -254,14 +260,20 @@ async def test_capabilities_event_extraction(
         )
 
 
-def test_all_models_loaded() -> None:
-    """Test that all models are loaded."""
-    hardware._load()
+async def test_all_models_loaded() -> None:
+    """Test that all models can be loaded."""
     folder = Path(hardware.__file__).parent
-    assert list(hardware.DEVICES) == sorted(
+    all_modules = sorted(
         [
             file.name.removesuffix(".py")
             for file in folder.iterdir()
             if file.is_file() and file.name != "__init__.py"
         ]
     )
+
+    # Try to load each module
+    for module_name in all_modules:
+        device_info = await hardware.get_static_device_info(module_name)
+        assert isinstance(device_info, StaticDeviceInfo), (
+            f"Failed to load device info for {module_name}"
+        )

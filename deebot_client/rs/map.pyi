@@ -3,26 +3,47 @@ from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
 
-class MapData:
-    """Map data in rust."""
-
-    def __new__(cls) -> Self:
-        """Create a new map data object."""
-
-    def add_trace_points(self, value: str) -> None:
-        """Add trace points to the map data."""
-
-    def clear_trace_points(self) -> None:
-        """Clear trace points."""
-
-    def set_map_info(self, base64_info: str) -> None:
-        """Set map info (base64-compressed JSON)."""
+class BackgroundImage:
+    """Map background image."""
 
     def update_map_piece(self, index: int, base64_data: str) -> bool:
         """Update map piece."""
 
     def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
         """Return True if update is required."""
+
+class TracePoints:
+    """Trace points in rust."""
+
+    def add(self, value: str) -> None:
+        """Add trace points to the trace points object."""
+
+    def clear(self) -> None:
+        """Clear all trace points."""
+
+class MapInfo:
+    """Map info."""
+
+    def set(self, baset64_data: str) -> None:
+        """Set map info (base64-compressed JSON)."""
+
+class MapData:
+    """Map data in rust."""
+
+    def __new__(cls) -> Self:
+        """Create a new map data object."""
+
+    @property
+    def background_image(self) -> BackgroundImage:
+        """Return background image."""
+
+    @property
+    def map_info(self) -> MapInfo:
+        """Return map info."""
+
+    @property
+    def trace_points(self) -> TracePoints:
+        """Return trace points."""
 
     def generate_svg(
         self,

@@ -4,8 +4,7 @@ from __future__ import annotations
 
 import asyncio
 import importlib
-import pkgutil
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 from deebot_client.logging_filter import get_logger
 
@@ -17,22 +16,33 @@ __all__ = ["get_static_device_info"]
 _LOGGER = get_logger(__name__)
 
 
-DEVICES: dict[str, StaticDeviceInfo] = {}
-
-
-def _load() -> None:
-    for _, package_name, _ in pkgutil.iter_modules(__path__):
-        full_package_name = f"{__package__}.{package_name}"
-        importlib.import_module(full_package_name)
+_DEVICES: dict[str, StaticDeviceInfo] = {}
+_NOT_FOUND: set[str] = set()
 
 
 async def get_static_device_info(class_: str) -> StaticDeviceInfo | None:
     """Get static device info for given class."""
-    if not DEVICES:
-        await asyncio.get_event_loop().run_in_executor(None, _load)
-
-    if device := DEVICES.get(class_):
+    # Check if already loaded
+    if device := _DEVICES.get(class_):
         _LOGGER.debug("Capabilities found for %s", class_)
         return device
 
-    return None
+    # Check if we already know it doesn't exist
+    if class_ in _NOT_FOUND:
+        return None
+
+    # Try to load just this specific module
+    try:
+        full_package_name = f"{__package__}.{class_}"
+        module = await asyncio.to_thread(importlib.import_module, full_package_name)
+    except ModuleNotFoundError:
+        _LOGGER.debug("No capabilities found for %s", class_)
+        _NOT_FOUND.add(class_)
+        return None
+
+    # Get device info from the module's get_device_info function
+    # This function is guaranteed to exist via a pytest test
+    device = cast("StaticDeviceInfo", module.get_device_info())
+    _DEVICES[class_] = device
+    _LOGGER.debug("Capabilities found for %s", class_)
+    return device

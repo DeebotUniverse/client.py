@@ -67,62 +67,62 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.models import StaticDeviceInfo
-from deebot_client.util import short_name
 
-from . import DEVICES
 
-DEVICES[short_name(__name__)] = StaticDeviceInfo(
-    DataType.XML,
-    Capabilities(
-        availability=CapabilityEvent(AvailabilityEvent, []),
-        battery=CapabilityEvent(BatteryEvent, [GetBatteryInfo()]),
-        charge=CapabilityExecute(Charge),
-        clean=CapabilityClean(
-            action=CapabilityCleanAction(command=Clean, area=CleanArea),
-            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-        ),
-        custom=CapabilityCustomCommand(
-            event=CustomCommandEvent, get=[], set=CustomCommand
-        ),
-        device_type=DeviceType.VACUUM,
-        error=CapabilityEvent(ErrorEvent, [GetError()]),
-        fan_speed=CapabilitySetTypes(
-            event=FanSpeedEvent,
-            get=[GetCleanSpeed()],
-            set=SetCleanSpeed,
-            types=(
-                FanSpeedLevel.NORMAL,
-                FanSpeedLevel.MAX,
+def get_device_info() -> StaticDeviceInfo:
+    """Get device info for this model."""
+    return StaticDeviceInfo(
+        DataType.XML,
+        Capabilities(
+            availability=CapabilityEvent(AvailabilityEvent, []),
+            battery=CapabilityEvent(BatteryEvent, [GetBatteryInfo()]),
+            charge=CapabilityExecute(Charge),
+            clean=CapabilityClean(
+                action=CapabilityCleanAction(command=Clean, area=CleanArea),
+                log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
             ),
+            custom=CapabilityCustomCommand(
+                event=CustomCommandEvent, get=[], set=CustomCommand
+            ),
+            device_type=DeviceType.VACUUM,
+            error=CapabilityEvent(ErrorEvent, [GetError()]),
+            fan_speed=CapabilitySetTypes(
+                event=FanSpeedEvent,
+                get=[GetCleanSpeed()],
+                set=SetCleanSpeed,
+                types=(
+                    FanSpeedLevel.NORMAL,
+                    FanSpeedLevel.MAX,
+                ),
+            ),
+            life_span=CapabilityLifeSpan(
+                types=(LifeSpan.BRUSH, LifeSpan.SIDE_BRUSH, LifeSpan.DUST_CASE_HEAP),
+                event=LifeSpanEvent,
+                get=[
+                    GetLifeSpan(LifeSpan.BRUSH),
+                    GetLifeSpan(LifeSpan.SIDE_BRUSH),
+                    GetLifeSpan(LifeSpan.DUST_CASE_HEAP),
+                ],
+                reset=ResetLifeSpan,
+            ),
+            map=CapabilityMap(
+                cached_info=CapabilityEvent(CachedMapInfoEvent, [GetMapSt()]),
+                changed=CapabilityEvent(MapChangedEvent, []),
+                major=CapabilityEvent(MajorMapEvent, [GetMapM()]),
+                minor=CapabilityExecute(PullMP),
+                position=CapabilityEvent(PositionsEvent, [GetPos(), GetChargerPos()]),
+                rooms=CapabilityEvent(RoomsEvent, [GetMapSt()]),
+                set=CapabilityExecute(lambda _, set_type: GetMapSet(set_type)),
+                trace=CapabilityEvent(MapTraceEvent, [GetTrM()]),
+            ),
+            network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
+            play_sound=CapabilityExecute(PlaySound),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanState()]),
+            stats=CapabilityStats(
+                clean=CapabilityEvent(StatsEvent, []),
+                report=CapabilityEvent(ReportStatsEvent, []),
+                total=CapabilityEvent(TotalStatsEvent, [GetCleanSum()]),
+            ),
+            settings=CapabilitySettings(),
         ),
-        life_span=CapabilityLifeSpan(
-            types=(LifeSpan.BRUSH, LifeSpan.SIDE_BRUSH, LifeSpan.DUST_CASE_HEAP),
-            event=LifeSpanEvent,
-            get=[
-                GetLifeSpan(LifeSpan.BRUSH),
-                GetLifeSpan(LifeSpan.SIDE_BRUSH),
-                GetLifeSpan(LifeSpan.DUST_CASE_HEAP),
-            ],
-            reset=ResetLifeSpan,
-        ),
-        map=CapabilityMap(
-            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetMapSt()]),
-            changed=CapabilityEvent(MapChangedEvent, []),
-            major=CapabilityEvent(MajorMapEvent, [GetMapM()]),
-            minor=CapabilityExecute(PullMP),
-            position=CapabilityEvent(PositionsEvent, [GetPos(), GetChargerPos()]),
-            rooms=CapabilityEvent(RoomsEvent, [GetMapSt()]),
-            set=CapabilityExecute(lambda _, set_type: GetMapSet(set_type)),
-            trace=CapabilityEvent(MapTraceEvent, [GetTrM()]),
-        ),
-        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfoLegacy()]),
-        play_sound=CapabilityExecute(PlaySound),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanState()]),
-        stats=CapabilityStats(
-            clean=CapabilityEvent(StatsEvent, []),
-            report=CapabilityEvent(ReportStatsEvent, []),
-            total=CapabilityEvent(TotalStatsEvent, [GetCleanSum()]),
-        ),
-        settings=CapabilitySettings(),
-    ),
-)
+    )

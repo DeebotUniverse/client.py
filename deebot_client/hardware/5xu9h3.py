@@ -67,75 +67,75 @@ from deebot_client.events import (
     VolumeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
-from deebot_client.util import short_name
 
-from . import DEVICES
 
-DEVICES[short_name(__name__)] = StaticDeviceInfo(
-    DataType.JSON,
-    Capabilities(
-        device_type=DeviceType.MOWER,
-        availability=CapabilityEvent(
-            AvailabilityEvent, [GetBattery(is_available_check=True)]
+def get_device_info() -> StaticDeviceInfo:
+    """Get device info for this model."""
+    return StaticDeviceInfo(
+        DataType.JSON,
+        Capabilities(
+            device_type=DeviceType.MOWER,
+            availability=CapabilityEvent(
+                AvailabilityEvent, [GetBattery(is_available_check=True)]
+            ),
+            battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
+            charge=CapabilityExecute(Charge),
+            clean=CapabilityClean(
+                action=CapabilityCleanAction(command=CleanV2),
+            ),
+            custom=CapabilityCustomCommand(
+                event=CustomCommandEvent, get=[], set=CustomCommand
+            ),
+            error=CapabilityEvent(ErrorEvent, [GetError()]),
+            life_span=CapabilityLifeSpan(
+                types=(LifeSpan.BLADE, LifeSpan.LENS_BRUSH),
+                event=LifeSpanEvent,
+                get=[
+                    GetLifeSpan(
+                        [
+                            LifeSpan.BLADE,
+                            LifeSpan.LENS_BRUSH,
+                        ]
+                    )
+                ],
+                reset=ResetLifeSpan,
+            ),
+            network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
+            play_sound=CapabilityExecute(PlaySound),
+            settings=CapabilitySettings(
+                advanced_mode=CapabilitySetEnable(
+                    AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
+                ),
+                border_switch=CapabilitySetEnable(
+                    BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
+                ),
+                cut_direction=CapabilitySet(
+                    CutDirectionEvent, [GetCutDirection()], SetCutDirection
+                ),
+                child_lock=CapabilitySetEnable(
+                    ChildLockEvent, [GetChildLock()], SetChildLock
+                ),
+                moveup_warning=CapabilitySetEnable(
+                    MoveUpWarningEvent, [GetMoveUpWarning()], SetMoveUpWarning
+                ),
+                cross_map_border_warning=CapabilitySetEnable(
+                    CrossMapBorderWarningEvent,
+                    [GetCrossMapBorderWarning()],
+                    SetCrossMapBorderWarning,
+                ),
+                safe_protect=CapabilitySetEnable(
+                    SafeProtectEvent, [GetSafeProtect()], SetSafeProtect
+                ),
+                true_detect=CapabilitySetEnable(
+                    TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
+                ),
+                volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
+            ),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+            stats=CapabilityStats(
+                clean=CapabilityEvent(StatsEvent, [GetStats()]),
+                report=CapabilityEvent(ReportStatsEvent, []),
+                total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
+            ),
         ),
-        battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
-        charge=CapabilityExecute(Charge),
-        clean=CapabilityClean(
-            action=CapabilityCleanAction(command=CleanV2),
-        ),
-        custom=CapabilityCustomCommand(
-            event=CustomCommandEvent, get=[], set=CustomCommand
-        ),
-        error=CapabilityEvent(ErrorEvent, [GetError()]),
-        life_span=CapabilityLifeSpan(
-            types=(LifeSpan.BLADE, LifeSpan.LENS_BRUSH),
-            event=LifeSpanEvent,
-            get=[
-                GetLifeSpan(
-                    [
-                        LifeSpan.BLADE,
-                        LifeSpan.LENS_BRUSH,
-                    ]
-                )
-            ],
-            reset=ResetLifeSpan,
-        ),
-        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
-        play_sound=CapabilityExecute(PlaySound),
-        settings=CapabilitySettings(
-            advanced_mode=CapabilitySetEnable(
-                AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
-            ),
-            border_switch=CapabilitySetEnable(
-                BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
-            ),
-            cut_direction=CapabilitySet(
-                CutDirectionEvent, [GetCutDirection()], SetCutDirection
-            ),
-            child_lock=CapabilitySetEnable(
-                ChildLockEvent, [GetChildLock()], SetChildLock
-            ),
-            moveup_warning=CapabilitySetEnable(
-                MoveUpWarningEvent, [GetMoveUpWarning()], SetMoveUpWarning
-            ),
-            cross_map_border_warning=CapabilitySetEnable(
-                CrossMapBorderWarningEvent,
-                [GetCrossMapBorderWarning()],
-                SetCrossMapBorderWarning,
-            ),
-            safe_protect=CapabilitySetEnable(
-                SafeProtectEvent, [GetSafeProtect()], SetSafeProtect
-            ),
-            true_detect=CapabilitySetEnable(
-                TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
-            ),
-            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
-        ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
-        stats=CapabilityStats(
-            clean=CapabilityEvent(StatsEvent, [GetStats()]),
-            report=CapabilityEvent(ReportStatsEvent, []),
-            total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
-        ),
-    ),
-)
+    )

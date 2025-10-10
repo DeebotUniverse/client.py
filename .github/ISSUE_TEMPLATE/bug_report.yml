@@ -1,22 +1,31 @@
-name: Report an issue
+name: 🐞 Report an issue
 description: Report an issue
-labels: [bug]
+type: Bug
 body:
   - type: markdown
     attributes:
       value: |
         This issue form is for reporting bugs only!
+        If you want to request a new feature or an enhancement, please use the other issues types.
 
-        If you have a feature request or a question, please use discussions.
+        This project is maintained in our spare time. Please be patient and respectful.
+        It's not related to Ecovacs or Deebot and we don't get any support from them.
+        As all is reverse engineered it might take some time to fix issues.
+        Due to the fact that this is a hobby project, we can't guarantee that all issues will be fixed.
+        Unfortunately some people think we are paid to do this and get angry if things don't work as they expect.
+        As result of this, we decided that this project is in a contribution only mode.
+        This means, if you want something to be fixed, you have to provide a fix yourself, wait for someone else to fix it or pay someone to do it.
+        It's not allowed to ping any members of the project to ask for help or to fix your issue.
+        If you do so, your issue will be closed without further notice.
   - type: checkboxes
     attributes:
       label: Checks
       options:
+        - label: I have read the above text and I'm aware of the situation
+          required: true
         - label: I have searched the existing issues and no issue is describing my issue
           required: true
-        - label: I have checked the [FAQ](https://deebot.readthedocs.io/home/faq/)
-          required: true
-        - label: I have checked the [documentation](https://deebot.readthedocs.io/integrations/home-assistant)
+        - label: I'm not creating an issue to add support for a new device/model.
           required: true
         - label: I have installed the latest version
           required: true

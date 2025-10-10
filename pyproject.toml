@@ -51,7 +51,7 @@ cache-keys = [
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    "maturin[patchelf]==1.9.4",
+    "maturin[patchelf]==1.9.6",
     "maturin-import-hook==0.3.0",
 ]
 lint = [

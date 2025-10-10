@@ -32,6 +32,14 @@ class PositionsEvent(Event):
 
 
 @dataclass(frozen=True)
+class GpsPositionEvent(Event):
+    """GPS position event representation."""
+
+    longitude: float
+    latitude: float
+
+
+@dataclass(frozen=True)
 class MapTraceEvent(Event):
     """Map trace event representation."""
 

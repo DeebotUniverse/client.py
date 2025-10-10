@@ -180,6 +180,7 @@ class Map:
         for unsubscribe in self._unsubscribers:
             unsubscribe()
         self._unsubscribers.clear()
+        self._map_data.teardown()
 
 
 class MapData:
@@ -214,12 +215,12 @@ class MapData:
 
     def add_trace_points(self, value: str) -> None:
         """Add trace points to the map data."""
-        self._data.add_trace_points(value)
+        self._data.trace_points.add(value)
         self._on_change()
 
     def clear_trace_points(self) -> None:
         """Clear trace points."""
-        self._data.clear_trace_points()
+        self._data.trace_points.clear()
         self._on_change()
 
     def update_positions(self, value: list[Position]) -> None:
@@ -229,12 +230,14 @@ class MapData:
 
     def update_map_piece(self, index: int, base64_data: str) -> None:
         """Update map piece."""
-        if self._data.update_map_piece(index, base64_data):
+        if self._data.background_image.update_map_piece(index, base64_data):
             self._on_change()
 
     def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
         """Return True if update is required."""
-        return self._data.map_piece_crc32_indicates_update(index, crc32)
+        return self._data.background_image.map_piece_crc32_indicates_update(
+            index, crc32
+        )
 
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
@@ -244,8 +247,12 @@ class MapData:
 
     def set_map_info(self, base64_info: str) -> None:
         """Set compressed map info (parsing happens in Rust)."""
-        self._data.set_map_info(base64_info)
+        self._data.map_info.set(base64_info)
         self._on_change()
+
+    def teardown(self) -> None:
+        """Teardown map data."""
+        self._room_handling.teardown()
 
 
 class MapRoomHandling:
@@ -279,3 +286,9 @@ class MapRoomHandling:
                     event_bus.notify(RoomsEvent(list(self._rooms.values())))
 
         self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
+
+    def teardown(self) -> None:
+        """Teardown room handling."""
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()

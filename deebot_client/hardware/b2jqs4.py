@@ -95,116 +95,118 @@ from deebot_client.events import (
     water_info,
 )
 from deebot_client.models import StaticDeviceInfo
-from deebot_client.util import short_name
 
-from . import DEVICES
 
-DEVICES[short_name(__name__)] = StaticDeviceInfo(
-    DataType.JSON,
-    Capabilities(
-        device_type=DeviceType.VACUUM,
-        availability=CapabilityEvent(
-            AvailabilityEvent, [GetBattery(is_available_check=True)]
-        ),
-        battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
-        charge=CapabilityExecute(Charge),
-        clean=CapabilityClean(
-            action=CapabilityCleanAction(command=Clean, area=CleanArea),
-            continuous=CapabilitySetEnable(
-                ContinuousCleaningEvent,
-                [GetContinuousCleaning()],
-                SetContinuousCleaning,
+def get_device_info() -> StaticDeviceInfo:
+    """Get device info for this model."""
+    return StaticDeviceInfo(
+        DataType.JSON,
+        Capabilities(
+            device_type=DeviceType.VACUUM,
+            availability=CapabilityEvent(
+                AvailabilityEvent, [GetBattery(is_available_check=True)]
             ),
-            count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
-            log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-            preference=CapabilitySetEnable(
-                CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
-            ),
-        ),
-        custom=CapabilityCustomCommand(
-            event=CustomCommandEvent, get=[], set=CustomCommand
-        ),
-        error=CapabilityEvent(ErrorEvent, [GetError()]),
-        fan_speed=CapabilitySetTypes(
-            event=FanSpeedEvent,
-            get=[GetFanSpeed()],
-            set=SetFanSpeed,
-            types=(
-                FanSpeedLevel.QUIET,
-                FanSpeedLevel.NORMAL,
-                FanSpeedLevel.MAX,
-                FanSpeedLevel.MAX_PLUS,
-            ),
-        ),
-        life_span=CapabilityLifeSpan(
-            types=(
-                LifeSpan.BRUSH,
-                LifeSpan.FILTER,
-                LifeSpan.SIDE_BRUSH,
-                LifeSpan.UNIT_CARE,
-            ),
-            event=LifeSpanEvent,
-            get=[
-                GetLifeSpan(
-                    [
-                        LifeSpan.BRUSH,
-                        LifeSpan.FILTER,
-                        LifeSpan.SIDE_BRUSH,
-                        LifeSpan.UNIT_CARE,
-                    ]
-                )
-            ],
-            reset=ResetLifeSpan,
-        ),
-        map=CapabilityMap(
-            cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
-            changed=CapabilityEvent(MapChangedEvent, []),
-            major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
-            minor=CapabilityExecute(GetMinorMap),
-            multi_state=CapabilitySetEnable(
-                MultimapStateEvent, [GetMultimapState()], SetMultimapState
-            ),
-            position=CapabilityEvent(PositionsEvent, [GetPos()]),
-            relocation=CapabilityExecute(SetRelocationState),
-            rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
-            set=CapabilityExecute(GetMapSet),
-            trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
-        ),
-        network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
-        play_sound=CapabilityExecute(PlaySound),
-        settings=CapabilitySettings(
-            advanced_mode=CapabilitySetEnable(
-                AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
-            ),
-            carpet_auto_fan_boost=CapabilitySetEnable(
-                CarpetAutoFanBoostEvent,
-                [GetCarpetAutoFanBoost()],
-                SetCarpetAutoFanBoost,
-            ),
-            true_detect=CapabilitySetEnable(
-                TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
-            ),
-            volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
-        ),
-        state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
-        stats=CapabilityStats(
-            clean=CapabilityEvent(StatsEvent, [GetStats()]),
-            report=CapabilityEvent(ReportStatsEvent, []),
-            total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
-        ),
-        water=CapabilityWater(
-            amount=CapabilitySetTypes(
-                event=water_info.WaterAmountEvent,
-                get=[GetWaterInfo()],
-                set=SetWaterInfo,
-                types=(
-                    water_info.WaterAmount.LOW,
-                    water_info.WaterAmount.MEDIUM,
-                    water_info.WaterAmount.HIGH,
-                    water_info.WaterAmount.ULTRAHIGH,
+            battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
+            charge=CapabilityExecute(Charge),
+            clean=CapabilityClean(
+                action=CapabilityCleanAction(command=Clean, area=CleanArea),
+                continuous=CapabilitySetEnable(
+                    ContinuousCleaningEvent,
+                    [GetContinuousCleaning()],
+                    SetContinuousCleaning,
+                ),
+                count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
+                log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
+                preference=CapabilitySetEnable(
+                    CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
                 ),
             ),
-            mop_attached=CapabilityEvent(water_info.MopAttachedEvent, [GetWaterInfo()]),
+            custom=CapabilityCustomCommand(
+                event=CustomCommandEvent, get=[], set=CustomCommand
+            ),
+            error=CapabilityEvent(ErrorEvent, [GetError()]),
+            fan_speed=CapabilitySetTypes(
+                event=FanSpeedEvent,
+                get=[GetFanSpeed()],
+                set=SetFanSpeed,
+                types=(
+                    FanSpeedLevel.QUIET,
+                    FanSpeedLevel.NORMAL,
+                    FanSpeedLevel.MAX,
+                    FanSpeedLevel.MAX_PLUS,
+                ),
+            ),
+            life_span=CapabilityLifeSpan(
+                types=(
+                    LifeSpan.BRUSH,
+                    LifeSpan.FILTER,
+                    LifeSpan.SIDE_BRUSH,
+                    LifeSpan.UNIT_CARE,
+                ),
+                event=LifeSpanEvent,
+                get=[
+                    GetLifeSpan(
+                        [
+                            LifeSpan.BRUSH,
+                            LifeSpan.FILTER,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.UNIT_CARE,
+                        ]
+                    )
+                ],
+                reset=ResetLifeSpan,
+            ),
+            map=CapabilityMap(
+                cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+                changed=CapabilityEvent(MapChangedEvent, []),
+                major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
+                minor=CapabilityExecute(GetMinorMap),
+                multi_state=CapabilitySetEnable(
+                    MultimapStateEvent, [GetMultimapState()], SetMultimapState
+                ),
+                position=CapabilityEvent(PositionsEvent, [GetPos()]),
+                relocation=CapabilityExecute(SetRelocationState),
+                rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+                set=CapabilityExecute(GetMapSet),
+                trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
+            ),
+            network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
+            play_sound=CapabilityExecute(PlaySound),
+            settings=CapabilitySettings(
+                advanced_mode=CapabilitySetEnable(
+                    AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
+                ),
+                carpet_auto_fan_boost=CapabilitySetEnable(
+                    CarpetAutoFanBoostEvent,
+                    [GetCarpetAutoFanBoost()],
+                    SetCarpetAutoFanBoost,
+                ),
+                true_detect=CapabilitySetEnable(
+                    TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
+                ),
+                volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
+            ),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+            stats=CapabilityStats(
+                clean=CapabilityEvent(StatsEvent, [GetStats()]),
+                report=CapabilityEvent(ReportStatsEvent, []),
+                total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
+            ),
+            water=CapabilityWater(
+                amount=CapabilitySetTypes(
+                    event=water_info.WaterAmountEvent,
+                    get=[GetWaterInfo()],
+                    set=SetWaterInfo,
+                    types=(
+                        water_info.WaterAmount.LOW,
+                        water_info.WaterAmount.MEDIUM,
+                        water_info.WaterAmount.HIGH,
+                        water_info.WaterAmount.ULTRAHIGH,
+                    ),
+                ),
+                mop_attached=CapabilityEvent(
+                    water_info.MopAttachedEvent, [GetWaterInfo()]
+                ),
+            ),
         ),
-    ),
-)
+    )
