@@ -12,6 +12,7 @@ from deebot_client.exceptions import (
     ApiTimeoutError,
     DeebotError,
 )
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import PATH_API_IOT_DEVMANAGER, REQUEST_HEADERS, DataType
 from .logging_filter import get_logger
@@ -25,23 +26,6 @@ if TYPE_CHECKING:
     from .models import ApiDeviceInfo
 
 _LOGGER = get_logger(__name__)
-
-
-@dataclass(frozen=True)
-class CommandResult(HandlingResult):
-    """Command result object."""
-
-    requested_commands: list[Command] = field(default_factory=list)
-
-    @classmethod
-    def success(cls) -> CommandResult:
-        """Create result with handling success."""
-        return CommandResult(HandlingState.SUCCESS)
-
-    @classmethod
-    def analyse(cls) -> CommandResult:
-        """Create result with handling analyse."""
-        return CommandResult(HandlingState.ANALYSE)
 
 
 @dataclass(frozen=True)
@@ -64,23 +48,17 @@ class Command(ABC):
     """Abstract command object."""
 
     _targets_bot: bool = True
+    NAME: str
+    DATA_TYPE: DataType
+
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("NAME", "DATA_TYPE"))
+        return super().__init_subclass__()
 
     def __init__(self, args: dict[str, Any] | list[Any] | None = None) -> None:
         if args is None:
             args = {}
         self._args = args
-
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def name(cls) -> str:
-        """Command name."""
-
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def data_type(cls) -> DataType:
-        """Data type."""
 
     @abstractmethod
     def _get_payload(self) -> dict[str, Any] | list[Any] | str:
@@ -112,10 +90,11 @@ class Command(ABC):
                     device_reached=self._targets_bot, raw_response=response
                 )
 
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.warning(
-                "Could not execute command %s",
-                self.name,
+                "Could not execute command %s for %s",
+                self.NAME,
+                device_info["class"],
                 exc_info=True,
             )
         return DeviceCommandResult(device_reached=False)
@@ -125,24 +104,28 @@ class Command(ABC):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
+    ) -> tuple[HandlingResult, dict[str, Any]]:
         """Execute command."""
         try:
             response = await self._execute_api_request(authenticator, device_info)
         except ApiTimeoutError:
             _LOGGER.warning(
-                "Could not execute command %s: Timeout reached",
-                self.name,
+                "Could not execute command %s for %s: Timeout reached",
+                self.NAME,
+                device_info["class"],
             )
-            return CommandResult(HandlingState.ERROR), {}
+            return HandlingResult(HandlingState.ERROR), {}
 
         result = self.__handle_response(event_bus, response)
         if result.state == HandlingState.ANALYSE:
             _LOGGER.debug(
-                "ANALYSE: Could not handle command: %s with %s", self.name, response
+                "ANALYSE: Could not handle command %s for %s: %s",
+                self.NAME,
+                device_info["class"],
+                response,
             )
             return (
-                CommandResult(
+                HandlingResult(
                     HandlingState.ANALYSE_LOGGED,
                     result.args,
                     result.requested_commands,
@@ -150,16 +133,21 @@ class Command(ABC):
                 response,
             )
         if result.state == HandlingState.ERROR:
-            _LOGGER.warning("Could not parse %s: %s", self.name, response)
+            _LOGGER.warning(
+                "Could not parse %s for %s: %s",
+                self.NAME,
+                device_info["class"],
+                response,
+            )
         return result, response
 
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         payload = {
-            "cmdName": self.name,
+            "cmdName": self.NAME,
             "payload": self._get_payload(),
-            "payloadType": self.data_type.value,
+            "payloadType": self.DATA_TYPE.value,
             "td": "q",
             "toId": device_info["did"],
             "toRes": device_info["resource"],
@@ -186,36 +174,37 @@ class Command(ABC):
 
     def __handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
         """
         try:
             result = self._handle_response(event_bus, response)
+        except Exception:
+            _LOGGER.warning(
+                "Could not parse response for %s: %s",
+                self.NAME,
+                response,
+                exc_info=True,
+            )
+            return HandlingResult(HandlingState.ERROR)
+        else:
             if result.state == HandlingState.ANALYSE:
                 _LOGGER.debug(
-                    "ANALYSE: Could not handle command: %s with %s", self.name, response
+                    "ANALYSE: Could not handle command: %s with %s", self.NAME, response
                 )
-                return CommandResult(
+                return HandlingResult(
                     HandlingState.ANALYSE_LOGGED,
                     result.args,
                     result.requested_commands,
                 )
             return result
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning(
-                "Could not parse response for %s: %s",
-                self.name,
-                response,
-                exc_info=True,
-            )
-            return CommandResult(HandlingState.ERROR)
 
     @abstractmethod
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -223,12 +212,15 @@ class Command(ABC):
 
     def __eq__(self, obj: object) -> bool:
         if isinstance(obj, Command):
-            return self.name == obj.name and self._args == obj._args
+            return self.NAME == obj.NAME and self._args == obj._args
 
         return False
 
     def __hash__(self) -> int:
-        return hash(self.name) + hash(self._args)
+        return hash(self.NAME) + hash(self._args)
+
+    def __repr__(self) -> str:
+        return f"<{self.__class__.__name__} args={self._args}>"
 
 
 class CommandWithMessageHandling(Command, Message, ABC):
@@ -238,7 +230,7 @@ class CommandWithMessageHandling(Command, Message, ABC):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -246,32 +238,32 @@ class CommandWithMessageHandling(Command, Message, ABC):
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             result = self.handle(event_bus, data)
-            return CommandResult(result.state, result.args)
+            return HandlingResult(result.state, result.args)
 
         if errno := response.get("errno"):
             match errno:
                 case 4200:
                     # bot offline
                     _LOGGER.info(
-                        'Device is offline. Could not execute command "%s"', self.name
+                        'Device is offline. Could not execute command "%s"', self.NAME
                     )
                     event_bus.notify(AvailabilityEvent(available=False))
-                    return CommandResult(HandlingState.FAILED)
+                    return HandlingResult(HandlingState.FAILED)
                 case 500:
                     if self._is_available_check:
                         _LOGGER.info(
                             'No response received for command "%s" during availability-check.',
-                            self.name,
+                            self.NAME,
                         )
                     else:
                         _LOGGER.warning(
                             'No response received for command "%s". This can happen if the device has network issues or does not support the command',
-                            self.name,
+                            self.NAME,
                         )
-                    return CommandResult(HandlingState.FAILED)
+                    return HandlingResult(HandlingState.FAILED)
 
-        _LOGGER.warning('Command "%s" was not successfully.', self.name)
-        return CommandResult(HandlingState.ANALYSE)
+        _LOGGER.warning('Command "%s" was not successfully.', self.NAME)
+        return HandlingResult(HandlingState.ANALYSE)
 
 
 @dataclass
@@ -289,11 +281,18 @@ class CommandMqttP2P(Command, ABC):
     _mqtt_params: MappingProxyType[str, InitParam | None]
 
     @abstractmethod
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def handle_mqtt_p2p(
+        self, event_bus: EventBus, response_payload: str | bytes | bytearray
+    ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
 
     @classmethod
-    def create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
+    @abstractmethod
+    def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
+        """Create a command from the mqtt data."""
+
+    @classmethod
+    def _create_from_mqtt(cls, data: dict[str, Any]) -> CommandMqttP2P:
         """Create a command from the mqtt data."""
         values: dict[str, Any] = {}
         if not hasattr(cls, "_mqtt_params"):
@@ -305,7 +304,9 @@ class CommandMqttP2P(Command, ABC):
                 data.pop(name, None)
             else:
                 try:
-                    values[param.name or name] = _pop_or_raise(name, param.type_, data)
+                    values[param.name or name] = cls._pop_or_raise(
+                        name, param.type_, data
+                    )
                 except KeyError as err:
                     if not param.optional:
                         msg = f'"{name}" is missing in {data}'
@@ -316,14 +317,18 @@ class CommandMqttP2P(Command, ABC):
 
         return cls(**values)
 
+    @classmethod
+    def _pop_or_raise(cls, name: str, type_: type, data: dict[str, Any]) -> Any:
+        value = data.pop(name)
+        try:
+            return cls._decode(type_, value)
+        except ValueError as err:
+            msg = f'Could not convert "{value}" of {name} into {type_}'
+            raise DeebotError(msg) from err
 
-def _pop_or_raise(name: str, type_: type, data: dict[str, Any]) -> Any:
-    value = data.pop(name)
-    try:
+    @classmethod
+    def _decode(cls, type_: type, value: Any) -> Any:
         return type_(value)
-    except ValueError as err:
-        msg = f'Could not convert "{value}" of {name} into {type_}'
-        raise DeebotError(msg) from err
 
 
 class GetCommand(CommandWithMessageHandling, ABC):
@@ -349,7 +354,9 @@ class SetCommand(CommandWithMessageHandling, CommandMqttP2P, ABC):
         """Return the corresponding "get" command."""
         raise NotImplementedError  # pragma: no cover
 
-    def handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+    def _handle_mqtt_p2p(
+        self, event_bus: EventBus, response: dict[str, Any] | str
+    ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
         result = self.handle(event_bus, response)
         if result.state == HandlingState.SUCCESS and isinstance(self._args, dict):

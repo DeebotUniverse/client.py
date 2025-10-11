@@ -14,8 +14,8 @@ from . import assert_command, assert_set_enable_command
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetChildLock(*, value: bool) -> None:
     """Testing get child lock."""
-    json = get_request_json(get_success_body({"on": 1 if value else 0}))
-    await assert_command(GetChildLock(), json, ChildLockEvent(value))
+    json, firmware_event = get_request_json(get_success_body({"on": 1 if value else 0}))
+    await assert_command(GetChildLock(), json, (firmware_event, ChildLockEvent(value)))
 
 
 @pytest.mark.parametrize("value", [False, True])

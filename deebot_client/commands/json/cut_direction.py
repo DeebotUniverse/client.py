@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetCutDirection(JsonGetCommand):
     """Get cut direction command."""
 
-    name = "getCutDirection"
+    NAME = "getCutDirection"
 
     @classmethod
     def _handle_body_data_dict(
@@ -35,7 +35,7 @@ class GetCutDirection(JsonGetCommand):
 class SetCutDirection(JsonSetCommand):
     """Set cut direction command."""
 
-    name = "setCutDirection"
+    NAME = "setCutDirection"
     get_command = GetCutDirection
     _mqtt_params = MappingProxyType({"angle": InitParam(int)})
 

@@ -22,3 +22,14 @@ nosetests.xml
 
 test.py
 .env
+
+/target
+
+# rust so
+*.cpython*.so
+
+.codspeed
+
+similarity_output/
+
+*.log

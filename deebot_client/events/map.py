@@ -11,13 +11,7 @@ from deebot_client.events import Event
 if TYPE_CHECKING:
     from datetime import datetime
 
-
-@unique
-class PositionType(str, Enum):
-    """Position type enum."""
-
-    DEEBOT = "deebotPos"
-    CHARGER = "chargePos"
+    from deebot_client.rs.map import PositionType
 
 
 @dataclass(frozen=True)
@@ -38,6 +32,14 @@ class PositionsEvent(Event):
 
 
 @dataclass(frozen=True)
+class GpsPositionEvent(Event):
+    """GPS position event representation."""
+
+    longitude: float
+    latitude: float
+
+
+@dataclass(frozen=True)
 class MapTraceEvent(Event):
     """Map trace event representation."""
 
@@ -47,11 +49,19 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MapInfoEvent(Event):
+    """Map info event representation."""
+
+    map_id: str
+    info: str
+
+
+@dataclass(frozen=True)
 class MajorMapEvent(Event):
     """Major map event."""
 
     map_id: str
-    values: list[str]
+    values: list[int]
     requested: bool = field(kw_only=True)
 
 
@@ -96,11 +106,20 @@ class MapSubsetEvent(Event):
 
 
 @dataclass(frozen=True)
+class Map:
+    """Map representation."""
+
+    id: str
+    name: str
+    using: bool
+    built: bool
+
+
+@dataclass(frozen=True)
 class CachedMapInfoEvent(Event):
     """Cached map info event."""
 
-    name: str
-    active: bool = field(kw_only=True)
+    maps: set[Map]
 
 
 @dataclass(frozen=True)

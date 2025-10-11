@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetCleanCount(JsonGetCommand):
     """Get clean count command."""
 
-    name = "getCleanCount"
+    NAME = "getCleanCount"
 
     @classmethod
     def _handle_body_data_dict(
@@ -35,7 +35,7 @@ class GetCleanCount(JsonGetCommand):
 class SetCleanCount(JsonSetCommand):
     """Set clean count command."""
 
-    name = "setCleanCount"
+    NAME = "setCleanCount"
     get_command = GetCleanCount
     _mqtt_params = MappingProxyType({"count": InitParam(int)})
 

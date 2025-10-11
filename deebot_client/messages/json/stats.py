@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import CleanJobStatus, ReportStatsEvent
+from deebot_client.events import CleanJobStatus, ReportStatsEvent, StatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class ReportStats(MessageBodyDataDict):
     """Report stats message."""
 
-    name = "reportStats"
+    NAME = "reportStats"
 
     @classmethod
     def _handle_body_data_dict(
@@ -39,4 +39,23 @@ class ReportStats(MessageBodyDataDict):
             content=[int(float(x)) for x in data.get("content", "").split(",") if x],
         )
         event_bus.notify(stats_event)
+        return HandlingResult.success()
+
+
+class OnStats(MessageBodyDataDict):
+    """Get stats command."""
+
+    NAME = "onStats"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        event_bus.notify(
+            StatsEvent(area=data["area"], time=data["time"], type=data.get("type"))
+        )
         return HandlingResult.success()

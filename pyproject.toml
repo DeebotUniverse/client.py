@@ -1,91 +1,115 @@
 [build-system]
-requires = ["hatchling"]
-build-backend = "hatchling.build"
+requires = ["maturin>=1.7,<2.0"]
+build-backend = "maturin"
 
 [project]
-name        = "deebot-client"
-license     = "GPL-3.0-or-later"
+name = "deebot-client"
+license = "GPL-3.0-or-later"
 description = "Deebot client library in python 3"
-readme      = "README.md"
-authors     = [
-    {name = "Robert Resch", email = "robert@resch.dev"}
+readme = "README.md"
+authors = [{ name = "Robert Resch", email = "robert@resch.dev" }]
+keywords = [
+    "home",
+    "automation",
+    "homeassistant",
+    "vacuum",
+    "robot",
+    "deebot",
+    "ecovacs",
 ]
-keywords    = ["home", "automation", "homeassistant", "vacuum", "robot", "deebot", "ecovacs"]
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
     "Topic :: Home Automation",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.12.0"
+requires-python = ">=3.13.0"
 dependencies = [
     "aiohttp~=3.10",
     "aiomqtt>=2.0.0,<3.0",
-    "cachetools>=5.0.0,<6.0",
+    "cachetools>=5.0.0,<7.0",
     "defusedxml>=0.7.1",
-    "numpy>=1.23.2,<3.0",
-    "pillow>=10,<12",
-    "svg-py>=1.4.2",
+    "orjson>=3.11.3",
 ]
 version = "0.0.0"
 
 [project.urls]
-"Homepage"    = "https://deebot.readthedocs.io/"
+"Homepage" = "https://deebot.readthedocs.io/"
 "Source Code" = "https://github.com/DeebotUniverse/client.py"
 "Bug Reports" = "https://github.com/DeebotUniverse/client.py/issues"
 
 [tool.uv]
-dev-dependencies = [
-    "mypy==1.13.0",
-    "pre-commit==4.0.1",
-    "pycountry==24.6.1",
-    "pylint==3.3.2",
-    "pytest-asyncio==0.25.0",
-    "pytest-cov==6.0.0",
-    "pytest-docker-fixtures==1.3.19",
-    "pytest-timeout==2.3.1",
-    "pytest==8.3.4",
-    "testfixtures==8.3.0",
-    "types-cachetools>=5.5.0.20240820",
-    "types-mock>=5.1.0.20240425",
-    "types-pillow>=10.2.0.20240822",
+# Rebuild package when any rust files change
+cache-keys = [
+    { file = "pyproject.toml" },
+    { file = "Cargo.toml" },
+    { file = "**/*.rs" },
 ]
 
+[dependency-groups]
+dev = [
+    { include-group = "test" },
+    { include-group = "lint" },
+    "maturin[patchelf]==1.9.6",
+    "maturin-import-hook==0.3.0",
+]
+lint = [
+    "mypy==1.18.2",
+    "pre-commit==4.3.0",
+    "types-cachetools>=5.5.0.20240820",
+    "types-mock>=5.1.0.20240425",
+]
+test = [
+    "pycountry==24.6.1",
+    "pytest-asyncio==1.2.0",
+    "pytest-codspeed>=3.1.2",
+    "pytest-cov==7.0.0",
+    "pytest-docker-fixtures==1.4.0",
+    "pytest-timeout==2.4.0",
+    "pytest==8.4.2",
+    "testfixtures==9.1.0",
+    "pytest-github-actions-annotate-failures==0.3.0",
+    "pytest-xdist==3.8.0",
+]
 
-[tool.hatch.build.targets.sdist]
-include = [
-  "/deebot_client",
+[tool.maturin]
+features = ["pyo3/extension-module"]
+module-name = "deebot_client.rs"
+auditwheel = "repair"
+exclude = [
+    { path = "**/.*/**", format = "sdist" },
+    { path = "**/.*", format = "sdist" },
+    { path = "*.ini", format = "sdist" },
+    { path = "tests/**", format = "sdist" },
+    { path = "scripts/**", format = "sdist" },
+    { path = "ci/**", format = "sdist" },
 ]
 
 [tool.ruff.lint]
-select = [
-    "ALL",
-]
+select = ["ALL"]
 
 ignore = [
     "ANN401", # Opinioated warning on disallowing dynamically typed expressions
-    "D203", # Conflicts with other rules
-    "D213", # Conflicts with other rules
-    "EM101", # raw-string-in-exception
+    "D203",   # Conflicts with other rules
+    "D213",   # Conflicts with other rules
+    "EM101",  # raw-string-in-exception
 
-    "D105",  # Missing docstring in magic method
-    "D107",  # Missing docstring in `__init__`
-    "E501",  # line too long
+    "D105", # Missing docstring in magic method
+    "D107", # Missing docstring in `__init__`
+    "E501", # line too long
 
-    "PLR2004",  # Magic value used in comparison, consider replacing {value} with a constant variable
+    "FBT", # flake8-boolean-trap
 
+    "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
 
     # Conflicts with the Ruff formatter
     "COM812",
-    "ISC001",
+
+    "TRY003", # raise-vanilla-args: Avoid specifying long messages outside the exception class
 
     # Remove later
-    "TD", # Todos
-    "A", # bultins
-    "DTZ", # use tz need to test it first
-    "TRY", # tryceratops
+    "TD",     # Todos
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`
 
@@ -98,92 +122,36 @@ fixture-parentheses = false
 [tool.ruff.lint.isort]
 combine-as-imports = true
 force-sort-within-sections = true
-known-first-party = [
-    "deebot_client",
-]
+known-first-party = ["deebot_client"]
 required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.per-file-ignores]
-"tests/**" = [
-    "D100",  # Missing docstring in public module
-    "D103",  # Missing docstring in public function
-    "D104",  # Missing docstring in public package
-    "N802",  # Function name {name} should be lowercase
-    "N816",  # Variable {name} in global scope should not be mixedCase
-    "PLR0913", # Too many arguments in function definition
-    "S101",  # Use of assert detected
-    "SLF001", # Private member accessed: {access}
-    "T201",  # print found
+"tests/fixtures/**" = [
+    "T201",   # print found
+    "TRY002", # raise-vanilla-class: Create your own exception
 ]
-"deebot_client/hardware/deebot/*" = [
-    "N999",  # Invalid module name
+"tests/**" = [
+    "D100",    # Missing docstring in public module
+    "D103",    # Missing docstring in public function
+    "D104",    # Missing docstring in public package
+    "N802",    # Function name {name} should be lowercase
+    "N816",    # Variable {name} in global scope should not be mixedCase
+    "PLR0913", # Too many arguments in function definition
+    "S101",    # Use of assert detected
+    "SLF001",  # Private member accessed: {access}
+    "T201",    # print found
+]
+"deebot_client/hardware/*" = [
+    "N999", # Invalid module name
+]
+"deebot_client/rs/*.pyi" = [
+    "PYI021", #  docstring-in-stub
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"svg.Path".msg = "Use map.Path instead"
+"json".msg = "Use orjson instead"
 
 
 [tool.ruff.lint.mccabe]
-max-complexity = 12
-
-[tool.ruff.lint.pylint]
-max-args = 7
-
-
-[tool.pylint.MAIN]
-py-version = "3.13"
-ignore = [
-    "tests",
-]
-fail-on = [
-    "I",
-]
-
-[tool.pylint.BASIC]
-good-names= ["i","j","k","ex","_","T","x","y","id","tg"]
-
-[tool.pylint."MESSAGES CONTROL"]
-# Reasons disabled:
-# format - handled by black
-# duplicate-code - unavoidable
-# cyclic-import - doesn't test if both import on load
-# abstract-class-little-used - prevents from setting right foundation
-# too-many-* - are not enforced for the sake of readability
-# too-few-* - same as too-many-*
-# abstract-method - with intro of async there are always methods missing
-# inconsistent-return-statements - doesn't handle raise
-# too-many-ancestors - it's too strict.
-# wrong-import-order - isort guards this
-# ---
-# Pylint CodeStyle plugin
-# consider-using-namedtuple-or-dataclass - too opinionated
-# consider-using-assignment-expr - decision to use := better left to devs
-disable = [
-    "format",
-    "cyclic-import",
-    "duplicate-code",
-    "too-many-arguments",
-    "too-many-instance-attributes",
-    "too-many-locals",
-    "too-many-ancestors",
-    "too-few-public-methods",
-    "invalid-name",
-]
-enable = [
-    "useless-suppression",
-    "use-symbolic-message-instead",
-]
-
-[tool.pylint.REPORTS]
-score = false
-
-
-[tool.pylint.FORMAT]
-expected-line-ending-format = "LF"
-
-[tool.pylint.EXCEPTIONS]
-overgeneral-exceptions = [
-    "builtins.BaseException",
-    "builtins.Exception",
-]
+max-complexity = 13

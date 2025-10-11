@@ -1,71 +1,470 @@
 name: CI
+run-name: "${{ github.event_name == 'workflow_dispatch' && format('CI: {0}', github.ref_name) || '' }}"
 
 on:
   push:
     branches:
-      - main
       - dev
   pull_request:
+  release:
+    types: [published]
+  workflow_dispatch:
 
 env:
-  UV_CACHE_DIR: /tmp/.uv-cache
+  ADDITIONAL_PYTHON_VERSIONS: "[]"
+
+concurrency:
+  group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
 
 jobs:
-  code-quality:
+  info:
+    name: Collect information & prepare
+    outputs:
+      default_python_version: ${{ steps.info.outputs.default_python_version }}
+      python_versions: ${{ steps.info.outputs.python_versions }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: ⤵️  Check out code from GitHub
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: Collect information
+        id: info
+        run: |
+          default_python_version=$(cat .python-version)
+          echo "default python version: ${default_python_version}"
+          echo "default_python_version=${default_python_version}" >> $GITHUB_OUTPUT
+
+          # Ensure ADDITIONAL_PYTHON_VERSIONS is properly initialized
+          ADDITIONAL_PYTHON_VERSIONS=${ADDITIONAL_PYTHON_VERSIONS:-"[]"}
+
+          # Check if ADDITIONAL_PYTHON_VERSIONS contains default_python_version
+          if [[ ! ${ADDITIONAL_PYTHON_VERSIONS} == *"${default_python_version}"* ]]; then
+            # Handle empty or "[]" case properly
+            if [[ ${ADDITIONAL_PYTHON_VERSIONS} == "[]" ]]; then
+              all_python_versions="['${default_python_version}']"
+            elif [[ -z ${ADDITIONAL_PYTHON_VERSIONS} ]]; then
+              all_python_versions="['${default_python_version}']"
+            else
+              all_python_versions="[${ADDITIONAL_PYTHON_VERSIONS:1:-1}, '${default_python_version}']"
+            fi
+          else
+            all_python_versions="${ADDITIONAL_PYTHON_VERSIONS}"
+          fi
+          echo "python_versions: ${all_python_versions}"
+          echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+      - name: Generate requirements files
+        run: |
+          uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
+          uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
+      - name: Upload requirements-test.txt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: requirements-test.txt
+          path: requirements-test.txt
+      - name: Upload requirements-dev.txt
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: requirements-dev.txt
+          path: requirements-dev.txt
+
+  python-code-quality:
     runs-on: "ubuntu-latest"
-    name: Check code quality
+    name: Check Python code quality
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        id: setup-python
 
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@v4
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
-          enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
+          cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
       - name: 🏗 Install the project
-        run: uv sync --locked --dev
+        run: uv sync --locked --group lint
 
       # Following steps cannot run by pre-commit.ci as repo = local
       - name: Run mypy
-        run: uv run --frozen mypy deebot_client/
-
-      - name: Pylint review
-        run: uv run --frozen pylint deebot_client/
+        run: |
+          source .venv/bin/activate
+          mypy deebot_client/
 
       - name: Verify no getLogger usages
         run: scripts/check_getLogger.sh
 
-  tests:
+  rust-code-quality:
     runs-on: "ubuntu-latest"
-    name: Run tests
-    strategy:
-      matrix:
-        python-version:
-          - "3.12"
-          - "3.13"
+    name: Check Rust code quality
+    env:
+      RUSTFLAGS: "-Dwarnings"
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
+        with:
+          components: rustfmt,clippy
+      - name: Rust format
+        uses: actions-rust-lang/rustfmt@559aa3035a47390ba96088dffa783b5d26da9326 # v1.1.1
+      - uses: clechasseur/rs-clippy-check@69da786488ddcceb16285b0219841750089369ba # v5.0.1
+        with:
+          args: --all-features
 
-      - name: 🏗 Install uv and Python ${{ matrix.python-version }}
-        uses: astral-sh/setup-uv@v4
+  pre-commit:
+    runs-on: ubuntu-latest
+    name: Run pre-commit checks
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+      - name: 🏗 Install the project
+        run: uv sync --locked --only-group lint --no-install-project
+      - uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ~/.cache/pre-commit
+          key: pre-commit-${{ hashFiles('.pre-commit-config.yaml') }}
+      - name: Run pre-commit
+        env:
+          SKIP: no-commit-to-branch,mypy,verifyNoGetLogger,rust-fmt,rust-check,rust-clippy
+        run: |
+          source .venv/bin/activate
+          pre-commit run --show-diff-on-failure --color=always --all-files
+
+  tests:
+    name: Execute tests
+    runs-on: ubuntu-latest
+    needs:
+      - info
+      - python-code-quality
+      - rust-code-quality
+      - pre-commit
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+        id: setup-python
+      - name: 🏗 Install uv and Python
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+      - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
+        with:
+          components: llvm-tools
+          cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
+      - name: Install cargo-llvm-cov
+        run: cargo install cargo-llvm-cov
+      - name: Download requirements-dev.txt
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: requirements-dev.txt
+      - name: Prepare env and install requirements
+        shell: bash
+        run: |
+          uv venv -p ${{ steps.setup-python.outputs.python-version }}
+          uv pip install --system -r requirements-dev.txt
+      - name: Execute tests
+        id: tests
+        run: |
+          source .venv/bin/activate
+          source <(cargo llvm-cov show-env --export-prefix)
+          export CARGO_TARGET_DIR=$CARGO_LLVM_COV_TARGET_DIR
+          export CARGO_INCREMENTAL=1
+          cargo llvm-cov clean --workspace
+          cargo test
+          maturin develop --uv
+          pytest tests -n auto --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
+          cargo llvm-cov report --lcov --output-path coverage.lcov
+      - name: Upload coverage to Codecov
+        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        with:
+          fail_ci_if_error: true
+          disable_telem: true
+          files: coverage.lcov,coverage.xml
+      - name: Upload test results to Codecov
+        if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
+        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        with:
+          fail_ci_if_error: true
+          verbose: true
+
+  build-test-native:
+    name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.platform.runner }}
+    needs:
+      - info
+      - tests
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Linux
+            manylinux: manylinux_2_34
+          - name: Macos
+            pytest_args: -m "not docker"
+        platform:
+          - name: Linux
+            runner: ubuntu-latest
+            target: x86_64
+          - name: Linux
+            runner: ubuntu-24.04-arm
+            target: aarch64
+          - name: Windows
+            runner: windows-latest
+            target: x64
+          - name: Macos
+            runner: macos-13
+            target: x86_64
+          - name: Macos
+            runner: macos-14
+            target: aarch64
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+          architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
+      - name: 🏗 Set package version
+        if: ${{ matrix.platform.name != 'Windows' && github.event_name == 'release' }}
+        run: |
+          sed -i.bak "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml && rm pyproject.toml.bak
+      - name: 🏗 Set package version (Windows)
+        if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
+        run: |
+          (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
+      - name: Build wheels
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --strip --out dist -i python${{ matrix.python-version }}
+          sccache: "false"
+          manylinux: ${{ matrix.manylinux }}
+          before-script-linux: python3 -m ensurepip
+      - name: Upload wheels
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          path: dist
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
         with:
           enable-cache: true
-          cache-dependency-glob: "uv.lock"
-          cache-local-path: ${{ env.UV_CACHE_DIR }}
-          python-version: ${{ matrix.python-version }}
-
-      - name: 🏗 Install the project
-        run: uv sync --locked --dev
-
-      - name: Run pytest
-        run: uv run --frozen pytest tests --cov=./ --cov-report=xml
-
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v5
+      - name: Download requirements-test.txt
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          fail_ci_if_error: true
+          name: requirements-test.txt
+      - name: Prepare env and install wheel
+        shell: bash
+        run: |
+          # Remove sources otherwise pytest will complain about missing rust files
+          rm -rf deebot_client
+          uv venv -p ${{ matrix.python-version }}
+          uv pip install -r requirements-test.txt
+          uv pip install --force-reinstall dist/deebot_client-*.whl
+      - name: Run pytest
+        if: ${{ matrix.platform.name != 'Windows' }}
+        id: pytest
+        run: |
+          source .venv/bin/activate
+          pytest tests -n auto -v ${{ matrix.pytest_args || ''}}
+      - name: Run pytest (windows)
+        if: ${{ matrix.platform.name == 'Windows' }}
+        id: pytest_windows
+        run: |
+          .venv/Scripts/activate
+          pytest tests -n auto -v -m "not docker"
+
+  build-test-musl:
+    name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.platform.os || 'ubuntu-latest' }}
+    needs:
+      - info
+      - tests
+    strategy:
+      fail-fast: false
+      matrix:
+        platform:
+          - target: x86_64
+            docker_arch: amd64
+          - target: aarch64
+            docker_arch: arm64
+            os: ubuntu-24.04-arm
+          - target: armv7
+            docker_arch: arm/v7
+            os: ubuntu-24.04-arm
+            qemu: true
+          - target: x86
+            docker_arch: 386
+            qemu: true
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
+    steps:
+      - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ matrix.python-version }}
+      - name: 🏗 Set package version
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: Build wheels
+        uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
+        with:
+          target: ${{ matrix.platform.target }}
+          args: --release --strip --out dist -i python${{ matrix.python-version }}
+          sccache: "false"
+          manylinux: musllinux_1_2
+      - name: Upload wheels
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-musllinux-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          path: dist
+      - name: Download requirements-test.txt
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: requirements-test.txt
+      - name: Install Qemu
+        if: ${{ matrix.platform.qemu || false }}
+        uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
+      - name: Install Docker Buildx
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
+      - name: Build image
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83 # v6.18.0
+        with:
+          context: .
+          file: ci/Dockerfile.alpine
+          platforms: linux/${{ matrix.platform.docker_arch }}
+          push: false
+          load: true
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+          build-args: |
+            PYTHON_VERSION=${{ matrix.python-version }}
+          tags: deebot_client:${{ matrix.platform.target }}-${{ matrix.python-version }}
+      - name: Pytest in docker
+        id: pytest
+        run: |
+          docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.platform.docker_arch }} deebot_client:${{ matrix.platform.target }}-${{ matrix.python-version }}
+
+  benchmarks:
+    runs-on: "ubuntu-latest"
+    name: Run benchmarks
+    if: ${{ github.event_name != 'release' }}
+    needs:
+      - info
+      - tests
+    steps:
+      - name: ⤵️ Checkout repository
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: 🏗 Install uv
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+      - name: 🏗 Setup Python
+        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        with:
+          python-version: ${{ needs.info.outputs.default_python_version }}
+      - name: Download requirements-dev.txt
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          name: requirements-dev.txt
+      - name: 🏗 Install the project
+        run: |
+          uv pip install --no-build --system -r requirements-dev.txt
+          maturin build --profile codspeed
+          uv pip install --no-build --system target/wheels/deebot_client-*.whl
+      - name: 🏗 Remove source files
+        run: |
+          rm -rf deebot_client/
+      - name: Run benchmarks
+        uses: CodSpeedHQ/action@6b43a0cd438f6ca5ad26f9ed03ed159ed2df7da9 # v4.1.1
+        with:
+          run: pytest tests/ --codspeed
+          token: ${{ secrets.CODSPEED_TOKEN }}
+          mode: instrumentation
+
+  sdist:
+    name: Create source distribution
+    runs-on: ubuntu-latest
+    needs: tests
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: 🏗 Set up uv
+        uses: astral-sh/setup-uv@eb1897b8dc4b5d5bfe39a428a8f2304605e0983c # v7.0.0
+        with:
+          enable-cache: true
+      - name: 🏗 Set package version
+        if: ${{ github.event_name == 'release' }}
+        run: |
+          sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: 📦 Build source package
+        run: uv build --sdist
+      - name: Upload sdist
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
+        with:
+          name: wheels-sdist
+          path: dist
+
+  release:
+    name: Releasing to PyPi
+    if: ${{ github.event_name == 'release' }}
+    runs-on: ubuntu-latest
+    needs:
+      - build-test-native
+      - build-test-musl
+      - sdist
+    environment:
+      name: release
+      url: https://pypi.org/p/deebot-client
+    permissions:
+      contents: write
+      id-token: write
+    steps:
+      - name: ⤵️ Check out code from GitHub
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+      - name: ⬇️ Download wheels
+        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        with:
+          pattern: wheels-*
+          path: dist
+          merge-multiple: true
+      - name: 🚀 Publish to PyPi
+        uses: pypa/gh-action-pypi-publish@ed0c53931b1dc9bd32cbe73a98c7f6766f8a527e # v1.13.0
+        with:
+          verbose: true
+          print-hash: true
+      - name: ✍️ Sign published artifacts
+        uses: sigstore/gh-action-sigstore-python@f7ad0af51a5648d09a20d00370f0a91c3bdf8f84 # v3.0.1
+        with:
+          inputs: ./dist/*.tar.gz ./dist/*.whl
+          release-signing-artifacts: true
+
+  all-required-green: # This job does nothing and is only used for the branch protection
+    name: All required checks pass
+    runs-on: ubuntu-latest
+    needs:
+      - build-test-native
+      - build-test-musl
+      - sdist
+      - benchmarks
+    if: always() && ${{ github.event_name != 'release' }}
+
+    steps:
+      - name: Check whether the needed jobs succeeded or failed
+        uses: re-actors/alls-green@05ac9388f0aebcb5727afa17fcccfecd6f8ec5fe # v1.2.2
+        with:
+          jobs: ${{ toJSON(needs) }}

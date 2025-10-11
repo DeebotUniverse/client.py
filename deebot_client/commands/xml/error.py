@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 class GetError(XmlCommandWithMessageHandling):
     """Get error command."""
 
-    name = "GetError"
+    NAME = "GetError"
 
     @classmethod
     def _handle_xml(cls, event_bus: EventBus, xml: Element) -> HandlingResult:

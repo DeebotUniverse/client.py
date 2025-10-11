@@ -21,7 +21,7 @@ _LOGGER = get_logger(__name__)
 class Charge(ExecuteCommand):
     """Charge command."""
 
-    name = "charge"
+    NAME = "charge"
 
     def __init__(self) -> None:
         super().__init__({"act": "go"})

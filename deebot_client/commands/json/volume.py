@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetVolume(JsonGetCommand):
     """Get volume command."""
 
-    name = "getVolume"
+    NAME = "getVolume"
 
     @classmethod
     def _handle_body_data_dict(
@@ -35,7 +35,7 @@ class GetVolume(JsonGetCommand):
 class SetVolume(JsonSetCommand):
     """Set volume command."""
 
-    name = "setVolume"
+    NAME = "setVolume"
     get_command = GetVolume
     _mqtt_params = MappingProxyType(
         {

@@ -6,7 +6,7 @@ import asyncio
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.hardware.deebot import get_static_device_info
+from deebot_client.hardware import get_static_device_info
 
 from .const import (
     PATH_API_APPSVR_APP,

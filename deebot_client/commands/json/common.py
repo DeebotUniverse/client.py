@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import datetime
+import time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+import orjson
+
 from deebot_client.command import (
     Command,
+    CommandMqttP2P,
     CommandWithMessageHandling,
     GetCommand,
     InitParam,
@@ -22,6 +25,7 @@ from deebot_client.message import (
     MessageBody,
     MessageBodyDataDict,
 )
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import CODE
 
@@ -32,16 +36,16 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 
-class JsonCommand(Command):
+class JsonCommand(Command, ABC):
     """Json base command."""
 
-    data_type: DataType = DataType.JSON
+    DATA_TYPE = DataType.JSON
 
     def _get_payload(self) -> dict[str, Any] | list[Any]:
         payload = {
             "header": {
                 "pri": "1",
-                "ts": datetime.now().timestamp(),
+                "ts": time.time(),
                 "tzm": 480,
                 "ver": "0.0.50",
             }
@@ -72,11 +76,33 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
         if body.get(CODE, -1) == 0:
             return HandlingResult.success()
 
-        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.name, body)
+        _LOGGER.warning('Command "%s" was not successfully. body=%s', cls.NAME, body)
         return HandlingResult(HandlingState.FAILED)
 
 
-class JsonSetCommand(ExecuteCommand, SetCommand, ABC):
+class JsonCommandMqttP2P(JsonCommand, CommandMqttP2P, ABC):
+    """Json base command for mqtt p2p channel."""
+
+    @classmethod
+    def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
+        """Create a command from the mqtt data."""
+        payload_json = orjson.loads(payload)
+        data = payload_json["body"]["data"]
+        return cls._create_from_mqtt(data)
+
+    def handle_mqtt_p2p(
+        self, event_bus: EventBus, response_payload: str | bytes | bytearray
+    ) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        response = orjson.loads(response_payload)
+        self._handle_mqtt_p2p(event_bus, response)
+
+    @abstractmethod
+    def _handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+
+
+class JsonSetCommand(ExecuteCommand, SetCommand, JsonCommandMqttP2P, ABC):
     """Json base set command.
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.
@@ -100,12 +126,11 @@ class GetEnableCommand(JsonGetCommand, ABC):
     """Abstract get enable command."""
 
     _field_name: str = "enable"
+    EVENT_TYPE: type[EnableEvent]
 
-    @property  # type: ignore[misc]
-    @classmethod
-    @abstractmethod
-    def event_type(cls) -> type[EnableEvent]:
-        """Event type."""
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("EVENT_TYPE",))
+        return super().__init_subclass__()
 
     @classmethod
     def _handle_body_data_dict(
@@ -115,7 +140,7 @@ class GetEnableCommand(JsonGetCommand, ABC):
 
         :return: A message response
         """
-        event: EnableEvent = cls.event_type(bool(data[cls._field_name]))  # type: ignore[call-arg, assignment]
+        event: EnableEvent = cls.EVENT_TYPE(bool(data[cls._field_name]))
         event_bus.notify(event)
         return HandlingResult.success()
 
@@ -132,5 +157,5 @@ class SetEnableCommand(JsonSetCommand, ABC):
         cls._mqtt_params = MappingProxyType({cls._field_name: InitParam(bool, _ENABLE)})
         super().__init_subclass__(**kwargs)
 
-    def __init__(self, enable: bool) -> None:  # noqa: FBT001
+    def __init__(self, enable: bool) -> None:
         super().__init__({self._field_name: 1 if enable else 0})

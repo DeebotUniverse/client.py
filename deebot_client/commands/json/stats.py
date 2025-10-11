@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
-    name = "getStats"
+    NAME = "getStats"
 
     @classmethod
     def _handle_body_data_dict(
@@ -38,7 +38,7 @@ class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetTotalStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get stats command."""
 
-    name = "getTotalStats"
+    NAME = "getTotalStats"
 
     @classmethod
     def _handle_body_data_dict(

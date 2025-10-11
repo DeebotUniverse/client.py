@@ -10,7 +10,7 @@ from .common import JsonCommandWithMessageHandling
 class GetBattery(OnBattery, JsonCommandWithMessageHandling):
     """Get battery command."""
 
-    name = "getBattery"
+    NAME = "getBattery"
 
     def __init__(self, *, is_available_check: bool = False) -> None:
         super().__init__()

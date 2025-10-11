@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 class OnBattery(MessageBodyDataDict):
     """On battery message."""
 
-    name = "onBattery"
+    NAME = "onBattery"
 
     @classmethod
     def _handle_body_data_dict(

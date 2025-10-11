@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 class GetFanSpeed(JsonGetCommand):
     """Get fan speed command."""
 
-    name = "getSpeed"
+    NAME = "getSpeed"
 
     @classmethod
     def _handle_body_data_dict(
@@ -36,7 +36,7 @@ class GetFanSpeed(JsonGetCommand):
 class SetFanSpeed(JsonSetCommand):
     """Set fan speed command."""
 
-    name = "setSpeed"
+    NAME = "setSpeed"
     get_command = GetFanSpeed
     _mqtt_params = MappingProxyType({"speed": InitParam(FanSpeedLevel)})
 

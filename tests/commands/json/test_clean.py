@@ -14,7 +14,7 @@ from deebot_client.commands.json.clean import (
     GetCleanInfoV2,
 )
 from deebot_client.event_bus import EventBus
-from deebot_client.events import StateEvent
+from deebot_client.events import FirmwareEvent, StateEvent
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from tests.helpers import get_request_json, get_success_body
 
@@ -24,20 +24,47 @@ if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
 
 
-@pytest.mark.parametrize("command", [GetCleanInfo(), GetCleanInfoV2()])
 @pytest.mark.parametrize(
-    ("json", "expected"),
+    ("command", "data", "expected"),
     [
         (
+            GetCleanInfo,
             get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
             StateEvent(State.IDLE),
+        ),
+        (
+            GetCleanInfoV2,
+            get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
+            StateEvent(State.IDLE),
+        ),
+        (
+            GetCleanInfoV2,
+            get_request_json(
+                get_success_body(
+                    {
+                        "trigger": "none",
+                        "state": "washing",
+                        "cleanState": {
+                            "cid": "122",
+                            "router": "plan",
+                            "motionState": "pause",
+                            "content": {"subContent": {"type": "auto"}},
+                            "cmode": 2,
+                        },
+                    }
+                )
+            ),
+            StateEvent(State.PAUSED),
         ),
     ],
 )
 async def test_GetCleanInfo(
-    command: GetCleanInfo, json: dict[str, Any], expected: StateEvent
+    command: type[GetCleanInfo],
+    data: tuple[dict[str, Any], FirmwareEvent],
+    expected: StateEvent,
 ) -> None:
-    await assert_command(command, json, expected)
+    json, firmware_event = data
+    await assert_command(command(), json, (firmware_event, expected))
 
 
 @pytest.mark.parametrize("command_type", [Clean, CleanV2])
@@ -90,8 +117,27 @@ async def test_Clean_act(
             CleanAreaV2(CleanMode.SPOT_AREA, "5,8"),
             {"act": "start", "content": {"type": "spotArea", "value": "5,8"}},
         ),
+        (
+            CleanArea(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            {
+                "act": "start",
+                "type": "customArea",
+                "content": "1580.0,-4087.0,3833.0,-7525.0",
+                "count": 1,
+            },
+        ),
+        (
+            CleanAreaV2(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            {
+                "act": "start",
+                "content": {
+                    "type": "customArea",
+                    "value": "1580.0,-4087.0,3833.0,-7525.0",
+                },
+            },
+        ),
     ],
-    ids=["CleanArea", "CleanAreaV2"],
+    ids=["Rooms", "Rooms V2", "Coordinates", "Coordinates V2"],
 )
 async def test_CleanArea(
     command: CleanArea | CleanAreaV2, args: dict[str, str]

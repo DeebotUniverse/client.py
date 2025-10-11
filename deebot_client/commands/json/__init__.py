@@ -4,8 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.command import Command, CommandMqttP2P
-
+from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -28,16 +27,18 @@ from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 )
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
-from .network import GetNetInfo
+from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
@@ -52,6 +53,8 @@ from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
 
 if TYPE_CHECKING:
+    from deebot_client.command import Command
+
     from .common import JsonCommand
 
 __all__ = [
@@ -80,6 +83,7 @@ __all__ = [
     "GetFanSpeed",
     "GetLifeSpan",
     "GetMajorMap",
+    "GetMapInfoV2",
     "GetMapSet",
     "GetMapSetV2",
     "GetMapSubSet",
@@ -89,6 +93,7 @@ __all__ = [
     "GetMoveUpWarning",
     "GetMultimapState",
     "GetNetInfo",
+    "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
     "GetSafeProtect",
@@ -113,6 +118,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetMajorMap",
     "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
     "SetMultimapState",
@@ -132,6 +138,9 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    auto_empty.GetAutoEmpty,
+    auto_empty.SetAutoEmpty,
 
     GetBorderSwitch,
     SetBorderSwitch,
@@ -184,11 +193,13 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 
     GetMopAutoWashFrequency,
     SetMopAutoWashFrequency,
@@ -200,6 +211,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetMultimapState,
 
     GetNetInfo,
+    GetNetInfoLegacy,
 
     GetOta,
     SetOta,
@@ -212,6 +224,10 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetSafeProtect,
     SetSafeProtect,
+
+    station_action.StationAction,
+
+    station_state.GetStationState,
 
     GetSweepMode,
     SetSweepMode,
@@ -236,13 +252,4 @@ _COMMANDS: list[type[JsonCommand]] = [
 ]
 # fmt: on
 
-COMMANDS: dict[str, type[Command]] = {
-    cmd.name: cmd  # type: ignore[misc]
-    for cmd in _COMMANDS
-}
-
-COMMANDS_WITH_MQTT_P2P_HANDLING: dict[str, type[CommandMqttP2P]] = {
-    cmd_name: cmd
-    for (cmd_name, cmd) in COMMANDS.items()
-    if issubclass(cmd, CommandMqttP2P)
-}
+COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}

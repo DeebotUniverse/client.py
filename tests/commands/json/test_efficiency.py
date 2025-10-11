@@ -24,8 +24,8 @@ from . import assert_command, assert_set_command
 async def test_GetEfficiencyMode(
     json: dict[str, Any], expected: EfficiencyModeEvent
 ) -> None:
-    json = get_request_json(get_success_body(json))
-    await assert_command(GetEfficiencyMode(), json, expected)
+    json, firmware_event = get_request_json(get_success_body(json))
+    await assert_command(GetEfficiencyMode(), json, (firmware_event, expected))
 
 
 @pytest.mark.parametrize(("value"), [EfficiencyMode.STANDARD_MODE, "standard_mode"])

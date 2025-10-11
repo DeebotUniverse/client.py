@@ -10,12 +10,12 @@ from .common import GetEnableCommand, SetEnableCommand
 class GetContinuousCleaning(GetEnableCommand):
     """Get continuous cleaning command."""
 
-    name = "getBreakPoint"
-    event_type = ContinuousCleaningEvent
+    NAME = "getBreakPoint"
+    EVENT_TYPE = ContinuousCleaningEvent
 
 
 class SetContinuousCleaning(SetEnableCommand):
     """Set continuous cleaning command."""
 
-    name = "setBreakPoint"
+    NAME = "setBreakPoint"
     get_command = GetContinuousCleaning

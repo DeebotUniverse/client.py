@@ -3,17 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import Enum, IntEnum, unique
+from enum import IntEnum, unique
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.base import Event
+from deebot_client.util.enum import StrEnumWithXml
 
+from . import auto_empty, station, water_info
+from .auto_empty import AutoEmptyEvent
+from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     CachedMapInfoEvent,
+    GpsPositionEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -21,17 +26,17 @@ from .map import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from .mop_auto_wash_frequency import MopAutoWashFrequency, MopAutoWashFrequencyEvent
 from .network import NetworkInfoEvent
-from .water_info import SweepType, WaterAmount, WaterInfoEvent
+from .station import StationEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
+    "AutoEmptyEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -41,8 +46,11 @@ __all__ = [
     "Event",
     "FanSpeedEvent",
     "FanSpeedLevel",
+    "FirmwareEvent",
+    "GpsPositionEvent",
     "MajorMapEvent",
     "MapChangedEvent",
+    "MapInfoEvent",
     "MapSetEvent",
     "MapSetType",
     "MapSubsetEvent",
@@ -52,14 +60,14 @@ __all__ = [
     "MopAutoWashFrequencyEvent",
     "NetworkInfoEvent",
     "Position",
-    "PositionType",
     "PositionsEvent",
+    "StationEvent",
     "SweepModeEvent",
-    "SweepType",
-    "WaterAmount",
-    "WaterInfoEvent",
     "WorkMode",
     "WorkModeEvent",
+    "auto_empty",
+    "station",
+    "water_info",
 ]
 
 
@@ -125,24 +133,30 @@ class ErrorEvent(Event):
 
 
 @unique
-class LifeSpan(str, Enum):
+class LifeSpan(StrEnumWithXml):
     """Enum class for all possible life span components."""
 
-    BRUSH = "brush"
-    FILTER = "heap"
-    SIDE_BRUSH = "sideBrush"
-    UNIT_CARE = "unitCare"
-    ROUND_MOP = "roundMop"
-    AIR_FRESHENER = "dModule"
-    UV_SANITIZER = "uv"
-    HUMIDIFY = "humidify"
-    HUMIDIFY_MAINTENANCE = "wbCare"
-    BLADE = "blade"
-    LENS_BRUSH = "lensBrush"
-    DUST_BAG = "dustBag"
-    CLEANING_FLUID = "autoWater_cleaningFluid"
-    STRAINER = "strainer"
-    HAND_FILTER = "handFilter"
+    BRUSH = "brush", "Brush"
+    FILTER = "heap", "Heap"
+    SIDE_BRUSH = "sideBrush", "SideBrush"
+    UNIT_CARE = "unitCare", "UnitCare"
+    ROUND_MOP = "roundMop", "RoundMop"
+    AIR_FRESHENER = "dModule", "DModule"
+    UV_SANITIZER = "uv", "Uv"
+    HUMIDIFY = "humidify", "Humidify"
+    HUMIDIFY_MAINTENANCE = "wbCare", "WbCare"
+    BLADE = "blade", "Blade"
+    LENS_BRUSH = "lensBrush", "LensBrush"
+    DUST_BAG = "dustBag", "DustBag"
+    CLEANING_FLUID = "autoWater_cleaningFluid", "AutoWater_cleaningFluid"
+    CLEANING_SOLUTION = "cleaningSolution", "CleaningSolution"
+    SEWAGE_BOX = "sewageBox", "SewageBox"
+    STRAINER = "strainer", "Strainer"
+    HAND_FILTER = "handFilter", "HandFilter"
+    DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
+    STATION_FILTER = "spHeap", "SpHeap"
+    WATER_SINK = "waterSink", "WaterSink"
+    MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
 
 
 @dataclass(frozen=True)
@@ -225,7 +239,7 @@ class VolumeEvent(Event):
 class EnableEvent(Event):
     """Enabled event."""
 
-    enable: bool
+    enabled: bool
 
 
 @dataclass(frozen=True)
@@ -298,3 +312,10 @@ class CutDirectionEvent(Event):
     """Cut direction event representation."""
 
     angle: int
+
+
+@dataclass(frozen=True)
+class FirmwareEvent(Event):
+    """Firmware event."""
+
+    version: str

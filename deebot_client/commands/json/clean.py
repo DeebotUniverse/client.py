@@ -13,7 +13,6 @@ from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.command import CommandResult
     from deebot_client.event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
@@ -22,7 +21,7 @@ _LOGGER = get_logger(__name__)
 class Clean(ExecuteCommand):
     """Clean command."""
 
-    name = "clean"
+    NAME = "clean"
 
     def __init__(self, action: CleanAction) -> None:
         super().__init__(self._get_args(action))
@@ -32,7 +31,7 @@ class Clean(ExecuteCommand):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
+    ) -> tuple[HandlingResult, dict[str, Any]]:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict):
@@ -77,7 +76,7 @@ class CleanArea(Clean):
 class CleanV2(Clean):
     """Clean V2 command."""
 
-    name = "clean_V2"
+    NAME = "clean_V2"
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
         content: dict[str, str] = {}
@@ -107,7 +106,7 @@ class CleanAreaV2(CleanV2):
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
-    name = "getCleanInfo"
+    NAME = "getCleanInfo"
 
     @classmethod
     def _handle_body_data_dict(
@@ -121,7 +120,7 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         state = data.get("state")
         if data.get("trigger") == "alert":
             status = State.ERROR
-        elif state == "clean":
+        elif state in ("clean", "washing"):
             clean_state = data.get("cleanState", {})
             motion_state = clean_state.get("motionState")
             if motion_state == "working":
@@ -158,4 +157,4 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 class GetCleanInfoV2(GetCleanInfo):
     """Get clean info v2 command."""
 
-    name = "getCleanInfo_V2"
+    NAME = "getCleanInfo_V2"

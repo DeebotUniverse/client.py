@@ -1,97 +1,43 @@
 from __future__ import annotations
 
 import asyncio
-from typing import TYPE_CHECKING
+import os
+from typing import TYPE_CHECKING, cast
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
-from svg import (
-    ArcRel,
-    ClosePath,
-    CubicBezier,
-    HorizontalLineToRel,
-    LineToRel,
-    MoveTo,
-    MoveToRel,
-    PathData,
-    Polygon,
-    Scale,
-    SmoothCubicBezierRel,
-    Use,
-    VerticalLineToRel,
-    ViewBoxSpec,
-)
 
 from deebot_client.events.map import (
+    CachedMapInfoEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapInfoEvent,
     MapSetEvent,
-    MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from deebot_client.map import (
     Map,
     MapData,
-    Path,
-    Point,
-    TracePoint,
-    ViewBoxFloat,
-    _calc_point,
-    _calc_point_in_viewbox,
-    _get_svg_positions,
-    _get_svg_subset,
-    _points_to_svg_path,
 )
-from deebot_client.models import Room
+from deebot_client.rs.map import PositionType
+from tests import load_data_folder
 
 from .common import block_till_done
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Callable
+    from types import ModuleType
+
+    from _pytest.mark import ParameterSet
+    from pytest_codspeed import BenchmarkFixture
 
     from deebot_client.event_bus import EventBus
-
-_test_calc_point_data = [
-    (5000, 0, Point(100.0, 0.0)),
-    (20010, -29900, Point(400.2, 598.0)),
-    (None, 29900, Point(0, -598.0)),
-]
-
-
-@pytest.mark.parametrize(("x", "y", "expected"), _test_calc_point_data)
-def test_calc_point(
-    x: int,
-    y: int,
-    expected: Point,
-) -> None:
-    result = _calc_point(x, y)
-    assert result == expected
-
-
-_test_calc_point_in_viewbox_data = [
-    (100, 100, ViewBoxSpec(-100, -100, 200, 150), Point(2.0, -2.0)),
-    (-64000, -64000, ViewBoxSpec(0, 0, 1000, 1000), Point(0.0, 1000.0)),
-    (64000, 64000, ViewBoxSpec(0, 0, 1000, 1000), Point(1000.0, 0.0)),
-    (None, 1000, ViewBoxSpec(-500, -500, 1000, 1000), Point(0.0, -20.0)),
-]
-
-
-@pytest.mark.parametrize(
-    ("x", "y", "view_box", "expected"), _test_calc_point_in_viewbox_data
-)
-def test_calc_point_in_viewbox(
-    x: int,
-    y: int,
-    view_box: ViewBoxSpec,
-    expected: Point,
-) -> None:
-    result = _calc_point_in_viewbox(x, y, ViewBoxFloat(view_box))
-    assert result == expected
+    from deebot_client.events.base import Event
+    from deebot_client.models import StaticDeviceInfo
 
 
 async def test_MapData(event_bus: EventBus) -> None:
@@ -101,9 +47,10 @@ async def test_MapData(event_bus: EventBus) -> None:
     map_data = MapData(event_bus)
 
     async def test_cycle() -> None:
-        for x in range(10000):
-            map_data.positions.append(Position(PositionType.DEEBOT, x, x, 0))
-            map_data.rooms[x] = Room("test", x, "1,2")
+        positions = []
+        for x in range(100):
+            positions.append(Position(PositionType.DEEBOT, x, x, 0))
+            map_data.update_positions(positions)
 
         assert map_data.changed is True
         mock.assert_called_once()
@@ -120,19 +67,40 @@ async def test_MapData(event_bus: EventBus) -> None:
     await test_cycle()
 
 
-async def test_Map_subscriptions(
-    execute_mock: AsyncMock, event_bus_mock: Mock, event_bus: EventBus
-) -> None:
-    map = Map(execute_mock, event_bus_mock)
+def _test_Map_subscriptions_subscribe(event_bus_mock: Mock) -> None:
+    async def on_cached_info(_: CachedMapInfoEvent) -> None:
+        pass
 
-    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY)]
+    event_bus_mock.subscribe(CachedMapInfoEvent, on_cached_info)
+    event_bus_mock.subscribe.reset_mock()
+
+
+@pytest.mark.parametrize(
+    ("prepare_fn", "events_with_subscriber"),
+    [(lambda _: None, []), (_test_Map_subscriptions_subscribe, [CachedMapInfoEvent])],
+    ids=["No CachedMapInfoEvent subscribers", "Already CachedMapInfoEvent subscribers"],
+)
+async def test_Map_subscriptions(
+    execute_mock: AsyncMock,
+    event_bus_mock: Mock,
+    event_bus: EventBus,
+    prepare_fn: Callable[[Mock], None],
+    events_with_subscriber: list[type[Event]],
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    prepare_fn(event_bus_mock)
+    capabilities_map = static_device_info.capabilities.map
+    assert capabilities_map is not None
+    map_obj = Map(execute_mock, event_bus_mock, capabilities_map)
+
+    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY), call(MapInfoEvent, ANY)]
     event_bus_mock.subscribe.assert_has_calls(calls)
     event_bus_mock.add_on_subscription_callback.assert_called_once_with(
         MapChangedEvent, ANY
     )
     # +1 is for the on_first_subscription call
     num_unsubs = len(calls) + 1
-    assert len(map._unsubscribers) == num_unsubs
+    assert len(map_obj._unsubscribers) == num_unsubs
 
     async def on_change() -> None:
         pass
@@ -140,196 +108,152 @@ async def test_Map_subscriptions(
     event_unsub = event_bus_mock.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
 
-    events = [MajorMapEvent, MinorMapEvent, PositionsEvent, MapTraceEvent]
+    events = [
+        MajorMapEvent,
+        MinorMapEvent,
+        CachedMapInfoEvent,
+        PositionsEvent,
+        MapTraceEvent,
+    ]
 
     calls.append(call(MapChangedEvent, on_change))
     calls.extend([call(event, ANY) for event in events])
     event_bus_mock.subscribe.assert_has_calls(calls)
-    assert len(map._unsubscribers) == num_unsubs
+    assert len(map_obj._unsubscribers) == num_unsubs
     for event in events:
         assert event_bus.has_subscribers(event)
 
     event_unsub()
     for event in events:
-        assert not event_bus.has_subscribers(event)
+        if event not in events_with_subscriber:
+            assert not event_bus.has_subscribers(event)
 
-    await map.teardown()
-    assert not map._unsubscribers
-
-
-@patch(
-    "deebot_client.map.decompress_7z_base64_data",
-    Mock(return_value=b"\x10\x00\x00\x01\x00"),
-)
-async def test_Map_svg_traces_path(
-    execute_mock: AsyncMock, event_bus_mock: Mock
-) -> None:
-    map = Map(execute_mock, event_bus_mock)
-
-    path = map._get_svg_traces_path()
-    assert path is None
-
-    map._update_trace_points("")
-    path = map._get_svg_traces_path()
-
-    assert path == Path(
-        fill="none",
-        stroke="#fff",
-        stroke_width=1.5,
-        stroke_linejoin="round",
-        vector_effect="non-scaling-stroke",
-        transform=[
-            Scale(0.2, -0.2),
-        ],
-        d=[MoveTo(x=16, y=256)],
-    )
+    await map_obj.teardown()
+    assert not map_obj._unsubscribers
 
 
-def test_compact_path() -> None:
-    """Test that the path is compacted correctly."""
-    path = Path(
-        fill="#ffe605",
-        d=[
-            MoveTo(4, -6.4),
-            CubicBezier(4, -4.2, 0, 0, 0, 0),
-            SmoothCubicBezierRel(-4, -4.2, -4, -6.4),
-            LineToRel(0, -3.2),
-            LineToRel(4, 0),
-            ArcRel(1, 2, 3, large_arc=True, sweep=False, dx=4, dy=5),
-            ClosePath(),
-        ],
-    )
+async def setup_map(
+    execute_mock: AsyncMock, event_bus: EventBus, static_device_info: StaticDeviceInfo
+) -> Map:
+    async def on_change(_: MapChangedEvent) -> None:
+        pass
 
-    assert (
-        str(path)
-        == '<path d="M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4l0-3.2 4 0a1 2 3 1 0 4 5Z" fill="#ffe605"/>'
-    )
+    capabilities_map = static_device_info.capabilities.map
+    assert capabilities_map is not None
+    map_obj = Map(execute_mock, event_bus, capabilities_map)
+    event_bus.subscribe(MapChangedEvent, on_change)
+    await block_till_done(event_bus)
+    return map_obj
 
 
 @pytest.mark.parametrize(
-    ("points", "expected"),
+    ("event", "exception_class"),
     [
+        (MinorMapEvent(65, "data"), ValueError),
         (
-            [Point(x=45.58, y=176.12), Point(x=18.78, y=175.94)],
-            [MoveTo(45.58, 176.12), LineToRel(-26.8, -0.18)],
-        ),
-        (
-            [
-                TracePoint(x=-215, y=-70, connected=False),
-                TracePoint(x=-215, y=-70, connected=True),
-                TracePoint(x=-212, y=-73, connected=True),
-                TracePoint(x=-213, y=-73, connected=True),
-                TracePoint(x=-227, y=-72, connected=True),
-                TracePoint(x=-227, y=-70, connected=True),
-                TracePoint(x=-227, y=-70, connected=True),
-                TracePoint(x=-256, y=-69, connected=False),
-                TracePoint(x=-260, y=-80, connected=True),
-            ],
-            [
-                MoveTo(x=-215, y=-70),
-                LineToRel(dx=3, dy=-3),
-                HorizontalLineToRel(dx=-1),
-                LineToRel(dx=-14, dy=1),
-                VerticalLineToRel(dy=2),
-                MoveToRel(dx=-29, dy=1),
-                LineToRel(dx=-4, dy=-11),
-            ],
+            MajorMapEvent(
+                map_id="1132127808",
+                values=[1295764014 for _ in range(100)],
+                requested=True,
+            ),
+            ExceptionGroup,
         ),
     ],
+    ids=["MinorMapEvent", "MajorMapEvent"],
 )
-def test_points_to_svg_path(
-    points: Sequence[Point | TracePoint], expected: list[PathData]
+async def test_invalid_map_piece_index(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    event: Event,
+    exception_class: type[Exception],
+    static_device_info: StaticDeviceInfo,
 ) -> None:
-    assert _points_to_svg_path(points) == expected
+    """Test invalid map piece index."""
+    await setup_map(execute_mock, event_bus, static_device_info)
+
+    event_bus.notify(event)
+    with pytest.raises(exception_class) as ex:
+        await block_till_done(event_bus)
+
+    exceptions = (
+        ex.value.exceptions if isinstance(ex.value, ExceptionGroup) else [ex.value]
+    )
+
+    for err in exceptions:
+        assert "Index out of bounds" in str(err)
+
+
+async def test_get_svg_map_empty(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test getting svg map without data returns None."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    assert map_obj.get_svg_map() is None
+
+
+async def test_empty_maptrace(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test empty data will not raise exception."""
+    with patch("deebot_client.map.MapData", autospec=True):
+        map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+        event_bus.notify(MapTraceEvent(0, 0, ""))
+        await block_till_done(event_bus)
+        cast("Mock", map_obj._map_data.add_trace_points).assert_not_called()
+
+
+def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:
+    """Extract EVENTS and SVG from the module."""
+    required_attributes = ["EVENTS", "SVG", "DEVICE_CLASS"]
+    if not all(hasattr(module, attr) for attr in required_attributes):
+        msg = f"Module does not have required attributes: {required_attributes}"
+        raise AttributeError(msg)
+
+    # To keep codspeed test history, we hide the params for the original test, which is now test_1
+    test_name = (
+        pytest.HIDDEN_PARAM
+        if filename == "test_1" and os.getenv("CI") == "true"
+        else f"{filename}-{module.DEVICE_CLASS}"
+    )
+
+    return pytest.param(
+        module.DEVICE_CLASS,
+        module.EVENTS,
+        module.SVG,
+        id=test_name,
+    )
 
 
 @pytest.mark.parametrize(
-    ("subset", "expected"),
-    [
-        (
-            MapSubsetEvent(
-                id=0, type=MapSetType.VIRTUAL_WALLS, coordinates="[-3900,668,-2133,668]"
-            ),
-            Path(
-                stroke="#f00000",
-                stroke_width=1.5,
-                stroke_dasharray=[4],
-                vector_effect="non-scaling-stroke",
-                d=[MoveTo(x=-78.0, y=-13.36), HorizontalLineToRel(dx=35.34)],
-            ),
-        ),
-        (
-            MapSubsetEvent(
-                id=1,
-                type=MapSetType.NO_MOP_ZONES,
-                coordinates="[-442,2910,-442,982,1214,982,1214,2910]",
-            ),
-            Polygon(
-                fill="#ffa50030",
-                stroke="#ffa500",
-                stroke_width=1.5,
-                stroke_dasharray=[4],
-                vector_effect="non-scaling-stroke",
-                points=[-8.84, -58.2, -8.84, -19.64, 24.28, -19.64, 24.28, -58.2],
-            ),
-        ),
-        (
-            MapSubsetEvent(
-                id=0,
-                type=MapSetType.VIRTUAL_WALLS,
-                coordinates="['12023', '1979', '12135', '-6720']",
-            ),
-            Path(
-                stroke="#f00000",
-                stroke_width=1.5,
-                stroke_dasharray=[4],
-                vector_effect="non-scaling-stroke",
-                d=[MoveTo(x=240.46, y=-39.58), LineToRel(dx=2.24, dy=173.98)],
-            ),
-        ),
-    ],
+    ("device_class", "events", "expected_svg"),
+    load_data_folder("map", extractor_for_test_get_svg_map),
 )
-def test_get_svg_subset(subset: MapSubsetEvent, expected: Path | Polygon) -> None:
-    assert _get_svg_subset(subset) == expected
-
-
-_test_get_svg_positions_data = [
-    (
-        [Position(PositionType.CHARGER, 5000, -55000, 0)],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#c", x=100, y=500)],
-    ),
-    (
-        [Position(PositionType.DEEBOT, 15000, 15000, 0)],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=300, y=-300)],
-    ),
-    (
-        [
-            Position(PositionType.CHARGER, 25000, 55000, 0),
-            Position(PositionType.DEEBOT, -5000, -50000, 0),
-        ],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=-100, y=500), Use(href="#c", x=500, y=-500)],
-    ),
-    (
-        [
-            Position(PositionType.DEEBOT, -10000, 10000, 0),
-            Position(PositionType.CHARGER, 50000, 5000, 0),
-        ],
-        ViewBoxSpec(-500, -500, 1000, 1000),
-        [Use(href="#d", x=-200, y=-200), Use(href="#c", x=500, y=-100)],
-    ),
-]
-
-
-@pytest.mark.parametrize(
-    ("positions", "view_box", "expected"), _test_get_svg_positions_data
-)
-def test_get_svg_positions(
-    positions: list[Position],
-    view_box: ViewBoxSpec,
-    expected: list[Use],
+def test_get_svg_map(
+    benchmark: BenchmarkFixture,
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+    events: list[Event],
+    expected_svg: str,
 ) -> None:
-    result = _get_svg_positions(positions, ViewBoxFloat(view_box))
-    assert result == expected
+    """Test getting svg map."""
+    event_loop = asyncio.new_event_loop()
+
+    async def test_fn() -> str | None:
+        map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+
+        for event in events:
+            event_bus.notify(event)
+
+        await block_till_done(event_bus)
+        return map_obj.get_svg_map()
+
+    @benchmark
+    def svg_map() -> str | None:
+        return event_loop.run_until_complete(test_fn())
+
+    assert svg_map == expected_svg

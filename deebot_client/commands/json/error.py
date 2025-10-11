@@ -18,7 +18,7 @@ if TYPE_CHECKING:
 class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
-    name = "getError"
+    NAME = "getError"
 
     @classmethod
     def _handle_body_data_dict(

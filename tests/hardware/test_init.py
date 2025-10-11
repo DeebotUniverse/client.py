@@ -2,14 +2,16 @@
 
 from __future__ import annotations
 
-import os
 from pathlib import Path
 from typing import TYPE_CHECKING
+from unittest import mock
 
 import pytest
 
+from deebot_client import hardware
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
+from deebot_client.commands.json.auto_empty import GetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
@@ -34,6 +36,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
+from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
@@ -41,6 +44,7 @@ from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -63,6 +67,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationEvent,
     StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
@@ -79,30 +84,34 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.events.water_info import WaterInfoEvent
-from deebot_client.hardware import deebot as hardware_deebot, get_static_device_info
+from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
+from deebot_client.models import StaticDeviceInfo
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
-
     from deebot_client.command import Command
     from deebot_client.events.base import Event
-    from deebot_client.models import StaticDeviceInfo
 
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
-        ("not_specified", lambda: None),
-        ("yna5xi", lambda: hardware_deebot.DEVICES["yna5xi"]),
+        ("not_specified", None),
+        ("yna5xi", get_yna5xi_info()),
     ],
 )
 async def test_get_static_device_info(
-    class_: str, expected: Callable[[], StaticDeviceInfo]
+    class_: str, expected: StaticDeviceInfo | None
 ) -> None:
     """Test get_static_device_info."""
-    static_device_info = await get_static_device_info(class_)
-    assert static_device_info == expected()
+    static_device_info = await hardware.get_static_device_info(class_)
+    assert static_device_info == expected
+
+    # Test caching
+    with mock.patch("deebot_client.hardware.importlib.import_module") as mock_import:
+        static_device_info_cached = await hardware.get_static_device_info(class_)
+        assert static_device_info_cached == expected
+        mock_import.assert_not_called()
 
 
 @pytest.mark.parametrize(
@@ -175,6 +184,7 @@ async def test_get_static_device_info(
                 MapChangedEvent: [],
                 MajorMapEvent: [GetMajorMap()],
                 MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
                 OtaEvent: [GetOta()],
@@ -185,14 +195,16 @@ async def test_get_static_device_info(
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
                 VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
+                WaterAmountEvent: [GetWaterInfo()],
             },
         ),
         (
             "p95mgv",
             {
+                AutoEmptyEvent: [GetAutoEmpty()],
                 AdvancedModeEvent: [GetAdvancedMode()],
                 AvailabilityEvent: [GetBattery(is_available_check=True)],
+                StationEvent: [GetStationState()],
                 BatteryEvent: [GetBattery()],
                 CachedMapInfoEvent: [GetCachedMapInfo()],
                 CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
@@ -216,6 +228,7 @@ async def test_get_static_device_info(
                 MajorMapEvent: [GetMajorMap()],
                 MapChangedEvent: [],
                 MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
                 MultimapStateEvent: [GetMultimapState()],
                 NetworkInfoEvent: [GetNetInfo()],
                 OtaEvent: [GetOta()],
@@ -228,7 +241,7 @@ async def test_get_static_device_info(
                 TrueDetectEvent: [GetTrueDetect()],
                 VoiceAssistantStateEvent: [GetVoiceAssistantState()],
                 VolumeEvent: [GetVolume()],
-                WaterInfoEvent: [GetWaterInfo()],
+                WaterAmountEvent: [GetWaterInfo()],
             },
         ),
     ],
@@ -237,24 +250,30 @@ async def test_get_static_device_info(
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
 ) -> None:
-    info = await get_static_device_info(class_)
+    info = await hardware.get_static_device_info(class_)
     assert info is not None
     capabilities = info.capabilities
     assert capabilities._events.keys() == expected.keys()
     for event, expected_commands in expected.items():
-        assert (
-            capabilities.get_refresh_commands(event) == expected_commands
-        ), f"Refresh commands doesn't match for {event}"
+        assert capabilities.get_refresh_commands(event) == expected_commands, (
+            f"Refresh commands doesn't match for {event}"
+        )
 
 
-def test_all_models_loaded() -> None:
-    """Test that all models are loaded."""
-    hardware_deebot._load()
-    folder = Path(hardware_deebot.__file__).parent
-    assert list(hardware_deebot.DEVICES) == sorted(
+async def test_all_models_loaded() -> None:
+    """Test that all models can be loaded."""
+    folder = Path(hardware.__file__).parent
+    all_modules = sorted(
         [
-            name.removesuffix(".py")
-            for name in os.listdir(folder)
-            if (folder / name).is_file() and name != "__init__.py"
+            file.name.removesuffix(".py")
+            for file in folder.iterdir()
+            if file.is_file() and file.name != "__init__.py"
         ]
     )
+
+    # Try to load each module
+    for module_name in all_modules:
+        device_info = await hardware.get_static_device_info(module_name)
+        assert isinstance(device_info, StaticDeviceInfo), (
+            f"Failed to load device info for {module_name}"
+        )

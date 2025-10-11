@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import json
 import logging
 import ssl
 from typing import TYPE_CHECKING, Any
@@ -10,6 +9,7 @@ from unittest.mock import DEFAULT, MagicMock, Mock, patch
 
 from aiomqtt import Client, Message, MqttError as AioMqttError
 from cachetools import TTLCache
+import orjson
 import pytest
 
 from deebot_client.commands.json.battery import GetBattery
@@ -22,9 +22,10 @@ from .mqtt_util import subscribe, verify_subscribe
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.models import ApiDeviceInfo
+    from deebot_client.models import ApiDeviceInfo, DeviceInfo
 
 
+@pytest.mark.docker
 async def test_last_message_received_at(
     mqtt_config: MqttConfiguration, authenticator: Authenticator
 ) -> None:
@@ -33,7 +34,7 @@ async def test_last_message_received_at(
     await asyncio.sleep(4)
 
     # Mock time for assertion
-    expected = datetime.datetime(2023, 1, 1)
+    expected = datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC)
     with patch("deebot_client.mqtt_client.datetime", wraps=datetime.datetime) as dt:
         dt.now.return_value = expected
 
@@ -45,42 +46,44 @@ async def test_last_message_received_at(
         assert mqtt_client.last_message_received_at == expected
 
 
+@pytest.mark.docker
 async def test_client_bot_subscription(
-    mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
+    mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback, unsubscribe) = await subscribe(mqtt_client, api_device_info)
+    (_, callback, unsubscribe) = await subscribe(mqtt_client, device_info)
 
     await verify_subscribe(
-        test_mqtt_client, api_device_info, callback, expected_called=True
+        test_mqtt_client, device_info, callback, expected_called=True
     )
 
     unsubscribe()
     await asyncio.sleep(0.1)
 
     await verify_subscribe(
-        test_mqtt_client, api_device_info, callback, expected_called=False
+        test_mqtt_client, device_info, callback, expected_called=False
     )
 
 
+@pytest.mark.docker
 async def test_client_reconnect_manual(
-    mqtt_client: MqttClient, api_device_info: ApiDeviceInfo, test_mqtt_client: Client
+    mqtt_client: MqttClient, device_info: DeviceInfo, test_mqtt_client: Client
 ) -> None:
-    (_, callback, _) = await subscribe(mqtt_client, api_device_info)
+    (_, callback, _) = await subscribe(mqtt_client, device_info)
 
     await verify_subscribe(
-        test_mqtt_client, api_device_info, callback, expected_called=True
+        test_mqtt_client, device_info, callback, expected_called=True
     )
 
     await mqtt_client.disconnect()
     await verify_subscribe(
-        test_mqtt_client, api_device_info, callback, expected_called=False
+        test_mqtt_client, device_info, callback, expected_called=False
     )
 
     await mqtt_client.connect()
     await asyncio.sleep(0.1)
 
     await verify_subscribe(
-        test_mqtt_client, api_device_info, callback, expected_called=True
+        test_mqtt_client, device_info, callback, expected_called=True
     )
 
 
@@ -93,8 +96,8 @@ async def _publish_p2p(
     data_type: str = "j",
     *,
     is_request: bool,
-) -> None:
-    data_bytes = json.dumps(data).encode("utf-8")
+) -> bytes:
+    data_bytes = orjson.dumps(data)
     if is_request:
         topic = f"iot/p2p/{command_name}/test/test/test/{device_info['did']}/{device_info['class']}/{device_info['resource']}/q/{request_id}/{data_type}"
     else:
@@ -102,19 +105,21 @@ async def _publish_p2p(
 
     await test_mqtt_client.publish(topic, data_bytes)
     await asyncio.sleep(0.1)
+    return data_bytes
 
 
+@pytest.mark.docker
 async def test_p2p_success(
     mqtt_client: MqttClient,
-    api_device_info: ApiDeviceInfo,
+    device_info: DeviceInfo,
     test_mqtt_client: Client,
 ) -> None:
     """Test p2p workflow on SetVolume."""
-    (events, _, _) = await subscribe(mqtt_client, api_device_info)
+    (events, _, _) = await subscribe(mqtt_client, device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
@@ -123,47 +128,46 @@ async def test_p2p_success(
         {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
-            api_device_info,
-            data,
+            device_info.api,
+            {"body": {"data": {"volume": 1}}},
             request_id,
             test_mqtt_client,
             is_request=True,
         )
 
-        create_from_mqtt.assert_called_with(data["body"]["data"])
+        create_from_mqtt.assert_called_with(payload)
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 
-        data = {"body": {"data": {"ret": "ok"}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
-            api_device_info,
-            data,
+            device_info.api,
+            {"body": {"data": {"ret": "ok"}}},
             request_id,
             test_mqtt_client,
             is_request=False,
         )
 
-        command_object.handle_mqtt_p2p.assert_called_with(events, data)
+        command_object.handle_mqtt_p2p.assert_called_with(events, payload)
         assert request_id not in mqtt_client._received_p2p_commands
         assert len(mqtt_client._received_p2p_commands) == 0
 
 
+@pytest.mark.docker
 async def test_p2p_not_supported(
     mqtt_client: MqttClient,
-    api_device_info: ApiDeviceInfo,
+    device_info: DeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test that unsupported command will be logged."""
-    await subscribe(mqtt_client, api_device_info)
-    command_name: str = GetBattery.name
+    await subscribe(mqtt_client, device_info)
+    command_name: str = GetBattery.NAME
 
     await _publish_p2p(
-        command_name, api_device_info, {}, "req", test_mqtt_client, is_request=True
+        command_name, device_info.api, {}, "req", test_mqtt_client, is_request=True
     )
 
     assert (
@@ -173,6 +177,7 @@ async def test_p2p_not_supported(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_data_type_not_supported(
     mqtt_client: MqttClient, caplog: pytest.LogCaptureFixture
 ) -> None:
@@ -201,20 +206,21 @@ async def test_p2p_data_type_not_supported(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_to_late(
     mqtt_client: MqttClient,
-    api_device_info: ApiDeviceInfo,
+    device_info: DeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test p2p when response comes in to late."""
     # reduce ttl to 1 seconds
     mqtt_client._received_p2p_commands = TTLCache(maxsize=60 * 60, ttl=1)
-    await subscribe(mqtt_client, api_device_info)
+    await subscribe(mqtt_client, device_info)
     assert len(mqtt_client._received_p2p_commands) == 0
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
@@ -223,17 +229,16 @@ async def test_p2p_to_late(
         {DataType.JSON: {command_name: command_type}},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"body": {"data": {"volume": 1}}}
-        await _publish_p2p(
+        payload = await _publish_p2p(
             command_name,
-            api_device_info,
-            data,
+            device_info.api,
+            {"body": {"data": {"volume": 1}}},
             request_id,
             test_mqtt_client,
             is_request=True,
         )
 
-        create_from_mqtt.assert_called_with(data["body"]["data"])
+        create_from_mqtt.assert_called_with(payload)
         assert len(mqtt_client._received_p2p_commands) == 1
         assert mqtt_client._received_p2p_commands[request_id] == command_object
 
@@ -242,7 +247,7 @@ async def test_p2p_to_late(
     data = {"body": {"data": {"ret": "ok"}}}
     await _publish_p2p(
         command_name,
-        api_device_info,
+        device_info.api,
         data,
         request_id,
         test_mqtt_client,
@@ -257,29 +262,29 @@ async def test_p2p_to_late(
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 async def test_p2p_parse_error(
     mqtt_client: MqttClient,
-    api_device_info: ApiDeviceInfo,
+    device_info: DeviceInfo,
     test_mqtt_client: Client,
     caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test p2p parse error."""
-    await subscribe(mqtt_client, api_device_info)
+    await subscribe(mqtt_client, device_info)
 
     command_object = Mock(spec=SetVolume)
-    command_name = SetVolume.name
+    command_name = SetVolume.NAME
     command_type = Mock(spec=SetVolume, return_value=command_object)
     with patch.dict(
         "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
         {command_name: command_type},
     ):
         request_id = "req"
-        data: dict[str, Any] = {"volume": 1}
 
-    await _publish_p2p(
+    payload = await _publish_p2p(
         command_name,
-        api_device_info,
-        data,
+        device_info.api,
+        {"volume": 1},
         request_id,
         test_mqtt_client,
         is_request=True,
@@ -287,11 +292,12 @@ async def test_p2p_parse_error(
 
     assert (
         "deebot_client.mqtt_client",
-        logging.WARNING,
-        f"Could not parse p2p payload: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={data}",
+        logging.ERROR,
+        f"An exception occurred during handling p2p message: topic=iot/p2p/{command_name}/test/test/test/did/get_class/resource/q/{request_id}/j; payload={payload!r}",
     ) in caplog.record_tuples
 
 
+@pytest.mark.docker
 @pytest.mark.parametrize(
     ("exception_to_raise", "expected_log_message"),
     [

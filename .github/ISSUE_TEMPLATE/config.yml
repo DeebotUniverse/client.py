@@ -1,8 +1,5 @@
 blank_issues_enabled: false
 contact_links:
-  - name: "❓ Ask a Question"
-    url: https://github.com/DeebotUniverse/client.py/discussions/new
-    about: For asking a question please select the category "Q&A"
-  - name: "💡 Suggest an feature/idea"
-    url: https://github.com/DeebotUniverse/client.py/discussions/new
-    about: For feature request please select the category "Ideas"
+  - name: "Home Assistant Ecovacs documentation"
+    url: https://www.home-assistant.io/integrations/ecovacs
+    about: Documentation how to use the Ecovacs integration in Home Assistant

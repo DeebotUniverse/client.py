@@ -11,8 +11,12 @@ from . import assert_command, assert_set_enable_command
 
 @pytest.mark.parametrize("value", [False, True])
 async def test_GetTrueDetect(*, value: bool) -> None:
-    json = get_request_json(get_success_body({"enable": 1 if value else 0}))
-    await assert_command(GetTrueDetect(), json, TrueDetectEvent(value))
+    json, firmware_event = get_request_json(
+        get_success_body({"enable": 1 if value else 0})
+    )
+    await assert_command(
+        GetTrueDetect(), json, (firmware_event, TrueDetectEvent(value))
+    )
 
 
 @pytest.mark.parametrize("value", [False, True])

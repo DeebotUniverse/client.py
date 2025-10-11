@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandResult
 from deebot_client.const import PATH_API_LG_LOG, REQUEST_HEADERS
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from deebot_client.logging_filter import get_logger
+from deebot_client.message import HandlingResult
 
 from .common import JsonCommand
 
@@ -23,7 +23,7 @@ class GetCleanLogs(JsonCommand):
     """Get clean logs command."""
 
     _targets_bot: bool = False
-    name = "GetCleanLogs"
+    NAME = "GetCleanLogs"
 
     def __init__(self, count: int = 0) -> None:
         super().__init__({"count": count})
@@ -32,7 +32,7 @@ class GetCleanLogs(JsonCommand):
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
         json = {
-            "td": self.name,
+            "td": self.NAME,
             "did": device_info["did"],
             "resource": device_info["resource"],
         }
@@ -55,7 +55,7 @@ class GetCleanLogs(JsonCommand):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -80,10 +80,10 @@ class GetCleanLogs(JsonCommand):
                                 duration=log["last"],
                             )
                         )
-                    except Exception:  # pylint: disable=broad-except
+                    except Exception:
                         _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
 
                 event_bus.notify(CleanLogEvent(logs))
-                return CommandResult.success()
+                return HandlingResult.success()
 
-        return CommandResult.analyse()
+        return HandlingResult.analyse()
