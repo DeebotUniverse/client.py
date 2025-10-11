@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 
 from deebot_client.commands.json import GetMopAutoWashFrequency, SetMopAutoWashFrequency
-from deebot_client.events import MopAutoWashFrequencyEvent
+from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from tests.helpers import (
     get_request_json,
     get_success_body,

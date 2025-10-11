@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.util.enum import StrEnumWithXml
 
-from . import auto_empty, station, water_info
+from . import auto_empty, mop_auto_wash_frequency, station, water_info
 from .auto_empty import AutoEmptyEvent
 from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -27,7 +27,6 @@ from .map import (
     Position,
     PositionsEvent,
 )
-from .mop_auto_wash_frequency import MopAutoWashFrequency, MopAutoWashFrequencyEvent
 from .network import NetworkInfoEvent
 from .station import StationEvent
 from .work_mode import WorkMode, WorkModeEvent
@@ -56,8 +55,6 @@ __all__ = [
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
-    "MopAutoWashFrequency",
-    "MopAutoWashFrequencyEvent",
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
@@ -66,6 +63,7 @@ __all__ = [
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
+    "mop_auto_wash_frequency",
     "station",
     "water_info",
 ]
