@@ -25,7 +25,7 @@ pub(super) struct Point {
     pub connected: bool,
 }
 
-pub(super) fn points_to_svg_path(points: &[Point]) -> Option<Path> {
+pub(super) fn points_to_svg_path(points: &[Point], close_path: bool) -> Option<Path> {
     // Until https://github.com/bodoni/svg/issues/68 is not implemented
     // we need to generate the path manually to avoid the extra spaces/characters which can be omitted
     if points.len() < 2 {
@@ -78,6 +78,9 @@ pub(super) fn points_to_svg_path(points: &[Point]) -> Option<Path> {
             let space = if 0.0 < y { " " } else { "" };
             let _ = write!(svg_path, "{x}{space}{y}");
         }
+    }
+    if close_path {
+        svg_path.push('z');
     }
 
     Some(Path::new().set("d", svg_path))
@@ -144,6 +147,7 @@ impl TracePoints {
                 .iter()
                 .map(Into::into)
                 .collect::<Vec<Point>>(),
+            false,
         )?;
 
         Some(
@@ -203,7 +207,7 @@ mod tests {
     #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], Some(Path::new().set("d", "M45.58 176.12l-26.8-0.18")))]
     #[case(vec![], None)]
     fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: Option<Path>) {
-        let trace = points_to_svg_path(&points);
+        let trace = points_to_svg_path(&points, false);
         assert_eq!(get_path_d_attribute(trace), get_path_d_attribute(expected));
     }
 

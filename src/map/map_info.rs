@@ -3,7 +3,7 @@ use super::{calc_point, decompress_base64_data, ViewBox};
 use super::points::{points_to_svg_path, Point};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use svg::node::element::{Group, Polygon};
+use svg::node::element::Group;
 
 const MAP_INFO_TYPE_OUTLINE: &str = "1";
 const MAP_INFO_TYPE_ROOM: &str = "2";
@@ -52,8 +52,10 @@ impl MapInfo {
         if !self.areas.is_empty() {
             // Add entire rooms as unreachable and overlay reachable sections
             let mut group = Group::new().set("class", STYLE_ROOMS_KEY);
-            for polygon in add_polygons_to_svg(&self.areas) {
-                group = group.add(polygon);
+            for area in &self.areas {
+                if let Some(path) = points_to_svg_path(area, true) {
+                    group = group.add(path);
+                }
             }
             svg_elements.push(Box::new(group));
             styles.push((STYLE_ROOMS_CSS_IDENTIFIER, STYLE_ROOMS_VALUE));
@@ -61,8 +63,10 @@ impl MapInfo {
 
         if !self.block_lines.is_empty() {
             let mut group = Group::new().set("class", STYLE_BLOCK_LINES_KEY);
-            for polygon in add_polygons_to_svg(&self.block_lines) {
-                group = group.add(polygon);
+            for block in &self.block_lines {
+                if let Some(path) = points_to_svg_path(block, true) {
+                    group = group.add(path);
+                }
             }
             svg_elements.push(Box::new(group));
             styles.push((STYLE_BLOCK_LINES_CSS_IDENTIFIER, STYLE_BLOCK_LINES_VALUE));
@@ -72,7 +76,7 @@ impl MapInfo {
         if !self.outlines.is_empty() {
             let mut outline_group = Group::new().set("class", STYLE_OUTLINE_KEY);
             for outline in &self.outlines {
-                if let Some(path) = points_to_svg_path(outline) {
+                if let Some(path) = points_to_svg_path(outline, false) {
                     outline_group = outline_group.add(path);
                 }
             }
@@ -205,15 +209,4 @@ fn minmax_points<'a, I: Iterator<Item = &'a Point>>(
             None => *bounds = Some((p.x, p.y, p.x, p.y)),
         }
     }
-}
-
-fn add_polygons_to_svg<'a>(polygons: &'a [Vec<Point>]) -> impl Iterator<Item = Polygon> + 'a {
-    polygons.iter().filter_map(move |p| {
-        if p.len() >= 3 {
-            let coords: Vec<f32> = p.iter().flat_map(|p| vec![p.x, p.y]).collect();
-            Some(Polygon::new().set("points", coords))
-        } else {
-            None
-        }
-    })
 }

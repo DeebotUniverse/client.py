@@ -14,7 +14,7 @@ use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
-    Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Style, Use,
+    Circle, Definitions, Group, Image, Path, RadialGradient, Stop, Style, Use,
 };
 use svg::{Document, Node};
 
@@ -30,7 +30,7 @@ fn calc_point(x: f32, y: f32) -> Point {
     }
 }
 
-fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, Box<dyn Node>)> {
+fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, Path)> {
     debug!("Adding subset: {subset:?}");
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
@@ -59,26 +59,9 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, B
         _ => return Err(PyValueError::new_err("Invalid set type")),
     };
 
-    let svg_object: Box<dyn Node> = if points.len() == 2 {
-        // Only 2 points: use a Path
-        Box::new(
-            points_to_svg_path(&points)
-                .unwrap()
-                .set("class", subset.set_type.as_str()),
-        )
-    } else {
-        // More than 2 points: use a Polygon
-        let mut coords = Vec::with_capacity(points.len() * 2);
-        for p in points {
-            coords.push(p.x);
-            coords.push(p.y);
-        }
-        Box::new(
-            Polygon::new()
-                .set("class", subset.set_type.as_str())
-                .set("points", coords),
-        )
-    };
+    let svg_object = points_to_svg_path(&points, points.len() > 2)
+        .unwrap()
+        .set("class", subset.set_type.as_str());
 
     Ok((class_key, style, svg_object))
 }
@@ -235,7 +218,7 @@ impl MapData {
 
         let mut styles = OrderMap::new();
         styles.insert(
-            "path, polygon",
+            "path",
             "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
         );
 
@@ -431,7 +414,7 @@ mod tests {
 
     #[rstest]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path class=\"vw\" d=\"M-78-13.36h35.34\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon class=\"mw\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<path class=\"mw\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
