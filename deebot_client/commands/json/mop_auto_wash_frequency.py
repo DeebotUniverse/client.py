@@ -6,7 +6,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
-from deebot_client.events import MopAutoWashFrequencyEvent
+from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from deebot_client.message import HandlingResult
 
 from .common import JsonGetCommand, JsonSetCommand
