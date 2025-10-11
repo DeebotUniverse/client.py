@@ -36,7 +36,7 @@ class OnStationState(MessageBodyDataDict):
             and content.get("type") == 1
             and content.get("motionState") == 1
         ):
-            reported_state = State.EMPTYING
+            reported_state = State.EMPTYING_DUSTBIN
         elif (
             state == 1
             and (content := data.get("content"))

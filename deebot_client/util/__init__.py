@@ -94,8 +94,3 @@ class OnChangedDict[KT, VT](dict[KT, VT]):
 
 _T = TypeVar("_T")
 LST = list[_T] | set[_T] | tuple[_T, ...]
-
-
-def short_name(value: str) -> str:
-    """Return value after last dot."""
-    return value.rsplit(".", maxsplit=1)[-1]

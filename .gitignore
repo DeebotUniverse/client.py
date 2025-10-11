@@ -31,3 +31,5 @@ test.py
 .codspeed
 
 similarity_output/
+
+*.log

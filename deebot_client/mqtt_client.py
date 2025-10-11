@@ -130,7 +130,7 @@ class MqttClient:
         self._mqtt_task: asyncio.Task[Any] | None = None
 
         self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(
-            maxsize=60 * 60, ttl=60
+            maxsize=200, ttl=60
         )
         self._last_message_received_at: datetime | None = None
 

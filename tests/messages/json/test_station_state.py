@@ -7,17 +7,17 @@ import pytest
 from deebot_client.events import FirmwareEvent
 from deebot_client.events.station import State, StationEvent
 from deebot_client.messages.json.station_state import OnStationState
-from tests.messages import assert_message
+from tests.messages.json import assert_message
 
 
 @pytest.mark.parametrize(
     ("state", "additional_content", "expected"),
     [
         (0, {"type": 0}, State.IDLE),
-        (1, {"type": 1, "motionState": 1}, State.EMPTYING),
+        (1, {"type": 1, "motionState": 1}, State.EMPTYING_DUSTBIN),
     ],
 )
-def test_onStationState(
+async def test_onStationState(
     state: int,
     additional_content: dict[str, Any],
     expected: State,
@@ -39,6 +39,6 @@ def test_onStationState(
         },
     }
 
-    assert_message(
+    await assert_message(
         OnStationState, data, (FirmwareEvent("1.30.0"), StationEvent(expected))
     )

@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, auto
 import functools
-import json
 from typing import TYPE_CHECKING, Any, final
+
+import orjson
 
 from deebot_client.events import FirmwareEvent
 from deebot_client.util import verify_required_class_variables_exists
@@ -17,6 +18,7 @@ from .logging_filter import get_logger
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from .command import Command
     from .event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
@@ -40,6 +42,7 @@ class HandlingResult:
 
     state: HandlingState
     args: dict[str, Any] | None = None
+    requested_commands: list[Command] = field(default_factory=list)
 
     @classmethod
     def success(cls) -> HandlingResult:
@@ -183,7 +186,7 @@ class MessageDictOrJson(Message, ABC):
         data = message
         if not isinstance(message, dict):
             try:
-                data = json.loads(message)
+                data = orjson.loads(message)
             except Exception:
                 _LOGGER.debug(
                     "Could not decode message %s payload %s as JSON",

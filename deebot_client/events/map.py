@@ -32,6 +32,14 @@ class PositionsEvent(Event):
 
 
 @dataclass(frozen=True)
+class GpsPositionEvent(Event):
+    """GPS position event representation."""
+
+    longitude: float
+    latitude: float
+
+
+@dataclass(frozen=True)
 class MapTraceEvent(Event):
     """Map trace event representation."""
 
@@ -90,11 +98,20 @@ class MapSubsetEvent(Event):
 
 
 @dataclass(frozen=True)
+class Map:
+    """Map representation."""
+
+    id: str
+    name: str
+    using: bool
+    built: bool
+
+
+@dataclass(frozen=True)
 class CachedMapInfoEvent(Event):
     """Cached map info event."""
 
-    name: str
-    active: bool = field(kw_only=True)
+    maps: set[Map]
 
 
 @dataclass(frozen=True)

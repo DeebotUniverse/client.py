@@ -1,16 +1,17 @@
 from __future__ import annotations
 
-import json
 import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from aiohttp import ClientTimeout
+import orjson
 import pytest
 
-from deebot_client.command import Command, CommandResult, InitParam
+from deebot_client.command import Command, InitParam
 from deebot_client.commands.json.common import JsonCommandMqttP2P
 from deebot_client.exceptions import ApiTimeoutError, DeebotError
+from deebot_client.message import HandlingResult
 
 if TYPE_CHECKING:
     from unittest.mock import Mock
@@ -38,8 +39,8 @@ class _TestCommand(JsonCommandMqttP2P):
         self,
         _: EventBus,
         response: dict[str, Any],  # noqa: ARG002
-    ) -> CommandResult:
-        return CommandResult.analyse()
+    ) -> HandlingResult:
+        return HandlingResult.analyse()
 
 
 def test_CommandMqttP2P_no_mqtt_params() -> None:
@@ -79,7 +80,7 @@ def test_CommandMqttP2P_create_from_mqtt_error(
     data: dict[str, str], expected: str
 ) -> None:
     with pytest.raises(DeebotError, match=expected):
-        _TestCommand.create_from_mqtt(json.dumps({"body": {"data": data}}))
+        _TestCommand.create_from_mqtt(orjson.dumps({"body": {"data": data}}))
 
 
 def test_CommandMqttP2P_create_from_mqtt_additional_fields(
@@ -111,5 +112,5 @@ async def test_execute_api_timeout_error(
     assert (
         "deebot_client.command",
         logging.WARNING,
-        "Could not execute command TestCommand: Timeout reached",
+        "Could not execute command TestCommand for get_class: Timeout reached",
     ) in caplog.record_tuples

@@ -15,7 +15,7 @@ from deebot_client.authentication import (
     create_rest_config as create_config_rest,
 )
 from deebot_client.event_bus import EventBus
-from deebot_client.hardware.deebot import get_static_device_info
+from deebot_client.hardware import get_static_device_info
 from deebot_client.models import (
     ApiDeviceInfo,
     Credentials,
@@ -171,7 +171,7 @@ def execute_mock() -> AsyncMock:
 
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
-    return EventBus(execute_mock, device_info.static.capabilities.get_refresh_commands)
+    return EventBus(execute_mock, device_info.static.capabilities)
 
 
 @pytest.fixture

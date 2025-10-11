@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import os
 from typing import TYPE_CHECKING
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
@@ -21,7 +22,6 @@ from deebot_client.map import (
     Map,
     MapData,
 )
-from deebot_client.models import Room, StaticDeviceInfo
 from deebot_client.rs.map import PositionType
 from tests import load_data_folder
 
@@ -36,6 +36,7 @@ if TYPE_CHECKING:
 
     from deebot_client.event_bus import EventBus
     from deebot_client.events.base import Event
+    from deebot_client.models import StaticDeviceInfo
 
 
 async def test_MapData(event_bus: EventBus) -> None:
@@ -49,7 +50,6 @@ async def test_MapData(event_bus: EventBus) -> None:
         for x in range(100):
             positions.append(Position(PositionType.DEEBOT, x, x, 0))
             map_data.update_positions(positions)
-            map_data.rooms[x] = Room("test", x, "1,2")
 
         assert map_data.changed is True
         mock.assert_called_once()
@@ -213,7 +213,7 @@ def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> Paramet
     # To keep codspeed test history, we hide the params for the original test, which is now test_1
     test_name = (
         pytest.HIDDEN_PARAM
-        if filename == "test_1"
+        if filename == "test_1" and os.getenv("CI") == "true"
         else f"{filename}-{module.DEVICE_CLASS}"
     )
 

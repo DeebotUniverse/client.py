@@ -2,19 +2,21 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Callable
-import json
 from typing import TYPE_CHECKING
-from unittest.mock import Mock, patch
+from unittest.mock import AsyncMock, Mock, patch
 
+import orjson
 import pytest
+from testfixtures import LogCapture
 
 from deebot_client.command import Command, DeviceCommandResult
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.commands.xml import GetBatteryInfo
 from deebot_client.const import DataType
 from deebot_client.device import Device
 from deebot_client.events import AvailabilityEvent, StateEvent
-from deebot_client.events.map import Position, PositionsEvent
+from deebot_client.events.map import MapSetType, Position, PositionsEvent
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.hardware import get_static_device_info
 from deebot_client.messages.json import OnBattery
@@ -46,7 +48,7 @@ def json_battery_message_payload(expected_version: str | None = "1.8.2") -> str:
         "header": header,
         "body": {"data": {"value": 100, "isLow": 0}},
     }
-    return json.dumps(data)
+    return orjson.dumps(data).decode("utf-8")
 
 
 def xml_battery_message_payload() -> str:
@@ -77,7 +79,7 @@ async def test_available_check_and_teardown(
         received_statuses.put_nowait(event)
 
     async def assert_received_status(*, expected: bool) -> None:
-        await asyncio.sleep(0.1)
+        await asyncio.sleep(0)
         assert received_statuses.get_nowait().available is expected
 
     # prepare mocks
@@ -96,10 +98,11 @@ async def test_available_check_and_teardown(
     mqtt_client.subscribe.return_value = unsubscribe_mock
     await bot.initialize(mqtt_client)
 
-    # deactivate refresh event subscribe refresh calls
-    bot.events._get_refresh_commands = lambda _: []
-
     bot.events.subscribe(AvailabilityEvent, on_status)
+    await asyncio.sleep(0)  # let refresh task of event bus be processed
+    execute_mock.assert_awaited_once()
+    execute_mock.reset_mock()
+    await assert_received_status(expected=True)
 
     # verify mqtt was subscribed and available task was started
     mqtt_client.subscribe.assert_called_once()
@@ -140,7 +143,7 @@ async def test_available_check_and_teardown(
 
     # teardown bot and verify that bot was unsubscribed from mqtt and available task was canceled.
     await bot.teardown()
-    await asyncio.sleep(0.1)
+    await asyncio.sleep(0)
 
     unsubscribe_mock.assert_called()
     assert bot._available_task.done()
@@ -148,12 +151,15 @@ async def test_available_check_and_teardown(
 
 
 async def test_mac_address(
-    authenticator: Authenticator, device_info: DeviceInfo
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
 ) -> None:
     """Test that the mac address is change on NetworkInfoEvent."""
+    device_info = DeviceInfo(
+        api_device_info,
+        mock_static_device_info({AvailabilityEvent: []}, DataType.JSON),
+    )
     device = Device(device_info, authenticator)
-    # deactivate refresh event subscribe refresh calls
-    device.events._get_refresh_commands = lambda _: []
 
     assert device.mac is None
 
@@ -265,9 +271,6 @@ async def test_device_handle_message_behaviour(
     mqtt_client.subscribe.return_value = unsubscribe_mock
     await bot.initialize(mqtt_client)
 
-    # deactivate refresh event subscribe refresh calls
-    bot.events._get_refresh_commands = lambda _: []
-
     bot.events.subscribe(AvailabilityEvent, on_status)
 
     # verify mqtt was subscribed and available task was started
@@ -359,6 +362,68 @@ async def test_onPos_device_handling(
         event_bus_mock.request_refresh.assert_called_once_with(StateEvent)
     else:
         event_bus_mock.request_refresh.assert_not_called()
+
+    # teardown bot
+    await bot.teardown()
+
+
+@pytest.mark.parametrize("device_class", ["kr0277"])
+@pytest.mark.parametrize(
+    "set_type",
+    [
+        MapSetType.ROOMS,
+        MapSetType.NO_MOP_ZONES,
+        MapSetType.VIRTUAL_WALLS,
+    ],
+)
+async def test_message_requested_commands(
+    authenticator: Authenticator,
+    device_info: DeviceInfo,
+    event_bus_mock: Mock,
+    set_type: MapSetType,
+) -> None:
+    """Test that commands requested by messages are executed."""
+    execute_command_mock = AsyncMock()
+
+    with (
+        patch("deebot_client.device.EventBus", return_value=event_bus_mock),
+        patch.object(Device, "_execute_command", execute_command_mock),
+    ):
+        bot = Device(device_info, authenticator)
+        mqtt_client = Mock(spec=MqttClient)
+        unsubscribe_mock = Mock(spec=Callable[[], None])
+        mqtt_client.subscribe.return_value = unsubscribe_mock
+        await bot.initialize(mqtt_client)
+        mqtt_client.subscribe.assert_called_once()
+        sub_info: SubscriberInfo = mqtt_client.subscribe.call_args.args[0]
+
+        message_data = {
+            "header": {
+                "pri": 1,
+                "tzm": 480,
+                "ts": "1304637391896",
+                "ver": "0.0.1",
+                "fwVer": "1.8.2",
+                "hwVer": "0.1.1",
+            },
+            "body": {"data": {"mid": "199390082", "type": set_type.value}},
+        }
+        message_payload = orjson.dumps(message_data).decode("utf-8")
+        with LogCapture() as log:
+            sub_info.callback("onMapSet_V2", message_payload)
+            await asyncio.sleep(0)  # let tasks be processed
+
+        log.check_present(
+            (
+                "deebot_client.device",
+                "DEBUG",
+                (
+                    "Message onMapSet_V2 requested commands: "
+                    f"[<GetMapSetV2 args={{'mid': '199390082', 'type': '{set_type.value}'}}>]"
+                ),
+            )
+        )
+        execute_command_mock.assert_called_once_with(GetMapSetV2("199390082", set_type))
 
     # teardown bot
     await bot.teardown()

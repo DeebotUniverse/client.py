@@ -5,13 +5,12 @@ from unittest.mock import patch
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetLifeSpan, ResetLifeSpan
 from deebot_client.events import LifeSpan, LifeSpanEvent
-from deebot_client.message import HandlingState
-from tests.commands import assert_command
+from deebot_client.message import HandlingResult, HandlingState
 
 from . import (
+    assert_command,
     assert_execute_command,
     get_failure_body,
     get_request_xml,
@@ -73,7 +72,7 @@ async def test_get_life_span_error(xml: str) -> None:
         GetLifeSpan(LifeSpan.BRUSH),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
 
 
