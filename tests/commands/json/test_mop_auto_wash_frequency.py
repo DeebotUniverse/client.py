@@ -15,7 +15,7 @@ from . import assert_command, assert_set_command
 
 
 @pytest.mark.parametrize(
-    ("json", "expected"),
+    ("data", "expected"),
     [
         ({"interval": 10}, MopAutoWashFrequencyEvent(10)),
         (
