@@ -391,6 +391,9 @@ class GetMapInfoV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
+        if data.get("outlineVer") != "1":
+            return HandlingResult.analyse()
+
         event_bus.notify(
             MapInfoEvent(
                 map_id=data["mid"],
