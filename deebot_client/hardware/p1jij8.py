@@ -11,6 +11,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityLifeSpan,
     CapabilityMap,
+    CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -49,6 +50,10 @@ from deebot_client.commands.json.map import (
     GetMapTrace,
     GetMinorMap,
     SetMajorMap,
+)
+from deebot_client.commands.json.mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
 )
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
@@ -97,6 +102,7 @@ from deebot_client.events import (
     WorkModeEvent,
     water_info,
 )
+from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -182,6 +188,13 @@ def get_device_info() -> StaticDeviceInfo:
                     CarpetAutoFanBoostEvent,
                     [GetCarpetAutoFanBoost()],
                     SetCarpetAutoFanBoost,
+                ),
+                mop_auto_wash_frequency=CapabilityNumber(
+                    event=MopAutoWashFrequencyEvent,
+                    get=[GetMopAutoWashFrequency()],
+                    set=SetMopAutoWashFrequency,
+                    min=0,
+                    max=60,
                 ),
                 true_detect=CapabilitySetEnable(
                     TrueDetectEvent, [GetTrueDetect()], SetTrueDetect

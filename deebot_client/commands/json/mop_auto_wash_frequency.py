@@ -6,9 +6,8 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
-from deebot_client.events import MopAutoWashFrequency, MopAutoWashFrequencyEvent
+from deebot_client.events import MopAutoWashFrequencyEvent
 from deebot_client.message import HandlingResult
-from deebot_client.util import get_enum
 
 from .common import JsonGetCommand, JsonSetCommand
 
@@ -29,9 +28,7 @@ class GetMopAutoWashFrequency(JsonGetCommand):
 
         :return: A message response
         """
-        event_bus.notify(
-            MopAutoWashFrequencyEvent(MopAutoWashFrequency(int(data["interval"])))
-        )
+        event_bus.notify(MopAutoWashFrequencyEvent(int(data["interval"])))
         return HandlingResult.success()
 
 
@@ -40,9 +37,7 @@ class SetMopAutoWashFrequency(JsonSetCommand):
 
     name = "setWashInfo"
     get_command = GetMopAutoWashFrequency
-    _mqtt_params = MappingProxyType({"interval": InitParam(MopAutoWashFrequency)})
+    _mqtt_params = MappingProxyType({"interval": InitParam(int)})
 
-    def __init__(self, interval: MopAutoWashFrequency | str) -> None:
-        if isinstance(interval, str):
-            interval = get_enum(MopAutoWashFrequency, interval)
-        super().__init__({"interval": interval.value})
+    def __init__(self, interval: int) -> None:
+        super().__init__({"interval": interval})
