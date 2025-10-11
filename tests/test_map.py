@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import asyncio
-import os
 from typing import TYPE_CHECKING, cast
 from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
@@ -214,17 +213,10 @@ def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> Paramet
         msg = f"Module does not have required attributes: {required_attributes}"
         raise AttributeError(msg)
 
-    # To keep codspeed test history, we hide the params for the original test, which is now test_1
-    test_name = (
-        pytest.HIDDEN_PARAM
-        if filename == "test_1" and os.getenv("CI") == "true"
-        else f"{filename}-{module.DEVICE_CLASS}"
-    )
-
     return pytest.param(
         module.DEVICE_CLASS,
         module.EVENTS,
-        id=test_name,
+        id=f"{filename}-{module.DEVICE_CLASS}",
     )
 
 
