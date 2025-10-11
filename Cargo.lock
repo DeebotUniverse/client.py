@@ -97,6 +97,7 @@ dependencies = [
  "liblzma",
  "log",
  "once_cell",
+ "ordermap",
  "png",
  "pyo3",
  "pyo3-log",
@@ -336,6 +337,15 @@ name = "once_cell"
 version = "1.21.3"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "42f5e15c9953c5e4ccceeb2e7382a716482c34515315f7b03532b8b4e8393d2d"
+
+[[package]]
+name = "ordermap"
+version = "0.5.12"
+source = "registry+https://github.com/rust-lang/crates.io-index"
+checksum = "b100f7dd605611822d30e182214d3c02fdefce2d801d23993f6b6ba6ca1392af"
+dependencies = [
+ "indexmap",
+]
 
 [[package]]
 name = "pin-project-lite"

@@ -3,11 +3,10 @@ mod common;
 mod map_info;
 mod points;
 
-use std::collections::HashMap;
-
 use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
+use ordermap::OrderMap;
 use points::{points_to_svg_path, Point, TracePoints};
 
 use super::util::decompress_base64_data;
@@ -234,7 +233,7 @@ impl MapData {
                     ),
             );
 
-        let mut styles = HashMap::new();
+        let mut styles = OrderMap::new();
         styles.insert(
             "path, polygon",
             "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
