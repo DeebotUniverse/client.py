@@ -3,6 +3,8 @@ mod common;
 mod map_info;
 mod points;
 
+use std::collections::HashMap;
+
 use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
@@ -13,7 +15,7 @@ use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
-    Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Use,
+    Circle, Definitions, Group, Image, Path, Polygon, RadialGradient, Stop, Style, Use,
 };
 use svg::{Document, Node};
 
@@ -29,15 +31,7 @@ fn calc_point(x: f32, y: f32) -> Point {
     }
 }
 
-fn get_color(set_type: &str) -> PyResult<&'static str> {
-    match set_type {
-        "vw" => Ok("#f00000"),
-        "mw" => Ok("#ffa500"),
-        _ => Err(PyValueError::new_err("Invalid set type")),
-    }
-}
-
-fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
+fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, Box<dyn Node>)> {
     debug!("Adding subset: {subset:?}");
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
@@ -54,34 +48,40 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<Box<dyn Node>> {
         points.push(calc_point(x, y));
     }
 
-    if points.len() == 2 {
+    let (class_key, style) = match subset.set_type.as_str() {
+        "vw" => (
+            ".vw",
+            "stroke: #f00000; fill: #f0000030; stroke-dasharray: 4;",
+        ),
+        "mw" => (
+            ".mw",
+            "stroke: #ffa500; fill: #ffa50030; stroke-dasharray: 4;",
+        ),
+        _ => return Err(PyValueError::new_err("Invalid set type")),
+    };
+
+    let svg_object: Box<dyn Node> = if points.len() == 2 {
         // Only 2 points: use a Path
-        Ok(Box::new(
-            Path::new()
-                .set("stroke", get_color(&subset.set_type)?)
-                .set("stroke-width", 1.5)
-                .set("stroke-dasharray", "4")
-                .set("vector-effect", "non-scaling-stroke")
-                .set("d", points_to_svg_path(&points).unwrap()),
-        ))
+        Box::new(
+            points_to_svg_path(&points)
+                .unwrap()
+                .set("class", subset.set_type.as_str()),
+        )
     } else {
         // More than 2 points: use a Polygon
-        let color = get_color(&subset.set_type)?;
         let mut coords = Vec::with_capacity(points.len() * 2);
         for p in points {
             coords.push(p.x);
             coords.push(p.y);
         }
-        Ok(Box::new(
+        Box::new(
             Polygon::new()
-                .set("fill", format!("{color}30"))
-                .set("stroke", color)
-                .set("stroke-width", 1.5)
-                .set("stroke-dasharray", "4")
-                .set("vector-effect", "non-scaling-stroke")
+                .set("class", subset.set_type.as_str())
                 .set("points", coords),
-        ))
-    }
+        )
+    };
+
+    Ok((class_key, style, svg_object))
 }
 
 #[pyclass(eq, eq_int)]
@@ -234,42 +234,51 @@ impl MapData {
                     ),
             );
 
+        let mut styles = HashMap::new();
+        styles.insert(
+            "path, polygon",
+            "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
+        );
+
         let mut document = Document::new().add(defs);
 
         // Create map from MapInfo, if exists, or generate background image
-        let viewbox = match self.map_info.borrow(py).generate() {
-            Some((map_elements, viewbox)) => {
-                // Append all map background elements to document
-                map_elements
-                    .into_iter()
-                    .for_each(|element| document.append(element));
-                viewbox
-            }
-            None => match self
-                .background_image
-                .borrow(py)
-                .generate()
-                .map_err(|err| PyValueError::new_err(err.to_string()))?
-            {
-                Some((base64_image, viewbox)) => {
-                    let image = Image::new()
-                        .set("x", viewbox.min_x)
-                        .set("y", viewbox.min_y)
-                        .set("width", viewbox.width)
-                        .set("height", viewbox.height)
-                        .set("style", "image-rendering: pixelated")
-                        .set("href", format!("data:image/png;base64,{base64_image}"));
-                    document.append(image);
-                    viewbox
-                }
-                None => return Ok(None),
-            },
+        let viewbox = if let Some((map_elements, viewbox, info_styles)) =
+            self.map_info.borrow(py).generate()
+        {
+            // Append all map background elements to document
+            map_elements
+                .into_iter()
+                .for_each(|element| document.append(element));
+            info_styles.into_iter().for_each(|(k, v)| {
+                styles.insert(k, v);
+            });
+            viewbox
+        } else if let Some((base64_image, viewbox)) = self
+            .background_image
+            .borrow(py)
+            .generate()
+            .map_err(|err| PyValueError::new_err(err.to_string()))?
+        {
+            let image = Image::new()
+                .set("x", viewbox.min_x)
+                .set("y", viewbox.min_y)
+                .set("width", viewbox.width)
+                .set("height", viewbox.height)
+                .set("style", "image-rendering: pixelated")
+                .set("href", format!("data:image/png;base64,{base64_image}"));
+            document.append(image);
+            viewbox
+        } else {
+            return Ok(None);
         };
 
         document = document.set("viewBox", viewbox.to_svg_viewbox());
 
         for subset in &subsets {
-            document.append(get_svg_subset(subset)?);
+            let (class_key, style, subset) = get_svg_subset(subset)?;
+            styles.insert(class_key, style);
+            document.append(subset);
         }
         if let Some(trace) = self.trace_points.borrow(py).get_path() {
             document.append(trace);
@@ -277,6 +286,16 @@ impl MapData {
         for position in get_svg_positions(&positions, &viewbox) {
             document.append(position);
         }
+
+        let style = Style::new(
+            styles
+                .into_iter()
+                .map(|(k, v)| format!("{} {{{}}}", k, v))
+                .collect::<Vec<String>>()
+                .join("\n"),
+        );
+        document.append(style);
+
         Ok(Some(document.to_string().replace('\n', "")))
     }
 }
@@ -412,13 +431,14 @@ mod tests {
     }
 
     #[rstest]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path d=\"M-78-13.36h35.34\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon fill=\"#ffa50030\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\" stroke=\"#ffa500\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path d=\"M240.46-39.58l2.24 173.98\" stroke=\"#f00000\" stroke-dasharray=\"4\" stroke-width=\"1.5\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path class=\"vw\" d=\"M-78-13.36h35.34\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<polygon class=\"mw\" points=\"-8.84 -58.2 -8.84 -19.64 24.28 -19.64 24.28 -58.2\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
-        let result = get_svg_subset(&subset).unwrap().to_string();
-        assert_eq!(result, expected);
+        let (_, _, node) = get_svg_subset(&subset).unwrap();
+
+        assert_eq!(node.to_string(), expected);
     }
 
     #[rstest]
@@ -433,12 +453,5 @@ mod tests {
     fn test_position_type_from_str_invalid() {
         let result = PositionType::from_str("invalid");
         assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_get_color() {
-        assert_eq!(get_color("vw").unwrap(), "#f00000");
-        assert_eq!(get_color("mw").unwrap(), "#ffa500");
-        assert!(get_color("invalid").is_err());
     }
 }

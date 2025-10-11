@@ -25,7 +25,7 @@ pub(super) struct Point {
     pub connected: bool,
 }
 
-pub(super) fn points_to_svg_path(points: &[Point]) -> Option<String> {
+pub(super) fn points_to_svg_path(points: &[Point]) -> Option<Path> {
     // Until https://github.com/bodoni/svg/issues/68 is not implemented
     // we need to generate the path manually to avoid the extra spaces/characters which can be omitted
     if points.len() < 2 {
@@ -80,7 +80,7 @@ pub(super) fn points_to_svg_path(points: &[Point]) -> Option<String> {
         }
     }
 
-    Some(svg_path)
+    Some(Path::new().set("d", svg_path))
 }
 
 /// Trace point
@@ -138,7 +138,7 @@ impl TracePoints {
             return None;
         }
 
-        let path_data = points_to_svg_path(
+        let path = points_to_svg_path(
             &self
                 .trace_points
                 .iter()
@@ -147,14 +147,10 @@ impl TracePoints {
         )?;
 
         Some(
-            Path::new()
-                .set("fill", "none")
+            path.set("fill", "none")
                 .set("stroke", "#fff")
-                .set("stroke-width", 1.5)
                 .set("stroke-linejoin", "round")
-                .set("vector-effect", "non-scaling-stroke")
-                .set("transform", "scale(0.2-0.2)")
-                .set("d", path_data),
+                .set("transform", "scale(0.2-0.2)"),
         )
     }
 }
@@ -179,11 +175,16 @@ impl TracePoints {
 mod tests {
     use super::*;
     use rstest::rstest;
+    use svg::node::Value;
 
     impl TracePoints {
         fn add_trace_points(&mut self, points: Vec<TracePoint>) {
             self.trace_points.extend(points);
         }
+    }
+
+    fn get_path_d_attribute(path: Option<Path>) -> Option<Value> {
+        path?.get_attributes().get("d").cloned()
     }
 
     #[rstest]
@@ -198,12 +199,12 @@ mod tests {
         Point{x:-227.0, y:-70.0, connected:true},
         Point{x:-256.0, y:-69.0, connected:false},
         Point{x:-260.0, y:-80.0, connected:true},
-    ], Some("M-215-70l3-3h-1l-14 1v2m-29 1l-4-11".to_string()))]
-    #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], Some("M45.58 176.12l-26.8-0.18".to_string()))]
+    ], Some(Path::new().set("d", "M-215-70l3-3h-1l-14 1v2m-29 1l-4-11")))]
+    #[case(vec![Point{x:45.58, y:176.12, connected:true}, Point{x:18.78, y:175.94, connected:true}], Some(Path::new().set("d", "M45.58 176.12l-26.8-0.18")))]
     #[case(vec![], None)]
-    fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: Option<String>) {
+    fn test_points_to_svg_path(#[case] points: Vec<Point>, #[case] expected: Option<Path>) {
         let trace = points_to_svg_path(&points);
-        assert_eq!(trace, expected);
+        assert_eq!(get_path_d_attribute(trace), get_path_d_attribute(expected));
     }
 
     #[test]
@@ -212,7 +213,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
     #[case(vec![
         TracePoint{x:-215, y:-70, connected:true},
         TracePoint{x:-215, y:-70, connected:true},
@@ -223,7 +224,7 @@ mod tests {
         TracePoint{x:-227, y:-70, connected:true},
         TracePoint{x:-256, y:-69, connected:false},
         TracePoint{x:-260, y:-80, connected:true},
-    ], "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" stroke-width=\"1.5\" transform=\"scale(0.2-0.2)\" vector-effect=\"non-scaling-stroke\"/>")]
+    ], "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
     fn test_get_trace_path(#[case] points: Vec<TracePoint>, #[case] expected: String) {
         let mut trace_points = TracePoints::new();
         trace_points.add_trace_points(points);
