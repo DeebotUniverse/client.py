@@ -272,3 +272,33 @@ fn minmax_points<'a, I: Iterator<Item = &'a Point>>(
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use rstest::rstest;
+
+    #[rstest]
+    #[case("1", Ok(MapInfoType::Outline))]
+    #[case("2", Ok(MapInfoType::Room))]
+    #[case("5", Ok(MapInfoType::Unknown5))]
+    #[case("6", Ok(MapInfoType::BlockLine))]
+    #[case("invalid", Err("Invalid map info type"))]
+    fn test_map_info_type_try_from(
+        #[case] input: &str,
+        #[case] expected: Result<MapInfoType, &str>,
+    ) {
+        assert_eq!(MapInfoType::try_from(input), expected);
+    }
+
+    #[test]
+    fn test_deserialize_empty_entry() {
+        let data = "[[],[\"1\"]]".as_bytes();
+        let entries: serde_json::Result<Vec<MapInfoTypeEntry>> = serde_json::from_slice(data);
+        assert!(entries.is_err());
+        assert_eq!(
+            entries.unwrap_err().to_string(),
+            "Empty map info entry at line 1 column 4"
+        );
+    }
+}
