@@ -6,15 +6,22 @@ import asyncio
 import logging
 import os
 from pathlib import Path
+import pkgutil
 import time
 
 import aiohttp
 import orjson
 
+from deebot_client import hardware
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
-from deebot_client.hardware import DEVICES, _load
 from deebot_client.util import md5
+
+
+async def _load_all_models() -> None:
+    """Load all models."""
+    for _, package_name, _ in pkgutil.iter_modules(hardware.__path__):
+        await hardware.get_static_device_info(package_name)
 
 
 def _save_file(name: str, data: dict[str, list[str]]) -> None:
@@ -33,14 +40,14 @@ def _add_models_by_similarity(models: list[str]) -> None:
 
     model_to_link = None
     for model in models:
-        if model in DEVICES:
+        if model in hardware._DEVICES:  # noqa: SLF001
             model_to_link = model
             break
 
     if model_to_link:
         # Found a model to link
         for model in models:
-            if model != model_to_link and model not in DEVICES:
+            if model != model_to_link and model not in hardware._DEVICES:  # noqa: SLF001
                 os.symlink(
                     f"{model_to_link}.py",
                     f"{model}.py",
@@ -78,7 +85,7 @@ async def main() -> None:
         )
 
         # Load current models
-        await asyncio.get_event_loop().run_in_executor(None, _load)
+        await _load_all_models()
 
         for map_obj in (name_map, ui_logic_map):
             for models in map_obj.values():
