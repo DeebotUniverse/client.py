@@ -22,7 +22,7 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
             (CSSClass::Path, CSSEntry{
                 identifier: "path",
                 value: "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
-                class_name: "path"
+                class_name: "path",
             }),
             (CSSClass::Outline, CSSEntry {
                 identifier: ".o path",
