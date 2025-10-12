@@ -28,6 +28,8 @@ ordermap = "0.5.12"
 
 [dev-dependencies]
 rstest = "0.26.0"
+strum = "0.27.2"
+strum_macros = "0.27.2"
 
 [profile.codspeed]
 inherits = "release"

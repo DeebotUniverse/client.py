@@ -2,12 +2,14 @@ mod background_image;
 mod common;
 mod map_info;
 mod points;
+mod style;
 
 use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
-use ordermap::OrderMap;
+use ordermap::OrderSet;
 use points::{points_to_svg_path, Point, TracePoints};
+use style::{get_style, CSSClass};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -30,7 +32,7 @@ fn calc_point(x: f32, y: f32) -> Point {
     }
 }
 
-fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, Path)> {
+fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
     debug!("Adding subset: {subset:?}");
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
@@ -47,23 +49,18 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<(&'static str, &'static str, P
         points.push(calc_point(x, y));
     }
 
-    let (class_key, style) = match subset.set_type.as_str() {
-        "vw" => (
-            ".vw",
-            "stroke: #f00000; fill: #f0000030; stroke-dasharray: 4;",
-        ),
-        "mw" => (
-            ".mw",
-            "stroke: #ffa500; fill: #ffa50030; stroke-dasharray: 4;",
-        ),
+    let css_key = match subset.set_type.as_str() {
+        "vw" => CSSClass::VirtualWall,
+        "mw" => CSSClass::NoMoppingWall,
         _ => return Err(PyValueError::new_err("Invalid set type")),
     };
+    let css_obj = get_style(&css_key);
 
     let svg_object = points_to_svg_path(&points, points.len() > 2)
         .unwrap()
-        .set("class", subset.set_type.as_str());
+        .set("class", css_obj.class_name);
 
-    Ok((class_key, style, svg_object))
+    Ok((css_key, svg_object))
 }
 
 #[pyclass(eq, eq_int)]
@@ -216,11 +213,8 @@ impl MapData {
                     ),
             );
 
-        let mut styles = OrderMap::new();
-        styles.insert(
-            "path",
-            "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
-        );
+        let mut styles = OrderSet::new();
+        styles.insert(CSSClass::Path);
 
         let mut document = Document::new().add(defs);
 
@@ -232,8 +226,8 @@ impl MapData {
             map_elements
                 .into_iter()
                 .for_each(|element| document.append(element));
-            info_styles.into_iter().for_each(|(k, v)| {
-                styles.insert(k, v);
+            info_styles.into_iter().for_each(|e| {
+                styles.insert(e);
             });
             viewbox
         } else if let Some((base64_image, viewbox)) = self
@@ -258,8 +252,8 @@ impl MapData {
         document = document.set("viewBox", viewbox.to_svg_viewbox());
 
         for subset in &subsets {
-            let (class_key, style, subset) = get_svg_subset(subset)?;
-            styles.insert(class_key, style);
+            let (css, subset) = get_svg_subset(subset)?;
+            styles.insert(css);
             document.append(subset);
         }
         if let Some(trace) = self.trace_points.borrow(py).get_path() {
@@ -272,7 +266,10 @@ impl MapData {
         let style = Style::new(
             styles
                 .into_iter()
-                .map(|(k, v)| format!("{} {{{}}}", k, v))
+                .map(|k| {
+                    let css = get_style(&k);
+                    format!("{} {{{}}}", css.identifier, css.value)
+                })
                 .collect::<Vec<String>>()
                 .join("\n"),
         );
@@ -413,12 +410,12 @@ mod tests {
     }
 
     #[rstest]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path class=\"vw\" d=\"M-78-13.36h35.34\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<path class=\"mw\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path class=\"vw\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path class=\"v\" d=\"M-78-13.36h35.34\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<path class=\"m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
     fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
-        let (_, _, node) = get_svg_subset(&subset).unwrap();
+        let (_, node) = get_svg_subset(&subset).unwrap();
 
         assert_eq!(node.to_string(), expected);
     }

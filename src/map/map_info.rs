@@ -1,19 +1,17 @@
+use crate::map::{get_style, CSSClass};
+
 use super::{calc_point, decompress_base64_data, ViewBox};
 
 use super::points::{points_to_svg_path, Point};
+use ordermap::OrderSet;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::hash::Hash;
-use std::sync::OnceLock;
 use svg::node::element::Group;
 
-type MapInfoGenerateResult = Option<(
-    Vec<Box<dyn svg::node::Node>>,
-    ViewBox,
-    Vec<(&'static str, &'static str)>,
-)>;
+type MapInfoGenerateResult = Option<(Vec<Box<dyn svg::node::Node>>, ViewBox, OrderSet<CSSClass>)>;
 
 #[derive(Debug, PartialEq)]
 struct MapInfoTypeDataEntry {
@@ -43,36 +41,6 @@ impl TryFrom<&str> for MapInfoType {
             _ => Err("Invalid map info type"),
         }
     }
-}
-
-// Visual style to match the background image look & feel
-fn get_styles() -> &'static HashMap<MapInfoType, CSSEntry> {
-    static STYLES: OnceLock<HashMap<MapInfoType, CSSEntry>> = OnceLock::new();
-    STYLES.get_or_init(|| {
-        HashMap::from([
-            (MapInfoType::Outline, CSSEntry {
-                identifier: ".o path",
-                value: "fill: none; stroke: #4e96e2; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3",
-                class_name: "o",
-            }),
-            (MapInfoType::Room, CSSEntry {
-                identifier: ".r",
-                value: "fill: #edf3fb",
-                class_name: "r",
-            }),
-            (MapInfoType::BlockLine, CSSEntry {
-                identifier: ".b",
-                value: "fill: #badaff",
-                class_name: "b",
-            }),
-        ])
-    })
-}
-
-struct CSSEntry {
-    identifier: &'static str,
-    value: &'static str,
-    class_name: &'static str,
 }
 
 #[derive(Debug)]
@@ -118,30 +86,29 @@ impl MapInfo {
     pub(super) fn generate(&self) -> MapInfoGenerateResult {
         let mut viewbox = None;
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::new();
-        let mut used_styles = Vec::new();
+        let mut used_styles = OrderSet::new();
 
         let ordered_types = [
-            MapInfoType::Room,
-            MapInfoType::BlockLine,
-            MapInfoType::Outline,
+            (MapInfoType::Room, CSSClass::RoomUnreachable),
+            (MapInfoType::BlockLine, CSSClass::RoomReachable),
+            (MapInfoType::Outline, CSSClass::Outline),
         ];
 
-        for map_info_type in ordered_types {
+        for (map_info_type, css) in ordered_types {
             if let Some(entries) = self.data.get(&map_info_type) {
                 if entries.is_empty() {
                     continue;
                 }
 
-                if let Some(style) = get_styles().get(&map_info_type) {
-                    let mut group = Group::new().set("class", style.class_name);
-                    for entry in entries {
-                        if let Some(path) = points_to_svg_path(&entry.points, entry.close_path) {
-                            group = group.add(path);
-                        }
+                let style = get_style(&css);
+                let mut group = Group::new().set("class", style.class_name);
+                for entry in entries {
+                    if let Some(path) = points_to_svg_path(&entry.points, entry.close_path) {
+                        group = group.add(path);
                     }
-                    svg_elements.push(Box::new(group));
-                    used_styles.push((style.identifier, style.value));
                 }
+                svg_elements.push(Box::new(group));
+                used_styles.insert(css);
                 if map_info_type == MapInfoType::Outline {
                     viewbox = calc_viewbox(entries);
                 }
