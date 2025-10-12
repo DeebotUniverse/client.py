@@ -7,9 +7,11 @@ use strum_macros::EnumIter;
 #[cfg_attr(test, derive(EnumIter))]
 pub(super) enum CSSClass {
     Path,
-    Outline,
+    FillNone,
+    OutlineStroke,
     RoomUnreachable,
     RoomReachable,
+    WallBase,
     VirtualWall,
     NoMoppingWall,
 }
@@ -21,12 +23,17 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
         HashMap::from([
             (CSSClass::Path, CSSEntry{
                 identifier: "path",
-                value: "stroke-width: 1.5; vector-effect: non-scaling-stroke;",
+                value: "stroke-width: 1.5; vector-effect: non-scaling-stroke",
                 class_name: "path",
             }),
-            (CSSClass::Outline, CSSEntry {
+            (CSSClass::FillNone, CSSEntry {
+                identifier: ".f",
+                value: "fill: none",
+                class_name: "f",
+            }),
+            (CSSClass::OutlineStroke, CSSEntry {
                 identifier: ".o path",
-                value: "fill: none; stroke: #4e96e2; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3",
+                value: "stroke: #4e96e2; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3",
                 class_name: "o",
             }),
             (CSSClass::RoomUnreachable, CSSEntry {
@@ -39,14 +46,19 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
                 value: "fill: #badaff",
                 class_name: "r",
             }),
+            (CSSClass::WallBase, CSSEntry {
+                identifier: ".w path",
+                value: "stroke-dasharray: 4; stroke-width: 3",
+                class_name: "w",
+            }),
             (CSSClass::VirtualWall, CSSEntry {
                 identifier: ".v",
-                value: "stroke: #f00000; fill: #f0000030; stroke-dasharray: 4;",
+                value: "stroke: #f00000; fill: #f0000030",
                 class_name: "v",
             }),
             (CSSClass::NoMoppingWall, CSSEntry {
                 identifier: ".m",
-                value: "stroke: #ffa500; fill: #ffa50030; stroke-dasharray: 4;",
+                value: "stroke: #ffa500; fill: #ffa50030",
                 class_name: "m",
             }),
         ])
@@ -55,6 +67,13 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
 
 pub(super) fn get_style(css: &CSSClass) -> &'static CSSEntry {
     get_styles().get(css).unwrap()
+}
+
+pub(super) fn get_class_names(css: &[CSSClass]) -> String {
+    css.iter()
+        .map(|e| get_style(e).class_name)
+        .collect::<Vec<&'static str>>()
+        .join(" ")
 }
 
 pub(super) struct CSSEntry {

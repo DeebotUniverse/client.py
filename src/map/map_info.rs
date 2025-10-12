@@ -1,5 +1,4 @@
-use crate::map::{get_style, CSSClass};
-
+use super::style::{get_class_names, CSSClass};
 use super::{calc_point, decompress_base64_data, ViewBox};
 
 use super::points::{points_to_svg_path, Point};
@@ -88,22 +87,17 @@ impl MapInfo {
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::new();
         let mut used_styles = OrderSet::new();
 
-        let ordered_types = [
-            (MapInfoType::Room, CSSClass::RoomUnreachable),
-            (MapInfoType::BlockLine, CSSClass::RoomReachable),
-            (MapInfoType::Outline, CSSClass::Outline),
-        ];
-
-        for (map_info_type, css) in ordered_types {
+        for (map_info_type, css, force_connected) in self.get_order() {
             if let Some(entries) = self.data.get(&map_info_type) {
                 if entries.is_empty() {
                     continue;
                 }
 
-                let style = get_style(&css);
-                let mut group = Group::new().set("class", style.class_name);
+                let mut group = Group::new().set("class", get_class_names(&css));
                 for entry in entries {
-                    if let Some(path) = points_to_svg_path(&entry.points, entry.close_path) {
+                    if let Some(path) =
+                        points_to_svg_path(&entry.points, entry.close_path, force_connected)
+                    {
                         group = group.add(path);
                     }
                 }
@@ -115,7 +109,39 @@ impl MapInfo {
             }
         }
 
-        Some((svg_elements, viewbox?, used_styles))
+        Some((
+            svg_elements,
+            viewbox?,
+            used_styles.into_iter().flatten().collect(),
+        ))
+    }
+
+    fn get_order(&self) -> [(MapInfoType, Vec<CSSClass>, bool); 3] {
+        if self.data.contains_key(&MapInfoType::BlockLine) {
+            [
+                (MapInfoType::Room, vec![CSSClass::RoomUnreachable], false),
+                (MapInfoType::BlockLine, vec![CSSClass::RoomReachable], false),
+                (
+                    MapInfoType::Outline,
+                    vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    false,
+                ),
+            ]
+        } else {
+            [
+                (MapInfoType::Outline, vec![CSSClass::RoomUnreachable], true),
+                (
+                    MapInfoType::Room,
+                    vec![CSSClass::RoomReachable, CSSClass::OutlineStroke],
+                    false,
+                ),
+                (
+                    MapInfoType::Outline,
+                    vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    false,
+                ),
+            ]
+        }
     }
 }
 

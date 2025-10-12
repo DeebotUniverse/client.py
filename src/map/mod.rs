@@ -56,7 +56,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
     };
     let css_obj = get_style(&css_key);
 
-    let svg_object = points_to_svg_path(&points, points.len() > 2)
+    let svg_object = points_to_svg_path(&points, points.len() > 2, false)
         .unwrap()
         .set("class", css_obj.class_name);
 
@@ -251,10 +251,17 @@ impl MapData {
 
         document = document.set("viewBox", viewbox.to_svg_viewbox());
 
-        for subset in &subsets {
-            let (css, subset) = get_svg_subset(subset)?;
-            styles.insert(css);
-            document.append(subset);
+        if !subsets.is_empty() {
+            let group_css = CSSClass::WallBase;
+            let mut group = Group::new().set("class", get_style(&group_css).class_name);
+            styles.insert(group_css);
+
+            for subset in &subsets {
+                let (css, subset) = get_svg_subset(subset)?;
+                styles.insert(css);
+                group = group.add(subset);
+            }
+            document.append(group);
         }
         if let Some(trace) = self.trace_points.borrow(py).get_path() {
             document.append(trace);
@@ -268,10 +275,10 @@ impl MapData {
                 .into_iter()
                 .map(|k| {
                     let css = get_style(&k);
-                    format!("{} {{{}}}", css.identifier, css.value)
+                    format!("{}{{{}}}", css.identifier, css.value)
                 })
                 .collect::<Vec<String>>()
-                .join("\n"),
+                .join(""),
         );
         document.append(style);
 
