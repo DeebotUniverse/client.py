@@ -231,7 +231,7 @@ jobs:
             runner: macos-13
             target: x86_64
           - name: Macos
-            runner: macos-14
+            runner: macos-15
             target: aarch64
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
