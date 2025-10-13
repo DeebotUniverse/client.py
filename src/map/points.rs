@@ -1,6 +1,6 @@
 use std::fmt::Write as FmtWrite;
 
-use super::{common::round, ROUND_TO_DIGITS};
+use super::{ROUND_TO_DIGITS, common::round};
 use crate::util::decompress_base64_data;
 use log::error;
 use pyo3::exceptions::PyValueError;

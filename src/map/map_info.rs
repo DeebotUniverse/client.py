@@ -1,7 +1,7 @@
-use super::style::{get_class_names, CSSClass};
-use super::{calc_point, decompress_base64_data, ViewBox};
+use super::style::{CSSClass, get_class_names};
+use super::{ViewBox, calc_point, decompress_base64_data};
 
-use super::points::{points_to_svg_path, Point};
+use super::points::{Point, points_to_svg_path};
 use ordermap::OrderSet;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -88,11 +88,9 @@ impl MapInfo {
         let mut used_styles = OrderSet::new();
 
         for (map_info_type, css, force_connected) in self.get_order() {
-            if let Some(entries) = self.data.get(&map_info_type) {
-                if entries.is_empty() {
-                    continue;
-                }
-
+            if let Some(entries) = self.data.get(&map_info_type)
+                && !entries.is_empty()
+            {
                 let mut group = Group::new().set("class", get_class_names(&css));
                 for entry in entries {
                     if let Some(path) =
@@ -170,12 +168,12 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
 
         for spec in parts {
             let mut coords = spec.splitn(3, ','); // coordinates are "x,y,type"
-            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
-                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>()) {
-                    let mut p = calc_point(x, y);
-                    p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
-                    path_points.push(p);
-                }
+            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next())
+                && let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
+            {
+                let mut p = calc_point(x, y);
+                p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
+                path_points.push(p);
             }
         }
 

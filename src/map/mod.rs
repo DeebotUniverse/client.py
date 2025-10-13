@@ -8,8 +8,8 @@ use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
-use points::{points_to_svg_path, Point, TracePoints};
-use style::{get_style, CSSClass};
+use points::{Point, TracePoints, points_to_svg_path};
+use style::{CSSClass, get_style};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -219,34 +219,37 @@ impl MapData {
         let mut document = Document::new().add(defs);
 
         // Create map from MapInfo, if exists, or generate background image
-        let viewbox = if let Some((map_elements, viewbox, info_styles)) =
-            self.map_info.borrow(py).generate()
-        {
-            // Append all map background elements to document
-            map_elements
-                .into_iter()
-                .for_each(|element| document.append(element));
-            info_styles.into_iter().for_each(|e| {
-                styles.insert(e);
-            });
-            viewbox
-        } else if let Some((base64_image, viewbox)) = self
-            .background_image
-            .borrow(py)
-            .generate()
-            .map_err(|err| PyValueError::new_err(err.to_string()))?
-        {
-            let image = Image::new()
-                .set("x", viewbox.min_x)
-                .set("y", viewbox.min_y)
-                .set("width", viewbox.width)
-                .set("height", viewbox.height)
-                .set("style", "image-rendering: pixelated")
-                .set("href", format!("data:image/png;base64,{base64_image}"));
-            document.append(image);
-            viewbox
-        } else {
-            return Ok(None);
+        let viewbox = match self.map_info.borrow(py).generate() {
+            Some((map_elements, viewbox, info_styles)) => {
+                // Append all map background elements to document
+                map_elements
+                    .into_iter()
+                    .for_each(|element| document.append(element));
+                info_styles.into_iter().for_each(|e| {
+                    styles.insert(e);
+                });
+                viewbox
+            }
+            _ => {
+                if let Some((base64_image, viewbox)) =
+                    self.background_image
+                        .borrow(py)
+                        .generate()
+                        .map_err(|err| PyValueError::new_err(err.to_string()))?
+                {
+                    let image = Image::new()
+                        .set("x", viewbox.min_x)
+                        .set("y", viewbox.min_y)
+                        .set("width", viewbox.width)
+                        .set("height", viewbox.height)
+                        .set("style", "image-rendering: pixelated")
+                        .set("href", format!("data:image/png;base64,{base64_image}"));
+                    document.append(image);
+                    viewbox
+                } else {
+                    return Ok(None);
+                }
+            }
         };
 
         document = document.set("viewBox", viewbox.to_svg_viewbox());

@@ -2,7 +2,7 @@ use log::error;
 use std::error::Error;
 use std::io::{Cursor, Read};
 
-use base64::{engine::general_purpose, Engine as _};
+use base64::{Engine as _, engine::general_purpose};
 use liblzma::read::XzDecoder;
 use liblzma::stream::Stream;
 use pyo3::exceptions::PyValueError;

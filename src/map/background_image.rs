@@ -1,6 +1,6 @@
-use super::{decompress_base64_data, ImageGenrationType, ViewBox};
-use base64::engine::general_purpose;
+use super::{ImageGenrationType, ViewBox, decompress_base64_data};
 use base64::Engine;
+use base64::engine::general_purpose;
 use crc32fast::Hasher;
 use image::{GenericImageView, GrayImage, Luma};
 use log::{debug, error};
