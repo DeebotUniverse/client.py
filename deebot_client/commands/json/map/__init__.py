@@ -16,9 +16,9 @@ from deebot_client.events import (
     MinorMapEvent,
     RoomsEvent,
 )
-from deebot_client.events.map import MapInfoEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.messages.json.map import OnMapInfoV2
 from deebot_client.models import Room
 from deebot_client.rs.util import decompress_base64_data
 
@@ -379,25 +379,10 @@ class GetMinorMap(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return HandlingResult.analyse()
 
 
-class GetMapInfoV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetMapInfoV2(JsonCommandWithMessageHandling, OnMapInfoV2):
     """Get map info v2 command."""
 
     NAME = "getMapInfo_V2"
 
     def __init__(self, map_id: str = "") -> None:
         super().__init__({"mid": map_id, "type": "0"})
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        if data.get("outlineVer") != "1":
-            return HandlingResult.analyse()
-
-        event_bus.notify(
-            MapInfoEvent(
-                map_id=data["mid"],
-                info=data["info"],
-            )
-        )
-        return HandlingResult.success()

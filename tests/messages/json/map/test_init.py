@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 import pytest
 
 from deebot_client.commands.json.map import GetMapSetV2
@@ -9,6 +11,9 @@ from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
 from deebot_client.messages.json.map import OnMajorMap, OnMapInfoV2
 from tests.messages.json import assert_message
+
+if TYPE_CHECKING:
+    from deebot_client.events.base import Event
 
 
 @pytest.mark.parametrize(
@@ -141,8 +146,20 @@ async def test_onMajorMap() -> None:
     assert result.args == {"map_id": map_id, "values": values}
 
 
-async def test_onMapInfo_V2() -> None:
-    """Test onMapInfo_V2 message."""
+@pytest.mark.parametrize(
+    ("online_ver", "expected_state", "should_notify"),
+    [
+        ("0", HandlingState.SUCCESS, False),
+        ("1", HandlingState.SUCCESS, True),
+        ("2", HandlingState.ANALYSE_LOGGED, False),
+    ],
+)
+async def test_onMapInfo_V2(
+    online_ver: str,
+    expected_state: HandlingState,
+    should_notify: bool,
+) -> None:
+    """Test onMapInfo_V2 message with unsupported version."""
     map_id = "1132127808"
     info = "KLUv/WBuAOUEAMKHEhGgJc0B/t+e/8tOpCUXnv6wB8MgkzOv8aaVcx83Ob970V2jqKjyDrpZulk0ORMwrriigTNeNNYSRZhBAHQ196KaaTODukBGSgQhJSCAojXXDSMFoBmkm5nkvB5Fd1Y/Egyq8WAN/OJ0DezknG5gqwa6MBfBRW+sfLOsgLwKK4gZv4feNsH2ufM7AGNqAo/2u6QQXgAi1EMPAw=="
     data = {
@@ -164,7 +181,7 @@ async def test_onMapInfo_V2() -> None:
                 "mid": map_id,
                 "msgid": "",
                 "outlineComplete": 0,
-                "outlineVer": "1",
+                "outlineVer": online_ver,
                 "serial": "1",
                 "type": "0",
                 "using": 0,
@@ -172,45 +189,13 @@ async def test_onMapInfo_V2() -> None:
         },
     }
 
-    await assert_message(
-        OnMapInfoV2,
-        data,
-        (FirmwareEvent("1.34.0"), MapInfoEvent(map_id, info)),
-    )
-
-
-async def test_onMapInfo_V2_invalid_version() -> None:
-    """Test onMapInfo_V2 message with unsupported version."""
-    data = {
-        "header": {
-            "pri": 1,
-            "tzm": 60,
-            "ts": "1758910287614",
-            "ver": "0.0.1",
-            "fwVer": "1.34.0",
-            "hwVer": "0.1.1",
-            "wkVer": "0.1.54",
-        },
-        "body": {
-            "data": {
-                "batid": "pdnkoi",
-                "index": "1",
-                "info": "KLUv/SACEQAAW10=",
-                "infoSize": 0,
-                "mid": "352599848",
-                "msgid": "",
-                "outlineComplete": 0,
-                "outlineVer": "0",
-                "serial": "1",
-                "type": "0",
-                "using": 0,
-            },
-        },
-    }
+    expected_events: list[Event] = [FirmwareEvent("1.34.0")]
+    if should_notify:
+        expected_events.append(MapInfoEvent(map_id, info))
 
     await assert_message(
         OnMapInfoV2,
         data,
-        FirmwareEvent("1.34.0"),
-        expected_state=HandlingState.ANALYSE_LOGGED,
+        expected_events,
+        expected_state=expected_state,
     )
