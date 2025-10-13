@@ -119,6 +119,7 @@ fn extract_trace_points(value: &str) -> Result<Vec<TracePoint>, Box<dyn Error>> 
 }
 
 impl From<&TracePoint> for Point {
+    #[inline]
     fn from(trace_point: &TracePoint) -> Self {
         Point {
             x: trace_point.x.into(),

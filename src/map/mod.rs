@@ -24,6 +24,7 @@ const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
 
+#[inline]
 fn calc_point(x: f32, y: f32) -> Point {
     Point {
         x: round(x / PIXEL_WIDTH, ROUND_TO_DIGITS),
@@ -34,6 +35,11 @@ fn calc_point(x: f32, y: f32) -> Point {
 
 fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
     debug!("Adding subset: {subset:?}");
+
+    // Estimate capacity: each coordinate is roughly 5 chars (e.g., "3900,")
+    let estimated_coords = subset.coordinates.len() / 5;
+    let mut points = Vec::with_capacity(estimated_coords / 2);
+
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
         if s.is_empty() {
@@ -44,7 +50,6 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
         }
     });
 
-    let mut points = Vec::with_capacity(subset.coordinates.len() / 2);
     while let (Some(x), Some(y)) = (numbers.next(), numbers.next()) {
         points.push(calc_point(x, y));
     }
@@ -93,6 +98,7 @@ impl PositionType {
 }
 
 impl PositionType {
+    #[inline]
     fn order(&self) -> i32 {
         match self {
             PositionType::Deebot => 0,
@@ -100,6 +106,7 @@ impl PositionType {
         }
     }
 
+    #[inline]
     fn svg_use_id(&self) -> &'static str {
         match self {
             PositionType::Deebot => "d",
@@ -117,6 +124,7 @@ struct Position {
     y: i32,
 }
 
+#[inline]
 fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox) -> Point {
     let point = calc_point(x as f32, y as f32);
     Point {
@@ -270,16 +278,25 @@ impl MapData {
             document.append(position);
         }
 
-        let style = Style::new(
-            styles
-                .into_iter()
-                .map(|k| {
-                    let css = get_style(&k);
-                    format!("{}{{{}}}", css.identifier, css.value)
-                })
-                .collect::<Vec<String>>()
-                .join(""),
-        );
+        // Pre-calculate total size for string allocation
+        let total_size: usize = styles
+            .iter()
+            .map(|k| {
+                let css = get_style(k);
+                css.identifier.len() + css.value.len() + 2 // +2 for {}
+            })
+            .sum();
+
+        let mut style_string = String::with_capacity(total_size);
+        for k in styles {
+            let css = get_style(&k);
+            style_string.push_str(css.identifier);
+            style_string.push('{');
+            style_string.push_str(css.value);
+            style_string.push('}');
+        }
+
+        let style = Style::new(style_string);
         document.append(style);
 
         Ok(Some(document.to_string().replace('\n', "")))
@@ -312,6 +329,7 @@ impl ViewBox {
         }
     }
 
+    #[inline]
     fn to_svg_viewbox(&self) -> String {
         format!(
             "{} {} {} {}",
@@ -322,14 +340,21 @@ impl ViewBox {
 
 type ImageGenrationType = Option<(String, ViewBox)>;
 
-fn get_svg_positions<'a>(positions: &'a [Position], viewbox: &ViewBox) -> Vec<Use> {
-    let mut positions: Vec<&'a Position> = positions.iter().collect();
-    positions.sort_by_key(|d| d.position_type.order());
+fn get_svg_positions(positions: &[Position], viewbox: &ViewBox) -> Vec<Use> {
+    if positions.is_empty() {
+        return Vec::new();
+    }
+
+    // Create indices and sort them instead of collecting references
+    let mut indices: Vec<usize> = (0..positions.len()).collect();
+    indices.sort_by_key(|&i| positions[i].position_type.order());
+
     debug!("Adding positions: {positions:?}");
 
     let mut svg_positions = Vec::with_capacity(positions.len());
 
-    for position in positions {
+    for &i in &indices {
+        let position = &positions[i];
         let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
 
         svg_positions.push(
