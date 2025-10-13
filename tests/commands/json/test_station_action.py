@@ -19,6 +19,14 @@ from . import assert_execute_command
             StationAction.EMPTY_DUSTBIN,
             {"act": 1, "type": 1},
         ),
+        (
+            StationAction.DRY_MOP,
+            {"act": 1, "type": 2},
+        ),
+        (
+            StationAction.CLEAN_BASE,
+            {"act": 1, "type": 3},
+        ),
     ],
 )
 async def test_StationAction(

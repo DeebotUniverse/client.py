@@ -60,6 +60,10 @@ from deebot_client.commands.json.map import (
     GetMinorMap,
     SetMajorMap,
 )
+from deebot_client.commands.json.mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
+)
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
@@ -116,6 +120,7 @@ from deebot_client.events.map import (
     MapTraceEvent,
     PositionsEvent,
 )
+from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -232,6 +237,13 @@ def get_device_info() -> StaticDeviceInfo:
                         EfficiencyMode.ENERGY_EFFICIENT_MODE,
                         EfficiencyMode.STANDARD_MODE,
                     ),
+                ),
+                mop_auto_wash_frequency=CapabilityNumber(
+                    event=MopAutoWashFrequencyEvent,
+                    get=[GetMopAutoWashFrequency()],
+                    set=SetMopAutoWashFrequency,
+                    min=0,
+                    max=60,
                 ),
                 ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),
                 sweep_mode=CapabilitySetEnable(

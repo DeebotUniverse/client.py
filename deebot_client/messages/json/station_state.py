@@ -26,6 +26,7 @@ class OnStationState(MessageBodyDataDict):
         """
         # "body":{"data":{"content":{"error":[],"type":0},"state":0},"code":0,"msg":"ok"} - Idle
         # "body":{"data":{"content":{"error":[],"type":1,"motionState":1},"state":1},"code":0,"msg":"ok"} - Emptying
+        # "body":{"data":{"content":{"error":[],"type":2,"motionState":1},"state":1},"code":0,"msg":"ok"} - Drying mop
 
         if (state := data.get("state")) == 0:
             reported_state = State.IDLE
@@ -36,6 +37,13 @@ class OnStationState(MessageBodyDataDict):
             and content.get("motionState") == 1
         ):
             reported_state = State.EMPTYING_DUSTBIN
+        elif (
+            state == 1
+            and (content := data.get("content"))
+            and content.get("type") == 2
+            and content.get("motionState") == 1
+        ):
+            reported_state = State.DRYING_MOP
         else:
             return HandlingResult.analyse()
 
