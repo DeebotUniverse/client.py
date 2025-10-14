@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  ADDITIONAL_PYTHON_VERSIONS: "[]"
+  ADDITIONAL_PYTHON_VERSIONS: "['3.14']"
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}
@@ -228,7 +228,7 @@ jobs:
             runner: windows-latest
             target: x64
           - name: Macos
-            runner: macos-13
+            runner: macos-15-intel
             target: x86_64
           - name: Macos
             runner: macos-15
@@ -263,8 +263,6 @@ jobs:
           path: dist
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@3259c6206f993105e3a61b142c2d97bf4b9ef83d # v7.1.0
-        with:
-          enable-cache: true
       - name: Download requirements-test.txt
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
@@ -291,28 +289,43 @@ jobs:
           pytest tests -n auto -v -m "not docker"
 
   build-test-musl:
-    name: Musllinux ${{ matrix.platform.target }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.platform.os || 'ubuntu-latest' }}
+    name: Musllinux ${{ matrix.target }} ${{ matrix.python-version }}
+    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
     needs:
       - info
       - tests
     strategy:
       fail-fast: false
       matrix:
-        platform:
+        target:
+          - x86_64
+          - aarch64
+          - armv7
+          - x86
+        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
+        exclude:
+          # Exclude deprecated HA architectures
+          - target: x86
+            python-version: "3.14"
+          - target: armv7
+            python-version: "3.14"
+        include:
+          # x86_64
           - target: x86_64
             docker_arch: amd64
+          # aarch64
           - target: aarch64
             docker_arch: arm64
             os: ubuntu-24.04-arm
+          # armv7
           - target: armv7
             docker_arch: arm/v7
             os: ubuntu-24.04-arm
             qemu: true
+          # x86
           - target: x86
             docker_arch: 386
             qemu: true
-        python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
@@ -325,21 +338,21 @@ jobs:
       - name: Build wheels
         uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
         with:
-          target: ${{ matrix.platform.target }}
+          target: ${{ matrix.target }}
           args: --release --strip --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: musllinux_1_2
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
-          name: wheels-musllinux-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          name: wheels-musllinux-${{ matrix.target }}-${{ matrix.python-version }}
           path: dist
       - name: Download requirements-test.txt
         uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
         with:
           name: requirements-test.txt
       - name: Install Qemu
-        if: ${{ matrix.platform.qemu || false }}
+        if: ${{ matrix.qemu || false }}
         uses: docker/setup-qemu-action@29109295f81e9208d7d86ff1c6c12d2833863392 # v3.6.0
       - name: Install Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
@@ -348,18 +361,18 @@ jobs:
         with:
           context: .
           file: ci/Dockerfile.alpine
-          platforms: linux/${{ matrix.platform.docker_arch }}
+          platforms: linux/${{ matrix.docker_arch }}
           push: false
           load: true
           cache-from: type=gha
           cache-to: type=gha,mode=max
           build-args: |
             PYTHON_VERSION=${{ matrix.python-version }}
-          tags: deebot_client:${{ matrix.platform.target }}-${{ matrix.python-version }}
+          tags: deebot_client:${{ matrix.target }}-${{ matrix.python-version }}
       - name: Pytest in docker
         id: pytest
         run: |
-          docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.platform.docker_arch }} deebot_client:${{ matrix.platform.target }}-${{ matrix.python-version }}
+          docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.docker_arch }} deebot_client:${{ matrix.target }}-${{ matrix.python-version }}
 
   benchmarks:
     runs-on: "ubuntu-latest"
@@ -405,8 +418,6 @@ jobs:
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: 🏗 Set up uv
         uses: astral-sh/setup-uv@3259c6206f993105e3a61b142c2d97bf4b9ef83d # v7.1.0
-        with:
-          enable-cache: true
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |

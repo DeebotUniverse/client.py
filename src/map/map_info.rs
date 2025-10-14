@@ -84,10 +84,11 @@ impl MapInfo {
 
     pub(super) fn generate(&self) -> MapInfoGenerateResult {
         let mut viewbox = None;
-        let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::new();
+        let order = self.get_order();
+        let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
         let mut used_styles = OrderSet::new();
 
-        for (map_info_type, css, force_connected) in self.get_order() {
+        for (map_info_type, css, force_connected) in order {
             if let Some(entries) = self.data.get(&map_info_type)
                 && !entries.is_empty()
             {
@@ -160,7 +161,9 @@ impl MapInfo {
 }
 
 fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
-    let mut outlines = Vec::new();
+    // Pre-allocate with estimated capacity
+    let filtered_count = data.iter().filter(|e| !e.is_empty()).count();
+    let mut outlines = Vec::with_capacity(filtered_count);
 
     for entry in data.iter().filter(|e| !e.is_empty()) {
         let parts = entry.split(';').filter(|s| !s.is_empty()).skip(1); // skip the outline ID
@@ -196,6 +199,7 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
     outlines
 }
 
+#[inline]
 fn parse_coords(s: &str) -> Option<(f32, f32)> {
     let mut it = s.splitn(2, ',');
     let x = it.next()?.parse::<f32>().ok()?;
@@ -204,7 +208,9 @@ fn parse_coords(s: &str) -> Option<(f32, f32)> {
 }
 
 fn process_map_info_room_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
-    let mut rooms = Vec::new();
+    // Pre-allocate with estimated capacity
+    let filtered_count = data.iter().filter(|e| !e.is_empty()).count();
+    let mut rooms = Vec::with_capacity(filtered_count);
 
     for entry in data.iter().filter(|e| !e.is_empty()) {
         let poly_points: Vec<Point> = entry
@@ -226,6 +232,7 @@ fn process_map_info_room_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
     rooms
 }
 
+#[inline]
 fn calc_viewbox(outlines: &[MapInfoTypeDataEntry]) -> Option<ViewBox> {
     let mut bounds = None;
     outlines
@@ -247,6 +254,7 @@ fn calc_viewbox(outlines: &[MapInfoTypeDataEntry]) -> Option<ViewBox> {
     })
 }
 
+#[inline]
 fn minmax_points<'a, I: Iterator<Item = &'a Point>>(
     iter: I,
     bounds: &mut Option<(f32, f32, f32, f32)>,
