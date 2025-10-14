@@ -38,7 +38,7 @@ class UndefinedType(Enum):
     _singleton = 0
 
 
-UNDEFINED = UndefinedType._singleton  # pylint: disable=protected-access  # noqa: SLF001
+UNDEFINED = UndefinedType._singleton  # noqa: SLF001
 
 # from https://github.com/mrbungle64/ecovacs-deebot.js/blob/master/library/errorCodes.json
 ERROR_CODES = {
@@ -102,6 +102,8 @@ ERROR_CODES = {
     317: "Clean Water Tank refill malfunction",
     318: "Dirty Water Tank is full",
     319: "Cleaning solution is running low",
+    322: "Clean Water Tank is empty or not installed",
+    323: "Dirty Water Tank is full not installed",
     404: "Recipient unavailable",
     500: "Request Timeout",
     601: "ERROR_ClosedAIVISideAbnormal",

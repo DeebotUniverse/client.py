@@ -3,6 +3,20 @@
 [![PyPI - Downloads](https://img.shields.io/pypi/dw/deebot-client?style=for-the-badge)](https://pypi.org/project/deebot-client)
 <a href="https://www.buymeacoffee.com/edenhaus" target="_blank"><img src="https://cdn.buymeacoffee.com/buttons/default-black.png" width="150px" height="35px" alt="Buy Me A Coffee" style="height: 35px !important;width: 150px !important;" ></a>
 
+## IMPORTANT: Contribution only
+
+This project is maintained in our spare time. Please be patient and respectful.
+
+It's not related to Ecovacs or Deebot and we don't get any support from them.
+
+As all is reverse engineered it might take some time to add new features and we can't guarantee that all features will be added.
+
+Unfortunately some people think we are paid to do this and get angry if things don't work as they expect.
+**As result of this, we decided that this project is in a contribution only mode.**
+
+This means, if you want something to be supported/added, you have to provide a fix yourself, wait for someone else to fix it or pay someone to do it.
+Members will still review and help on pull requests.
+
 ## Installation
 
 If you have a recent version of Python 3, you should be able to
@@ -25,7 +39,7 @@ import time
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
-from deebot_client.commands.json.clean import CleanAction
+from deebot_client.commands.json.clean import Clean, CleanAction
 from deebot_client.events import BatteryEvent
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5

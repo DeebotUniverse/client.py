@@ -4,8 +4,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import Position, PositionsEvent, PositionType
+from deebot_client.events import Position, PositionsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.rs.map import PositionType
 
 from .common import JsonCommandWithMessageHandling
 
@@ -14,7 +15,7 @@ if TYPE_CHECKING:
 
 
 class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
-    """Get volume command."""
+    """Get position command."""
 
     NAME = "getPos"
 
@@ -35,26 +36,20 @@ class GetPos(JsonCommandWithMessageHandling, MessageBodyDataDict):
             data_positions = data.get(type_str, [])
 
             if isinstance(data_positions, dict):
-                positions.append(
+                data_positions = [data_positions]
+
+            positions.extend(
+                [
                     Position(
-                        type=PositionType(type_str),
-                        x=data_positions["x"],
-                        y=data_positions["y"],
-                        a=data_positions.get("a", 0),
+                        type=PositionType.from_str(type_str),
+                        x=entry["x"],
+                        y=entry["y"],
+                        a=entry.get("a", 0),
                     )
-                )
-            else:
-                positions.extend(
-                    [
-                        Position(
-                            type=PositionType(type_str),
-                            x=entry["x"],
-                            y=entry["y"],
-                            a=entry.get("a", 0),
-                        )
-                        for entry in data_positions
-                    ]
-                )
+                    for entry in data_positions
+                    if entry.get("invalid", 0) == 0
+                ]
+            )
 
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))

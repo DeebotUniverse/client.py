@@ -29,3 +29,7 @@ test.py
 *.cpython*.so
 
 .codspeed
+
+similarity_output/
+
+*.log

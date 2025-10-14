@@ -13,7 +13,6 @@ from .common import ExecuteCommand, JsonCommandWithMessageHandling
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
-    from deebot_client.command import CommandResult
     from deebot_client.event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
@@ -32,7 +31,7 @@ class Clean(ExecuteCommand):
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
+    ) -> tuple[HandlingResult, dict[str, Any]]:
         """Execute command."""
         state = event_bus.get_last_event(StateEvent)
         if state and isinstance(self._args, dict):
@@ -121,7 +120,7 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         state = data.get("state")
         if data.get("trigger") == "alert":
             status = State.ERROR
-        elif state == "clean":
+        elif state in ("clean", "washing"):
             clean_state = data.get("cleanState", {})
             motion_state = clean_state.get("motionState")
             if motion_state == "working":

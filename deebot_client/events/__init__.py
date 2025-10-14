@@ -3,19 +3,22 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum, unique
-from typing import TYPE_CHECKING, Any, Self
+from enum import IntEnum, unique
+from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.base import Event
+from deebot_client.util.enum import StrEnumWithXml
 
-from . import auto_empty, station
+from . import auto_empty, mop_auto_wash_frequency, station, water_info
 from .auto_empty import AutoEmptyEvent
+from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     CachedMapInfoEvent,
+    GpsPositionEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -23,11 +26,9 @@ from .map import (
     MinorMapEvent,
     Position,
     PositionsEvent,
-    PositionType,
 )
 from .network import NetworkInfoEvent
 from .station import StationEvent
-from .water_info import SweepType, WaterAmount, WaterInfoEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
@@ -44,8 +45,11 @@ __all__ = [
     "Event",
     "FanSpeedEvent",
     "FanSpeedLevel",
+    "FirmwareEvent",
+    "GpsPositionEvent",
     "MajorMapEvent",
     "MapChangedEvent",
+    "MapInfoEvent",
     "MapSetEvent",
     "MapSetType",
     "MapSubsetEvent",
@@ -53,17 +57,15 @@ __all__ = [
     "MinorMapEvent",
     "NetworkInfoEvent",
     "Position",
-    "PositionType",
     "PositionsEvent",
     "StationEvent",
     "SweepModeEvent",
-    "SweepType",
-    "WaterAmount",
-    "WaterInfoEvent",
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
+    "mop_auto_wash_frequency",
     "station",
+    "water_info",
 ]
 
 
@@ -129,26 +131,8 @@ class ErrorEvent(Event):
 
 
 @unique
-class LifeSpan(StrEnum):
+class LifeSpan(StrEnumWithXml):
     """Enum class for all possible life span components."""
-
-    xml_value: str
-
-    def __new__(cls, value: str, xml_value: str = "") -> Self:
-        obj = str.__new__(cls, value)
-        obj._value_ = value
-        obj.xml_value = xml_value
-        return obj
-
-    @classmethod
-    def from_xml(cls, value: str) -> LifeSpan:
-        """Get LifeSpan from xml value."""
-        for life_span in LifeSpan:
-            if life_span.xml_value == value:
-                return life_span
-
-        msg = f"{value} is not a valid {cls.__name__}"
-        raise ValueError(msg)
 
     BRUSH = "brush", "Brush"
     FILTER = "heap", "Heap"
@@ -163,10 +147,14 @@ class LifeSpan(StrEnum):
     LENS_BRUSH = "lensBrush", "LensBrush"
     DUST_BAG = "dustBag", "DustBag"
     CLEANING_FLUID = "autoWater_cleaningFluid", "AutoWater_cleaningFluid"
+    CLEANING_SOLUTION = "cleaningSolution", "CleaningSolution"
+    SEWAGE_BOX = "sewageBox", "SewageBox"
     STRAINER = "strainer", "Strainer"
     HAND_FILTER = "handFilter", "HandFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
     STATION_FILTER = "spHeap", "SpHeap"
+    WATER_SINK = "waterSink", "WaterSink"
+    MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
 
 
 @dataclass(frozen=True)
@@ -298,6 +286,11 @@ class ChildLockEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class BorderSpinEvent(EnableEvent):
+    """Border spin event."""
+
+
+@dataclass(frozen=True)
 class BorderSwitchEvent(EnableEvent):
     """Border switch event."""
 
@@ -322,3 +315,10 @@ class CutDirectionEvent(Event):
     """Cut direction event representation."""
 
     angle: int
+
+
+@dataclass(frozen=True)
+class FirmwareEvent(Event):
+    """Firmware event."""
+
+    version: str

@@ -4,14 +4,12 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetChargeState
 from deebot_client.events import StateEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import State
-from tests.commands import assert_command
 
-from . import get_request_xml
+from . import assert_command, get_request_xml
 
 if TYPE_CHECKING:
     from deebot_client.events.base import Event
@@ -21,11 +19,10 @@ if TYPE_CHECKING:
     ("state", "expected_event"),
     [
         ("SlotCharging", StateEvent(State.DOCKED)),
-        ("Idle", StateEvent(State.IDLE)),
         ("Going", StateEvent(State.RETURNING)),
         ("unknown state returned", StateEvent(State.ERROR)),
     ],
-    ids=["slot_charging", "idle", "going", "unknown"],
+    ids=["slot_charging", "going", "unknown"],
 )
 async def test_get_charge_state(state: str, expected_event: Event) -> None:
     json = get_request_xml(f"<ctl ret='ok'><charge type='{state}' g='0'/></ctl>")
@@ -34,8 +31,12 @@ async def test_get_charge_state(state: str, expected_event: Event) -> None:
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>", "<ctl ret='ok'></ctl>"],
-    ids=["error", "no_state"],
+    [
+        "<ctl ret='error'/>",
+        "<ctl ret='ok'></ctl>",
+        "<ctl ret='ok'><charge type='Idle' g='0'/></ctl>",
+    ],
+    ids=["error", "no_state", "idle"],
 )
 async def test_get_charge_state_error(xml: str) -> None:
     json = get_request_xml(xml)
@@ -43,5 +44,5 @@ async def test_get_charge_state_error(xml: str) -> None:
         GetChargeState(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )

@@ -2,13 +2,16 @@
 
 from __future__ import annotations
 
-from abc import ABC
-from datetime import datetime
+from abc import ABC, abstractmethod
+import time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+import orjson
+
 from deebot_client.command import (
     Command,
+    CommandMqttP2P,
     CommandWithMessageHandling,
     GetCommand,
     InitParam,
@@ -42,7 +45,7 @@ class JsonCommand(Command, ABC):
         payload = {
             "header": {
                 "pri": "1",
-                "ts": datetime.now().timestamp(),
+                "ts": time.time(),
                 "tzm": 480,
                 "ver": "0.0.50",
             }
@@ -77,7 +80,29 @@ class ExecuteCommand(JsonCommandWithMessageHandling, ABC):
         return HandlingResult(HandlingState.FAILED)
 
 
-class JsonSetCommand(ExecuteCommand, SetCommand, ABC):
+class JsonCommandMqttP2P(JsonCommand, CommandMqttP2P, ABC):
+    """Json base command for mqtt p2p channel."""
+
+    @classmethod
+    def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
+        """Create a command from the mqtt data."""
+        payload_json = orjson.loads(payload)
+        data = payload_json["body"]["data"]
+        return cls._create_from_mqtt(data)
+
+    def handle_mqtt_p2p(
+        self, event_bus: EventBus, response_payload: str | bytes | bytearray
+    ) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+        response = orjson.loads(response_payload)
+        self._handle_mqtt_p2p(event_bus, response)
+
+    @abstractmethod
+    def _handle_mqtt_p2p(self, event_bus: EventBus, response: dict[str, Any]) -> None:
+        """Handle response received over the mqtt channel "p2p"."""
+
+
+class JsonSetCommand(ExecuteCommand, SetCommand, JsonCommandMqttP2P, ABC):
     """Json base set command.
 
     Command needs to be linked to the "get" command, for handling (updating) the sensors.

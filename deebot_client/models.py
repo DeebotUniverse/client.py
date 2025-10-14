@@ -3,9 +3,10 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
-from enum import IntEnum, StrEnum, unique
-from pathlib import Path
+from enum import IntEnum, unique
 from typing import TYPE_CHECKING, Required, TypedDict
+
+from deebot_client.util.enum import StrEnumWithXml
 
 if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
@@ -64,22 +65,22 @@ class State(IntEnum):
 
 
 @unique
-class CleanAction(StrEnum):
+class CleanAction(StrEnumWithXml):
     """Enum class for all possible clean actions."""
 
-    START = "start"
-    PAUSE = "pause"
-    RESUME = "resume"
-    STOP = "stop"
+    START = "start", "s"
+    PAUSE = "pause", "p"
+    RESUME = "resume", "r"
+    STOP = "stop", "h"
 
 
 @unique
-class CleanMode(StrEnum):
+class CleanMode(StrEnumWithXml):
     """Enum class for all possible clean modes."""
 
-    AUTO = "auto"
-    SPOT_AREA = "spotArea"
-    CUSTOM_AREA = "customArea"
+    AUTO = "auto", "auto"
+    SPOT_AREA = "spotArea", "SpotArea"
+    CUSTOM_AREA = "customArea", "spot"
 
 
 @dataclass(frozen=True)
@@ -89,26 +90,3 @@ class Credentials:
     token: str
     user_id: str
     expires_at: int = 0
-
-
-def _str_to_bool_or_cert(value: bool | str) -> bool | str:
-    """Convert string to bool or certificate."""
-    if isinstance(value, bool):
-        return value
-
-    if value is not None:
-        value = value.lower()
-        if value in ("y", "yes", "t", "true", "on", "1"):
-            return True
-        if value in ("n", "no", "f", "false", "off", "0"):
-            return False
-        path = Path(str(value))
-        if path.exists():
-            # User could provide a path to a CA Cert as well, which is useful for Bumper
-            if path.is_file():
-                return value
-            msg = f"Certificate path provided is not a file: {value}"
-            raise ValueError(msg)
-
-    msg = f'Cannot convert "{value}" to a bool or certificate path'
-    raise ValueError(msg)

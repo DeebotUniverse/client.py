@@ -47,8 +47,8 @@ from . import assert_command, assert_execute_command
 )
 async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyEvent) -> None:
     """Test GetAutoEmpty."""
-    json = get_request_json(get_success_body(json))
-    await assert_command(GetAutoEmpty(), json, expected)
+    json, firmware_event = get_request_json(get_success_body(json))
+    await assert_command(GetAutoEmpty(), json, (firmware_event, expected))
 
 
 @pytest.mark.parametrize(

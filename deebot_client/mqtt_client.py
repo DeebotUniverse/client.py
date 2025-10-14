@@ -5,8 +5,7 @@ from __future__ import annotations
 import asyncio
 from contextlib import suppress
 from dataclasses import dataclass
-from datetime import datetime
-import json
+from datetime import UTC, datetime
 import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
@@ -131,7 +130,7 @@ class MqttClient:
         self._mqtt_task: asyncio.Task[Any] | None = None
 
         self._received_p2p_commands: MutableMapping[str, CommandMqttP2P] = TTLCache(
-            maxsize=60 * 60, ttl=60
+            maxsize=200, ttl=60
         )
         self._last_message_received_at: datetime | None = None
 
@@ -234,7 +233,7 @@ class MqttClient:
                         "Could not authenticate. Please check your credentials and afterwards reload the integration."
                     )
                     return
-                except Exception:  # pylint: disable=broad-except
+                except Exception:
                     _LOGGER.exception("An exception occurred")
                     return
 
@@ -247,7 +246,7 @@ class MqttClient:
         _LOGGER.debug(
             "Got message: topic=%s, payload=%s", message.topic, message.payload
         )
-        self._last_message_received_at = datetime.now()
+        self._last_message_received_at = datetime.now(tz=UTC)
 
         if message.payload is None or isinstance(message.payload, int | float):
             _LOGGER.warning(
@@ -289,7 +288,7 @@ class MqttClient:
         try:
             if sub_info := self._subscriptions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
-        except Exception:  # pylint: disable=broad-except
+        except Exception:
             _LOGGER.exception("An exception occurred during handling atr message")
 
     def _handle_p2p(
@@ -314,29 +313,21 @@ class MqttClient:
             request_id = topic_split[10]
 
             if is_request:
-                payload_json = json.loads(payload)
-                try:
-                    data = payload_json["body"]["data"]
-                except KeyError:
-                    _LOGGER.warning(
-                        "Could not parse p2p payload: topic=%s; payload=%s",
-                        "/".join(topic_split),
-                        payload_json,
-                    )
-                    return
-
                 self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
-                    data
+                    payload
                 )
             elif command := self._received_p2p_commands.pop(request_id, None):
                 if sub_info := self._subscriptions.get(topic_split[3]):
-                    data = json.loads(payload)
-                    command.handle_mqtt_p2p(sub_info.events, data)
+                    command.handle_mqtt_p2p(sub_info.events, payload)
             else:
                 _LOGGER.debug(
                     "Response to command came in probably to late. requestId=%s, commandName=%s",
                     request_id,
                     command_name,
                 )
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.exception("An exception occurred during handling p2p message")
+        except Exception:
+            _LOGGER.exception(
+                "An exception occurred during handling p2p message: topic=%s; payload=%s",
+                "/".join(topic_split),
+                payload,
+            )

@@ -6,12 +6,13 @@ from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
 from enum import StrEnum
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Any, Generic, ParamSpec, TypeVar
+from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BorderSpinEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -31,6 +32,7 @@ from deebot_client.events import (
     LifeSpanEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapSetType,
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
@@ -48,11 +50,11 @@ from deebot_client.events import (
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
-    WaterAmount,
-    WaterInfoEvent,
     WorkMode,
     WorkModeEvent,
     auto_empty,
+    mop_auto_wash_frequency,
+    water_info,
 )
 
 if TYPE_CHECKING:
@@ -60,16 +62,10 @@ if TYPE_CHECKING:
 
     from _typeshed import DataclassInstance
 
-    from deebot_client.command import Command
+    from deebot_client.command import Command, CommandWithMessageHandling
     from deebot_client.commands import StationAction
-    from deebot_client.commands.json.common import ExecuteCommand
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
-
-
-_T = TypeVar("_T")
-_EVENT = TypeVar("_EVENT", bound=Event)
-_P = ParamSpec("_P")
 
 
 def _get_events(
@@ -89,47 +85,55 @@ def _get_events(
 
 
 @dataclass(frozen=True)
-class CapabilityEvent(Generic[_EVENT]):
+class CapabilityEvent[E: Event]:
     """Capability for an event with get command."""
 
-    event: type[_EVENT]
+    event: type[E]
     get: list[Command]
 
 
 @dataclass(frozen=True)
-class CapabilitySet(CapabilityEvent[_EVENT], Generic[_EVENT, _P]):
+class CapabilitySet[E: Event, **P](CapabilityEvent[E]):
     """Capability setCommand with event."""
 
-    set: Callable[_P, ExecuteCommand]
+    set: Callable[P, CommandWithMessageHandling]
 
 
 @dataclass(frozen=True)
-class CapabilitySetEnable(CapabilitySet[_EVENT, [bool]]):
+class CapabilitySetEnable[E: Event](CapabilitySet[E, [bool]]):
     """Capability for SetEnableCommand with event."""
 
 
 @dataclass(frozen=True)
-class CapabilityExecute(Generic[_P]):
+class CapabilityExecute[**P]:
     """Capability to execute a command."""
 
-    execute: Callable[_P, Command]
+    execute: Callable[P, Command]
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityTypes(Generic[_T]):
+class CapabilityTypes[T]:
     """Capability to specify types support."""
 
-    types: tuple[_T, ...]
+    types: tuple[T, ...]
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilityExecuteTypes(CapabilityTypes[_T], CapabilityExecute[[_T]]):
+class CapabilityExecuteTypes[T](CapabilityTypes[T], CapabilityExecute[[T]]):
     """Capability to execute a command with types."""
 
 
 @dataclass(frozen=True, kw_only=True)
-class CapabilitySetTypes(CapabilitySet[_EVENT, _P], CapabilityTypes[_T]):
+class CapabilitySetTypes[E: Event, **P, T](CapabilitySet[E, P], CapabilityTypes[T]):
     """Capability for set command and types."""
+
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilityNumber[E: Event, **P](CapabilitySet[E, P]):
+    """Capability for a number entity with min and max."""
+
+    min: int
+    max: int
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -155,7 +159,7 @@ class CapabilityClean:
 
 
 @dataclass(frozen=True)
-class CapabilityCustomCommand(CapabilityEvent[_EVENT]):
+class CapabilityCustomCommand[E: Event](CapabilityEvent[E]):
     """Capability custom command."""
 
     set: Callable[[str, Any], Command]
@@ -175,11 +179,14 @@ class CapabilityMap:
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
-    major: CapabilityEvent[MajorMapEvent]
-    multi_state: CapabilitySetEnable[MultimapStateEvent]
+    info: CapabilityExecute[[str]] | None = None
+    major: CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]]
+    minor: CapabilityExecute[[int, str]]
+    multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
-    relocation: CapabilityExecute[[]]
+    relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
+    set: CapabilityExecute[[str, MapSetType]]
     trace: CapabilityEvent[MapTraceEvent]
 
 
@@ -202,9 +209,14 @@ class CapabilitySettings:
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
         | None
     ) = None
+    border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
+    mop_auto_wash_frequency: (
+        CapabilityNumber[mop_auto_wash_frequency.MopAutoWashFrequencyEvent, [int]]
+        | None
+    ) = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None
@@ -214,7 +226,7 @@ class CapabilitySettings:
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
-    volume: CapabilitySet[VolumeEvent, [int]]
+    volume: CapabilitySet[VolumeEvent, [int]] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -228,6 +240,21 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+
+
+@dataclass(frozen=True, kw_only=True)
+class CapabilityWater:
+    """Capabilities for water."""
+
+    amount: (
+        CapabilitySetTypes[
+            water_info.WaterAmountEvent,
+            [water_info.WaterAmount | str],
+            water_info.WaterAmount,
+        ]
+        | CapabilityNumber[water_info.WaterCustomAmountEvent, [int]]
+    )
+    mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -253,9 +280,7 @@ class Capabilities(ABC):
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None
     stats: CapabilityStats
-    water: (
-        CapabilitySetTypes[WaterInfoEvent, [WaterAmount | str], WaterAmount] | None
-    ) = None
+    water: CapabilityWater | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
 

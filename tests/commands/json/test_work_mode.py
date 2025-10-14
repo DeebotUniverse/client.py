@@ -24,8 +24,8 @@ from . import assert_command, assert_set_command
     ],
 )
 async def test_GetWorkMode(json: dict[str, Any], expected: WorkModeEvent) -> None:
-    json = get_request_json(get_success_body(json))
-    await assert_command(GetWorkMode(), json, expected)
+    json, firmware_event = get_request_json(get_success_body(json))
+    await assert_command(GetWorkMode(), json, (firmware_event, expected))
 
 
 @pytest.mark.parametrize(("value"), [WorkMode.MOP_AFTER_VACUUM, "mop_after_vacuum"])

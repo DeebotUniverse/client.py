@@ -3,7 +3,7 @@ from __future__ import annotations
 import asyncio
 from typing import Any
 
-from deebot_client.util import cancel, create_task
+from deebot_client.util import OnChangedDict, cancel, create_task
 
 
 async def test_create_task_and_cancel() -> None:
@@ -35,3 +35,39 @@ async def test_create_task_and_cancel() -> None:
     for task in _tasks:
         assert task.cancelled()
         assert task.done()
+
+
+def test_on_changed_dict() -> None:
+    callback_count = 0
+
+    def increase_counter() -> None:
+        nonlocal callback_count
+        callback_count += 1
+
+    sut: OnChangedDict[str, int] = OnChangedDict(increase_counter)
+
+    sut["test"] = 1001
+    assert callback_count == 1
+    assert sut["test"] == 1001
+
+    sut.update({"test": 1002, "test2": 2001, "test3": 3001, "test4": 4001})
+    assert sut["test"] == 1002
+    assert callback_count == 2
+
+    del sut["test"]
+    assert "test" not in sut
+    assert callback_count == 3
+
+    assert sut.pop("test2") == 2001
+    assert "test2" not in sut
+    assert callback_count == 4
+
+    (popped_key, popped_value) = sut.popitem()
+    assert popped_key == "test4"
+    assert popped_value == 4001
+    assert "test4" not in sut
+    assert callback_count == 5
+
+    sut.clear()
+    assert sut == {}
+    assert callback_count == 6

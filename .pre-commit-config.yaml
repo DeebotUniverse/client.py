@@ -1,54 +1,39 @@
-ci:
-  autofix_prs: false
-  skip:
-    # This steps run in the ci workflow. Keep in sync
-    - mypy
-    - pylint
-    - verifyNoGetLogger
-    - rust-fmt
-    - rust-check
-    - rust-clippy
-
-default_language_version:
-  python: python3.13
-
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.9.3
+    rev: v0.14.0
     hooks:
-      - id: ruff
+      - id: ruff-check
         args:
           - --fix
           - --unsafe-fixes
       - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.19.1
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
         args:
           - --py313-plus
   - repo: https://github.com/codespell-project/codespell
-    rev: v2.4.0
+    rev: v2.4.1
     hooks:
       - id: codespell
         args:
-          - --ignore-words-list=deebot
-          - --skip="./.*,*.csv,*.json"
+          - --ignore-words-list=deebot,MapP
           - --quiet-level=2
           - --exclude-file=deebot_client/util/continents.py
+          - --exclude-file=tests/data/map/test_2.py
         exclude_types:
           - csv
           - json
         exclude: ^uv.lock$
   - repo: https://github.com/pre-commit/pre-commit-hooks
-    rev: v5.0.0
+    rev: v6.0.0
     hooks:
       - id: check-executables-have-shebangs
       - id: check-merge-conflict
       - id: detect-private-key
       - id: no-commit-to-branch
         args: [--branch, main, --branch, dev]
-      - id: requirements-txt-fixer
   # - repo: https://github.com/doublify/pre-commit-rust
   #   rev: v1.0
   #   hooks:
@@ -66,20 +51,20 @@ repos:
     hooks:
       - id: prettier
         additional_dependencies:
-          - prettier@3.2.4
-          - prettier-plugin-sort-json@3.1.0
+          - prettier@3.5.3
+          - prettier-plugin-sort-json@4.1.1
         exclude_types:
           - python
         exclude: ^uv.lock$
   - repo: https://github.com/adrienverge/yamllint.git
-    rev: v1.35.1
+    rev: v1.37.1
     hooks:
       - id: yamllint
   - repo: local
     hooks:
       - id: rust-fmt
         name: Rust format
-        entry: cargo fmt --all -- --check
+        entry: cargo fmt --all
         language: system
         types:
           - rust
@@ -110,14 +95,6 @@ repos:
         types:
           - python
         require_serial: true
-      - id: pylint
-        name: Check with pylint
-        entry: scripts/run-in-env.sh pylint
-        language: script
-        types:
-          - python
-        require_serial: true
-        exclude: ^tests/.+
       - id: verifyNoGetLogger
         name: Verify no getLogger usages
         entry: scripts/check_getLogger.sh

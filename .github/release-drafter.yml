@@ -24,14 +24,6 @@ categories:
       - "pr: dependency-update"
       - "dependencies"
 
-include-labels:
-  - "pr: Breaking Change"
-  - "pr: enhancement"
-  - "pr: dependency-update"
-  - "pr: new-feature"
-  - "pr: bugfix"
-  - "pr: refactor"
-
 version-resolver:
   major:
     labels:
@@ -39,11 +31,12 @@ version-resolver:
   minor:
     labels:
       - "pr: enhancement"
-      - "pr: dependency-update"
       - "pr: new-feature"
   patch:
     labels:
       - "pr: bugfix"
+      - "pr: dependency-update"
+      - "dependencies"
   default: patch
 
 template: |

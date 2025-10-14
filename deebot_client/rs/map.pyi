@@ -1,40 +1,63 @@
+from enum import Enum, auto
 from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
 
-class TracePoint:
-    """Trace point."""
+class BackgroundImage:
+    """Map background image."""
 
-    def __new__(cls, x: float, y: float, connected: bool) -> Self:
-        """Create a new trace point."""
+    def update_map_piece(self, index: int, base64_data: str) -> bool:
+        """Update map piece."""
+
+    def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
+        """Return True if update is required."""
+
+class TracePoints:
+    """Trace points in rust."""
+
+    def add(self, value: str) -> None:
+        """Add trace points to the trace points object."""
+
+    def clear(self) -> None:
+        """Clear all trace points."""
+
+class MapInfo:
+    """Map info."""
+
+    def set(self, baset64_data: str) -> None:
+        """Set map info (base64-compressed JSON)."""
+
+class MapData:
+    """Map data in rust."""
+
+    def __new__(cls) -> Self:
+        """Create a new map data object."""
 
     @property
-    def x(self) -> float:
-        """X coordinate."""
+    def background_image(self) -> BackgroundImage:
+        """Return background image."""
 
     @property
-    def y(self) -> float:
-        """Y coordinate."""
+    def map_info(self) -> MapInfo:
+        """Return map info."""
 
     @property
-    def connected(self) -> float:
-        """If the point is connected."""
+    def trace_points(self) -> TracePoints:
+        """Return trace points."""
 
-def extract_trace_points(value: str) -> list[TracePoint]:
-    """Extract trace points from 7z compressed data string."""
-
-class Svg:
-    """SVG in rust."""
-
-    def __new__(
-        cls,
-        viewbox: tuple[float, float, float, float],
-        image: bytes,
-        trace_points: list[TracePoint],
+    def generate_svg(
+        self,
         subsets: list[MapSubsetEvent],
         position: list[Position],
-    ) -> Self:
-        """Create a new Svg object."""
-
-    def generate(self) -> str:
+    ) -> str | None:
         """Generate SVG image."""
+
+class PositionType(Enum):
+    """Position type enum."""
+
+    DEEBOT = auto()
+    CHARGER = auto()
+
+    @staticmethod
+    def from_str(value: str) -> PositionType:
+        """Create a position type from string."""

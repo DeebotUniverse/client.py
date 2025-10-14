@@ -4,20 +4,18 @@ from __future__ import annotations
 
 import base64
 import lzma
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.rs.util import decompress_7z_base64_data
+from deebot_client.rs.util import decompress_base64_data
 
 if TYPE_CHECKING:
-    from contextlib import AbstractContextManager
-
     from pytest_codspeed import BenchmarkFixture
 
 
 @pytest.mark.parametrize(
-    ("input", "expected"),
+    ("value", "expected"),
     [
         (
             "XQAABACZAAAAABaOQmW9Bsibxz42rKUpGlV7Rr4D1S/9x9mDa60v4J1BKrEsnk34EAt6X5gKkxwYzfOu3T8GAPpmIy5o4A==",
@@ -38,37 +36,58 @@ if TYPE_CHECKING:
     ],
     ids=["1", "2", "3", "4"],
 )
-def test_decompress_7z_base64_data(
-    benchmark: BenchmarkFixture, input: str, expected: bytes
+def test_decompress_base64_data_lzma(
+    benchmark: BenchmarkFixture, value: str, expected: bytes
 ) -> None:
-    """Test decompress_7z_base64_data function."""
+    """Test decompress_base64_data function with lzma base64 values."""
     # Benchmark only the production function
-    result = benchmark(decompress_7z_base64_data, input)
+    result = benchmark(decompress_base64_data, value)
     assert result == expected
 
     # Verify that the old python function is producing the same result
-    assert _decompress_7z_base64_data_python(input) == result
+    assert _decompress_7z_base64_data_python(value) == result
 
 
 @pytest.mark.parametrize(
-    ("input", "error"),
+    ("value", "expected"),
+    [
+        (
+            "KLUv/SB//QEAMgQKDKClbQC+WNsvI/5vYPMSO6jz8h7OwN2BYlTHRR2DYgSeurlRRyp2UAgALXwANbAWWqAuACQBKiDgFiUJ",
+            b"-624,-774;-524,-774;-474,-724;-424,-724;-374,-674;-124,-674;-24,-774;-74,-824;2325,-824;2375,-774;2425,-774;2425,1225;-624,1225",
+        ),
+    ],
+    ids=["1"],
+)
+def test_decompress_base64_data_zstd(
+    benchmark: BenchmarkFixture, value: str, expected: bytes
+) -> None:
+    """Test decompress_base64_data function with zstd base64 values."""
+    # Benchmark only the production function
+    result = benchmark(decompress_base64_data, value)
+    assert result == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_error"),
     [
         (
             "XQAABADHAAAAAC2WwEHwYhHX3vWwDK80QCnaQU0mwUd9Vk34ub6OxzOk6kdFfbFvpVp4iIlKisAvp0MznQNYEZ8koxFHnO,+iM44GUKgujGQKgzl0bScbQgaon1jI3eyCRikWlkmrbwA=",
-            pytest.raises(ValueError, match="Invalid symbol 44, offset 94."),
+            "Invalid symbol 44, offset 94.",
         ),
         (
             "XQAABABBAAAAAC2WwEIwUhHX3vfFDfs1H1PUqtdWgakwVnMBz3Bb3yaoE5OYkd",
-            pytest.raises(ValueError, match="Invalid padding"),
+            "Invalid padding",
+        ),
+        (
+            "AAABAA==",
+            "Invalid 7z compressed data",
         ),
     ],
 )
-def test_decompress_7z_base64_data_errors(
-    input: str, error: AbstractContextManager[Any]
-) -> None:
-    """Test decompress_7z_base64_data function."""
-    with error:
-        assert decompress_7z_base64_data(input)
+def test_decompress_base64_data_errors(value: str, expected_error: str) -> None:
+    """Test decompress_base64_data function."""
+    with pytest.raises(ValueError, match=expected_error):
+        assert decompress_base64_data(value)
 
 
 def _decompress_7z_base64_data_python(data: str) -> bytes:

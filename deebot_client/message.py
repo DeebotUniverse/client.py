@@ -3,11 +3,14 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, auto
 import functools
-from typing import TYPE_CHECKING, Any, TypeVar, final
+from typing import TYPE_CHECKING, Any, final
 
+import orjson
+
+from deebot_client.events import FirmwareEvent
 from deebot_client.util import verify_required_class_variables_exists
 
 from .logging_filter import get_logger
@@ -15,9 +18,12 @@ from .logging_filter import get_logger
 if TYPE_CHECKING:
     from collections.abc import Callable
 
+    from .command import Command
     from .event_bus import EventBus
 
 _LOGGER = get_logger(__name__)
+
+MessagePayloadType = str | bytes | bytearray | dict[str, Any]
 
 
 class HandlingState(IntEnum):
@@ -36,6 +42,7 @@ class HandlingResult:
 
     state: HandlingState
     args: dict[str, Any] | None = None
+    requested_commands: list[Command] = field(default_factory=list)
 
     @classmethod
     def success(cls) -> HandlingResult:
@@ -48,29 +55,34 @@ class HandlingResult:
         return HandlingResult(HandlingState.ANALYSE)
 
 
-_MessageT = TypeVar("_MessageT", bound="Message")
-
-
-def _handle_error_or_analyse(
-    func: Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult],
-) -> Callable[[type[_MessageT], EventBus, dict[str, Any]], HandlingResult]:
+def _handle_error_or_analyse[M: Message, T](
+    func: Callable[[type[M], EventBus, T], HandlingResult],
+) -> Callable[[type[M], EventBus, T], HandlingResult]:
     """Handle error or None response."""
 
     @functools.wraps(func)
-    def wrapper(
-        cls: type[_MessageT], event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
+    def wrapper(cls: type[M], event_bus: EventBus, data: T) -> HandlingResult:
         try:
             response = func(cls, event_bus, data)
+        except Exception:
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            return HandlingResult(HandlingState.ERROR)
+        else:
+            # This happens if for some reason someone calls super() of an ABC where handle is not implemented
+            if not response:
+                _LOGGER.error(
+                    "Handler for message %s: %s returned no response. "
+                    "This is a bug should not happen. Please report it.",
+                    cls.NAME,
+                    data,
+                )
+                return HandlingResult(HandlingState.ERROR)
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             if response.state == HandlingState.ERROR:
                 _LOGGER.warning("Could not parse %s: %s", cls.NAME, data)
             return response
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
-            return HandlingResult(HandlingState.ERROR)
 
     return wrapper
 
@@ -87,7 +99,7 @@ class Message(ABC):
     @classmethod
     @abstractmethod
     def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+        cls, event_bus: EventBus, message: MessagePayloadType
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
@@ -97,9 +109,7 @@ class Message(ABC):
     @classmethod
     @_handle_error_or_analyse
     @final
-    def handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
-    ) -> HandlingResult:
+    def handle(cls, event_bus: EventBus, message: MessagePayloadType) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
@@ -119,27 +129,82 @@ class MessageStr(Message, ABC):
         """
 
     @classmethod
-    # @_handle_error_or_analyse @edenhaus will make the decorator to work again
+    @_handle_error_or_analyse
     @final
     def __handle_str(cls, event_bus: EventBus, message: str) -> HandlingResult:
         return cls._handle_str(event_bus, message)
 
     @classmethod
     def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+        cls, event_bus: EventBus, message: MessagePayloadType
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
         """
-        # This basically means an XML message
-        if isinstance(message, str):
-            return cls.__handle_str(event_bus, message)
+        if isinstance(message, bytearray):
+            data = bytes(message).decode()
+        elif isinstance(message, bytes):
+            data = message.decode()
+        elif isinstance(message, str):
+            data = message
+        else:
+            return super()._handle(event_bus, message)
+
+        return cls.__handle_str(event_bus, data)
+
+
+class MessageDictOrJson(Message, ABC):
+    """Dict or json message."""
+
+    @classmethod
+    @abstractmethod
+    def _handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle string message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+
+    @classmethod
+    @_handle_error_or_analyse
+    @final
+    def __handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
+    ) -> HandlingResult:
+        return cls._handle_dict(event_bus, message)
+
+    @classmethod
+    def _handle(
+        cls, event_bus: EventBus, message: MessagePayloadType
+    ) -> HandlingResult:
+        """Handle message and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        data = message
+        if not isinstance(message, dict):
+            try:
+                data = orjson.loads(message)
+            except Exception:
+                _LOGGER.debug(
+                    "Could not decode message %s payload %s as JSON",
+                    cls.NAME,
+                    message,
+                )
+
+        if isinstance(data, dict):
+            fw_version = data.get("header", {}).get("fwVer", None)
+            if fw_version:
+                event_bus.notify(FirmwareEvent(fw_version))
+
+            return cls.__handle_dict(event_bus, data)
 
         return super()._handle(event_bus, message)
 
 
-class MessageBody(Message, ABC):
+class MessageBody(MessageDictOrJson, ABC):
     """Dict message with body attribute."""
 
     @classmethod
@@ -157,17 +222,17 @@ class MessageBody(Message, ABC):
         return cls._handle_body(event_bus, body)
 
     @classmethod
-    def _handle(
-        cls, event_bus: EventBus, message: dict[str, Any] | str
+    def _handle_dict(
+        cls, event_bus: EventBus, message: dict[str, Any]
     ) -> HandlingResult:
         """Handle message and notify the correct event subscribers.
 
         :return: A message response
         """
-        if isinstance(message, dict):
+        if "body" in message:
             return cls.__handle_body(event_bus, message["body"])
 
-        return super()._handle(event_bus, message)
+        return super()._handle_dict(event_bus, message)
 
 
 class MessageBodyData(MessageBody, ABC):
@@ -190,13 +255,14 @@ class MessageBodyData(MessageBody, ABC):
     ) -> HandlingResult:
         try:
             response = cls._handle_body_data(event_bus, data)
+        except Exception:
+            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            return HandlingResult(HandlingState.ERROR)
+        else:
             if response.state == HandlingState.ANALYSE:
                 _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             return response
-        except Exception:  # pylint: disable=broad-except
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
-            return HandlingResult(HandlingState.ERROR)
 
     @classmethod
     def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:

@@ -8,6 +8,7 @@ from deebot_client.commands.json.error import GetError
 from deebot_client.const import DataType
 from deebot_client.messages import get_message
 from deebot_client.messages.json.battery import OnBattery
+from deebot_client.messages.json.stats import OnStats
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
@@ -19,6 +20,7 @@ if TYPE_CHECKING:
         ("onBattery", DataType.JSON, OnBattery),
         ("onBattery_V2", DataType.JSON, OnBattery),
         ("onError", DataType.JSON, GetError),
+        ("onStats", DataType.JSON, OnStats),
         ("GetCleanLogs", DataType.JSON, None),
         ("unknown", DataType.JSON, None),
         ("unknown", DataType.XML, None),

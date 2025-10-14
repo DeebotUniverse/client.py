@@ -10,8 +10,10 @@ from . import assert_command, assert_set_command
 
 
 async def test_GetCutDirection() -> None:
-    json = get_request_json(get_success_body({"angle": 90}))
-    await assert_command(GetCutDirection(), json, CutDirectionEvent(90))
+    json, firmware_event = get_request_json(get_success_body({"angle": 90}))
+    await assert_command(
+        GetCutDirection(), json, (firmware_event, CutDirectionEvent(90))
+    )
 
 
 @pytest.mark.parametrize("angle", [1, 45, 90])

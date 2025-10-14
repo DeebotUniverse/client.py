@@ -2,13 +2,13 @@ from __future__ import annotations
 
 import pytest
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.xml import GetPos
-from deebot_client.events import Position, PositionsEvent, PositionType
-from deebot_client.message import HandlingState
-from tests.commands import assert_command
+from deebot_client.commands.xml.pos import GetChargerPos
+from deebot_client.events import Position, PositionsEvent
+from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.rs.map import PositionType
 
-from . import get_request_xml
+from . import assert_command, get_request_xml
 
 
 async def test_get_pos() -> None:
@@ -21,8 +21,13 @@ async def test_get_pos() -> None:
 
 @pytest.mark.parametrize(
     "xml",
-    ["<ctl ret='error'/>", "<ctl ret='ok' t='p'></ctl>"],
-    ids=["error", "no_state"],
+    [
+        "<ctl ret='error'/>",
+        "<ctl ret='ok' t='p'></ctl>",
+        "<ctl ret='ok' t='??' p='77,-5' a='-3' valid='1'/>",
+        "<ctl ret='ok' t='p' p='77,-5' a='-3' valid='0'/>",
+    ],
+    ids=["error", "no_state", "wrong_type", "not_valid"],
 )
 async def test_get_pos_error(xml: str) -> None:
     json = get_request_xml(xml)
@@ -30,5 +35,28 @@ async def test_get_pos_error(xml: str) -> None:
         GetPos(),
         json,
         None,
-        command_result=CommandResult(HandlingState.ANALYSE_LOGGED),
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
+    )
+
+
+async def test_get_charger_pos() -> None:
+    json = get_request_xml("<ctl ret='ok' p='77,-5' a='-3'/>")
+    expected_event = PositionsEvent(
+        positions=[Position(type=PositionType.CHARGER, x=77, y=-5, a=-3)]
+    )
+    await assert_command(GetChargerPos(), json, expected_event)
+
+
+@pytest.mark.parametrize(
+    "xml",
+    ["<ctl ret='error'/>", "<ctl ret='ok'></ctl>"],
+    ids=["error", "no_state"],
+)
+async def test_get_charger_pos_error(xml: str) -> None:
+    json = get_request_xml(xml)
+    await assert_command(
+        GetChargerPos(),
+        json,
+        None,
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
     )
