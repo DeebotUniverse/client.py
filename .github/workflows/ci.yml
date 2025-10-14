@@ -299,6 +299,12 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
+        exclude:
+          # Exclude deprecated HA architectures
+          - target: x86
+            python-version: "3.14"
+          - target: armv7
+            python-version: "3.14"
         platform:
           - target: x86_64
             docker_arch: amd64
