@@ -168,12 +168,10 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
     let mut outlines = Vec::with_capacity(filtered_count);
 
     for entry in data.iter().filter(|e| !e.is_empty()) {
-        // Estimate points capacity based on entry length
-        let estimated_points = entry.len() / 10; // rough estimate
-        let mut path_points = Vec::with_capacity(estimated_points);
+        let parts = entry.split(';').filter(|s| !s.is_empty()).skip(1); // skip the outline ID
+        let mut path_points = Vec::new();
 
-        for spec in entry.split(';').filter(|s| !s.is_empty()).skip(1) {
-            // skip the outline ID
+        for spec in parts {
             let mut coords = spec.splitn(3, ','); // coordinates are "x,y,type"
             if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
                 if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>()) {

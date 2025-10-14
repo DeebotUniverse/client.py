@@ -279,16 +279,7 @@ impl MapData {
             document.append(position);
         }
 
-        // Pre-calculate total size for string allocation
-        let total_size: usize = styles
-            .iter()
-            .map(|k| {
-                let css = get_style(k);
-                css.identifier.len() + css.value.len() + 2 // +2 for {}
-            })
-            .sum();
-
-        let mut style_string = String::with_capacity(total_size);
+        let mut style_string = String::new();
         for k in styles {
             let css = get_style(&k);
             style_string.push_str(css.identifier);
