@@ -228,7 +228,7 @@ jobs:
             runner: windows-latest
             target: x64
           - name: Macos
-            runner: macos-13
+            runner: macos-15-intel
             target: x86_64
           - name: Macos
             runner: macos-15
