@@ -4,11 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandResult
 from deebot_client.commands.json.common import JsonCommand
 from deebot_client.events import CustomCommandEvent
 from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -29,7 +28,7 @@ class CustomCommand(JsonCommand):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -37,10 +36,10 @@ class CustomCommand(JsonCommand):
         if response.get("ret") == "ok":
             data = response.get("resp", response)
             event_bus.notify(CustomCommandEvent(self.NAME, data))
-            return CommandResult.success()
+            return HandlingResult.success()
 
         _LOGGER.warning('Command "%s" was not successfully: %s', self.NAME, response)
-        return CommandResult(HandlingState.FAILED)
+        return HandlingResult(HandlingState.FAILED)
 
     def __eq__(self, obj: object) -> bool:
         if super().__eq__(obj) and isinstance(obj, CustomCommand):

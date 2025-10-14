@@ -10,6 +10,7 @@ from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .events import (
     MajorMapEvent,
+    MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -51,35 +52,24 @@ class Map:
 
         self._capabilities = capabilities
         self._map_data: Final[MapData] = MapData(event_bus)
-        self._amount_rooms: int = 0
         self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
-                self._amount_rooms = len(event.subsets)
-                for room_id in self._map_data.rooms.copy():
-                    if room_id not in event.subsets:
-                        self._map_data.rooms.pop(room_id, None)
-            else:
-                for subset_id, subset in self._map_data.map_subsets.copy().items():
-                    if subset.type == event.type and subset_id not in event.subsets:
-                        self._map_data.map_subsets.pop(subset_id, None)
+                return
+
+            for subset_id, subset in self._map_data.map_subsets.copy().items():
+                if subset.type == event.type and subset_id not in event.subsets:
+                    self._map_data.map_subsets.pop(subset_id, None)
 
         self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
-            if event.type == MapSetType.ROOMS and event.name:
-                room = Room(event.name, event.id, event.coordinates)
-                if self._map_data.rooms.get(event.id, None) != room:
-                    self._map_data.rooms[room.id] = room
-
-                    if len(self._map_data.rooms) == self._amount_rooms:
-                        self._event_bus.notify(
-                            RoomsEvent(list(self._map_data.rooms.values()))
-                        )
-
-            elif self._map_data.map_subsets.get(event.id, None) != event:
+            if (
+                event.type != MapSetType.ROOMS
+                and self._map_data.map_subsets.get(event.id, None) != event
+            ):
                 self._map_data.map_subsets[event.id] = event
 
         self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
@@ -90,12 +80,14 @@ class Map:
             )
         )
 
+        async def on_map_info(event: MapInfoEvent) -> None:
+            self._map_data.set_map_info(event.info)
+
+        self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
+
     # ---------------------------- METHODS ----------------------------
 
-    async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
-        """On first MapChanged subscription."""
-        unsubscribers = []
-
+    async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
         async def on_major_map(event: MajorMapEvent) -> None:
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
@@ -109,12 +101,17 @@ class Map:
                             )
                         )
 
-        unsubscribers.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
-
         async def on_minor_map(event: MinorMapEvent) -> None:
             self._map_data.update_map_piece(event.index, event.value)
 
-        unsubscribers.append(self._event_bus.subscribe(MinorMapEvent, on_minor_map))
+        return [
+            self._event_bus.subscribe(MajorMapEvent, on_major_map),
+            self._event_bus.subscribe(MinorMapEvent, on_minor_map),
+        ]
+
+    async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
+        """On first MapChanged subscription."""
+        unsubscribers = await self._subscribe_minor_major_map_events()
 
         async def on_cached_info(_: CachedMapInfoEvent) -> None:
             # We need to subscribe to it, otherwise it could happen
@@ -155,6 +152,7 @@ class Map:
             raise MapError("Please enable the map first")
 
         # TODO make it nice
+        self._event_bus.request_refresh(CachedMapInfoEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
         self._event_bus.request_refresh(MajorMapEvent)
@@ -182,6 +180,7 @@ class Map:
         for unsubscribe in self._unsubscribers:
             unsubscribe()
         self._unsubscribers.clear()
+        self._map_data.teardown()
 
 
 class MapData:
@@ -197,8 +196,8 @@ class MapData:
         self._on_change = on_change
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: list[Position] = []
-        self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
         self._data = MapDataRs()
+        self._room_handling = MapRoomHandling(event_bus, on_change)
 
     @property
     def changed(self) -> bool:
@@ -210,23 +209,18 @@ class MapData:
         """Return map subsets."""
         return self._map_subsets
 
-    @property
-    def rooms(self) -> dict[int, Room]:
-        """Return rooms."""
-        return self._rooms
-
     def reset_changed(self) -> None:
         """Reset changed value."""
         self._changed = False
 
     def add_trace_points(self, value: str) -> None:
         """Add trace points to the map data."""
-        self._data.add_trace_points(value)
+        self._data.trace_points.add(value)
         self._on_change()
 
     def clear_trace_points(self) -> None:
         """Clear trace points."""
-        self._data.clear_trace_points()
+        self._data.trace_points.clear()
         self._on_change()
 
     def update_positions(self, value: list[Position]) -> None:
@@ -236,15 +230,65 @@ class MapData:
 
     def update_map_piece(self, index: int, base64_data: str) -> None:
         """Update map piece."""
-        if self._data.update_map_piece(index, base64_data):
+        if self._data.background_image.update_map_piece(index, base64_data):
             self._on_change()
 
     def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
         """Return True if update is required."""
-        return self._data.map_piece_crc32_indicates_update(index, crc32)
+        return self._data.background_image.map_piece_crc32_indicates_update(
+            index, crc32
+        )
 
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
         return self._data.generate_svg(
             list(self._map_subsets.values()), self._positions
         )
+
+    def set_map_info(self, base64_info: str) -> None:
+        """Set compressed map info (parsing happens in Rust)."""
+        self._data.map_info.set(base64_info)
+        self._on_change()
+
+    def teardown(self) -> None:
+        """Teardown map data."""
+        self._room_handling.teardown()
+
+
+class MapRoomHandling:
+    """Room handling."""
+
+    def __init__(self, event_bus: EventBus, on_change: Callable[[], None]) -> None:
+        self._amount_rooms: int = 0
+        self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
+        self._unsubscribers: list[Callable[[], None]] = []
+
+        async def on_map_set(event: MapSetEvent) -> None:
+            if event.type != MapSetType.ROOMS:
+                return
+
+            self._amount_rooms = len(event.subsets)
+            for room_id in self._rooms.copy():
+                if room_id not in event.subsets:
+                    self._rooms.pop(room_id, None)
+
+        self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
+
+        async def on_map_subset(event: MapSubsetEvent) -> None:
+            if event.type != MapSetType.ROOMS or not event.name:
+                return
+
+            room = Room(event.name, event.id, event.coordinates)
+            if self._rooms.get(event.id, None) != room:
+                self._rooms[room.id] = room
+
+                if len(self._rooms) == self._amount_rooms:
+                    event_bus.notify(RoomsEvent(list(self._rooms.values())))
+
+        self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
+
+    def teardown(self) -> None:
+        """Teardown room handling."""
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()

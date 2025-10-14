@@ -6,7 +6,7 @@ import pytest
 
 from deebot_client.events import FirmwareEvent, auto_empty
 from deebot_client.messages.json.auto_empty import OnAutoEmpty
-from tests.messages import assert_message
+from tests.messages.json import assert_message
 
 
 @pytest.mark.parametrize(
@@ -19,7 +19,7 @@ from tests.messages import assert_message
     ],
 )
 @pytest.mark.parametrize("enable", [True, False])
-def test_onAutoEmpty(
+async def test_onAutoEmpty(
     frequency: str | None, expected_freq: auto_empty.Frequency | None, enable: bool
 ) -> None:
     data: dict[str, Any] = {
@@ -37,7 +37,7 @@ def test_onAutoEmpty(
     if frequency is not None:
         data["body"]["data"]["frequency"] = frequency
 
-    assert_message(
+    await assert_message(
         OnAutoEmpty,
         data,
         (FirmwareEvent("1.30.0"), auto_empty.AutoEmptyEvent(enable, expected_freq)),

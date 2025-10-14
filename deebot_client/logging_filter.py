@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import copy
 from logging import Filter, Logger, LogRecord, getLogger
 from typing import Any
 
@@ -43,13 +42,19 @@ class SanitizeFilter(Filter):
         sanitized_data = None
         for key, value in data.items():
             if any(substring in key.lower() for substring in self._SANITIZE_LOG_KEYS):
+                # Lazy shallow copy on first modification
                 if sanitized_data is None:
-                    sanitized_data = copy.deepcopy(data)
+                    sanitized_data = dict(data)
                 sanitized_data[key] = "[REMOVED]"
             elif isinstance(value, set | list | dict):
-                if sanitized_data is None:
-                    sanitized_data = copy.deepcopy(data)
-                sanitized_data[key] = self._sanitize_data(value)
+                # Recursively sanitize nested structures
+                sanitized_value = self._sanitize_data(value)
+                if (
+                    sanitized_value is not value
+                ):  # Only copy if nested data was modified
+                    if sanitized_data is None:
+                        sanitized_data = dict(data)
+                    sanitized_data[key] = sanitized_value
 
         return sanitized_data if sanitized_data else data
 

@@ -3,10 +3,11 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
-from datetime import UTC, datetime
-import json
+import time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
+
+import orjson
 
 from deebot_client.command import (
     Command,
@@ -44,7 +45,7 @@ class JsonCommand(Command, ABC):
         payload = {
             "header": {
                 "pri": "1",
-                "ts": datetime.now(tz=UTC).timestamp(),
+                "ts": time.time(),
                 "tzm": 480,
                 "ver": "0.0.50",
             }
@@ -85,7 +86,7 @@ class JsonCommandMqttP2P(JsonCommand, CommandMqttP2P, ABC):
     @classmethod
     def create_from_mqtt(cls, payload: str | bytes | bytearray) -> CommandMqttP2P:
         """Create a command from the mqtt data."""
-        payload_json = json.loads(payload)
+        payload_json = orjson.loads(payload)
         data = payload_json["body"]["data"]
         return cls._create_from_mqtt(data)
 
@@ -93,7 +94,7 @@ class JsonCommandMqttP2P(JsonCommand, CommandMqttP2P, ABC):
         self, event_bus: EventBus, response_payload: str | bytes | bytearray
     ) -> None:
         """Handle response received over the mqtt channel "p2p"."""
-        response = json.loads(response_payload)
+        response = orjson.loads(response_payload)
         self._handle_mqtt_p2p(event_bus, response)
 
     @abstractmethod

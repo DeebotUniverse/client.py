@@ -4,9 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import datetime
-import json
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock
+
+import orjson
 
 from deebot_client.event_bus import EventBus
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
@@ -27,9 +28,7 @@ async def verify_subscribe(
     expected_called: bool,
 ) -> None:
     command = "test"
-    data = json.dumps({"test": str(datetime.datetime.now(tz=datetime.UTC))}).encode(
-        "utf-8"
-    )
+    data = orjson.dumps({"test": str(datetime.datetime.now(tz=datetime.UTC))})
     api = device_info.api
     topic = f"iot/atr/{command}/{api['did']}/{api['class']}/{api['resource']}/j"
     await test_client.publish(topic, data)

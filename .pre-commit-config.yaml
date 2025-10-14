@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.13.0
+    rev: v0.14.0
     hooks:
       - id: ruff-check
         args:
@@ -8,7 +8,7 @@ repos:
           - --unsafe-fixes
       - id: ruff-format
   - repo: https://github.com/asottile/pyupgrade
-    rev: v3.20.0
+    rev: v3.21.0
     hooks:
       - id: pyupgrade
         args:
@@ -19,9 +19,9 @@ repos:
       - id: codespell
         args:
           - --ignore-words-list=deebot,MapP
-          - --skip="./.*,*.csv,*.json"
           - --quiet-level=2
           - --exclude-file=deebot_client/util/continents.py
+          - --exclude-file=tests/data/map/test_2.py
         exclude_types:
           - csv
           - json
@@ -64,7 +64,7 @@ repos:
     hooks:
       - id: rust-fmt
         name: Rust format
-        entry: cargo fmt --all -- --check
+        entry: cargo fmt --all
         language: system
         types:
           - rust

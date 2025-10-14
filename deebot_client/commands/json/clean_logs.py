@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.command import CommandResult
 from deebot_client.const import PATH_API_LG_LOG, REQUEST_HEADERS
 from deebot_client.events import CleanJobStatus, CleanLogEntry, CleanLogEvent
 from deebot_client.logging_filter import get_logger
+from deebot_client.message import HandlingResult
 
 from .common import JsonCommand
 
@@ -55,7 +55,7 @@ class GetCleanLogs(JsonCommand):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -84,6 +84,6 @@ class GetCleanLogs(JsonCommand):
                         _LOGGER.warning("Skipping log entry: %s", log, exc_info=True)
 
                 event_bus.notify(CleanLogEvent(logs))
-                return CommandResult.success()
+                return HandlingResult.success()
 
-        return CommandResult.analyse()
+        return HandlingResult.analyse()

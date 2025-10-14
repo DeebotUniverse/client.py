@@ -4,9 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING
 
-from deebot_client.command import Command, CommandResult
 from deebot_client.events import MajorMapEvent, MapSetEvent, MapSetType, MinorMapEvent
-from deebot_client.events.map import CachedMapInfoEvent, MapSubsetEvent
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    Map,
+    MapSubsetEvent,
+)
 from deebot_client.message import HandlingResult, HandlingState
 
 from .common import XmlCommandWithMessageHandling
@@ -39,25 +42,24 @@ class GetMapSt(XmlCommandWithMessageHandling):
             return HandlingResult.analyse()
 
         built = st == "built"
-        event_bus.notify(CachedMapInfoEvent(name="", active=built))
+        event_bus.notify(
+            CachedMapInfoEvent({Map(id="", name="", using=True, built=built)})
+        )
         return HandlingResult.success()
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS:
-            commands = []
-            if map_obj := event_bus.capabilities.map:
-                commands = [map_obj.set.execute("", entry) for entry in MapSetType]
-            return CommandResult(
-                result.state,
-                result.args,
-                commands,
+        if result.state == HandlingState.SUCCESS and (
+            map_obj := event_bus.capabilities.map
+        ):
+            result.requested_commands.extend(
+                [map_obj.set.execute("", entry) for entry in MapSetType]
             )
 
         return result
@@ -122,22 +124,23 @@ class GetMapSet(XmlCommandWithMessageHandling):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
-            commands: list[Command] = [
-                PullM(
-                    mid=subset,
-                    msid=result.args[self._ARGS_MSID],
-                    type=result.args[self._ARGS_TYPE],
-                )
-                for subset in result.args[self._ARGS_SUBSETS]
-            ]
-            return CommandResult(result.state, result.args, commands)
+            result.requested_commands.extend(
+                [
+                    PullM(
+                        mid=subset,
+                        msid=result.args[self._ARGS_MSID],
+                        type=result.args[self._ARGS_TYPE],
+                    )
+                    for subset in result.args[self._ARGS_SUBSETS]
+                ]
+            )
 
         return result
 
@@ -218,7 +221,7 @@ class PullM(XmlCommandWithMessageHandling):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -233,7 +236,6 @@ class PullM(XmlCommandWithMessageHandling):
                     coordinates=coords,
                 )
             )
-            return CommandResult(result.state, result.args)
 
         return result
 
@@ -265,7 +267,7 @@ class PullMP(XmlCommandWithMessageHandling):
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
-    ) -> CommandResult:
+    ) -> HandlingResult:
         """Handle response from a command.
 
         :return: A message response
@@ -274,7 +276,6 @@ class PullMP(XmlCommandWithMessageHandling):
         if result.state == HandlingState.SUCCESS and result.args:
             piece = result.args[self._ARG_PIECE]
             event_bus.notify(MinorMapEvent(index=self._piece_index, value=piece))
-            return CommandResult(result.state, result.args)
 
         return result
 

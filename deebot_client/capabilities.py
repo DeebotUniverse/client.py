@@ -12,6 +12,7 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BorderSpinEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
@@ -52,6 +53,7 @@ from deebot_client.events import (
     WorkMode,
     WorkModeEvent,
     auto_empty,
+    mop_auto_wash_frequency,
     water_info,
 )
 
@@ -177,7 +179,8 @@ class CapabilityMap:
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
-    major: CapabilityEvent[MajorMapEvent]
+    info: CapabilityExecute[[str]] | None = None
+    major: CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]]
     minor: CapabilityExecute[[int, str]]
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
@@ -206,9 +209,14 @@ class CapabilitySettings:
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
         | None
     ) = None
+    border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
+    mop_auto_wash_frequency: (
+        CapabilityNumber[mop_auto_wash_frequency.MopAutoWashFrequencyEvent, [int]]
+        | None
+    ) = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None

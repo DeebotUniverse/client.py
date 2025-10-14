@@ -5,22 +5,23 @@ from typing import TYPE_CHECKING, Any
 from unittest.mock import AsyncMock, Mock, call
 
 from deebot_client.authentication import Authenticator
-from deebot_client.command import Command, CommandResult
 from deebot_client.event_bus import EventBus
 from deebot_client.hardware import get_static_device_info
+from deebot_client.message import HandlingResult
 from deebot_client.models import (
     ApiDeviceInfo,
     Credentials,
 )
 
 if TYPE_CHECKING:
+    from deebot_client.command import Command
     from deebot_client.events import Event
 
 
 def _wrap_command(
     command: Command,
-) -> tuple[Command, Callable[[CommandResult, dict[str, Any] | None], None]]:
-    result: CommandResult | None = None
+) -> tuple[Command, Callable[[HandlingResult, dict[str, Any] | None], None]]:
+    result: HandlingResult | None = None
     response: dict[str, Any] | None = None
     execute_fn = command._execute
 
@@ -29,13 +30,13 @@ def _wrap_command(
         authenticator: Authenticator,
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
-    ) -> tuple[CommandResult, dict[str, Any]]:
+    ) -> tuple[HandlingResult, dict[str, Any]]:
         nonlocal result, response
         result, response = await execute_fn(authenticator, device_info, event_bus)
         return result, response
 
     def verify_result(
-        expected_result: CommandResult, expected_response: dict[str, Any] | None = None
+        expected_result: HandlingResult, expected_response: dict[str, Any] | None = None
     ) -> None:
         assert result == expected_result
         if expected_response is not None:
@@ -51,10 +52,10 @@ async def assert_command(
     expected_events: Event | None | Sequence[Event],
     *,
     device_class: str,
-    command_result: CommandResult | None = None,
+    handling_result: HandlingResult | None = None,
     expected_raw_response: dict[str, Any] | None = None,
 ) -> None:
-    command_result = command_result or CommandResult.success()
+    handling_result = handling_result or HandlingResult.success()
     event_bus = Mock(spec_set=EventBus)
     static_device_info = await get_static_device_info(device_class)
     assert static_device_info is not None, f"Unknown device class: {device_class}"
@@ -85,7 +86,7 @@ async def assert_command(
     await command.execute(authenticator, device_info, event_bus)
 
     # verify
-    verify_result(command_result, expected_raw_response)
+    verify_result(handling_result, expected_raw_response)
     authenticator.post_authenticated.assert_called()
     if expected_events:
         if isinstance(expected_events, Sequence):

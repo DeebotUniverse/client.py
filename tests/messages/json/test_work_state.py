@@ -9,7 +9,8 @@ from deebot_client.events.station import State as StationState, StationEvent
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.work_state import OnWorkState
 from deebot_client.models import State as RobotState
-from tests.messages import assert_message, assert_message_failure
+from tests.messages import assert_message_failure
+from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
     from deebot_client.events.base import Event
@@ -110,7 +111,7 @@ if TYPE_CHECKING:
         ),
     ],
 )
-def test_onWorkState(
+async def test_onWorkState(
     paused: int,
     robot_state: str,
     additional_content: dict[str, Any],
@@ -143,7 +144,7 @@ def test_onWorkState(
         },
     }
 
-    assert_message(OnWorkState, data, (FirmwareEvent("1.30.0"), *expected))
+    await assert_message(OnWorkState, data, (FirmwareEvent("1.30.0"), *expected))
 
 
 @pytest.mark.parametrize(

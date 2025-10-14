@@ -6,10 +6,11 @@ from unittest.mock import Mock, patch
 
 import pytest
 
-from deebot_client.command import CommandResult, InitParam
+from deebot_client.command import InitParam
 from deebot_client.commands.xml.common import XmlCommandMqttP2P
 from deebot_client.event_bus import EventBus
 from deebot_client.events import LifeSpan
+from deebot_client.message import HandlingResult
 
 
 @pytest.mark.parametrize(
@@ -71,8 +72,8 @@ def test_XmlCommandMqttP2P_create_from_mqtt(
 
         def _handle_response(
             self, _event_bus: EventBus, _response: dict[str, Any]
-        ) -> CommandResult:
-            return CommandResult.analyse()
+        ) -> HandlingResult:
+            return HandlingResult.analyse()
 
     xml_message = f"<ctl ret='ok' payload='{command_payload}' remove='42' />"
 

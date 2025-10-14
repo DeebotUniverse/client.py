@@ -21,6 +21,7 @@ classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Topic :: Home Automation",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
@@ -30,6 +31,7 @@ dependencies = [
     "aiomqtt>=2.0.0,<3.0",
     "cachetools>=5.0.0,<7.0",
     "defusedxml>=0.7.1",
+    "orjson>=3.11.3",
 ]
 version = "0.0.0"
 
@@ -50,11 +52,11 @@ cache-keys = [
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    "maturin[patchelf]==1.9.4",
+    "maturin[patchelf]==1.9.6",
     "maturin-import-hook==0.3.0",
 ]
 lint = [
-    "mypy==1.18.1",
+    "mypy==1.18.2",
     "pre-commit==4.3.0",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
@@ -67,9 +69,10 @@ test = [
     "pytest-docker-fixtures==1.4.0",
     "pytest-timeout==2.4.0",
     "pytest==8.4.2",
-    "testfixtures==9.1.0",
+    "testfixtures==9.2.0",
     "pytest-github-actions-annotate-failures==0.3.0",
     "pytest-xdist==3.8.0",
+    "syrupy==5.0.0",
 ]
 
 [tool.maturin]
@@ -141,7 +144,7 @@ required-imports = ["from __future__ import annotations"]
     "SLF001",  # Private member accessed: {access}
     "T201",    # print found
 ]
-"deebot_client/hardware/deebot/*" = [
+"deebot_client/hardware/*" = [
     "N999", # Invalid module name
 ]
 "deebot_client/rs/*.pyi" = [
@@ -149,7 +152,7 @@ required-imports = ["from __future__ import annotations"]
 ]
 
 [tool.ruff.lint.flake8-tidy-imports.banned-api]
-"svg.Path".msg = "Use map.Path instead"
+"json".msg = "Use orjson instead"
 
 
 [tool.ruff.lint.mccabe]

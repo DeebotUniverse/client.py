@@ -9,6 +9,7 @@ from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final
 
 from deebot_client.events.network import NetworkInfoEvent
+from deebot_client.message import HandlingState
 from deebot_client.mqtt_client import MqttClient, SubscriberInfo
 from deebot_client.util import cancel
 
@@ -59,6 +60,7 @@ class Device:
         self._state: StateEvent | None = None
         self._last_time_available: datetime = datetime.now(tz=UTC)
         self._available_task: asyncio.Task[Any] | None = None
+        self._running_tasks: set[asyncio.Future[Any]] = set()
         self._unsubscribe: Callable[[], None] | None = None
 
         self.fw_version: str | None = None
@@ -138,6 +140,8 @@ class Device:
 
         if self._available_task is None or self._available_task.done():
             self._available_task = asyncio.create_task(self._available_task_worker())
+            self._running_tasks.add(self._available_task)
+            self._available_task.add_done_callback(self._running_tasks.discard)
 
     async def teardown(self) -> None:
         """Tear down bot including stopping task and unsubscribing."""
@@ -145,9 +149,11 @@ class Device:
             self._unsubscribe()
             self._unsubscribe = None
 
-        if self._available_task and self._available_task.cancel():
-            with suppress(asyncio.CancelledError):
-                await self._available_task
+        for task in self._running_tasks.copy():
+            if task.cancel():
+                with suppress(asyncio.CancelledError):
+                    await task
+        self._running_tasks.clear()
 
         await self.events.teardown()
         if self.map:
@@ -196,6 +202,18 @@ class Device:
 
         self.events.notify(AvailabilityEvent(available=available))
 
+    def _create_request_command_task(self, requested_commands: list[Command]) -> None:
+        """Create a task to execute the requested commands."""
+
+        async def task_group_runner() -> None:
+            async with asyncio.TaskGroup() as tg:
+                for cmd in requested_commands:
+                    tg.create_task(self._execute_command(cmd))
+
+        task = asyncio.create_task(task_group_runner())
+        self._running_tasks.add(task)
+        task.add_done_callback(self._running_tasks.discard)
+
     def _handle_message(
         self, message_name: str, message_data: MessagePayloadType
     ) -> None:
@@ -211,6 +229,14 @@ class Device:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
             if message := get_message(message_name, self._device_info.static.data_type):
-                message.handle(self.events, message_data)
+                result = message.handle(self.events, message_data)
+                if result.state == HandlingState.SUCCESS and result.requested_commands:
+                    _LOGGER.debug(
+                        "Message %s requested commands: %s",
+                        message_name,
+                        result.requested_commands,
+                    )
+                    self._create_request_command_task(result.requested_commands)
+
         except Exception:
             _LOGGER.exception("An exception occurred during handling message")

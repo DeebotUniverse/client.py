@@ -6,7 +6,8 @@ from deebot_client.events import Event, StateEvent
 from deebot_client.message import HandlingState
 from deebot_client.messages.xml import ChargeState
 from deebot_client.models import State
-from tests.messages import assert_message, assert_message_failure
+from tests.messages import assert_message_failure
+from tests.messages.xml import assert_message
 
 
 @pytest.mark.parametrize(
@@ -20,7 +21,7 @@ from tests.messages import assert_message, assert_message_failure
 )
 async def test_charge_state(state: str, expected_event: Event) -> None:
     xml_message = f'<ctl ts="1745329944849" td="ChargeState"><charge type="{state}" h="" r="" s="" g="0" /></ctl>'
-    assert_message(ChargeState, xml_message, expected_event)
+    await assert_message(ChargeState, xml_message, expected_event)
 
 
 @pytest.mark.parametrize(

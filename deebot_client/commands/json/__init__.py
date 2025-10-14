@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
+from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
@@ -27,12 +28,15 @@ from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
 )
+from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo, GetNetInfoLegacy
@@ -62,6 +66,7 @@ __all__ = [
     "ClearMap",
     "GetAdvancedMode",
     "GetBattery",
+    "GetBorderSpin",
     "GetBorderSwitch",
     "GetCachedMapInfo",
     "GetCarpetAutoFanBoost",
@@ -80,11 +85,13 @@ __all__ = [
     "GetFanSpeed",
     "GetLifeSpan",
     "GetMajorMap",
+    "GetMapInfoV2",
     "GetMapSet",
     "GetMapSetV2",
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
+    "GetMopAutoWashFrequency",
     "GetMoveUpWarning",
     "GetMultimapState",
     "GetNetInfo",
@@ -103,6 +110,7 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
+    "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
     "SetChildLock",
@@ -113,6 +121,8 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetMajorMap",
+    "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
@@ -134,6 +144,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
+
+    GetBorderSpin,
+    SetBorderSpin,
 
     GetBorderSwitch,
     SetBorderSwitch,
@@ -186,11 +199,16 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSet,
     GetMapSetV2,
     GetMapSubSet,
     GetMapTrace,
     GetMinorMap,
+    SetMajorMap,
+
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
 
     GetMoveUpWarning,
     SetMoveUpWarning,
