@@ -36,9 +36,10 @@ fn calc_point(x: f32, y: f32) -> Point {
 fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
     debug!("Adding subset: {subset:?}");
 
-    // Estimate capacity: each coordinate is roughly 5 chars (e.g., "3900,")
-    let estimated_coords = subset.coordinates.len() / 5;
-    let mut points = Vec::with_capacity(estimated_coords / 2);
+    // Estimate capacity: each point consists of an x and y coordinate, separated by commas.
+    // So, the number of points is half the number of comma-separated values.
+    let num_coords = subset.coordinates.split(',').count();
+    let mut points = Vec::with_capacity(num_coords / 2);
 
     let mut numbers = subset.coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
