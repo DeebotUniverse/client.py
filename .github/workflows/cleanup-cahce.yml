@@ -13,8 +13,17 @@ jobs:
       - name: Cleanup
         run: |
           echo "Fetching list of cache keys"
-          cacheKeysForPR=$(gh cache list --ref $BRANCH --limit 1000 --json id --jq '.[].id')
-
+          cacheKeysForPR=""
+          PAGE=1
+          PER_PAGE=100
+          while true; do
+            IDS=$(gh cache list --ref $BRANCH --limit $PER_PAGE --page $PAGE --json id --jq '.[].id')
+            if [ -z "$IDS" ]; then
+              break
+            fi
+            cacheKeysForPR="$cacheKeysForPR $IDS"
+            PAGE=$((PAGE + 1))
+          done
           ## Setting this to not fail the workflow while deleting cache keys.
           set +e
           echo "Deleting caches..."
