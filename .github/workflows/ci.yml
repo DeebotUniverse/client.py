@@ -340,10 +340,16 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
-      - run: rustup toolchain install stable --profile minimal
-      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+      - name: Setup Rust cache directory
+        run: mkdir -p ${{ runner.temp }}/cargo-cache
+      - name: Cache Rust dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
         with:
-          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.python-version }}
+          path: ${{ runner.temp }}/cargo-cache
+          key: musllinux-${{ matrix.target }}-${{ matrix.python-version }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            musllinux-${{ matrix.target }}-${{ matrix.python-version }}-
+            musllinux-${{ matrix.target }}-
       - name: Build wheels
         uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
         with:
@@ -351,7 +357,7 @@ jobs:
           args: --release --strip --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: musllinux_1_2
-          docker-options: -v ${{ runner.home }}/.cargo:/root/.cargo
+          docker-options: -v ${{ runner.temp }}/cargo-cache:/root/.cargo
       - name: Upload wheels
         uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
         with:
