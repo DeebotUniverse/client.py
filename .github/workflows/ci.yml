@@ -343,7 +343,7 @@ jobs:
       - run: rustup toolchain install stable --profile minimal
       - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
         with:
-          key: ${{ runner.os }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
+          key: ${{ runner.os }}-${{ matrix.target }}-${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@86b9d133d34bc1b40018696f782949dac11bd380 # v1.49.4
         with:
