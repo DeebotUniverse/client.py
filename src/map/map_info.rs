@@ -82,7 +82,7 @@ impl MapInfo {
         }
     }
 
-    pub(super) fn generate(&self) -> MapInfoGenerateResult {
+    pub(super) fn generate(&self, rotation_deg: i16) -> MapInfoGenerateResult {
         let mut viewbox = None;
         let order = self.get_order();
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
@@ -92,8 +92,28 @@ impl MapInfo {
             if let Some(entries) = self.data.get(&map_info_type)
                 && !entries.is_empty()
             {
+                // Normalize and rotate points
+                let entries: Vec<MapInfoTypeDataEntry> = entries
+                    .iter()
+                    .map(|entry| {
+                        let points = entry
+                            .points
+                            .iter()
+                            .map(|point| {
+                                let mut p = calc_point(point.x, point.y, rotation_deg);
+                                p.connected = point.connected;
+                                p
+                            })
+                            .collect();
+                        MapInfoTypeDataEntry {
+                            points,
+                            close_path: entry.close_path,
+                        }
+                    })
+                    .collect();
+
                 let mut group = Group::new().set("class", get_class_names(&css));
-                for entry in entries {
+                for entry in &entries {
                     if let Some(path) =
                         points_to_svg_path(&entry.points, entry.close_path, force_connected)
                     {
@@ -103,7 +123,7 @@ impl MapInfo {
                 svg_elements.push(Box::new(group));
                 used_styles.insert(css);
                 if map_info_type == MapInfoType::Outline {
-                    viewbox = calc_viewbox(entries);
+                    viewbox = calc_viewbox(&entries);
                 }
             }
         }
@@ -174,9 +194,11 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
             if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next())
                 && let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
             {
-                let mut p = calc_point(x, y);
-                p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
-                path_points.push(p);
+                path_points.push(Point {
+                    x,
+                    y,
+                    connected: coords.next().unwrap_or("1").trim() != "3-1-0",
+                });
             }
         }
 
@@ -218,7 +240,11 @@ fn process_map_info_room_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
             .filter(|s| !s.is_empty())
             .skip(1) // skip the area ID
             .filter_map(parse_coords)
-            .map(|(x, y)| calc_point(x, y))
+            .map(|(x, y)| Point {
+                x,
+                y,
+                connected: true,
+            })
             .collect();
 
         if poly_points.len() >= 3 {

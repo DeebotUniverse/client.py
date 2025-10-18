@@ -29,6 +29,45 @@ const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
 const MAP_PIECE_SIZE: u16 = 100;
 pub(super) const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 
+fn calculate_piece_position(i: usize, rotation_deg: i16) -> (u16, u16) {
+    match rotation_deg {
+        90 => (
+            (i as u16 % 8) * MAP_PIECE_SIZE,
+            (i as u16 / 8) * MAP_PIECE_SIZE,
+        ),
+        180 => (
+            MAP_MAX_SIZE - (((i as u16 / 8) + 1) * MAP_PIECE_SIZE),
+            (i as u16 % 8) * MAP_PIECE_SIZE,
+        ),
+        270 => (
+            MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE),
+            MAP_MAX_SIZE - (((i as u16 / 8) + 1) * MAP_PIECE_SIZE),
+        ),
+        _ => (
+            (i as u16 / 8) * MAP_PIECE_SIZE,
+            MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE),
+        ), // 0 deg or default
+    }
+}
+
+fn calculate_pixel_position(
+    piece_x: u16,
+    piece_y: u16,
+    pixel_x: u16,
+    pixel_y: u16,
+    rotation_deg: i16,
+) -> (u16, u16) {
+    match rotation_deg {
+        90 => (piece_x + pixel_x, piece_y + pixel_y),
+        180 => (piece_x + MAP_PIECE_SIZE - 1 - pixel_y, piece_y + pixel_x),
+        270 => (
+            piece_x + MAP_PIECE_SIZE - 1 - pixel_x,
+            piece_y + MAP_PIECE_SIZE - 1 - pixel_y,
+        ),
+        _ => (piece_x + pixel_y, piece_y + MAP_PIECE_SIZE - 1 - pixel_x), // 0 deg or default
+    }
+}
+
 #[pyclass]
 pub(super) struct BackgroundImage {
     map_pieces: [MapPiece; 64],
@@ -41,7 +80,10 @@ impl BackgroundImage {
         }
     }
 
-    pub(super) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
+    pub(super) fn generate(
+        &self,
+        rotation_deg: i16,
+    ) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let mut image = GrayImage::new(MAP_MAX_SIZE.into(), MAP_MAX_SIZE.into());
         let mut min_x = u16::MAX;
         let mut min_y = u16::MAX;
@@ -50,8 +92,7 @@ impl BackgroundImage {
 
         for (i, piece) in self.map_pieces.iter().enumerate() {
             // Order of the pieces is from bottom-left to top-right (column by column)
-            let piece_x = (i as u16 / 8) * MAP_PIECE_SIZE;
-            let piece_y = MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE);
+            let (piece_x, piece_y) = calculate_piece_position(i, rotation_deg);
 
             if let Some(pixels) = piece.pixels_indexed() {
                 debug!("Adding piece at {i} ({piece_x}, {piece_y})");
@@ -63,9 +104,14 @@ impl BackgroundImage {
                         let pixel_x = j as u16 % MAP_PIECE_SIZE;
                         let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
-                        // We need to rotate the image 90 degrees counterclockwise
-                        let new_x = piece_x + pixel_y;
-                        let new_y = piece_y + MAP_PIECE_SIZE - 1 - pixel_x;
+                        // We need to rotate the image 90 degrees counterclockwise and then by the user-requested angle
+                        let (new_x, new_y) = calculate_pixel_position(
+                            piece_x,
+                            piece_y,
+                            pixel_x,
+                            pixel_y,
+                            rotation_deg,
+                        );
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color

@@ -38,6 +38,7 @@ from tests.messages.json import assert_message
                     "built": 1,
                     "name": "Erdgeschoss",
                     "isFastBuilding": 1,
+                    "angle": 90,
                 },
                 {
                     "mid": "0",
@@ -67,12 +68,14 @@ from tests.messages.json import assert_message
                         name="",
                         using=False,
                         built=False,
+                        angle=0,
                     ),
                     Map(
                         id="1132127808",
                         name="Erdgeschoss",
                         using=True,
                         built=True,
+                        angle=90,
                     ),
                 }
             ),

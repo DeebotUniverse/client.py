@@ -49,6 +49,7 @@ class MapData:
         self,
         subsets: list[MapSubsetEvent],
         position: list[Position],
+        rotation_deg: int,
     ) -> str | None:
         """Generate SVG image."""
 

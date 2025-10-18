@@ -113,6 +113,7 @@ class Map:
     name: str
     using: bool
     built: bool
+    angle: int = field(default=0, kw_only=True)
 
 
 @dataclass(frozen=True)

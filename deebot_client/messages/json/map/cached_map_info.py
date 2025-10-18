@@ -40,6 +40,7 @@ class OnCachedMapInfo(MessageBodyDataDict):
                 name=map_info.get("name", ""),
                 using=map_info["using"] == 1,
                 built=map_info["built"] == 1,
+                angle=map_info.get("angle", 0),
             )
             maps.add(map_obj)
             if map_obj.using:

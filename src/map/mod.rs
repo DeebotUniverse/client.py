@@ -25,15 +25,21 @@ const ROUND_TO_DIGITS: usize = 3;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
 
 #[inline]
-fn calc_point(x: f32, y: f32) -> Point {
+fn calc_point(x: f32, y: f32, rotation_deg: i16) -> Point {
+    let (px, py) = match rotation_deg {
+        90 => (y / PIXEL_WIDTH, x / PIXEL_WIDTH),
+        180 => (-x / PIXEL_WIDTH, y / PIXEL_WIDTH),
+        270 => (-y / PIXEL_WIDTH, -x / PIXEL_WIDTH),
+        _ => (x / PIXEL_WIDTH, -y / PIXEL_WIDTH), // 0 deg or default
+    };
     Point {
-        x: round(x / PIXEL_WIDTH, ROUND_TO_DIGITS),
-        y: round((-y) / PIXEL_WIDTH, ROUND_TO_DIGITS),
+        x: round(px, ROUND_TO_DIGITS),
+        y: round(py, ROUND_TO_DIGITS),
         connected: true,
     }
 }
 
-fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
+fn get_svg_subset(subset: &MapSubset, rotation_deg: i16) -> PyResult<(CSSClass, Path)> {
     debug!("Adding subset: {subset:?}");
 
     // Estimate capacity: each point consists of an x and y coordinate, separated by commas.
@@ -52,7 +58,7 @@ fn get_svg_subset(subset: &MapSubset) -> PyResult<(CSSClass, Path)> {
     });
 
     while let (Some(x), Some(y)) = (numbers.next(), numbers.next()) {
-        points.push(calc_point(x, y));
+        points.push(calc_point(x, y, rotation_deg));
     }
 
     let css_key = match subset.set_type.as_str() {
@@ -126,8 +132,8 @@ struct Position {
 }
 
 #[inline]
-fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox) -> Point {
-    let point = calc_point(x as f32, y as f32);
+fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox, rotation_deg: i16) -> Point {
+    let point = calc_point(x as f32, y as f32, rotation_deg);
     Point {
         x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
         y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
@@ -169,6 +175,7 @@ impl MapData {
         py: Python<'_>,
         subsets: Vec<MapSubset>,
         positions: Vec<Position>,
+        rotation_deg: i16,
     ) -> PyResult<Option<String>> {
         let defs = Definitions::new()
             .add(
@@ -228,7 +235,7 @@ impl MapData {
         let mut document = Document::new().add(defs);
 
         // Create map from MapInfo, if exists, or generate background image
-        let viewbox = match self.map_info.borrow(py).generate() {
+        let viewbox = match self.map_info.borrow(py).generate(rotation_deg) {
             Some((map_elements, viewbox, info_styles)) => {
                 // Append all map background elements to document
                 map_elements
@@ -243,7 +250,7 @@ impl MapData {
                 if let Some((base64_image, viewbox)) =
                     self.background_image
                         .borrow(py)
-                        .generate()
+                        .generate(rotation_deg)
                         .map_err(|err| PyValueError::new_err(err.to_string()))?
                 {
                     let image = Image::new()
@@ -269,16 +276,16 @@ impl MapData {
             styles.insert(group_css);
 
             for subset in &subsets {
-                let (css, subset) = get_svg_subset(subset)?;
+                let (css, subset) = get_svg_subset(subset, rotation_deg)?;
                 styles.insert(css);
                 group = group.add(subset);
             }
             document.append(group);
         }
-        if let Some(trace) = self.trace_points.borrow(py).get_path() {
+        if let Some(trace) = self.trace_points.borrow(py).get_path(rotation_deg) {
             document.append(trace);
         }
-        for position in get_svg_positions(&positions, &viewbox) {
+        for position in get_svg_positions(&positions, &viewbox, rotation_deg) {
             document.append(position);
         }
 
@@ -335,7 +342,11 @@ impl ViewBox {
 
 type ImageGenrationType = Option<(String, ViewBox)>;
 
-fn get_svg_positions(positions: &[Position], viewbox: &ViewBox) -> Vec<Use> {
+fn get_svg_positions(
+    positions: &[Position],
+    viewbox: &ViewBox,
+    rotation_deg: i16,
+) -> Vec<Use> {
     if positions.is_empty() {
         return Vec::new();
     }
@@ -350,7 +361,7 @@ fn get_svg_positions(positions: &[Position], viewbox: &ViewBox) -> Vec<Use> {
 
     for &i in &indices {
         let position = &positions[i];
-        let pos = calc_point_in_viewbox(position.x, position.y, viewbox);
+        let pos = calc_point_in_viewbox(position.x, position.y, viewbox, rotation_deg);
 
         svg_positions.push(
             Use::new()
@@ -398,37 +409,59 @@ mod tests {
     }
 
     #[rstest]
-    #[case(5000.0, 0.0, Point { x:100.0, y:0.0, connected:true })]
-    #[case(20010.0, -29900.0, Point { x: 400.2, y: 598.0, connected:true  })]
-    #[case(0.0, 29900.0, Point { x: 0.0, y: -598.0, connected:true  })]
-    fn test_calc_point(#[case] x: f32, #[case] y: f32, #[case] expected: Point) {
-        let result = calc_point(x, y);
+    #[case(5000.0, 0.0, 0, Point { x:100.0, y:0.0, connected:true })]
+    #[case(20010.0, -29900.0, 0, Point { x: 400.2, y: 598.0, connected:true  })]
+    #[case(0.0, 29900.0, 0, Point { x: 0.0, y: -598.0, connected:true  })]
+    #[case(5000.0, 0.0, 90, Point { x:0.0, y:100.0, connected:true })]
+    #[case(20010.0, -29900.0, 90, Point { x: -598.0, y: 400.2, connected:true  })]
+    #[case(5000.0, 0.0, 180, Point { x:-100.0, y:0.0, connected:true })]
+    #[case(20010.0, -29900.0, 180, Point { x: -400.2, y: -598.0, connected:true  })]
+    #[case(5000.0, 0.0, 270, Point { x:0.0, y:-100.0, connected:true })]
+    #[case(20010.0, -29900.0, 270, Point { x: 598.0, y: -400.2, connected:true  })]
+    fn test_calc_point(
+        #[case] x: f32,
+        #[case] y: f32,
+        #[case] rotation_deg: i16,
+        #[case] expected: Point,
+    ) {
+        let result = calc_point(x, y, rotation_deg);
         assert_eq!(result, expected);
     }
 
     #[rstest]
-    #[case(100, 100, (-100, -100, 200, 150), Point { x: 2.0, y: -2.0, connected: false })]
-    #[case(-64000, -64000, (0, 0, 1000, 1000), Point { x: 0.0, y: 1000.0, connected: false })]
-    #[case(64000, 64000, (0, 0, 1000, 1000), Point { x: 1000.0, y: 0.0, connected: false })]
-    #[case(0, 1000, (-500, -500, 1000, 1000), Point { x: 0.0, y: -20.0, connected: false })]
+    #[case(100, 100, (-100, -100, 200, 150), 0, Point { x: 2.0, y: -2.0, connected: false })]
+    #[case(-64000, -64000, (0, 0, 1000, 1000), 0, Point { x: 0.0, y: 1000.0, connected: false })]
+    #[case(64000, 64000, (0, 0, 1000, 1000), 0, Point { x: 1000.0, y: 0.0, connected: false })]
+    #[case(0, 1000, (-500, -500, 1000, 1000), 0, Point { x: 0.0, y: -20.0, connected: false })]
+    #[case(100, 100, (-100, -100, 200, 150), 90, Point { x: 2.0, y: 2.0, connected: false })]
+    #[case(100, 100, (-100, -100, 200, 150), 180, Point { x: -2.0, y: 2.0, connected: false })]
+    #[case(100, 100, (-100, -100, 200, 150), 270, Point { x: -2.0, y: -2.0, connected: false })]
     fn test_calc_point_in_viewbox(
         #[case] x: i32,
         #[case] y: i32,
         #[case] viewbox: (i16, i16, u16, u16),
+        #[case] rotation_deg: i16,
         #[case] expected: Point,
     ) {
-        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox));
+        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox), rotation_deg);
         assert_eq!(result, expected);
     }
 
     #[rstest]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    fn test_get_svg_positions(#[case] positions: &[Position], #[case] expected: String) {
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], 0, "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], 0, "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
+    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], 0, "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], 0, "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], 90, "<use href=\"#d\" x=\"-500\" y=\"100\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], 180, "<use href=\"#d\" x=\"-100\" y=\"-500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], 270, "<use href=\"#d\" x=\"500\" y=\"-100\"/>")]
+    fn test_get_svg_positions(
+        #[case] positions: &[Position],
+        #[case] rotation_deg: i16,
+        #[case] expected: String,
+    ) {
         let viewbox = (-500, -500, 1000, 1000);
-        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox))
+        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox), rotation_deg)
             .iter()
             .map(|u| u.to_string())
             .collect::<Vec<String>>()
@@ -437,12 +470,19 @@ mod tests {
     }
 
     #[rstest]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, "<path class=\"v\" d=\"M-78-13.36h35.34\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, "<path class=\"m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    fn test_get_svg_subset(#[case] subset: MapSubset, #[case] expected: String) {
-        let (_, node) = get_svg_subset(&subset).unwrap();
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, 0, "<path class=\"v\" d=\"M-78-13.36h35.34\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, 0, "<path class=\"m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, 0, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, 0, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, 90, "<path class=\"v\" d=\"M13.36-78v35.34\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, 180, "<path class=\"v\" d=\"M78 13.36h-35.34\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, 270, "<path class=\"v\" d=\"M-13.36 78v-35.34\"/>")]
+    fn test_get_svg_subset(
+        #[case] subset: MapSubset,
+        #[case] rotation_deg: i16,
+        #[case] expected: String,
+    ) {
+        let (_, node) = get_svg_subset(&subset, rotation_deg).unwrap();
 
         assert_eq!(node.to_string(), expected);
     }
