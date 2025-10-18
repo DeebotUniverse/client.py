@@ -247,11 +247,11 @@ impl MapData {
                 viewbox
             }
             _ => {
-                if let Some((base64_image, viewbox)) =
-                    self.background_image
-                        .borrow(py)
-                        .generate(rotation_deg)
-                        .map_err(|err| PyValueError::new_err(err.to_string()))?
+                if let Some((base64_image, viewbox)) = self
+                    .background_image
+                    .borrow(py)
+                    .generate(rotation_deg)
+                    .map_err(|err| PyValueError::new_err(err.to_string()))?
                 {
                     let image = Image::new()
                         .set("x", viewbox.min_x)
@@ -342,11 +342,7 @@ impl ViewBox {
 
 type ImageGenrationType = Option<(String, ViewBox)>;
 
-fn get_svg_positions(
-    positions: &[Position],
-    viewbox: &ViewBox,
-    rotation_deg: i16,
-) -> Vec<Use> {
+fn get_svg_positions(positions: &[Position], viewbox: &ViewBox, rotation_deg: i16) -> Vec<Use> {
     if positions.is_empty() {
         return Vec::new();
     }
