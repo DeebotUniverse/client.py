@@ -29,6 +29,7 @@ const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
 const MAP_PIECE_SIZE: u16 = 100;
 pub(super) const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 
+#[inline]
 fn calculate_piece_position(i: usize, rotation_deg: i16) -> (u16, u16) {
     match rotation_deg {
         90 => (
@@ -50,6 +51,7 @@ fn calculate_piece_position(i: usize, rotation_deg: i16) -> (u16, u16) {
     }
 }
 
+#[inline]
 fn calculate_pixel_position(
     piece_x: u16,
     piece_y: u16,

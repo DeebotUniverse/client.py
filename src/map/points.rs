@@ -132,13 +132,6 @@ fn trace_point_to_point(trace_point: &TracePoint, rotation_deg: i16) -> Point {
     }
 }
 
-impl From<&TracePoint> for Point {
-    #[inline]
-    fn from(trace_point: &TracePoint) -> Self {
-        trace_point_to_point(trace_point, 0)
-    }
-}
-
 #[pyclass]
 pub(super) struct TracePoints {
     trace_points: Vec<TracePoint>,
