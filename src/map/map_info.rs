@@ -89,28 +89,23 @@ impl MapInfo {
         let mut used_styles = OrderSet::new();
 
         for (map_info_type, css, force_connected) in order {
-            if let Some(entries) = self.data.get(&map_info_type)
-                && !entries.is_empty()
+            if let Some(source_entries) = self.data.get(&map_info_type)
+                && !source_entries.is_empty()
             {
                 // Normalize and rotate points
-                let entries: Vec<MapInfoTypeDataEntry> = entries
-                    .iter()
-                    .map(|entry| {
-                        let points = entry
-                            .points
-                            .iter()
-                            .map(|point| {
-                                let mut p = calc_point(point.x, point.y, rotation_deg);
-                                p.connected = point.connected;
-                                p
-                            })
-                            .collect();
-                        MapInfoTypeDataEntry {
-                            points,
-                            close_path: entry.close_path,
-                        }
-                    })
-                    .collect();
+                let mut entries = Vec::with_capacity(source_entries.len());
+                for entry in source_entries {
+                    let mut points = Vec::with_capacity(entry.points.len());
+                    for point in &entry.points {
+                        let mut p = calc_point(point.x, point.y, rotation_deg);
+                        p.connected = point.connected;
+                        points.push(p);
+                    }
+                    entries.push(MapInfoTypeDataEntry {
+                        points,
+                        close_path: entry.close_path,
+                    });
+                }
 
                 let mut group = Group::new().set("class", get_class_names(&css));
                 for entry in &entries {

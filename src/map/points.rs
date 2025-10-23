@@ -149,15 +149,13 @@ impl TracePoints {
             return None;
         }
 
-        let path = points_to_svg_path(
-            &self
-                .trace_points
-                .iter()
-                .map(|tp| trace_point_to_point(tp, rotation_deg))
-                .collect::<Vec<Point>>(),
-            false,
-            false,
-        )?;
+        // Pre-allocate capacity to avoid reallocations
+        let mut points = Vec::with_capacity(self.trace_points.len());
+        for tp in &self.trace_points {
+            points.push(trace_point_to_point(tp, rotation_deg));
+        }
+
+        let path = points_to_svg_path(&points, false, false)?;
 
         Some(
             path.set("fill", "none")

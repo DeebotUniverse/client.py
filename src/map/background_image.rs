@@ -29,56 +29,47 @@ const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
 const MAP_PIECE_SIZE: u16 = 100;
 pub(super) const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 
-type PiecePositionCalculator = Box<dyn Fn(usize) -> (u16, u16)>;
-type PixelPositionCalculator = Box<dyn Fn(u16, u16, u16, u16) -> (u16, u16)>;
-
-fn create_position_calculators(
-    rotation_deg: i16,
-) -> (PiecePositionCalculator, PixelPositionCalculator) {
-    let calculate_piece_position: PiecePositionCalculator = match rotation_deg {
-        90 => Box::new(|i: usize| {
-            (
-                (i as u16 % 8) * MAP_PIECE_SIZE,
-                (i as u16 / 8) * MAP_PIECE_SIZE,
-            )
-        }),
-        180 => Box::new(|i: usize| {
-            (
-                MAP_MAX_SIZE - (((i as u16 / 8) + 1) * MAP_PIECE_SIZE),
-                (i as u16 % 8) * MAP_PIECE_SIZE,
-            )
-        }),
-        270 => Box::new(|i: usize| {
-            (
-                MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE),
-                MAP_MAX_SIZE - (((i as u16 / 8) + 1) * MAP_PIECE_SIZE),
-            )
-        }),
-        _ => Box::new(|i: usize| {
-            (
-                (i as u16 / 8) * MAP_PIECE_SIZE,
-                MAP_MAX_SIZE - (((i as u16 % 8) + 1) * MAP_PIECE_SIZE),
-            )
-        }), // 0 deg or default
+macro_rules! calculate_piece_position {
+    ($rotation_deg:expr, $i:expr) => {
+        match $rotation_deg {
+            90 => (
+                ($i as u16 % 8) * MAP_PIECE_SIZE,
+                ($i as u16 / 8) * MAP_PIECE_SIZE,
+            ),
+            180 => (
+                MAP_MAX_SIZE - ((($i as u16 / 8) + 1) * MAP_PIECE_SIZE),
+                ($i as u16 % 8) * MAP_PIECE_SIZE,
+            ),
+            270 => (
+                MAP_MAX_SIZE - ((($i as u16 % 8) + 1) * MAP_PIECE_SIZE),
+                MAP_MAX_SIZE - ((($i as u16 / 8) + 1) * MAP_PIECE_SIZE),
+            ),
+            _ => (
+                ($i as u16 / 8) * MAP_PIECE_SIZE,
+                MAP_MAX_SIZE - ((($i as u16 % 8) + 1) * MAP_PIECE_SIZE),
+            ),
+        }
     };
+}
 
-    let calculate_pixel_position: PixelPositionCalculator = match rotation_deg {
-        90 => Box::new(|piece_x, piece_y, pixel_x, pixel_y| (piece_x + pixel_x, piece_y + pixel_y)),
-        180 => Box::new(|piece_x, piece_y, pixel_x, pixel_y| {
-            (piece_x + MAP_PIECE_SIZE - 1 - pixel_y, piece_y + pixel_x)
-        }),
-        270 => Box::new(|piece_x, piece_y, pixel_x, pixel_y| {
-            (
-                piece_x + MAP_PIECE_SIZE - 1 - pixel_x,
-                piece_y + MAP_PIECE_SIZE - 1 - pixel_y,
-            )
-        }),
-        _ => Box::new(|piece_x, piece_y, pixel_x, pixel_y| {
-            (piece_x + pixel_y, piece_y + MAP_PIECE_SIZE - 1 - pixel_x)
-        }), // 0 deg or default
+macro_rules! calculate_pixel_position {
+    ($rotation_deg:expr, $piece_x:expr, $piece_y:expr, $pixel_x:expr, $pixel_y:expr) => {
+        match $rotation_deg {
+            90 => ($piece_x + $pixel_x, $piece_y + $pixel_y),
+            180 => (
+                $piece_x + MAP_PIECE_SIZE - 1 - $pixel_y,
+                $piece_y + $pixel_x,
+            ),
+            270 => (
+                $piece_x + MAP_PIECE_SIZE - 1 - $pixel_x,
+                $piece_y + MAP_PIECE_SIZE - 1 - $pixel_y,
+            ),
+            _ => (
+                $piece_x + $pixel_y,
+                $piece_y + MAP_PIECE_SIZE - 1 - $pixel_x,
+            ),
+        }
     };
-
-    (calculate_piece_position, calculate_pixel_position)
 }
 
 #[pyclass]
@@ -103,13 +94,9 @@ impl BackgroundImage {
         let mut max_x = 0u16;
         let mut max_y = 0u16;
 
-        // Create closures for position calculation based on rotation_deg
-        let (calculate_piece_position, calculate_pixel_position) =
-            create_position_calculators(rotation_deg);
-
         for (i, piece) in self.map_pieces.iter().enumerate() {
             // Order of the pieces is from bottom-left to top-right (column by column)
-            let (piece_x, piece_y) = calculate_piece_position(i);
+            let (piece_x, piece_y) = calculate_piece_position!(rotation_deg, i);
 
             if let Some(pixels) = piece.pixels_indexed() {
                 debug!("Adding piece at {i} ({piece_x}, {piece_y})");
@@ -122,8 +109,13 @@ impl BackgroundImage {
                         let pixel_y = j as u16 / MAP_PIECE_SIZE;
 
                         // We need to rotate the image 90 degrees counterclockwise and then by the user-requested angle
-                        let (new_x, new_y) =
-                            calculate_pixel_position(piece_x, piece_y, pixel_x, pixel_y);
+                        let (new_x, new_y) = calculate_pixel_position!(
+                            rotation_deg,
+                            piece_x,
+                            piece_y,
+                            pixel_x,
+                            pixel_y
+                        );
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color
