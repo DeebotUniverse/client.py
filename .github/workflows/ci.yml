@@ -170,7 +170,7 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: requirements-dev.txt
       - name: Prepare env and install requirements
@@ -264,7 +264,7 @@ jobs:
       - name: 🏗 Install uv
         uses: astral-sh/setup-uv@2ddd2b9cb38ad8efd50337e8ab201519a34c9f24 # v7.1.1
       - name: Download requirements-test.txt
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: requirements-test.txt
       - name: Prepare env and install wheel
@@ -348,7 +348,7 @@ jobs:
           name: wheels-musllinux-${{ matrix.target }}-${{ matrix.python-version }}
           path: dist
       - name: Download requirements-test.txt
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: requirements-test.txt
       - name: Install Qemu
@@ -391,7 +391,7 @@ jobs:
         with:
           python-version: ${{ needs.info.outputs.default_python_version }}
       - name: Download requirements-dev.txt
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           name: requirements-dev.txt
       - name: 🏗 Install the project
@@ -448,7 +448,7 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
       - name: ⬇️ Download wheels
-        uses: actions/download-artifact@634f93cb2916e3fdff6788551b99b062d0335ce0 # v5.0.0
+        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
         with:
           pattern: wheels-*
           path: dist
