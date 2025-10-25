@@ -19,7 +19,8 @@ from tests.messages.json import assert_message
     ],
 )
 @pytest.mark.parametrize("enable", [True, False])
-async def test_onAutoEmpty(
+@pytest.mark.benchmark
+def test_onAutoEmpty(
     frequency: str | None, expected_freq: auto_empty.Frequency | None, enable: bool
 ) -> None:
     data: dict[str, Any] = {
@@ -37,7 +38,7 @@ async def test_onAutoEmpty(
     if frequency is not None:
         data["body"]["data"]["frequency"] = frequency
 
-    await assert_message(
+    assert_message(
         OnAutoEmpty,
         data,
         (FirmwareEvent("1.30.0"), auto_empty.AutoEmptyEvent(enable, expected_freq)),

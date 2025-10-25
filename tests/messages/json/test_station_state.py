@@ -19,7 +19,7 @@ from tests.messages.json import assert_message
         (1, {"type": 2, "motionState": 1}, State.DRYING_MOP),
     ],
 )
-async def test_onStationState(
+def test_onStationState(
     state: int,
     additional_content: dict[str, Any],
     expected: State,
@@ -41,7 +41,7 @@ async def test_onStationState(
         },
     }
 
-    await assert_message(
+    assert_message(
         OnStationState, data, (FirmwareEvent("1.30.0"), StationEvent(expected))
     )
 
@@ -59,9 +59,8 @@ async def test_onStationState(
         (2, {"type": 2, "motionState": 1}),
     ],
 )
-async def test_onStationState_analyse(
-    state: int, additional_content: dict[str, Any]
-) -> None:
+@pytest.mark.benchmark
+def test_onStationState_analyse(state: int, additional_content: dict[str, Any]) -> None:
     """Cases that should fall through to analyse() (not handled)."""
     data: dict[str, Any] = {
         "header": {
@@ -80,7 +79,7 @@ async def test_onStationState_analyse(
         },
     }
 
-    await assert_message(
+    assert_message(
         OnStationState,
         data,
         (FirmwareEvent("1.30.0"),),

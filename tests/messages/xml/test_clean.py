@@ -22,9 +22,10 @@ from tests.messages import assert_message_failure
 from tests.messages.xml import assert_message
 
 
-async def test_CleanSt() -> None:
+@pytest.mark.benchmark
+def test_CleanSt() -> None:
     xml_message = "<ctl td='CleanSt' a='21' s='1743945874' l='1595' t='' type='auto'/>"
-    await assert_message(CleanSt, xml_message, None)
+    assert_message(CleanSt, xml_message, None)
 
 
 @pytest.mark.parametrize(
@@ -64,12 +65,13 @@ async def test_CleanSt() -> None:
         "fanspeed_only",
     ],
 )
-async def test_CleanReport(
+@pytest.mark.benchmark
+def test_CleanReport(
     params: str,
     expected_events: list[Event],
 ) -> None:
     xml_message = f"<ctl ts='1744467249311' td='CleanReport'><clean type='auto' {params} rsn='a' a='' l='' sts=''/></ctl>"
-    await assert_message(
+    assert_message(
         CleanReport,
         xml_message,
         expected_events,
@@ -134,9 +136,10 @@ async def test_CleanReport(
         ),
     ],
 )
-async def test_CleanReportServer(params: str, expected_events: list[Event]) -> None:
+@pytest.mark.benchmark
+def test_CleanReportServer(params: str, expected_events: list[Event]) -> None:
     xml_message = f"<ctl ts='1744467393682' td='CleanReportServer' {params} />"
-    await assert_message(
+    assert_message(
         CleanReportServer,
         xml_message,
         expected_events,
@@ -151,6 +154,7 @@ async def test_CleanReportServer(params: str, expected_events: list[Event]) -> N
     ],
     ids=["missing_act", "missing_clean_session"],
 )
+@pytest.mark.benchmark
 def test_CleanReportServer_error(xml_message: str) -> None:
     assert_message_failure(
         CleanReportServer,
@@ -167,6 +171,7 @@ def test_CleanReportServer_error(xml_message: str) -> None:
     ],
     ids=["error", "no_state"],
 )
+@pytest.mark.benchmark
 def test_CleanReport_error(xml: str) -> None:
     assert_message_failure(
         CleanReport,
@@ -176,11 +181,12 @@ def test_CleanReport_error(xml: str) -> None:
 
 
 @pytest.mark.parametrize("position", [(-9, 15, 89)])
-async def test_CleanedPos(position: tuple[int, int, int]) -> None:
+@pytest.mark.benchmark
+def test_CleanedPos(position: tuple[int, int, int]) -> None:
     x, y, a = position
     xml_message = f"<ctl ts='1744467393682' td='CleanedPos' t='p' p='{x},{y}' a='{a}' csid='1134230540'/>"
 
-    await assert_message(
+    assert_message(
         CleanedPos,
         xml_message,
         PositionsEvent([Position(type=PositionType.DEEBOT, x=x, y=y, a=a)]),
@@ -197,5 +203,6 @@ async def test_CleanedPos(position: tuple[int, int, int]) -> None:
         }
     ),
 )
+@pytest.mark.benchmark
 def test_CleanedPos_error(xml_message: str) -> None:
     assert_message_failure(CleanedPos, xml_message, HandlingState.ANALYSE_LOGGED)

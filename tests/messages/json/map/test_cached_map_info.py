@@ -135,7 +135,8 @@ from tests.messages.json import assert_message
         ),
     ],
 )
-async def test_onCachedMapInfo(
+@pytest.mark.benchmark
+def test_onCachedMapInfo(
     info: list[dict[str, Any]],
     expected_event: CachedMapInfoEvent,
     expected_args: dict[str, Any],
@@ -158,7 +159,7 @@ async def test_onCachedMapInfo(
         },
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnCachedMapInfo,
         data,
         (
@@ -183,7 +184,8 @@ async def test_onCachedMapInfo(
         ("0", []),
     ],
 )
-async def test_onCachedMapInfo_no_using_map(
+@pytest.mark.benchmark
+def test_onCachedMapInfo_no_using_map(
     first_map_id: str, expected_events: list[CachedMapInfoEvent]
 ) -> None:
     """Test onCachedMapInfo message."""
@@ -248,7 +250,7 @@ async def test_onCachedMapInfo_no_using_map(
         },
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnCachedMapInfo,
         data,
         (

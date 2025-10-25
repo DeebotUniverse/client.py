@@ -15,7 +15,8 @@ from tests.messages.json import assert_message
         ("139.691706", "35.689487"),
     ],
 )
-async def test_onGpsPos(longitude: str, latitude: str) -> None:
+@pytest.mark.benchmark
+def test_onGpsPos(longitude: str, latitude: str) -> None:
     data = {
         "header": {
             "tzm": -240,
@@ -25,7 +26,7 @@ async def test_onGpsPos(longitude: str, latitude: str) -> None:
         "body": {"data": {"longitude": longitude, "latitude": latitude}},
     }
 
-    await assert_message(
+    assert_message(
         OnGpsPos,
         data,
         (FirmwareEvent("1.13.31"), GpsPositionEvent(float(longitude), float(latitude))),

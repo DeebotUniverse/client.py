@@ -10,9 +10,10 @@ from tests.messages.xml import assert_message
 
 
 @pytest.mark.parametrize(("pid", "data"), [(42, "base64data")])
-async def test_MapP(pid: int, data: str) -> None:
+@pytest.mark.benchmark
+def test_MapP(pid: int, data: str) -> None:
     xml_message = f"<ctl td='MapP' i='1245233875' pid='{pid}' p='{data}'/>"
-    await assert_message(
+    assert_message(
         MapP,
         xml_message,
         MinorMapEvent(index=pid, value=data),
@@ -30,14 +31,16 @@ async def test_MapP(pid: int, data: str) -> None:
         }
     ),
 )
+@pytest.mark.benchmark
 def test_MapP_error(xml_message: str) -> None:
     assert_message_failure(MapP, xml_message, HandlingState.ANALYSE_LOGGED)
 
 
 @pytest.mark.parametrize(("tf", "tt", "tr"), [(13, 42, "base64data")])
-async def test_Trace(tf: int, tt: int, tr: str) -> None:
+@pytest.mark.benchmark
+def test_Trace(tf: int, tt: int, tr: str) -> None:
     xml_message = f"<ctl td='trace' trid='631369' tf='{tf}' tt='{tt}' tr='{tr}'/>"
-    await assert_message(
+    assert_message(
         Trace,
         xml_message,
         MapTraceEvent(start=tf, total=tt, data=tr),
@@ -57,5 +60,6 @@ async def test_Trace(tf: int, tt: int, tr: str) -> None:
         }
     ),
 )
+@pytest.mark.benchmark
 def test_Trace_error(xml_message: str) -> None:
     assert_message_failure(Trace, xml_message, HandlingState.ANALYSE_LOGGED)

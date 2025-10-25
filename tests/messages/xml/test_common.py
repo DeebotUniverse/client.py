@@ -3,6 +3,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import TYPE_CHECKING
 
+import pytest
+
 from deebot_client.events import Event
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.xml.common import XmlMessage
@@ -31,12 +33,14 @@ class _TestXmlMessage(XmlMessage):
         return HandlingResult.analyse()
 
 
-async def test_XmlMessageDecoding() -> None:
-    await assert_message(
+@pytest.mark.benchmark
+def test_XmlMessageDecoding() -> None:
+    assert_message(
         _TestXmlMessage, '<ctl ret="ok" payload="test" />', _TestEvent("test")
     )
 
 
+@pytest.mark.benchmark
 def test_XmlMessageFailure() -> None:
     assert_message_failure(
         _TestXmlMessage, '<ctl ret="ok" />', HandlingState.ANALYSE_LOGGED

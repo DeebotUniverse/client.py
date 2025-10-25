@@ -10,10 +10,11 @@ from tests.messages.xml import assert_message
 
 
 @pytest.mark.parametrize("percentage", [0, 49, 100])
-async def test_BatteryInfo(percentage: int) -> None:
+@pytest.mark.benchmark
+def test_BatteryInfo(percentage: int) -> None:
     xml_message = f'<ctl ret="ok"><battery power="{percentage}" /></ctl>'
 
-    await assert_message(BatteryInfo, xml_message, BatteryEvent(percentage))
+    assert_message(BatteryInfo, xml_message, BatteryEvent(percentage))
 
 
 @pytest.mark.parametrize(
@@ -25,5 +26,6 @@ async def test_BatteryInfo(percentage: int) -> None:
         '<ctl ret="ok"><wrong power="100" /></ctl>',
     ],
 )
+@pytest.mark.benchmark
 def test_BatteryInfo_error(xml_message: str) -> None:
     assert_message_failure(BatteryInfo, xml_message, HandlingState.ANALYSE_LOGGED)

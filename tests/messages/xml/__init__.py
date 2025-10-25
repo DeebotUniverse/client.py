@@ -16,7 +16,7 @@ if TYPE_CHECKING:
     from deebot_client.events import Event
 
 
-async def assert_message(
+def assert_message(
     message: type[Message],
     data: MessagePayloadType,
     expected_events: Event | None | Sequence[Event],
@@ -24,7 +24,7 @@ async def assert_message(
     device_class: str = "2pv572",
     expected_state: HandlingState = HandlingState.SUCCESS,
 ) -> HandlingResult:
-    return await _assert_message(
+    return _assert_message(
         message,
         data,
         expected_events,
