@@ -4,7 +4,7 @@ import importlib.util
 from pathlib import Path
 from typing import TYPE_CHECKING, cast
 
-from deebot_client import hardware
+import deebot_client.hardware
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
@@ -42,6 +42,6 @@ def load_data_folder(
 
 
 def get_static_device_info(class_: str) -> StaticDeviceInfo:
-    full_package_name = f"{hardware.__package__}.{class_}"
+    full_package_name = f"{deebot_client.hardware.__package__}.{class_}"
     module = importlib.import_module(full_package_name)
     return cast("StaticDeviceInfo", module.get_device_info())
