@@ -162,7 +162,6 @@ impl MapInfo {
     }
 }
 
-#[allow(clippy::collapsible_if)]
 fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
     // Pre-allocate with estimated capacity
     let filtered_count = data.iter().filter(|e| !e.is_empty()).count();
