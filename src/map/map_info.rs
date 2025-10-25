@@ -89,9 +89,11 @@ impl MapInfo {
         let mut used_styles = OrderSet::new();
 
         for (map_info_type, css, force_connected) in order {
-            if let Some(entries) = self.data.get(&map_info_type)
-                && !entries.is_empty()
-            {
+            if let Some(entries) = self.data.get(&map_info_type) {
+                if entries.is_empty() {
+                    continue;
+                }
+
                 let mut group = Group::new().set("class", get_class_names(&css));
                 for entry in entries {
                     if let Some(path) =
@@ -160,6 +162,7 @@ impl MapInfo {
     }
 }
 
+#[allow(clippy::collapsible_if)]
 fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry> {
     // Pre-allocate with estimated capacity
     let filtered_count = data.iter().filter(|e| !e.is_empty()).count();
@@ -171,12 +174,12 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
 
         for spec in parts {
             let mut coords = spec.splitn(3, ','); // coordinates are "x,y,type"
-            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next())
-                && let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
-            {
-                let mut p = calc_point(x, y);
-                p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
-                path_points.push(p);
+            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
+                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>()) {
+                    let mut p = calc_point(x, y);
+                    p.connected = coords.next().unwrap_or("1").trim() != "3-1-0"; // lines to points of type "3-1-0" are not displayed
+                    path_points.push(p);
+                }
             }
         }
 
