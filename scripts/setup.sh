@@ -12,5 +12,5 @@ uv sync --frozen --group dev
 # Setup maturin development hook
 python -m maturin_import_hook site install
 
-# Setup pre-commit
-pre-commit install
+# Setup prek
+prek install
