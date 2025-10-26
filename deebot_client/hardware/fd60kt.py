@@ -1,4 +1,4 @@
-"""Deebot DEEBOT T80 OMNI Capabilities."""
+"""Deebot DEEBOT T50 OMNI Capabilities."""
 
 from __future__ import annotations
 
@@ -12,6 +12,7 @@ from deebot_client.capabilities import (
     CapabilityExecuteTypes,
     CapabilityLifeSpan,
     CapabilityMap,
+    CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -23,7 +24,6 @@ from deebot_client.capabilities import (
 )
 from deebot_client.commands import StationAction
 from deebot_client.commands.json import station_action
-from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.carpet import (
@@ -40,10 +40,6 @@ from deebot_client.commands.json.clean import (
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
-from deebot_client.commands.json.clean_preference import (
-    GetCleanPreference,
-    SetCleanPreference,
-)
 from deebot_client.commands.json.continuous_cleaning import (
     GetContinuousCleaning,
     SetContinuousCleaning,
@@ -61,6 +57,10 @@ from deebot_client.commands.json.map import (
     GetMapTrace,
     GetMinorMap,
     SetMajorMap,
+)
+from deebot_client.commands.json.mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
 )
 from deebot_client.commands.json.multimap_state import (
     GetMultimapState,
@@ -84,7 +84,6 @@ from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
 from deebot_client.const import DataType
 from deebot_client.events import (
-    AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
     CachedMapInfoEvent,
@@ -92,7 +91,6 @@ from deebot_client.events import (
     ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
-    CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CustomCommandEvent,
     EfficiencyModeEvent,
@@ -125,6 +123,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
+from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -148,9 +147,6 @@ def get_device_info() -> StaticDeviceInfo:
                 ),
                 count=CapabilitySet(CleanCountEvent, [GetCleanCount()], SetCleanCount),
                 log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
-                preference=CapabilitySetEnable(
-                    CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
-                ),
                 work_mode=CapabilitySetTypes(
                     event=WorkModeEvent,
                     get=[GetWorkMode()],
@@ -180,24 +176,25 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             life_span=CapabilityLifeSpan(
                 types=(
+                    LifeSpan.SIDE_BRUSH,
                     LifeSpan.BRUSH,
                     LifeSpan.FILTER,
-                    LifeSpan.HAND_FILTER,
-                    LifeSpan.SIDE_BRUSH,
                     LifeSpan.UNIT_CARE,
+                    LifeSpan.ROUND_MOP,
+                    LifeSpan.DUST_BAG,
                     LifeSpan.CLEANING_SOLUTION,
-                    LifeSpan.SEWAGE_BOX,
                 ),
                 event=LifeSpanEvent,
                 get=[
                     GetLifeSpan(
                         [
+                            LifeSpan.SIDE_BRUSH,
                             LifeSpan.BRUSH,
                             LifeSpan.FILTER,
-                            LifeSpan.HAND_FILTER,
-                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.UNIT_CARE,
+                            LifeSpan.ROUND_MOP,
+                            LifeSpan.DUST_BAG,
                             LifeSpan.CLEANING_SOLUTION,
-                            LifeSpan.SEWAGE_BOX,
                         ]
                     )
                 ],
@@ -221,9 +218,6 @@ def get_device_info() -> StaticDeviceInfo:
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
             settings=CapabilitySettings(
-                advanced_mode=CapabilitySetEnable(
-                    AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
-                ),
                 carpet_auto_fan_boost=CapabilitySetEnable(
                     CarpetAutoFanBoostEvent,
                     [GetCarpetAutoFanBoost()],
@@ -240,6 +234,13 @@ def get_device_info() -> StaticDeviceInfo:
                         EfficiencyMode.ENERGY_EFFICIENT_MODE,
                         EfficiencyMode.STANDARD_MODE,
                     ),
+                ),
+                mop_auto_wash_frequency=CapabilityNumber(
+                    event=MopAutoWashFrequencyEvent,
+                    get=[GetMopAutoWashFrequency()],
+                    set=SetMopAutoWashFrequency,
+                    min=0,
+                    max=60,
                 ),
                 ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),
                 sweep_mode=CapabilitySetEnable(
@@ -258,7 +259,12 @@ def get_device_info() -> StaticDeviceInfo:
             state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
             station=CapabilityStation(
                 action=CapabilityExecuteTypes(
-                    station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
+                    station_action.StationAction,
+                    types=(
+                        StationAction.EMPTY_DUSTBIN,
+                        StationAction.DRY_MOP,
+                        StationAction.WASH_MOP,
+                    ),
                 ),
                 auto_empty=CapabilitySetTypes(
                     event=AutoEmptyEvent,
@@ -277,16 +283,12 @@ def get_device_info() -> StaticDeviceInfo:
                 total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
             ),
             water=CapabilityWater(
-                amount=CapabilitySetTypes(
-                    event=water_info.WaterAmountEvent,
+                amount=CapabilityNumber(
+                    event=water_info.WaterCustomAmountEvent,
                     get=[GetWaterInfo()],
-                    set=SetWaterInfo,
-                    types=(
-                        water_info.WaterAmount.LOW,
-                        water_info.WaterAmount.MEDIUM,
-                        water_info.WaterAmount.HIGH,
-                        water_info.WaterAmount.ULTRAHIGH,
-                    ),
+                    set=lambda custom_amount: SetWaterInfo(custom_amount=custom_amount),
+                    min=0,
+                    max=50,
                 ),
                 mop_attached=CapabilityEvent(
                     water_info.MopAttachedEvent, [GetWaterInfo()]
