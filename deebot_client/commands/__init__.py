@@ -36,3 +36,4 @@ class StationAction(IntEnum):
     EMPTY_DUSTBIN = 1
     DRY_MOP = 2
     CLEAN_BASE = 3
+    WASH_MOP = 4
