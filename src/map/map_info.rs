@@ -89,9 +89,11 @@ impl MapInfo {
         let mut used_styles = OrderSet::new();
 
         for (map_info_type, css, force_connected) in order {
-            if let Some(entries) = self.data.get(&map_info_type)
-                && !entries.is_empty()
-            {
+            if let Some(entries) = self.data.get(&map_info_type) {
+                if entries.is_empty() {
+                    continue;
+                }
+
                 // Normalize and rotate points
                 let entries: Vec<MapInfoTypeDataEntry> = entries
                     .iter()
@@ -191,14 +193,14 @@ fn process_map_info_outline_entries(data: &[String]) -> Vec<MapInfoTypeDataEntry
 
         for spec in parts {
             let mut coords = spec.splitn(3, ','); // coordinates are "x,y,type"
-            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next())
-                && let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>())
-            {
-                path_points.push(Point {
-                    x,
-                    y,
-                    connected: coords.next().unwrap_or("1").trim() != "3-1-0",
-                });
+            if let (Some(x_str), Some(y_str)) = (coords.next(), coords.next()) {
+                if let (Ok(x), Ok(y)) = (x_str.parse::<f32>(), y_str.parse::<f32>()) {
+                    path_points.push(Point {
+                        x,
+                        y,
+                        connected: coords.next().unwrap_or("1").trim() != "3-1-0",
+                    });
+                }
             }
         }
 

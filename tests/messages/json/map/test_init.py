@@ -24,7 +24,8 @@ if TYPE_CHECKING:
         ("199390082", MapSetType.VIRTUAL_WALLS),
     ],
 )
-async def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
+@pytest.mark.benchmark
+def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -37,7 +38,7 @@ async def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
         "body": {"data": {"mid": mid, "type": set_type.value}},
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnMapSetV2,
         data,
         (FirmwareEvent("1.8.2"),),
@@ -45,7 +46,8 @@ async def test_onMapSetV2(mid: str, set_type: MapSetType) -> None:
     assert result.requested_commands == [GetMapSetV2(mid, set_type)]
 
 
-async def test_onMajorMap() -> None:
+@pytest.mark.benchmark
+def test_onMajorMap() -> None:
     """Test onMajorMap message."""
     map_id = "1132127808"
     values = [
@@ -138,7 +140,7 @@ async def test_onMajorMap() -> None:
         },
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnMajorMap,
         data,
         (FirmwareEvent("1.34.0"), MajorMapEvent(map_id, values, requested=False)),
@@ -154,7 +156,8 @@ async def test_onMajorMap() -> None:
         ("2", HandlingState.ANALYSE_LOGGED, False),
     ],
 )
-async def test_onMapInfo_V2(
+@pytest.mark.benchmark
+def test_onMapInfo_V2(
     online_ver: str,
     expected_state: HandlingState,
     should_notify: bool,
@@ -193,7 +196,7 @@ async def test_onMapInfo_V2(
     if should_notify:
         expected_events.append(MapInfoEvent(map_id, info))
 
-    await assert_message(
+    assert_message(
         OnMapInfoV2,
         data,
         expected_events,

@@ -111,7 +111,8 @@ if TYPE_CHECKING:
         ),
     ],
 )
-async def test_onWorkState(
+@pytest.mark.benchmark
+def test_onWorkState(
     paused: int,
     robot_state: str,
     additional_content: dict[str, Any],
@@ -144,7 +145,7 @@ async def test_onWorkState(
         },
     }
 
-    await assert_message(OnWorkState, data, (FirmwareEvent("1.30.0"), *expected))
+    assert_message(OnWorkState, data, (FirmwareEvent("1.30.0"), *expected))
 
 
 @pytest.mark.parametrize(
@@ -174,7 +175,8 @@ async def test_onWorkState(
         },
     ],
 )
-async def test_onWorkState_edge_cases(message_data: dict[str, Any]) -> None:
+@pytest.mark.benchmark
+def test_onWorkState_edge_cases(message_data: dict[str, Any]) -> None:
     data: dict[str, Any] = {
         "header": {
             "pri": 1,

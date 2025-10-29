@@ -41,6 +41,7 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
+    GetMapInfoV2,
     GetMapSetV2,
     GetMapTrace,
     GetMinorMap,
@@ -151,6 +152,7 @@ def get_device_info() -> StaticDeviceInfo:
             map=CapabilityMap(
                 cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
                 changed=CapabilityEvent(MapChangedEvent, []),
+                info=CapabilityExecute(GetMapInfoV2),
                 major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
                 minor=CapabilityExecute(GetMinorMap),
                 multi_state=CapabilitySetEnable(

@@ -2,13 +2,17 @@ from __future__ import annotations
 
 import importlib.util
 from pathlib import Path
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
+
+import deebot_client.hardware
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Iterator
     from types import ModuleType
 
     from _pytest.mark import ParameterSet
+
+    from deebot_client.models import StaticDeviceInfo
 
 
 def load_data_folder(
@@ -35,3 +39,9 @@ def load_data_folder(
                 spec.loader.exec_module(module)
 
                 yield extract_fn(module, filename)
+
+
+def get_static_device_info(class_: str) -> StaticDeviceInfo:
+    full_package_name = f"{deebot_client.hardware.__package__}.{class_}"
+    module = importlib.import_module(full_package_name)
+    return cast("StaticDeviceInfo", module.get_device_info())
