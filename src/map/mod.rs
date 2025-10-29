@@ -12,7 +12,7 @@ use points::{Point, TracePoints, points_to_svg_path};
 use style::{CSSClass, get_style};
 
 use super::util::decompress_base64_data;
-use log::debug;
+use log::{debug, warn};
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
@@ -144,7 +144,7 @@ impl From<i16> for RotationAngle {
             180 => RotationAngle::Deg180,
             270 => RotationAngle::Deg270,
             _ => {
-                log::warn!(
+                warn!(
                     "Invalid rotation angle: {}. Valid values are 0, 90, 180, 270. Defaulting to 0.",
                     value
                 );
