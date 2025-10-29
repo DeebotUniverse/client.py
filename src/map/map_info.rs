@@ -1,5 +1,5 @@
 use super::style::{CSSClass, get_class_names};
-use super::{ViewBox, calc_point, decompress_base64_data};
+use super::{RotationAngle, ViewBox, calc_point, decompress_base64_data};
 
 use super::points::{Point, points_to_svg_path};
 use ordermap::OrderSet;
@@ -82,7 +82,7 @@ impl MapInfo {
         }
     }
 
-    pub(super) fn generate(&self, rotation_deg: i16) -> MapInfoGenerateResult {
+    pub(super) fn generate(&self, rotation: RotationAngle) -> MapInfoGenerateResult {
         let mut viewbox = None;
         let order = self.get_order();
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
@@ -100,7 +100,7 @@ impl MapInfo {
                             .points
                             .iter()
                             .map(|point| {
-                                let mut p = calc_point(point.x, point.y, rotation_deg);
+                                let mut p = calc_point(point.x, point.y, rotation);
                                 p.connected = point.connected;
                                 p
                             })

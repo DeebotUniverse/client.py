@@ -11,6 +11,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.map.cached_map_info import OnCachedMapInfo
+from deebot_client.rs.map import RotationAngle
 from tests.messages.json import assert_message
 
 
@@ -68,14 +69,14 @@ from tests.messages.json import assert_message
                         name="",
                         using=False,
                         built=False,
-                        angle=0,
+                        angle=RotationAngle.DEG_0,
                     ),
                     Map(
                         id="1132127808",
                         name="Erdgeschoss",
                         using=True,
                         built=True,
-                        angle=90,
+                        angle=RotationAngle.DEG_90,
                     ),
                 }
             ),
@@ -131,6 +132,7 @@ from tests.messages.json import assert_message
                         name="",
                         using=True,
                         built=False,
+                        angle=RotationAngle.DEG_0,
                     ),
                 }
             ),
@@ -179,7 +181,15 @@ async def test_onCachedMapInfo(
             "1048154397",
             [
                 CachedMapInfoEvent(
-                    {Map(id="1048154397", name="", using=False, built=False)}
+                    {
+                        Map(
+                            id="1048154397",
+                            name="",
+                            using=False,
+                            built=False,
+                            angle=RotationAngle.DEG_0,
+                        )
+                    }
                 )
             ],
         ),

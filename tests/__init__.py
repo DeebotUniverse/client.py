@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 def load_data_folder(
-    folder: str, extract_fn: Callable[[ModuleType, str], list[ParameterSet]]
+    folder: str, extract_fn: Callable[[ModuleType, str], ParameterSet]
 ) -> Iterator[ParameterSet]:
     """Iterate over all files in tests/data/[folder] and call passed extract function."""
     map_data_dir = Path(__file__).parent / "data" / folder
@@ -34,4 +34,4 @@ def load_data_folder(
                 module = importlib.util.module_from_spec(spec)
                 spec.loader.exec_module(module)
 
-                yield from extract_fn(module, filename)
+                yield extract_fn(module, filename)

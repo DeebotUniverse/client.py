@@ -206,28 +206,22 @@ async def test_empty_maptrace(
         cast("Mock", map_obj._map_data.add_trace_points).assert_not_called()
 
 
-def extractor_for_test_get_svg_map(
-    module: ModuleType, filename: str
-) -> list[ParameterSet]:
+def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:
     """Extract EVENTS and SVG from the module."""
     required_attributes = ["EVENTS", "DEVICE_CLASS"]
     if not all(hasattr(module, attr) for attr in required_attributes):
         msg = f"Module does not have required attributes: {required_attributes}"
         raise AttributeError(msg)
 
-    return [
-        pytest.param(
-            module.DEVICE_CLASS,
-            module.EVENTS,
-            angle,
-            id=f"{filename}-{module.DEVICE_CLASS}-{angle}",
-        )
-        for angle in [0, 90, 180, 270]
-    ]
+    return pytest.param(
+        module.DEVICE_CLASS,
+        module.EVENTS,
+        id=f"{filename}-{module.DEVICE_CLASS}",
+    )
 
 
 @pytest.mark.parametrize(
-    ("device_class", "events", "angle"),
+    ("device_class", "events"),
     load_data_folder("map", extractor_for_test_get_svg_map),
 )
 def test_get_svg_map(
@@ -237,7 +231,6 @@ def test_get_svg_map(
     event_bus: EventBus,
     static_device_info: StaticDeviceInfo,
     events: list[Event],
-    angle: int,
 ) -> None:
     """Test getting svg map."""
     event_loop = asyncio.new_event_loop()
@@ -249,8 +242,6 @@ def test_get_svg_map(
             event_bus.notify(event)
 
         await block_till_done(event_bus)
-
-        map_obj._map_data.set_rotation_deg(angle)
         return map_obj.get_svg_map()
 
     @benchmark

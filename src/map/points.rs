@@ -1,6 +1,6 @@
 use std::fmt::Write as FmtWrite;
 
-use super::{ROUND_TO_DIGITS, common::round};
+use super::{ROUND_TO_DIGITS, RotationAngle, common::round};
 use crate::util::decompress_base64_data;
 use log::error;
 use pyo3::exceptions::PyValueError;
@@ -118,12 +118,12 @@ fn extract_trace_points(value: &str) -> Result<Vec<TracePoint>, Box<dyn Error>> 
     process_trace_points(&decompressed_data)
 }
 
-fn trace_point_to_point(trace_point: &TracePoint, rotation_deg: i16) -> Point {
-    let (x, y) = match rotation_deg {
-        90 => (trace_point.y.into(), -(trace_point.x as f32)),
-        180 => (-(trace_point.x as f32), -(trace_point.y as f32)),
-        270 => (-(trace_point.y as f32), trace_point.x.into()),
-        _ => (trace_point.x.into(), trace_point.y.into()), // 0 deg or default
+fn trace_point_to_point(trace_point: &TracePoint, rotation: RotationAngle) -> Point {
+    let (x, y) = match rotation {
+        RotationAngle::Deg0 => (trace_point.x.into(), trace_point.y.into()),
+        RotationAngle::Deg90 => (trace_point.y.into(), -(trace_point.x as f32)),
+        RotationAngle::Deg180 => (-(trace_point.x as f32), -(trace_point.y as f32)),
+        RotationAngle::Deg270 => (-(trace_point.y as f32), trace_point.x.into()),
     };
     Point {
         x,
@@ -144,7 +144,7 @@ impl TracePoints {
         }
     }
 
-    pub(super) fn get_path(&self, rotation_deg: i16) -> Option<Path> {
+    pub(super) fn get_path(&self, rotation: RotationAngle) -> Option<Path> {
         if self.trace_points.is_empty() {
             return None;
         }
@@ -153,7 +153,7 @@ impl TracePoints {
             &self
                 .trace_points
                 .iter()
-                .map(|tp| trace_point_to_point(tp, rotation_deg))
+                .map(|tp| trace_point_to_point(tp, rotation))
                 .collect::<Vec<Point>>(),
             false,
             false,
@@ -222,11 +222,11 @@ mod tests {
 
     #[test]
     fn test_get_trace_points_path() {
-        assert!(TracePoints::new().get_path(0).is_none());
+        assert!(TracePoints::new().get_path(RotationAngle::Deg0).is_none());
     }
 
     #[rstest]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], 0, "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg0, "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
     #[case(vec![
         TracePoint{x:-215, y:-70, connected:true},
         TracePoint{x:-215, y:-70, connected:true},
@@ -237,18 +237,18 @@ mod tests {
         TracePoint{x:-227, y:-70, connected:true},
         TracePoint{x:-256, y:-69, connected:false},
         TracePoint{x:-260, y:-80, connected:true},
-    ], 0, "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], 90, "<path d=\"M256-16v16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], 180, "<path d=\"M-16-256h16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], 270, "<path d=\"M-256 16v-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    ], RotationAngle::Deg0, "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg90, "<path d=\"M256-16v16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg180, "<path d=\"M-16-256h16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg270, "<path d=\"M-256 16v-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
     fn test_get_trace_path(
         #[case] points: Vec<TracePoint>,
-        #[case] rotation_deg: i16,
+        #[case] rotation: RotationAngle,
         #[case] expected: String,
     ) {
         let mut trace_points = TracePoints::new();
         trace_points.add_trace_points(points);
-        let trace = trace_points.get_path(rotation_deg);
+        let trace = trace_points.get_path(rotation);
         assert_eq!(trace.unwrap().to_string(), expected);
     }
 

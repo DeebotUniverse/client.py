@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    Map,
     MapInfoEvent,
     MapSetType,
     MapSubsetEvent,
@@ -8,12 +10,23 @@ from deebot_client.events.map import (
     Position,
     PositionsEvent,
 )
-from deebot_client.rs.map import PositionType
+from deebot_client.rs.map import PositionType, RotationAngle
 
 DEVICE_CLASS = "ilt3k8"
 
 
 EVENTS = [
+    CachedMapInfoEvent(
+        {
+            Map(
+                id="1038845207",
+                name="Home",
+                using=True,
+                built=True,
+                angle=RotationAngle.DEG_90,
+            ),
+        }
+    ),
     PositionsEvent(
         positions=[
             Position(type=PositionType.DEEBOT, x=-668, y=-48, a=1),
