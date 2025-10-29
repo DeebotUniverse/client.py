@@ -363,7 +363,7 @@ dev = [
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "syrupy", specifier = "==5.0.0" },
-    { name = "testfixtures", specifier = "==9.2.0" },
+    { name = "testfixtures", specifier = "==10.0.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
 ]
@@ -384,7 +384,7 @@ test = [
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "syrupy", specifier = "==5.0.0" },
-    { name = "testfixtures", specifier = "==9.2.0" },
+    { name = "testfixtures", specifier = "==10.0.0" },
 ]
 
 [[package]]
@@ -1074,11 +1074,11 @@ wheels = [
 
 [[package]]
 name = "testfixtures"
-version = "9.2.0"
+version = "10.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/05/40/e6d473e77a69b91bb8e042cab961f24536ddc04f9fb9042cbbe6e6c73c66/testfixtures-9.2.0.tar.gz", hash = "sha256:1909e7889073c96adda774a01de6441da1a2cb47ea5c25c8c2fe56d42a7cf0c1", size = 90563, upload-time = "2025-10-13T14:54:55.062Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/4d/53/d7439458a89dc5be4780b23af09432a8347c798ea52ba0b53fd158f86653/testfixtures-10.0.0.tar.gz", hash = "sha256:2b9829bf7f42f0ca8600250762e6725575da59af18d9a7f82aae2c97b14f0f66", size = 147464, upload-time = "2025-10-29T08:42:20.733Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/96/52/6626627fd6b2216fc7109d95f0c0d453c702c801bd25d2a660c60653e0a2/testfixtures-9.2.0-py3-none-any.whl", hash = "sha256:6fc7cd859509a4dd2cf9ca18ca1114bb8fd55db6358925539525c067b275e805", size = 108533, upload-time = "2025-10-13T14:54:53.996Z" },
+    { url = "https://files.pythonhosted.org/packages/15/30/70da9c7cd9931f2299ab2a353cf082427ba5dbea5f34db57e6a9ef89c8a5/testfixtures-10.0.0-py3-none-any.whl", hash = "sha256:c54ed5c4cd93ad271a6add94a575a5843964ea3aaf590f4c3cb4df16a261b15f", size = 111285, upload-time = "2025-10-29T08:42:19.647Z" },
 ]
 
 [[package]]
