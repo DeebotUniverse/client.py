@@ -30,7 +30,7 @@ class SetAutoEmpty(ExecuteCommand):
 
         if enable is not bool and frequency is None:
             frequency = get_enum(Frequency, enable)
-            if frequency == “manual”:
+            if frequency == "manual":
                 enable = 0
             else:
                 enable = 1
