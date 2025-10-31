@@ -66,7 +66,6 @@ async def test_getCachedMapInfo(
                         "using": 0,
                         "built": 1,
                         "name": "",
-                        "angle": 180,
                     },
                 ],
             }
@@ -103,7 +102,7 @@ async def test_getCachedMapInfo(
                         name="",
                         using=False,
                         built=True,
-                        angle=RotationAngle.DEG_180,
+                        angle=RotationAngle.DEG_0,
                     ),
                 }
             ),

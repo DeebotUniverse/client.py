@@ -12,7 +12,7 @@ use points::{Point, TracePoints, points_to_svg_path};
 use style::{CSSClass, get_style};
 
 use super::util::decompress_base64_data;
-use log::{debug, warn};
+use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
@@ -136,29 +136,20 @@ pub(super) enum RotationAngle {
     Deg270 = 270,
 }
 
-impl From<i16> for RotationAngle {
-    fn from(value: i16) -> Self {
-        match value {
-            0 => RotationAngle::Deg0,
-            90 => RotationAngle::Deg90,
-            180 => RotationAngle::Deg180,
-            270 => RotationAngle::Deg270,
-            _ => {
-                warn!(
-                    "Invalid rotation angle: {}. Valid values are 0, 90, 180, 270. Defaulting to 0.",
-                    value
-                );
-                RotationAngle::Deg0
-            }
-        }
-    }
-}
-
 #[pymethods]
 impl RotationAngle {
     #[staticmethod]
-    fn from_int(value: i16) -> Self {
-        RotationAngle::from(value)
+    fn from_int(value: i16) -> PyResult<Self> {
+        match value {
+            0 => Ok(RotationAngle::Deg0),
+            90 => Ok(RotationAngle::Deg90),
+            180 => Ok(RotationAngle::Deg180),
+            270 => Ok(RotationAngle::Deg270),
+            _ => Err(PyValueError::new_err(format!(
+                "Invalid rotation angle: {}. Valid values are 0, 90, 180, 270.",
+                value
+            ))),
+        }
     }
 }
 
@@ -548,7 +539,7 @@ mod tests {
     #[case(180, RotationAngle::Deg180)]
     #[case(270, RotationAngle::Deg270)]
     fn test_rotation_angle_from_int_valid(#[case] value: i16, #[case] expected: RotationAngle) {
-        let result = RotationAngle::from(value);
+        let result = RotationAngle::from_int(value).unwrap();
         assert_eq!(result, expected);
     }
 
@@ -558,8 +549,8 @@ mod tests {
     #[case(-90)]
     #[case(100)]
     fn test_rotation_angle_from_int_invalid(#[case] value: i16) {
-        let result = RotationAngle::from(value);
-        assert_eq!(result, RotationAngle::Deg0);
+        let result = RotationAngle::from_int(value);
+        assert!(result.is_err());
     }
 
     #[test]
