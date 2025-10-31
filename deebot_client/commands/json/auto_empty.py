@@ -28,28 +28,16 @@ class SetAutoEmpty(ExecuteCommand):
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)
 
+        if enable is not bool and frequency is None:
+            frequency = get_enum(Frequency, enable)
+            if frequency == “manual”:
+                enable = 0
+            else:
+                enable = 1
+
         params: dict[str, Any] = {}
         if enable is not None:
             params["enable"] = int(enable)
-        if frequency:
-            params["frequency"] = frequency.value
-        super().__init__(params)
-
-
-class SetAutoEmpty2(ExecuteCommand):
-    """Set auto empty command without enable."""
-
-    NAME = "setAutoEmpty"
-
-    def __init__(self, frequency: Frequency | str | None = None) -> None:
-        if frequency is not None and not isinstance(frequency, Frequency):
-            frequency = get_enum(Frequency, frequency)
-
-        params: dict[str, Any] = {}
-        if frequency == "manual":
-            params["enable"] = 0
-        else:
-            params["enable"] = 1
         if frequency:
             params["frequency"] = frequency.value
         super().__init__(params)
