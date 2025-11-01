@@ -23,13 +23,13 @@ class SetAutoEmpty(ExecuteCommand):
     NAME = "setAutoEmpty"
 
     def __init__(
-        self, enable: bool | None = None, frequency: Frequency | str | None = None
+        self, enable: bool | str | None = None, frequency: Frequency | str | None = None
     ) -> None:
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)
 
-        if not isinstance(enable, bool | None) and frequency is None:
-            frequency = get_enum(Frequency, str(enable))
+        if isinstance(enable, str):
+            frequency = get_enum(Frequency, enable) if frequency is None
             enable = frequency != "manual"
 
         params: dict[str, Any] = {}
