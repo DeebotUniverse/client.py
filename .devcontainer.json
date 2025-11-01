@@ -49,7 +49,7 @@
     },
     "ghcr.io/devcontainers/features/rust:1": {}
   },
-  "image": "mcr.microsoft.com/devcontainers/python:3",
+  "image": "mcr.microsoft.com/devcontainers/python:3.14",
   "name": "Deebot client",
   // Use 'forwardPorts' to make a list of ports inside the container available locally.
   // "forwardPorts": [],
