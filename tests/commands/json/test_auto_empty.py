@@ -129,6 +129,11 @@ async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyEvent) -> N
             None,
             {"enable": 0, "frequency": "manual"},
         ),
+        (
+            "manual",
+            "manual",
+            {"enable": 0, "frequency": "manual"},
+        ),
     ],
 )
 async def test_SetAutoEmpty(
