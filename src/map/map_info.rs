@@ -8,14 +8,9 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::hash::Hash;
-use svg::node::element::{Group, Line, Pattern};
+use svg::node::element::Group;
 
-type MapInfoGenerateResult = Option<(
-    Vec<Box<dyn svg::node::Node>>,
-    ViewBox,
-    OrderSet<CSSClass>,
-    Vec<Box<dyn svg::node::Node>>,
-)>;
+type MapInfoGenerateResult = Option<(Vec<Box<dyn svg::node::Node>>, ViewBox, OrderSet<CSSClass>)>;
 
 const ROOM_COLORS: [CSSClass; 4] = [
     CSSClass::RoomColor1,
@@ -56,6 +51,14 @@ impl TryFrom<&str> for MapInfoType {
 
 #[derive(Debug)]
 struct MapInfoTypeEntry(MapInfoType, Vec<MapInfoTypeDataEntry>);
+
+#[derive(Debug)]
+struct MapInfoLayer {
+    map_info_type: MapInfoType,
+    css: Vec<CSSClass>,
+    force_connected: bool,
+    colorize: bool,
+}
 
 impl<'de> Deserialize<'de> for MapInfoTypeEntry {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
@@ -100,8 +103,8 @@ impl MapInfo {
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
         let mut used_styles = OrderSet::new();
 
-        for (map_info_type, css, force_connected, colorize) in order {
-            if let Some(entries) = self.data.get(&map_info_type) {
+        for layer in order {
+            if let Some(entries) = self.data.get(&layer.map_info_type) {
                 if entries.is_empty() {
                     continue;
                 }
@@ -126,12 +129,12 @@ impl MapInfo {
                     })
                     .collect();
 
-                let mut group = Group::new().set("class", get_class_names(&css));
+                let mut group = Group::new().set("class", get_class_names(&layer.css));
                 for (index, entry) in entries.iter().enumerate() {
                     if let Some(path) =
-                        points_to_svg_path(&entry.points, entry.close_path, force_connected)
+                        points_to_svg_path(&entry.points, entry.close_path, layer.force_connected)
                     {
-                        let path = if colorize {
+                        let path = if layer.colorize {
                             let color_class = ROOM_COLORS[index % 4];
                             used_styles.insert(color_class);
                             path.set("class", get_style(&color_class).class_name)
@@ -142,78 +145,64 @@ impl MapInfo {
                     }
                 }
                 svg_elements.push(Box::new(group));
-                used_styles.extend(css);
-                if map_info_type == MapInfoType::Outline {
+                used_styles.extend(layer.css);
+                if layer.map_info_type == MapInfoType::Outline {
                     viewbox = calc_viewbox(&entries);
                 }
             }
         }
 
-        // Generate additional required defs elements
-        let mut added_defs: Vec<Box<dyn svg::node::Node>> = Vec::new();
-        if used_styles.contains(&CSSClass::RoomUnreachable) {
-            // Diagonal stripes pattern (for unreachable areas)
-            let pattern = Pattern::new()
-                .set("id", "ds")
-                .set("x", 0)
-                .set("y", 0)
-                .set("width", 2)
-                .set("height", 2)
-                .set("patternUnits", "userSpaceOnUse")
-                .set("patternTransform", "rotate(45)")
-                .add(
-                    Line::new()
-                        .set("x1", 0)
-                        .set("y1", 0)
-                        .set("x2", 0)
-                        .set("y2", 2)
-                        .set("stroke", "rgba(0, 0, 0, 0.2)")
-                        .set("stroke-width", 1),
-                );
-            added_defs.push(Box::new(pattern));
-        }
-
-        Some((svg_elements, viewbox?, used_styles, added_defs))
+        Some((svg_elements, viewbox?, used_styles))
     }
 
-    fn get_order(&self) -> Vec<(MapInfoType, Vec<CSSClass>, bool, bool)> {
+    fn get_order(&self) -> Vec<MapInfoLayer> {
         if self.data.contains_key(&MapInfoType::BlockLine) {
             vec![
-                (MapInfoType::Room, vec![], false, true),
-                (
-                    MapInfoType::Room,
-                    vec![CSSClass::RoomUnreachable],
-                    false,
-                    false,
-                ),
-                (MapInfoType::BlockLine, vec![], false, true),
-                (
-                    MapInfoType::Outline,
-                    vec![CSSClass::FillNone, CSSClass::OutlineStroke],
-                    false,
-                    false,
-                ),
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Room,
+                    css: vec![],
+                    force_connected: false,
+                    colorize: true,
+                },
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Room,
+                    css: vec![CSSClass::RoomUnreachable],
+                    force_connected: false,
+                    colorize: false,
+                },
+                MapInfoLayer {
+                    map_info_type: MapInfoType::BlockLine,
+                    css: vec![],
+                    force_connected: false,
+                    colorize: true,
+                },
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Outline,
+                    css: vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    force_connected: false,
+                    colorize: false,
+                },
             ]
         } else {
             vec![
-                (
-                    MapInfoType::Outline,
-                    vec![CSSClass::RoomUnknown],
-                    true,
-                    false,
-                ),
-                (
-                    MapInfoType::Room,
-                    vec![CSSClass::OutlineStroke],
-                    false,
-                    true,
-                ),
-                (
-                    MapInfoType::Outline,
-                    vec![CSSClass::FillNone, CSSClass::OutlineStroke],
-                    false,
-                    false,
-                ),
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Outline,
+                    css: vec![CSSClass::RoomUnknown],
+                    force_connected: true,
+                    colorize: false,
+                },
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Room,
+                    css: vec![CSSClass::OutlineStroke],
+                    force_connected: false,
+                    colorize: true,
+                },
+                MapInfoLayer {
+                    map_info_type: MapInfoType::Outline,
+                    css: vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    force_connected: false,
+                    colorize: false,
+                },
             ]
         }
     }

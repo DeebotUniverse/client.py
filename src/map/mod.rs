@@ -9,7 +9,7 @@ use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
 use points::{Point, TracePoints, points_to_svg_path};
-use style::{CSSClass, get_style};
+use style::{CSSClass, get_definition, get_required_definitions, get_style};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -267,9 +267,7 @@ impl MapData {
 
         // Create map from MapInfo, if exists, or generate background image
         let viewbox = match self.map_info.borrow(py).generate(rotation) {
-            Some((map_elements, viewbox, info_styles, added_defs)) => {
-                // Add additional definitions to defs
-                added_defs.into_iter().for_each(|e| defs.append(e));
+            Some((map_elements, viewbox, info_styles)) => {
                 // Append all map background elements to document
                 map_elements.into_iter().for_each(|e| document.append(e));
                 styles.extend(info_styles);
@@ -296,6 +294,11 @@ impl MapData {
                 }
             }
         };
+
+        // Add required definitions based on used CSS classes
+        get_required_definitions(&styles)
+            .into_iter()
+            .for_each(|def_id| defs.append(get_definition(&def_id)));
 
         document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
 
