@@ -28,8 +28,8 @@ class SetAutoEmpty(ExecuteCommand):
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)
 
-        if type(enable) is str and frequency is None:
-            frequency = get_enum(Frequency, enable)
+        if type(enable) is not bool and frequency is None:
+            frequency = get_enum(Frequency, str(enable))
             enable = False if frequency == "manual" else True
 
         params: dict[str, Any] = {}
