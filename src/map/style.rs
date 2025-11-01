@@ -3,14 +3,18 @@ use std::{collections::HashMap, sync::OnceLock};
 #[cfg(test)]
 use strum_macros::EnumIter;
 
-#[derive(Eq, PartialEq, Hash)]
+#[derive(Eq, PartialEq, Hash, Copy, Clone)]
 #[cfg_attr(test, derive(EnumIter))]
 pub(super) enum CSSClass {
     Path,
     FillNone,
     OutlineStroke,
     RoomUnreachable,
-    RoomReachable,
+    RoomUnknown,
+    RoomColor1,
+    RoomColor2,
+    RoomColor3,
+    RoomColor4,
     WallBase,
     VirtualWall,
     NoMoppingWall,
@@ -36,15 +40,35 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
                 value: "stroke: #4e96e2; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3",
                 class_name: "o",
             }),
-            (CSSClass::RoomUnreachable, CSSEntry {
+            (CSSClass::RoomUnknown, CSSEntry {
                 identifier: ".u",
                 value: "fill: #edf3fb",
                 class_name: "u",
             }),
-            (CSSClass::RoomReachable, CSSEntry {
+            (CSSClass::RoomUnreachable, CSSEntry {
                 identifier: ".r",
-                value: "fill: #badaff",
+                value: "fill: url(#ds); mix-blend-mode: multiply;",
                 class_name: "r",
+            }),
+            (CSSClass::RoomColor1, CSSEntry {
+                identifier: ".r1",
+                value: "fill: #a2bce7",
+                class_name: "r1",
+            }),
+            (CSSClass::RoomColor2, CSSEntry {
+                identifier: ".r2",
+                value: "fill: #ecd099",
+                class_name: "r2",
+            }),
+            (CSSClass::RoomColor3, CSSEntry {
+                identifier: ".r3",
+                value: "fill: #9bd4da",
+                class_name: "r3",
+            }),
+            (CSSClass::RoomColor4, CSSEntry {
+                identifier: ".r4",
+                value: "fill: #ecc6c9",
+                class_name: "r4",
             }),
             (CSSClass::WallBase, CSSEntry {
                 identifier: ".w path",

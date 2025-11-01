@@ -1,4 +1,4 @@
-use super::style::{CSSClass, get_class_names};
+use super::style::{CSSClass, get_class_names, get_style};
 use super::{RotationAngle, ViewBox, calc_point, decompress_base64_data};
 
 use super::points::{Point, points_to_svg_path};
@@ -8,9 +8,21 @@ use pyo3::prelude::*;
 use serde::{Deserialize, Deserializer};
 use std::collections::HashMap;
 use std::hash::Hash;
-use svg::node::element::Group;
+use svg::node::element::{Group, Line, Pattern};
 
-type MapInfoGenerateResult = Option<(Vec<Box<dyn svg::node::Node>>, ViewBox, OrderSet<CSSClass>)>;
+type MapInfoGenerateResult = Option<(
+    Vec<Box<dyn svg::node::Node>>,
+    ViewBox,
+    OrderSet<CSSClass>,
+    Vec<Box<dyn svg::node::Node>>,
+)>;
+
+const ROOM_COLORS: [CSSClass; 4] = [
+    CSSClass::RoomColor1,
+    CSSClass::RoomColor2,
+    CSSClass::RoomColor3,
+    CSSClass::RoomColor4,
+];
 
 #[derive(Debug, PartialEq)]
 struct MapInfoTypeDataEntry {
@@ -88,7 +100,7 @@ impl MapInfo {
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
         let mut used_styles = OrderSet::new();
 
-        for (map_info_type, css, force_connected) in order {
+        for (map_info_type, css, force_connected, colorize) in order {
             if let Some(entries) = self.data.get(&map_info_type) {
                 if entries.is_empty() {
                     continue;
@@ -115,50 +127,91 @@ impl MapInfo {
                     .collect();
 
                 let mut group = Group::new().set("class", get_class_names(&css));
-                for entry in &entries {
+                for (index, entry) in entries.iter().enumerate() {
                     if let Some(path) =
                         points_to_svg_path(&entry.points, entry.close_path, force_connected)
                     {
+                        let path = if colorize {
+                            let color_class = ROOM_COLORS[index % 4];
+                            used_styles.insert(color_class);
+                            path.set("class", get_style(&color_class).class_name)
+                        } else {
+                            path
+                        };
                         group = group.add(path);
                     }
                 }
                 svg_elements.push(Box::new(group));
-                used_styles.insert(css);
+                used_styles.extend(css);
                 if map_info_type == MapInfoType::Outline {
                     viewbox = calc_viewbox(&entries);
                 }
             }
         }
 
-        Some((
-            svg_elements,
-            viewbox?,
-            used_styles.into_iter().flatten().collect(),
-        ))
+        // Generate additional required defs elements
+        let mut added_defs: Vec<Box<dyn svg::node::Node>> = Vec::new();
+        if used_styles.contains(&CSSClass::RoomUnreachable) {
+            // Diagonal stripes pattern (for unreachable areas)
+            let pattern = Pattern::new()
+                .set("id", "ds")
+                .set("x", 0)
+                .set("y", 0)
+                .set("width", 2)
+                .set("height", 2)
+                .set("patternUnits", "userSpaceOnUse")
+                .set("patternTransform", "rotate(45)")
+                .add(
+                    Line::new()
+                        .set("x1", 0)
+                        .set("y1", 0)
+                        .set("x2", 0)
+                        .set("y2", 2)
+                        .set("stroke", "rgba(0, 0, 0, 0.2)")
+                        .set("stroke-width", 1),
+                );
+            added_defs.push(Box::new(pattern));
+        }
+
+        Some((svg_elements, viewbox?, used_styles, added_defs))
     }
 
-    fn get_order(&self) -> [(MapInfoType, Vec<CSSClass>, bool); 3] {
+    fn get_order(&self) -> Vec<(MapInfoType, Vec<CSSClass>, bool, bool)> {
         if self.data.contains_key(&MapInfoType::BlockLine) {
-            [
-                (MapInfoType::Room, vec![CSSClass::RoomUnreachable], false),
-                (MapInfoType::BlockLine, vec![CSSClass::RoomReachable], false),
+            vec![
+                (MapInfoType::Room, vec![], false, true),
+                (
+                    MapInfoType::Room,
+                    vec![CSSClass::RoomUnreachable],
+                    false,
+                    false,
+                ),
+                (MapInfoType::BlockLine, vec![], false, true),
                 (
                     MapInfoType::Outline,
                     vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    false,
                     false,
                 ),
             ]
         } else {
-            [
-                (MapInfoType::Outline, vec![CSSClass::RoomUnreachable], true),
+            vec![
+                (
+                    MapInfoType::Outline,
+                    vec![CSSClass::RoomUnknown],
+                    true,
+                    false,
+                ),
                 (
                     MapInfoType::Room,
-                    vec![CSSClass::RoomReachable, CSSClass::OutlineStroke],
+                    vec![CSSClass::OutlineStroke],
                     false,
+                    true,
                 ),
                 (
                     MapInfoType::Outline,
                     vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    false,
                     false,
                 ),
             ]
