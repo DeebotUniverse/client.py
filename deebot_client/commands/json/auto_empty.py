@@ -29,7 +29,7 @@ class SetAutoEmpty(ExecuteCommand):
             frequency = get_enum(Frequency, frequency)
 
         if isinstance(enable, str):
-            frequency = get_enum(Frequency, enable) if frequency is None
+            if frequency is None: frequency = get_enum(Frequency, enable)
             enable = frequency != "manual"
 
         params: dict[str, Any] = {}
