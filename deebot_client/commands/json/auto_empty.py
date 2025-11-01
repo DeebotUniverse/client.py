@@ -28,7 +28,7 @@ class SetAutoEmpty(ExecuteCommand):
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)
 
-        if enable is not None type(enable) is not bool and frequency is None:
+        if enable is not None and type(enable) is not bool and frequency is None:
             frequency = get_enum(Frequency, str(enable))
             enable = frequency != "manual"
 
