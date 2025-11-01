@@ -66,6 +66,11 @@ async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyEvent) -> N
         ),
         (
             True,
+            Frequency.MANUAL,
+            {"enable": 1, "frequency": "manual"},
+        ),
+        (
+            True,
             "smart",
             {"enable": 1, "frequency": "smart"},
         ),
@@ -108,6 +113,21 @@ async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyEvent) -> N
             False,
             None,
             {"enable": 0},
+        ),
+        (
+            "min_10",
+            None,
+            {"enable": 1, "frequency": "10"},
+        ),
+        (
+            "smart",
+            None,
+            {"enable": 1, "frequency": "smart"},
+        ),
+        (
+            "manual",
+            None,
+            {"enable": 0, "frequency": "manual"},
         ),
     ],
 )
