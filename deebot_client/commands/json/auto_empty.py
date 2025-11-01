@@ -30,7 +30,7 @@ class SetAutoEmpty(ExecuteCommand):
 
         if type(enable) is not bool and frequency is None:
             frequency = get_enum(Frequency, str(enable))
-            enable = False if frequency == "manual" else True
+            enable = frequency != "manual"
 
         params: dict[str, Any] = {}
         if enable is not None:
