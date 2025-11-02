@@ -68,8 +68,12 @@ fn get_definition(def: Definition) -> Box<dyn svg::node::Node> {
 #[cfg_attr(test, derive(EnumIter))]
 pub(super) enum CSSClass {
     Path,
+
     FillNone,
+    StrokeWidth2,
+
     OutlineStroke,
+
     RoomUnreachable,
     RoomUnknown,
     RoomColor0,
@@ -78,6 +82,7 @@ pub(super) enum CSSClass {
     RoomColor3,
     RoomColor4,
     RoomColor5,
+
     WallBase,
     VirtualWall,
     NoMoppingWall,
@@ -150,35 +155,66 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
     static STYLES: OnceLock<HashMap<CSSClass, CSSEntry>> = OnceLock::new();
     STYLES.get_or_init(|| {
         HashMap::from([
-            (CSSClass::Path, CSSEntry{
-                identifier: "path",
-                value: "stroke-width: 1.5; vector-effect: non-scaling-stroke",
-                class_name: "path",
-                required_def: None,
-            }),
+            (
+                CSSClass::Path,
+                CSSEntry {
+                    identifier: "path",
+                    value: "stroke-width: 1.5; vector-effect: non-scaling-stroke",
+                    class_name: "path",
+                    required_def: None,
+                },
+            ),
             (CSSClass::FillNone, css_entry!("f", "fill: none")),
-            (CSSClass::OutlineStroke, CSSEntry {
-                class_name: "o",
-                value: "stroke: #666666; stroke-linecap: round; stroke-linejoin: round; stroke-width: 3",
-                required_def: None,
-                identifier: ".o path",
-            }),
-            (CSSClass::RoomUnknown,  css_entry!("u", "fill: #edf3fb")),
-            (CSSClass::RoomUnreachable, css_entry!("ru", "fill: url(#ds); mix-blend-mode: multiply;", Definition::DiagonalStripes)),
+            (
+                CSSClass::StrokeWidth2,
+                CSSEntry {
+                    class_name: "s2",
+                    value: "stroke-width: 2",
+                    required_def: None,
+                    identifier: ".s2 path",
+                },
+            ),
+            (
+                CSSClass::OutlineStroke,
+                CSSEntry {
+                    class_name: "o",
+                    value: "stroke: #666666; stroke-linecap: round; stroke-linejoin: round",
+                    required_def: None,
+                    identifier: ".o path",
+                },
+            ),
+            (CSSClass::RoomUnknown, css_entry!("u", "fill: #edf3fb")),
+            (
+                CSSClass::RoomUnreachable,
+                css_entry!(
+                    "ru",
+                    "fill: url(#ds); mix-blend-mode: multiply;",
+                    Definition::DiagonalStripes
+                ),
+            ),
             room_color_entry!(RoomColor0, "#a2bce7"),
             room_color_entry!(RoomColor1, "#ecd099"),
             room_color_entry!(RoomColor2, "#9bd4da"),
             room_color_entry!(RoomColor3, "#ecc6c9"),
             room_color_entry!(RoomColor4, "#d7bce3"),
             room_color_entry!(RoomColor5, "#c3e2b6"),
-            (CSSClass::WallBase, CSSEntry {
-                class_name: "w",
-                value: "stroke-dasharray: 4; stroke-width: 3",
-                required_def: None,
-                identifier: ".w path",
-            }),
-            (CSSClass::VirtualWall,  css_entry!("v", "stroke: #f00000; fill: #f0000030")),
-            (CSSClass::NoMoppingWall, css_entry!("m", "stroke: #ffa500; fill: #ffa50030")),
+            (
+                CSSClass::WallBase,
+                CSSEntry {
+                    class_name: "w",
+                    value: "stroke-dasharray: 4",
+                    required_def: None,
+                    identifier: ".w path",
+                },
+            ),
+            (
+                CSSClass::VirtualWall,
+                css_entry!("v", "stroke: #f00000; fill: #f0000030"),
+            ),
+            (
+                CSSClass::NoMoppingWall,
+                css_entry!("m", "stroke: #ffa500; fill: #ffa50030"),
+            ),
         ])
     })
 }
