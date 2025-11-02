@@ -10,7 +10,6 @@ use pyo3::prelude::*;
 
 const NOT_INUSE_CRC32: u32 = 1295764014;
 const MAP_TRANSPARENT_INDEX: u8 = 0;
-const MAP_FLOOR_INDEX: u8 = 1;
 
 // when updating palette, update MAP_IMAGE_PALETTE_LEN and MAP_IMAGE_PALETTE_TRANSPARENCY
 const MAP_IMAGE_PALETTE: &[u8] = &[
@@ -20,11 +19,19 @@ const MAP_IMAGE_PALETTE: &[u8] = &[
     0x1a, 0x81, 0xed, // Carpet
     0xde, 0xe9, 0xfb, // Not scanned space
     0xed, 0xf3, 0xfb, // Possible obstacle
+    0xa2, 0xbc, 0xe7, // Room color 0
+    0xec, 0xd0, 0x99, // Room color 1
+    0x9b, 0xd4, 0xda, // Room color 2
+    0xec, 0xc6, 0xc9, // Room color 3
+    0xd7, 0xbc, 0xe3, // Room color 4
+    0xc3, 0xe2, 0xb6, // Room color 5
 ];
-const MAP_IMAGE_PALETTE_LEN: u8 = 6;
+const MAP_IMAGE_PALETTE_WITHOUT_ROOMS_LEN: u8 = 6;
+const MAP_IMAGE_PALETTE_ROOMS_LEN: u8 = 6;
 // 0 -> Transparent, 255 -> Fully opaque
 // (first entry is transparent, rest opaque)
-const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] = &[0u8, 255, 255, 255, 255, 255];
+const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] =
+    &[0u8, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255];
 
 const MAP_PIECE_SIZE: u16 = 100;
 pub(super) const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
@@ -69,8 +76,9 @@ impl BackgroundImage {
 
                         // Newer bots will return a different pixel index per room
                         // mapping all to the floor color
-                        let pixel = if pixel_idx > MAP_IMAGE_PALETTE_LEN {
-                            MAP_FLOOR_INDEX
+                        let pixel = if pixel_idx > MAP_IMAGE_PALETTE_WITHOUT_ROOMS_LEN {
+                            (pixel_idx % MAP_IMAGE_PALETTE_ROOMS_LEN)
+                                + MAP_IMAGE_PALETTE_WITHOUT_ROOMS_LEN
                         } else {
                             pixel_idx
                         };
