@@ -19,7 +19,6 @@ class Frequency(StrEnum):
     MIN_25 = "25"
     AUTO = "auto"
     SMART = "smart"
-    MANUAL = "manual"
 
 
 @dataclass(frozen=True)
