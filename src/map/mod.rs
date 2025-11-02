@@ -9,7 +9,7 @@ use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
 use points::{Point, TracePoints, points_to_svg_path};
-use style::{CSSClass, get_style, get_used_definitions};
+use style::{CSSClass, get_class_names, get_style, get_used_definitions};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -303,9 +303,9 @@ impl MapData {
         document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
 
         if !subsets.is_empty() {
-            let group_css = CSSClass::WallBase;
-            let mut group = Group::new().set("class", get_style(&group_css).class_name);
-            styles.insert(group_css);
+            let group_css = [CSSClass::WallBase, CSSClass::StrokeWidth2];
+            let mut group = Group::new().set("class", get_class_names(&group_css));
+            styles.extend(group_css);
 
             for subset in &subsets {
                 let (css, subset) = get_svg_subset(subset, rotation)?;

@@ -171,7 +171,11 @@ impl MapInfo {
                 },
                 MapInfoLayer {
                     map_info_type: MapInfoType::Outline,
-                    css: vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    css: vec![
+                        CSSClass::FillNone,
+                        CSSClass::OutlineStroke,
+                        CSSClass::StrokeWidth2,
+                    ],
                     force_connected: false,
                     colorize: false,
                 },
@@ -192,7 +196,11 @@ impl MapInfo {
                 },
                 MapInfoLayer {
                     map_info_type: MapInfoType::Outline,
-                    css: vec![CSSClass::FillNone, CSSClass::OutlineStroke],
+                    css: vec![
+                        CSSClass::FillNone,
+                        CSSClass::OutlineStroke,
+                        CSSClass::StrokeWidth2,
+                    ],
                     force_connected: false,
                     colorize: false,
                 },
