@@ -14,6 +14,7 @@ from deebot_client.events import MapSetType
 from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.hardware import get_static_device_info
 from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.rs.map import RotationAngle
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
 
@@ -87,18 +88,21 @@ async def test_getCachedMapInfo(
                         name="Erdgeschoss",
                         using=True,
                         built=True,
+                        angle=RotationAngle.DEG_0,
                     ),
                     Map(
                         id="722607162",
                         name="",
                         using=False,
                         built=False,
+                        angle=RotationAngle.DEG_0,
                     ),
                     Map(
                         id="722607178",
                         name="",
                         using=False,
                         built=True,
+                        angle=RotationAngle.DEG_0,
                     ),
                 }
             ),

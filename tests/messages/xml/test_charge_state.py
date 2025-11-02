@@ -19,9 +19,10 @@ from tests.messages.xml import assert_message
     ],
     ids=["slot_charging", "going", "unknown"],
 )
-async def test_charge_state(state: str, expected_event: Event) -> None:
+@pytest.mark.benchmark
+def test_charge_state(state: str, expected_event: Event) -> None:
     xml_message = f'<ctl ts="1745329944849" td="ChargeState"><charge type="{state}" h="" r="" s="" g="0" /></ctl>'
-    await assert_message(ChargeState, xml_message, expected_event)
+    assert_message(ChargeState, xml_message, expected_event)
 
 
 @pytest.mark.parametrize(
@@ -32,5 +33,6 @@ async def test_charge_state(state: str, expected_event: Event) -> None:
     ],
     ids=["missing_payload", "idle"],
 )
-async def test_charge_state_error(xml_message: str) -> None:
+@pytest.mark.benchmark
+def test_charge_state_error(xml_message: str) -> None:
     assert_message_failure(ChargeState, xml_message, HandlingState.ANALYSE_LOGGED)

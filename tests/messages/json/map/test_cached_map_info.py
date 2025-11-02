@@ -11,6 +11,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.map.cached_map_info import OnCachedMapInfo
+from deebot_client.rs.map import RotationAngle
 from tests.messages.json import assert_message
 
 
@@ -67,12 +68,14 @@ from tests.messages.json import assert_message
                         name="",
                         using=False,
                         built=False,
+                        angle=RotationAngle.DEG_0,
                     ),
                     Map(
                         id="1132127808",
                         name="Erdgeschoss",
                         using=True,
                         built=True,
+                        angle=RotationAngle.DEG_0,
                     ),
                 }
             ),
@@ -128,14 +131,103 @@ from tests.messages.json import assert_message
                         name="",
                         using=True,
                         built=False,
+                        angle=RotationAngle.DEG_0,
                     ),
                 }
             ),
             {"map_id": "1048154397"},
         ),
+        (
+            [
+                {
+                    "angle": 0,
+                    "backupId": "0",
+                    "built": 0,
+                    "index": 3,
+                    "isFastBuilding": 0,
+                    "lock": 0,
+                    "mid": "0",
+                    "mts": 0,
+                    "name": "",
+                    "show": 0,
+                    "status": 1,
+                    "userOprated": 0,
+                    "userUsing": 0,
+                    "using": 0,
+                },
+                {
+                    "angle": 90,
+                    "backupId": "380965640",
+                    "built": 1,
+                    "index": 0,
+                    "isFastBuilding": 1,
+                    "lock": 0,
+                    "mid": "1038845207",
+                    "mts": 1760349651,
+                    "name": "Home",
+                    "show": 1,
+                    "status": 0,
+                    "userOprated": 1,
+                    "userUsing": 1,
+                    "using": 1,
+                },
+                {
+                    "angle": 0,
+                    "backupId": "1986363930",
+                    "built": 1,
+                    "index": 1,
+                    "isFastBuilding": 1,
+                    "lock": 0,
+                    "mid": "379107632",
+                    "mts": 1759561567,
+                    "name": "Map 2",
+                    "show": 1,
+                    "status": 1,
+                    "userOprated": 1,
+                    "userUsing": 0,
+                    "using": 0,
+                },
+                {
+                    "angle": 0,
+                    "backupId": "0",
+                    "built": 0,
+                    "index": 2,
+                    "isFastBuilding": 0,
+                    "lock": 0,
+                    "mid": "0",
+                    "mts": 0,
+                    "name": "",
+                    "show": 0,
+                    "status": 1,
+                    "userOprated": 0,
+                    "userUsing": 0,
+                    "using": 0,
+                },
+            ],
+            CachedMapInfoEvent(
+                {
+                    Map(
+                        id="1038845207",
+                        name="Home",
+                        using=True,
+                        built=True,
+                        angle=RotationAngle.DEG_90,
+                    ),
+                    Map(
+                        id="379107632",
+                        name="Map 2",
+                        using=False,
+                        built=True,
+                        angle=RotationAngle.DEG_0,
+                    ),
+                }
+            ),
+            {"map_id": "1038845207"},
+        ),
     ],
 )
-async def test_onCachedMapInfo(
+@pytest.mark.benchmark
+def test_onCachedMapInfo(
     info: list[dict[str, Any]],
     expected_event: CachedMapInfoEvent,
     expected_args: dict[str, Any],
@@ -158,7 +250,7 @@ async def test_onCachedMapInfo(
         },
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnCachedMapInfo,
         data,
         (
@@ -176,14 +268,23 @@ async def test_onCachedMapInfo(
             "1048154397",
             [
                 CachedMapInfoEvent(
-                    {Map(id="1048154397", name="", using=False, built=False)}
+                    {
+                        Map(
+                            id="1048154397",
+                            name="",
+                            using=False,
+                            built=False,
+                            angle=RotationAngle.DEG_0,
+                        )
+                    }
                 )
             ],
         ),
         ("0", []),
     ],
 )
-async def test_onCachedMapInfo_no_using_map(
+@pytest.mark.benchmark
+def test_onCachedMapInfo_no_using_map(
     first_map_id: str, expected_events: list[CachedMapInfoEvent]
 ) -> None:
     """Test onCachedMapInfo message."""
@@ -248,7 +349,7 @@ async def test_onCachedMapInfo_no_using_map(
         },
     }
 
-    result = await assert_message(
+    result = assert_message(
         OnCachedMapInfo,
         data,
         (

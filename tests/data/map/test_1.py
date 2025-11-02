@@ -12,7 +12,7 @@ from deebot_client.events.map import (
     Position,
     PositionsEvent,
 )
-from deebot_client.rs.map import PositionType
+from deebot_client.rs.map import PositionType, RotationAngle
 
 DEVICE_CLASS = "yna5xi"
 
@@ -100,12 +100,14 @@ EVENTS = [
                 name="Erdgeschoss",
                 using=True,
                 built=True,
+                angle=RotationAngle.DEG_0,
             ),
             Map(
                 id="722607162",
                 name="NO_NAME",
                 using=False,
                 built=False,
+                angle=RotationAngle.DEG_0,
             ),
         }
     ),

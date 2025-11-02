@@ -22,6 +22,7 @@ from deebot_client.events import (
 )
 from deebot_client.events.map import Map
 from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.rs.map import RotationAngle
 from tests.commands.xml import get_request_xml
 
 from . import assert_command
@@ -43,7 +44,9 @@ async def test_GetMapSt(built_flag: str, expected_built: bool) -> None:
     await assert_command(
         GetMapSt(),
         json,
-        CachedMapInfoEvent({Map("", "", using=True, built=expected_built)}),
+        CachedMapInfoEvent(
+            {Map("", "", using=True, built=expected_built, angle=RotationAngle.DEG_0)}
+        ),
         handling_result=HandlingResult(
             HandlingState.SUCCESS, None, [GetMapSet(t) for t in MapSetType]
         ),

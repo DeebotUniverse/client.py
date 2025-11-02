@@ -5,19 +5,19 @@ from typing import TYPE_CHECKING
 from unittest.mock import Mock, call
 
 from deebot_client.event_bus import EventBus
-from deebot_client.hardware import get_static_device_info
 from deebot_client.message import (
     HandlingResult,
     HandlingState,
     Message,
     MessagePayloadType,
 )
+from tests import get_static_device_info
 
 if TYPE_CHECKING:
     from deebot_client.events import Event
 
 
-async def assert_message(
+def assert_message(
     message: type[Message],
     data: MessagePayloadType,
     expected_events: Event | None | Sequence[Event],
@@ -26,7 +26,7 @@ async def assert_message(
     expected_state: HandlingState = HandlingState.SUCCESS,
 ) -> HandlingResult:
     event_bus = Mock(spec_set=EventBus)
-    static_device_info = await get_static_device_info(device_class)
+    static_device_info = get_static_device_info(device_class)
     assert static_device_info is not None, f"Unknown device class: {device_class}"
     event_bus.capabilities = static_device_info.capabilities
 

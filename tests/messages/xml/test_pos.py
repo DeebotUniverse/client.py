@@ -11,10 +11,11 @@ from tests.messages.xml import assert_message
 
 
 @pytest.mark.parametrize("position", [(-9, 15, 89)])
-async def test_Pos(position: tuple[int, int, int]) -> None:
+@pytest.mark.benchmark
+def test_Pos(position: tuple[int, int, int]) -> None:
     x, y, a = position
     xml_message = f'<ctl td="Pos" t="p" p="{x},{y}" a="{a}" valid="1" />'
-    await assert_message(
+    assert_message(
         Pos,
         xml_message,
         PositionsEvent([Position(type=PositionType.DEEBOT, x=x, y=y, a=a)]),
@@ -31,5 +32,6 @@ async def test_Pos(position: tuple[int, int, int]) -> None:
         }
     ),
 )
+@pytest.mark.benchmark
 def test_Pos_error(xml_message: str) -> None:
     assert_message_failure(Pos, xml_message, HandlingState.ANALYSE_LOGGED)

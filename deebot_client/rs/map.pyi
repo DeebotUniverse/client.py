@@ -49,6 +49,7 @@ class MapData:
         self,
         subsets: list[MapSubsetEvent],
         position: list[Position],
+        rotation: RotationAngle,
     ) -> str | None:
         """Generate SVG image."""
 
@@ -61,3 +62,15 @@ class PositionType(Enum):
     @staticmethod
     def from_str(value: str) -> PositionType:
         """Create a position type from string."""
+
+class RotationAngle(Enum):
+    """Rotation angle enum."""
+
+    DEG_0 = auto()
+    DEG_90 = auto()
+    DEG_180 = auto()
+    DEG_270 = auto()
+
+    @staticmethod
+    def from_int(value: int) -> RotationAngle:
+        """Create a rotation angle from integer."""

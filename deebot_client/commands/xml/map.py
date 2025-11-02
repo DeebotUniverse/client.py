@@ -11,6 +11,7 @@ from deebot_client.events.map import (
     MapSubsetEvent,
 )
 from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.rs.map import RotationAngle
 
 from .common import XmlCommandWithMessageHandling
 
@@ -43,7 +44,17 @@ class GetMapSt(XmlCommandWithMessageHandling):
 
         built = st == "built"
         event_bus.notify(
-            CachedMapInfoEvent({Map(id="", name="", using=True, built=built)})
+            CachedMapInfoEvent(
+                {
+                    Map(
+                        id="",
+                        name="",
+                        using=True,
+                        built=built,
+                        angle=RotationAngle.DEG_0,
+                    )
+                }
+            )
         )
         return HandlingResult.success()
 

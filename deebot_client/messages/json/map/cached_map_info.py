@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.rs.map import RotationAngle
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -40,6 +41,7 @@ class OnCachedMapInfo(MessageBodyDataDict):
                 name=map_info.get("name", ""),
                 using=map_info["using"] == 1,
                 built=map_info["built"] == 1,
+                angle=RotationAngle.from_int(map_info.get("angle", 0)),
             )
             maps.add(map_obj)
             if map_obj.using:

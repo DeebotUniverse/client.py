@@ -23,7 +23,7 @@ from .events import (
 from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
-from .rs.map import MapData as MapDataRs
+from .rs.map import MapData as MapDataRs, RotationAngle
 from .util import (
     OnChangedDict,
 )
@@ -113,10 +113,10 @@ class Map:
         """On first MapChanged subscription."""
         unsubscribers = await self._subscribe_minor_major_map_events()
 
-        async def on_cached_info(_: CachedMapInfoEvent) -> None:
-            # We need to subscribe to it, otherwise it could happen
-            # that the required MapSet Events are not get
-            pass
+        async def on_cached_info(event: CachedMapInfoEvent) -> None:
+            used_map = next((m for m in event.maps if m.using), None)
+            if used_map:
+                self._map_data.set_rotation_angle(used_map.angle)
 
         cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
         unsubscribers.append(
@@ -196,6 +196,7 @@ class MapData:
         self._on_change = on_change
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: list[Position] = []
+        self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
 
@@ -242,12 +243,19 @@ class MapData:
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
         return self._data.generate_svg(
-            list(self._map_subsets.values()), self._positions
+            list(self._map_subsets.values()),
+            self._positions,
+            self._rotation,
         )
 
     def set_map_info(self, base64_info: str) -> None:
         """Set compressed map info (parsing happens in Rust)."""
         self._data.map_info.set(base64_info)
+        self._on_change()
+
+    def set_rotation_angle(self, rotation: RotationAngle) -> None:
+        """Set clockwise rotation angle for SVG image."""
+        self._rotation = rotation
         self._on_change()
 
     def teardown(self) -> None:

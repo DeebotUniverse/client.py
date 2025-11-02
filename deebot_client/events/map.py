@@ -11,7 +11,7 @@ from deebot_client.events import Event
 if TYPE_CHECKING:
     from datetime import datetime
 
-    from deebot_client.rs.map import PositionType
+    from deebot_client.rs.map import PositionType, RotationAngle
 
 
 @dataclass(frozen=True)
@@ -113,6 +113,7 @@ class Map:
     name: str
     using: bool
     built: bool
+    angle: RotationAngle
 
 
 @dataclass(frozen=True)
