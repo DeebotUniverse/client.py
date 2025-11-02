@@ -12,11 +12,13 @@ use svg::node::element::Group;
 
 type MapInfoGenerateResult = Option<(Vec<Box<dyn svg::node::Node>>, ViewBox, OrderSet<CSSClass>)>;
 
-const ROOM_COLORS: [CSSClass; 4] = [
+const ROOM_COLORS: [CSSClass; 6] = [
     CSSClass::RoomColor1,
     CSSClass::RoomColor2,
     CSSClass::RoomColor3,
     CSSClass::RoomColor4,
+    CSSClass::RoomColor5,
+    CSSClass::RoomColor6,
 ];
 
 #[derive(Debug, PartialEq)]
@@ -135,7 +137,7 @@ impl MapInfo {
                         points_to_svg_path(&entry.points, entry.close_path, layer.force_connected)
                     {
                         let path = if layer.colorize {
-                            let color_class = ROOM_COLORS[index % 4];
+                            let color_class = ROOM_COLORS[index % ROOM_COLORS.len()];
                             used_styles.insert(color_class);
                             path.set("class", get_style(&color_class).class_name)
                         } else {
