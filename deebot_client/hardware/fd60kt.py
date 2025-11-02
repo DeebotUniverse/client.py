@@ -256,7 +256,6 @@ def get_device_info() -> StaticDeviceInfo:
                     types=(
                         auto_empty.Frequency.AUTO,
                         auto_empty.Frequency.SMART,
-                        auto_empty.Frequency.MANUAL,
                     ),
                 ),
                 state=CapabilityEvent(StationEvent, [GetStationState()]),
