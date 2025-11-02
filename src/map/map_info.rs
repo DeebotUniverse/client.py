@@ -1,4 +1,4 @@
-use super::style::{CSSClass, get_class_names, get_style};
+use super::style::{CSSClass, ROOM_COLORS, get_class_names, get_style};
 use super::{RotationAngle, ViewBox, calc_point, decompress_base64_data};
 
 use super::points::{Point, points_to_svg_path};
@@ -11,15 +11,6 @@ use std::hash::Hash;
 use svg::node::element::Group;
 
 type MapInfoGenerateResult = Option<(Vec<Box<dyn svg::node::Node>>, ViewBox, OrderSet<CSSClass>)>;
-
-const ROOM_COLORS: [CSSClass; 6] = [
-    CSSClass::RoomColor1,
-    CSSClass::RoomColor2,
-    CSSClass::RoomColor3,
-    CSSClass::RoomColor4,
-    CSSClass::RoomColor5,
-    CSSClass::RoomColor6,
-];
 
 #[derive(Debug, PartialEq)]
 struct MapInfoTypeDataEntry {

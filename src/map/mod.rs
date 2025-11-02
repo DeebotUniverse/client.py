@@ -9,7 +9,7 @@ use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
 use points::{Point, TracePoints, points_to_svg_path};
-use style::{CSSClass, get_definition, get_required_definitions, get_style};
+use style::{CSSClass, get_style, get_used_definitions};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -296,9 +296,9 @@ impl MapData {
         };
 
         // Add required definitions based on used CSS classes
-        get_required_definitions(&styles)
+        get_used_definitions(&styles)
             .into_iter()
-            .for_each(|def_id| defs.append(get_definition(&def_id)));
+            .for_each(|def| defs.append(def));
 
         document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
 
