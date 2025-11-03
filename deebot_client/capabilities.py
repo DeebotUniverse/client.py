@@ -115,7 +115,7 @@ class CapabilityExecute[**P]:
 class CapabilityTypes[T]:
     """Capability to specify types support."""
 
-    types: tuple[T, ...]
+    types: tuple[T, ...] | dict[T, dict[str, Any]]
 
 
 @dataclass(frozen=True, kw_only=True)
