@@ -254,9 +254,18 @@ def get_device_info() -> StaticDeviceInfo:
                     get=[GetAutoEmpty()],
                     set=SetAutoEmpty,
                     types={
-                        auto_empty.Frequency.AUTO: {"enable": 1, "frequency": auto_empty.Frequency.AUTO},
-                        auto_empty.Frequency.SMART: {"enable": 1, "frequency": auto_empty.Frequency.SMART},
-                        auto_empty.Frequency.MANUAL: {"enable": 0, "frequency": auto_empty.Frequency.MANUAL},
+                        auto_empty.Frequency.AUTO: {
+                            "enable": 1,
+                            "frequency": auto_empty.Frequency.AUTO,
+                        },
+                        auto_empty.Frequency.SMART: {
+                            "enable": 1,
+                            "frequency": auto_empty.Frequency.SMART,
+                        },
+                        auto_empty.Frequency.MANUAL: {
+                            "enable": 0,
+                            "frequency": auto_empty.Frequency.MANUAL,
+                        },
                     },
                 ),
                 state=CapabilityEvent(StationEvent, [GetStationState()]),
