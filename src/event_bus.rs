@@ -7,12 +7,11 @@ use std::time::{SystemTime, UNIX_EPOCH};
 pub type EventTypeId = u64;
 
 /// Data stored per event type
-#[derive(Clone)]
 struct EventProcessingData {
     /// Subscribers count (we don't store Python callbacks in Rust to avoid GIL issues)
     subscriber_count: usize,
     /// Last event data (as Python object)
-    last_event: Option<PyObject>,
+    last_event: Option<Py<PyAny>>,
     /// Last event timestamp (milliseconds since epoch)
     last_event_time: u128,
     /// Whether a refresh is currently running
@@ -89,7 +88,7 @@ impl EventBus {
     }
 
     /// Get the last event for an event type
-    fn get_last_event(&self, event_type_id: EventTypeId, py: Python<'_>) -> Option<PyObject> {
+    fn get_last_event(&self, event_type_id: EventTypeId, py: Python<'_>) -> Option<Py<PyAny>> {
         let data = self.data.lock().unwrap();
         data.get(&event_type_id)
             .and_then(|d| d.last_event.as_ref().map(|e| e.clone_ref(py)))
@@ -100,7 +99,7 @@ impl EventBus {
     fn should_notify(
         &self,
         event_type_id: EventTypeId,
-        event: PyObject,
+        event: Py<PyAny>,
         debounce_time_ms: u128,
         py: Python<'_>,
     ) -> (bool, bool, bool) {
@@ -136,7 +135,7 @@ impl EventBus {
     }
 
     /// Store an event after notification
-    fn store_event(&self, event_type_id: EventTypeId, event: PyObject) {
+    fn store_event(&self, event_type_id: EventTypeId, event: Py<PyAny>) {
         let mut data = self.data.lock().unwrap();
         let entry = data
             .entry(event_type_id)
