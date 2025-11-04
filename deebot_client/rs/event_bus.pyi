@@ -15,7 +15,6 @@ class EventBus:
 
     def __init__(self) -> None:
         """Initialize the event bus."""
-
     def has_subscribers(self, event_type_id: int) -> bool:
         """Check if an event type has subscribers.
 
@@ -26,7 +25,6 @@ class EventBus:
             True if the event type has subscribers
 
         """
-
     def add_subscriber(self, event_type_id: int) -> tuple[bool, bool]:
         """Add a subscriber to an event type.
 
@@ -37,7 +35,6 @@ class EventBus:
             A tuple of (is_first_subscriber, had_last_event)
 
         """
-
     def remove_subscriber(self, event_type_id: int) -> bool:
         """Remove a subscriber from an event type.
 
@@ -48,7 +45,6 @@ class EventBus:
             True if this was the last subscriber
 
         """
-
     def get_last_event(self, event_type_id: int) -> Any | None:
         """Get the last event for an event type.
 
@@ -59,7 +55,6 @@ class EventBus:
             The last event object or None if no event has been stored
 
         """
-
     def should_notify(
         self,
         event_type_id: int,
@@ -77,7 +72,6 @@ class EventBus:
             A tuple of (should_notify, should_debounce, is_duplicate)
 
         """
-
     def store_event(self, event_type_id: int, event: Any) -> None:
         """Store an event after notification.
 
@@ -86,7 +80,6 @@ class EventBus:
             event: The event object to store
 
         """
-
     def set_pending_notification(self, event_type_id: int, pending: bool) -> None:
         """Mark that a debounced notification is pending.
 
@@ -95,7 +88,6 @@ class EventBus:
             pending: Whether a notification is pending
 
         """
-
     def has_pending_notification(self, event_type_id: int) -> bool:
         """Check if there's a pending notification.
 
@@ -106,7 +98,6 @@ class EventBus:
             True if there's a pending notification
 
         """
-
     def try_acquire_refresh_lock(self, event_type_id: int) -> bool:
         """Try to acquire refresh lock.
 
@@ -117,7 +108,6 @@ class EventBus:
             True if lock was acquired
 
         """
-
     def release_refresh_lock(self, event_type_id: int) -> None:
         """Release refresh lock.
 
@@ -125,7 +115,6 @@ class EventBus:
             event_type_id: The unique identifier for the event type
 
         """
-
     def get_subscribed_event_types(self) -> list[int]:
         """Get all event type IDs that have subscribers.
 
@@ -133,7 +122,6 @@ class EventBus:
             A list of event type IDs
 
         """
-
     def add_on_subscription_callback(self, event_type_id: int) -> None:
         """Add on subscription callback.
 
@@ -141,7 +129,6 @@ class EventBus:
             event_type_id: The unique identifier for the event type
 
         """
-
     def remove_on_subscription_callback(self, event_type_id: int) -> None:
         """Remove on subscription callback.
 
@@ -149,6 +136,5 @@ class EventBus:
             event_type_id: The unique identifier for the event type
 
         """
-
     def clear(self) -> None:
         """Clear all data (for teardown)."""

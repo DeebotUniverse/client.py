@@ -64,7 +64,9 @@ impl EventBus {
     /// Returns a tuple (is_first_subscriber, had_last_event)
     fn add_subscriber(&self, event_type_id: EventTypeId) -> (bool, bool) {
         let mut data = self.data.lock().unwrap();
-        let entry = data.entry(event_type_id).or_insert_with(EventProcessingData::new);
+        let entry = data
+            .entry(event_type_id)
+            .or_insert_with(EventProcessingData::new);
 
         let was_empty = entry.subscriber_count == 0;
         entry.subscriber_count += 1;
@@ -103,7 +105,9 @@ impl EventBus {
         py: Python<'_>,
     ) -> (bool, bool, bool) {
         let mut data = self.data.lock().unwrap();
-        let entry = data.entry(event_type_id).or_insert_with(EventProcessingData::new);
+        let entry = data
+            .entry(event_type_id)
+            .or_insert_with(EventProcessingData::new);
 
         // Check if event is duplicate
         let is_duplicate = if let Some(ref last_event) = entry.last_event {
@@ -134,7 +138,9 @@ impl EventBus {
     /// Store an event after notification
     fn store_event(&self, event_type_id: EventTypeId, event: PyObject) {
         let mut data = self.data.lock().unwrap();
-        let entry = data.entry(event_type_id).or_insert_with(EventProcessingData::new);
+        let entry = data
+            .entry(event_type_id)
+            .or_insert_with(EventProcessingData::new);
 
         entry.last_event = Some(event);
         entry.last_event_time = SystemTime::now()
@@ -164,7 +170,9 @@ impl EventBus {
     /// Returns true if lock was acquired
     fn try_acquire_refresh_lock(&self, event_type_id: EventTypeId) -> bool {
         let mut data = self.data.lock().unwrap();
-        let entry = data.entry(event_type_id).or_insert_with(EventProcessingData::new);
+        let entry = data
+            .entry(event_type_id)
+            .or_insert_with(EventProcessingData::new);
 
         if entry.refresh_locked {
             false
@@ -194,7 +202,9 @@ impl EventBus {
     /// Add on subscription callback
     fn add_on_subscription_callback(&self, event_type_id: EventTypeId) {
         let mut data = self.data.lock().unwrap();
-        let entry = data.entry(event_type_id).or_insert_with(EventProcessingData::new);
+        let entry = data
+            .entry(event_type_id)
+            .or_insert_with(EventProcessingData::new);
         entry.on_subscription_callback_count += 1;
     }
 
