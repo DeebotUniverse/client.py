@@ -23,36 +23,95 @@ def _parse_csv_ints_via_float_python(value: str) -> list[int]:
     return [int(float(x)) for x in value.split(",") if x]
 
 
-# Test data representing realistic usage patterns
-SMALL_DATA = "1,2,3,4,5"  # 5 values
-MEDIUM_DATA = ",".join(str(i) for i in range(50))  # 50 values
-LARGE_DATA = ",".join(str(i) for i in range(200))  # 200 values (realistic for stats)
-
-SMALL_FLOAT_DATA = "1.5,2.7,3.1,4.9,5.2"  # 5 values
-MEDIUM_FLOAT_DATA = ",".join(f"{i}.{i % 10}" for i in range(50))  # 50 values
-LARGE_FLOAT_DATA = ",".join(f"{i}.{i % 10}" for i in range(200))  # 200 values
-
 # Edge cases
 EMPTY_DATA = ""
 TRAILING_COMMAS = "1,2,3,,"
 WHITESPACE_DATA = " 1 , 2 , 3 "
+REAL_DATA_INTS = [
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    817288174,
+    3571566673,
+    2120918229,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    4119863044,
+    3345372489,
+    1125149782,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    2826859129,
+    3628293953,
+    1436915986,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    3857336909,
+    2692517274,
+    3424129059,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    1295764014,
+    2514771601,
+    2675258590,
+    3347634930,
+    1295764014,
+    1295764014,
+    1295764014,
+]
 
 
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        (SMALL_DATA, [1, 2, 3, 4, 5]),
+        (",".join(str(x) for x in REAL_DATA_INTS), REAL_DATA_INTS),
         (EMPTY_DATA, []),
         (TRAILING_COMMAS, [1, 2, 3]),
         (WHITESPACE_DATA, [1, 2, 3]),
         ("123", [123]),
         ("-1,-2,-3", [-1, -2, -3]),
     ],
-    ids=["small", "empty", "trailing_commas", "whitespace", "single", "negative"],
+    ids=["real data", "empty", "trailing_commas", "whitespace", "single", "negative"],
 )
-def test_parse_csv_ints_correctness(value: str, expected: list[int]) -> None:
+def test_parse_csv_ints(
+    benchmark: BenchmarkFixture, value: str, expected: list[int]
+) -> None:
     """Test that parse_csv_ints produces correct results."""
-    result = parse_csv_ints(value)
+    result = benchmark(parse_csv_ints, value)
     assert result == expected
 
     # Verify Python baseline produces the same result
@@ -77,8 +136,7 @@ def test_parse_csv_ints_errors(value: str) -> None:
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
-        (SMALL_FLOAT_DATA, [1, 2, 3, 4, 5]),
-        ("1.9,2.1,3.5", [1, 2, 3]),
+        ("-606.000000,11191.000000,2824.000000,8497.000000", [-606, 11191, 2824, 8497]),
         (EMPTY_DATA, []),
         (TRAILING_COMMAS, [1, 2, 3]),
         (WHITESPACE_DATA, [1, 2, 3]),
@@ -86,8 +144,7 @@ def test_parse_csv_ints_errors(value: str) -> None:
         ("-1.5,-2.7,-3.9", [-1, -2, -3]),
     ],
     ids=[
-        "small_float",
-        "float_truncation",
+        "real data",
         "empty",
         "trailing_commas",
         "whitespace",
@@ -109,106 +166,3 @@ def test_parse_csv_ints_via_float_errors() -> None:
     """Test that parse_csv_ints_via_float raises errors for invalid input."""
     with pytest.raises(ValueError, match="invalid float literal"):
         parse_csv_ints_via_float("1,2,invalid,3")
-
-
-# Benchmarks for parse_csv_ints
-@pytest.mark.parametrize(
-    "data",
-    [SMALL_DATA, MEDIUM_DATA, LARGE_DATA],
-    ids=["small_5_values", "medium_50_values", "large_200_values"],
-)
-def test_parse_csv_ints_rust(benchmark: BenchmarkFixture, data: str) -> None:
-    """Benchmark Rust implementation of parse_csv_ints."""
-    result = benchmark(parse_csv_ints, data)
-    assert len(result) > 0
-
-    # Verify Python baseline produces the same result
-    python_result = _parse_csv_ints_python(data)
-    assert result == python_result
-
-
-@pytest.mark.parametrize(
-    "data",
-    [SMALL_DATA, MEDIUM_DATA, LARGE_DATA],
-    ids=["small_5_values", "medium_50_values", "large_200_values"],
-)
-def test_parse_csv_ints_python(benchmark: BenchmarkFixture, data: str) -> None:
-    """Benchmark Python baseline implementation of parse_csv_ints."""
-    result = benchmark(_parse_csv_ints_python, data)
-    assert len(result) > 0
-
-
-# Benchmarks for parse_csv_ints_via_float
-@pytest.mark.parametrize(
-    "data",
-    [SMALL_FLOAT_DATA, MEDIUM_FLOAT_DATA, LARGE_FLOAT_DATA],
-    ids=["small_5_values", "medium_50_values", "large_200_values"],
-)
-def test_parse_csv_ints_via_float_rust(benchmark: BenchmarkFixture, data: str) -> None:
-    """Benchmark Rust implementation of parse_csv_ints_via_float."""
-    result = benchmark(parse_csv_ints_via_float, data)
-    assert len(result) > 0
-
-    # Verify Python baseline produces the same result
-    python_result = _parse_csv_ints_via_float_python(data)
-    assert result == python_result
-
-
-@pytest.mark.parametrize(
-    "data",
-    [SMALL_FLOAT_DATA, MEDIUM_FLOAT_DATA, LARGE_FLOAT_DATA],
-    ids=["small_5_values", "medium_50_values", "large_200_values"],
-)
-def test_parse_csv_ints_via_float_python(
-    benchmark: BenchmarkFixture, data: str
-) -> None:
-    """Benchmark Python baseline implementation of parse_csv_ints_via_float."""
-    result = benchmark(_parse_csv_ints_via_float_python, data)
-    assert len(result) > 0
-
-
-# Real-world usage benchmarks based on actual message patterns
-def test_stats_content_realistic(benchmark: BenchmarkFixture) -> None:
-    """Benchmark stats content parsing with realistic data.
-
-    Based on actual ReportStats messages which contain area, time, and other
-    cleaning statistics as comma-separated values.
-    """
-    # Realistic stats data: ~30-50 values typical for cleaning stats
-    realistic_stats = ",".join(str(i * 10) for i in range(40))
-    result = benchmark(parse_csv_ints_via_float, realistic_stats)
-    assert len(result) == 40
-
-    # Verify Python baseline produces the same result
-    python_result = _parse_csv_ints_via_float_python(realistic_stats)
-    assert result == python_result
-
-
-def test_stats_content_realistic_python(benchmark: BenchmarkFixture) -> None:
-    """Benchmark stats content parsing (Python baseline) with realistic data."""
-    realistic_stats = ",".join(str(i * 10) for i in range(40))
-    result = benchmark(_parse_csv_ints_via_float_python, realistic_stats)
-    assert len(result) == 40
-
-
-def test_map_crc_values(benchmark: BenchmarkFixture) -> None:
-    """Benchmark map CRC value parsing.
-
-    Based on OnMajorMap messages which contain 64 CRC32 checksums
-    (one per map piece).
-    """
-    # Realistic map CRC data: 64 CRC32 values
-    map_crcs = ",".join(str(1000000 + i * 12345) for i in range(64))
-    result = benchmark(parse_csv_ints, map_crcs)
-    assert len(result) == 64
-
-    # Verify Python baseline produces the same result
-    python_result = _parse_csv_ints_python(map_crcs)
-    assert result == python_result
-
-
-def test_map_crc_values_python(benchmark: BenchmarkFixture) -> None:
-    """Benchmark map CRC value parsing (Python baseline)."""
-    map_crcs = ",".join(str(1000000 + i * 12345) for i in range(64))
-    result = benchmark(_parse_csv_ints_python, map_crcs)
-    assert len(result) == 64
