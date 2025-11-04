@@ -10,6 +10,7 @@ import pytest
 
 from deebot_client.event_bus import EventBus as PythonEventBus
 from deebot_client.events import BatteryEvent, StateEvent
+from tests.conftest import get_capabilities
 
 try:
     from deebot_client.event_bus_rust import EventBus as RustEventBus
@@ -30,8 +31,6 @@ if TYPE_CHECKING:
 )
 def event_bus_impl(request: pytest.FixtureRequest, execute_mock: AsyncMock) -> EventBus:
     """Fixture that provides both Python and Rust implementations."""
-    from tests.conftest import get_capabilities
-
     capabilities = get_capabilities()
     if request.param == "python":
         return PythonEventBus(execute_mock, capabilities)
@@ -158,9 +157,9 @@ def test_concurrent_operations(
 
     def concurrent_ops() -> None:
         # Subscribe
-        unsubscribers = []
-        for i in range(5):
-            unsubscribers.append(event_bus_impl.subscribe(BatteryEvent, AsyncMock()))
+        unsubscribers = [
+            event_bus_impl.subscribe(BatteryEvent, AsyncMock()) for _ in range(5)
+        ]
 
         # Notify
         for i in range(10):
@@ -181,7 +180,7 @@ async def test_async_notify_with_callbacks(
     """Benchmark async notification with actual callback execution."""
     callback_count = 0
 
-    async def callback(event: BatteryEvent) -> None:
+    async def callback(_event: BatteryEvent) -> None:
         nonlocal callback_count
         callback_count += 1
         await asyncio.sleep(0)  # Yield control
@@ -215,8 +214,6 @@ def test_debounce_check(benchmark: BenchmarkFixture, event_bus_impl: EventBus) -
 @pytest.mark.skipif(not RUST_AVAILABLE, reason="Rust backend not available")
 def test_rust_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncMock) -> None:
     """Benchmark Rust state management operations."""
-    from tests.conftest import get_capabilities
-
     capabilities = get_capabilities()
     if RustEventBus is None:
         pytest.skip("Rust backend not available")
@@ -238,8 +235,6 @@ def test_rust_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncM
 @pytest.mark.benchmark
 def test_python_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncMock) -> None:
     """Benchmark Python state management operations."""
-    from tests.conftest import get_capabilities
-
     capabilities = get_capabilities()
     python_bus = PythonEventBus(execute_mock, capabilities)
 

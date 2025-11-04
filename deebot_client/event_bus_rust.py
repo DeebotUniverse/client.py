@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Any, Final, TypeVar
 
 from .events import AvailabilityEvent, Event, StateEvent
@@ -132,7 +131,7 @@ class EventBus:
 
         return unsubscribe
 
-    def notify(self, event: T, *, debounce_time: float = 0) -> None:
+    def notify(self, event: T, *, debounce_time: float = 0) -> None:  # noqa: C901
         """Notify subscriber with given event representation."""
         event_type = type(event)
         event_id = _get_event_type_id(event_type)
@@ -144,7 +143,7 @@ class EventBus:
         ) is not None and not handle.cancelled():
             handle.cancel()
 
-        def _notify(event: T) -> None:
+        def _notify(event: T) -> None:  # noqa: PLR0912
             event_processing_data.notify_handle = None
 
             # Special handling for StateEvent
@@ -181,7 +180,7 @@ class EventBus:
 
             # Check if notification should proceed (not a duplicate)
             debounce_ms = int(debounce_time * 1000)
-            should_notify, should_debounce, is_duplicate = self._rust_bus.should_notify(
+            _should_notify, should_debounce, is_duplicate = self._rust_bus.should_notify(
                 event_id, event, debounce_ms
             )
 

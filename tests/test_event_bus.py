@@ -11,7 +11,7 @@ from deebot_client.event_bus import EventBus as PythonEventBus
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterAmountEvent
-from deebot_client.models import State
+from deebot_client.models import DeviceInfo, State
 
 try:
     from deebot_client.event_bus_rust import EventBus as RustEventBus
@@ -32,7 +32,7 @@ if TYPE_CHECKING:
     params=["python"] + (["rust"] if RUST_AVAILABLE else [])
 )
 def event_bus_test(
-    request: pytest.FixtureRequest, execute_mock: AsyncMock, device_info
+    request: pytest.FixtureRequest, execute_mock: AsyncMock, device_info: DeviceInfo
 ) -> EventBus:
     """Fixture that provides both Python and Rust implementations for testing."""
     if request.param == "python":

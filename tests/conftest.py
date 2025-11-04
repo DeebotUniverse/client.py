@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock
@@ -32,6 +33,8 @@ from .fixtures.mqtt_server import MqttServer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+
+    from deebot_client.capabilities import Capabilities
 
 
 @pytest.fixture
@@ -179,29 +182,16 @@ def event_bus_mock(event_bus: EventBus) -> Mock:
     return Mock(spec_set=EventBus, wraps=event_bus)
 
 
-def get_capabilities():
-    """Helper to get capabilities for testing."""
-    import asyncio
+def get_capabilities() -> Capabilities:
+    """Get capabilities for testing."""
 
-    # Get capabilities from a device
-    async def _get():
-        from deebot_client.hardware import get_static_device_info
-
+    async def _get() -> Capabilities:
         info = await get_static_device_info("yna5xi")
         assert info is not None
         return info.capabilities
 
-    try:
-        loop = asyncio.get_running_loop()
-        # If we're in an async context, we need to use a different approach
-        # This shouldn't happen in normal test usage, but just in case
-        import nest_asyncio
-
-        nest_asyncio.apply()
-        return asyncio.run(_get())
-    except RuntimeError:
-        # No running loop, we can just run it
-        return asyncio.run(_get())
+    # Run in a new event loop
+    return asyncio.run(_get())
 
 
 @pytest.fixture(name="caplog")
