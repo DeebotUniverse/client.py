@@ -133,6 +133,10 @@ class TestParseCSVIntsBenchmark:
         result = benchmark(parse_csv_ints, data)
         assert len(result) > 0
 
+        # Verify Python baseline produces the same result
+        python_result = _parse_csv_ints_python(data)
+        assert result == python_result
+
     @pytest.mark.parametrize(
         "data",
         [SMALL_DATA, MEDIUM_DATA, LARGE_DATA],
@@ -160,6 +164,10 @@ class TestParseCSVIntsViaFloatBenchmark:
         """Benchmark Rust implementation of parse_csv_ints_via_float."""
         result = benchmark(parse_csv_ints_via_float, data)
         assert len(result) > 0
+
+        # Verify Python baseline produces the same result
+        python_result = _parse_csv_ints_via_float_python(data)
+        assert result == python_result
 
     @pytest.mark.parametrize(
         "data",
@@ -189,6 +197,10 @@ class TestRealWorldBenchmarks:
         result = benchmark(parse_csv_ints_via_float, realistic_stats)
         assert len(result) == 40
 
+        # Verify Python baseline produces the same result
+        python_result = _parse_csv_ints_via_float_python(realistic_stats)
+        assert result == python_result
+
     def test_stats_content_realistic_python(self, benchmark: BenchmarkFixture) -> None:
         """Benchmark stats content parsing (Python baseline) with realistic data."""
         realistic_stats = ",".join(str(i * 10) for i in range(40))
@@ -205,6 +217,10 @@ class TestRealWorldBenchmarks:
         map_crcs = ",".join(str(1000000 + i * 12345) for i in range(64))
         result = benchmark(parse_csv_ints, map_crcs)
         assert len(result) == 64
+
+        # Verify Python baseline produces the same result
+        python_result = _parse_csv_ints_python(map_crcs)
+        assert result == python_result
 
     def test_map_crc_values_python(self, benchmark: BenchmarkFixture) -> None:
         """Benchmark map CRC value parsing (Python baseline)."""
