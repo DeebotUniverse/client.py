@@ -19,6 +19,7 @@ from tests.messages.json import assert_message
         (1, {"type": 2, "motionState": 1}, State.DRYING_MOP),
     ],
 )
+@pytest.mark.benchmark
 def test_onStationState(
     state: int,
     additional_content: dict[str, Any],
