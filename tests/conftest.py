@@ -179,6 +179,31 @@ def event_bus_mock(event_bus: EventBus) -> Mock:
     return Mock(spec_set=EventBus, wraps=event_bus)
 
 
+def get_capabilities():
+    """Helper to get capabilities for testing."""
+    import asyncio
+
+    # Get capabilities from a device
+    async def _get():
+        from deebot_client.hardware import get_static_device_info
+
+        info = await get_static_device_info("yna5xi")
+        assert info is not None
+        return info.capabilities
+
+    try:
+        loop = asyncio.get_running_loop()
+        # If we're in an async context, we need to use a different approach
+        # This shouldn't happen in normal test usage, but just in case
+        import nest_asyncio
+
+        nest_asyncio.apply()
+        return asyncio.run(_get())
+    except RuntimeError:
+        # No running loop, we can just run it
+        return asyncio.run(_get())
+
+
 @pytest.fixture(name="caplog")
 def caplog_fixture(caplog: pytest.LogCaptureFixture) -> pytest.LogCaptureFixture:
     """Set log level to debug for tests using the caplog fixture."""

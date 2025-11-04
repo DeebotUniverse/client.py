@@ -7,10 +7,19 @@ from unittest.mock import AsyncMock, call, patch
 
 import pytest
 
+from deebot_client.event_bus import EventBus as PythonEventBus
 from deebot_client.events import AvailabilityEvent, BatteryEvent, StateEvent
 from deebot_client.events.map import MapChangedEvent
 from deebot_client.events.water_info import WaterAmountEvent
 from deebot_client.models import State
+
+try:
+    from deebot_client.event_bus_rust import EventBus as RustEventBus
+
+    RUST_AVAILABLE = True
+except ImportError:
+    RustEventBus = None  # type: ignore[misc, assignment]
+    RUST_AVAILABLE = False
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -19,29 +28,43 @@ if TYPE_CHECKING:
     from deebot_client.events.base import Event
 
 
+@pytest.fixture(
+    params=["python"] + (["rust"] if RUST_AVAILABLE else [])
+)
+def event_bus_test(
+    request: pytest.FixtureRequest, execute_mock: AsyncMock, device_info
+) -> EventBus:
+    """Fixture that provides both Python and Rust implementations for testing."""
+    if request.param == "python":
+        return PythonEventBus(execute_mock, device_info.static.capabilities)
+    if RustEventBus is None:
+        pytest.skip("Rust backend not available")
+    return RustEventBus(execute_mock, device_info.static.capabilities)
+
+
 def _verify_event_command_called(
     execute_mock: AsyncMock,
     event: type[Event],
-    event_bus: EventBus,
+    event_bus_test: EventBus,
     *,
     expected_call: bool,
 ) -> None:
-    for command in event_bus.capabilities.get_refresh_commands(event):
+    for command in event_bus_test.capabilities.get_refresh_commands(event):
         assert (call(command) in execute_mock.call_args_list) == expected_call
 
 
 async def _subscribeAndVerify(
     execute_mock: AsyncMock,
-    event_bus: EventBus,
+    event_bus_test: EventBus,
     to_subscribe: type[Event],
     *,
     expected_call: bool,
 ) -> Callable[[], None]:
-    unsubscribe = event_bus.subscribe(to_subscribe, AsyncMock())
+    unsubscribe = event_bus_test.subscribe(to_subscribe, AsyncMock())
 
     await asyncio.sleep(0.1)
     _verify_event_command_called(
-        execute_mock, to_subscribe, event_bus, expected_call=expected_call
+        execute_mock, to_subscribe, event_bus_test, expected_call=expected_call
     )
 
     execute_mock.reset_mock()
@@ -50,16 +73,16 @@ async def _subscribeAndVerify(
 
 @pytest.mark.parametrize("event", [BatteryEvent, StateEvent])
 async def test_subscription(
-    execute_mock: AsyncMock, event_bus: EventBus, event: type[Event]
+    execute_mock: AsyncMock, event_bus_test: EventBus, event: type[Event]
 ) -> None:
     # on first should subscription the refresh should be triggered
     unsubscribers = [
-        await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
+        await _subscribeAndVerify(execute_mock, event_bus_test, event, expected_call=True)
     ]
 
     # this time no refresh should be happening
     unsubscribers.append(
-        await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=False)
+        await _subscribeAndVerify(execute_mock, event_bus_test, event, expected_call=False)
     )
 
     # unsubscribe from all
@@ -68,23 +91,23 @@ async def test_subscription(
 
     # as there are no subscriber...
     # the first one, should trigger a refresh
-    await _subscribeAndVerify(execute_mock, event_bus, event, expected_call=True)
+    await _subscribeAndVerify(execute_mock, event_bus_test, event, expected_call=True)
 
 
 async def test_refresh_when_coming_back_online(
-    execute_mock: AsyncMock, event_bus: EventBus
+    execute_mock: AsyncMock, event_bus_test: EventBus
 ) -> None:
     available_mock = AsyncMock()
 
     async def notify(*, available: bool) -> None:
         event = AvailabilityEvent(available=available)
-        event_bus.notify(event)
+        event_bus_test.notify(event)
         await asyncio.sleep(0.1)
         available_mock.assert_awaited_with(event)
 
-    event_bus.subscribe(WaterAmountEvent, AsyncMock())
-    event_bus.subscribe(StateEvent, AsyncMock())
-    event_bus.subscribe(AvailabilityEvent, available_mock)
+    event_bus_test.subscribe(WaterAmountEvent, AsyncMock())
+    event_bus_test.subscribe(StateEvent, AsyncMock())
+    event_bus_test.subscribe(AvailabilityEvent, available_mock)
     await asyncio.sleep(0.1)
 
     # Only calls made after coming back online are of interest
@@ -94,45 +117,45 @@ async def test_refresh_when_coming_back_online(
     await notify(available=True)
 
     _verify_event_command_called(
-        execute_mock, WaterAmountEvent, event_bus, expected_call=True
+        execute_mock, WaterAmountEvent, event_bus_test, expected_call=True
     )
     _verify_event_command_called(
-        execute_mock, StateEvent, event_bus, expected_call=True
+        execute_mock, StateEvent, event_bus_test, expected_call=True
     )
     _verify_event_command_called(
-        execute_mock, AvailabilityEvent, event_bus, expected_call=False
+        execute_mock, AvailabilityEvent, event_bus_test, expected_call=False
     )
 
 
-async def test_get_last_event(event_bus: EventBus) -> None:
+async def test_get_last_event(event_bus_test: EventBus) -> None:
     def notify(percent: int) -> BatteryEvent:
         event = BatteryEvent(percent)
-        event_bus.notify(event)
-        assert event_bus.get_last_event(BatteryEvent) == event
+        event_bus_test.notify(event)
+        assert event_bus_test.get_last_event(BatteryEvent) == event
         return event
 
-    assert event_bus.get_last_event(BatteryEvent) is None
+    assert event_bus_test.get_last_event(BatteryEvent) is None
 
     event = notify(100)
 
-    event_bus.subscribe(BatteryEvent, AsyncMock())
-    assert event_bus.get_last_event(BatteryEvent) == event
+    event_bus_test.subscribe(BatteryEvent, AsyncMock())
+    assert event_bus_test.get_last_event(BatteryEvent) == event
 
     notify(10)
 
 
-async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> None:
+async def test_request_refresh(execute_mock: AsyncMock, event_bus_test: EventBus) -> None:
     event = BatteryEvent
-    event_bus.request_refresh(event)
-    _verify_event_command_called(execute_mock, event, event_bus, expected_call=False)
+    event_bus_test.request_refresh(event)
+    _verify_event_command_called(execute_mock, event, event_bus_test, expected_call=False)
 
-    event_bus.subscribe(event, AsyncMock())
+    event_bus_test.subscribe(event, AsyncMock())
     execute_mock.reset_mock()
 
-    event_bus.request_refresh(event)
+    event_bus_test.request_refresh(event)
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, event, event_bus, expected_call=True)
+    _verify_event_command_called(execute_mock, event, event_bus_test, expected_call=True)
 
 
 @pytest.mark.parametrize(
@@ -144,19 +167,19 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
     ],
 )
 async def test_StateEvent(
-    event_bus: EventBus,
+    event_bus_test: EventBus,
     last: State,
     actual: State,
     expected: State | None,
 ) -> None:
     async def notify(state: State) -> None:
-        event_bus.notify(StateEvent(state))
+        event_bus_test.notify(StateEvent(state))
         await asyncio.sleep(0.1)
 
     await notify(last)
 
     mock = AsyncMock()
-    event_bus.subscribe(StateEvent, mock)
+    event_bus_test.subscribe(StateEvent, mock)
     mock.assert_called_once_with(StateEvent(last))
     mock.reset_mock()
 
@@ -165,22 +188,24 @@ async def test_StateEvent(
     if expected:
         mock.assert_called_once_with(StateEvent(expected))
     else:
-        assert event_bus.get_last_event(StateEvent) == StateEvent(last)
+        assert event_bus_test.get_last_event(StateEvent) == StateEvent(last)
 
 
 @pytest.mark.parametrize(
     "debounce_time",
     [-1, 0, 1],
 )
-async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
+async def test_debounce_time(event_bus_test: EventBus, debounce_time: float) -> None:
     async def notify(event: MapChangedEvent, debounce_time: float) -> None:
-        event_bus.notify(event, debounce_time=debounce_time)
+        event_bus_test.notify(event, debounce_time=debounce_time)
         await asyncio.sleep(0.1)
 
     mock = AsyncMock()
-    event_bus.subscribe(MapChangedEvent, mock)
+    event_bus_test.subscribe(MapChangedEvent, mock)
 
-    with patch("deebot_client.event_bus.asyncio", wraps=asyncio) as aio:
+    # Determine which module to patch based on the implementation type
+    module_to_patch = "deebot_client.event_bus_rust.asyncio" if (RustEventBus is not None and isinstance(event_bus_test, RustEventBus)) else "deebot_client.event_bus.asyncio"
+    with patch(module_to_patch, wraps=asyncio) as aio:
 
         async def test_cycle(*, call_expected: bool) -> MapChangedEvent:
             event = MapChangedEvent(datetime.now(UTC))
@@ -213,7 +238,7 @@ async def test_debounce_time(event_bus: EventBus, debounce_time: float) -> None:
                 mock.reset_mock()
 
 
-async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
+async def test_teardown(event_bus_test: EventBus, execute_mock: AsyncMock) -> None:
     # setup
     async def wait() -> None:
         await asyncio.sleep(1000)
@@ -221,26 +246,26 @@ async def test_teardown(event_bus: EventBus, execute_mock: AsyncMock) -> None:
     execute_mock.side_effect = wait
 
     mock = AsyncMock()
-    event_bus.subscribe(BatteryEvent, mock)
+    event_bus_test.subscribe(BatteryEvent, mock)
 
-    event_bus.notify(BatteryEvent(100), debounce_time=10000)
-    event_bus.request_refresh(BatteryEvent)
+    event_bus_test.notify(BatteryEvent(100), debounce_time=10000)
+    event_bus_test.request_refresh(BatteryEvent)
 
     # verify tasks/handle still running
-    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    handle = event_bus_test._event_processing_dict[BatteryEvent].notify_handle
     assert handle is None
-    assert len(event_bus._tasks) > 0
+    assert len(event_bus_test._tasks) > 0
 
-    event_bus.notify(BatteryEvent(100), debounce_time=10000)
-    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    event_bus_test.notify(BatteryEvent(100), debounce_time=10000)
+    handle = event_bus_test._event_processing_dict[BatteryEvent].notify_handle
     assert handle is not None
     assert handle.cancelled() is False
 
     # test
-    await event_bus.teardown()
+    await event_bus_test.teardown()
 
     # verify
-    handle = event_bus._event_processing_dict[BatteryEvent].notify_handle
+    handle = event_bus_test._event_processing_dict[BatteryEvent].notify_handle
     assert handle is not None
     assert handle.cancelled() is True
-    assert len(event_bus._tasks) == 0
+    assert len(event_bus_test._tasks) == 0
