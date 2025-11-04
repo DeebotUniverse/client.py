@@ -52,6 +52,7 @@ from tests.messages.json import assert_message
         ),
     ],
 )
+@pytest.mark.benchmark
 def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
     data = {
         "header": {
