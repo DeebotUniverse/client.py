@@ -181,7 +181,7 @@ class EventBus:
                                 break
 
             # Check if notification should proceed (not a duplicate)
-            debounce_ms = int(debounce_time * 1000)
+            debounce_ms = max(0, int(debounce_time * 1000))
             _should_notify, should_debounce, is_duplicate = (
                 self._rust_bus.should_notify(event_id, event, debounce_ms)
             )
