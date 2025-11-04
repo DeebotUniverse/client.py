@@ -79,7 +79,7 @@ fn python_parse_csv_ints(value: &str) -> Result<Vec<i64>, PyErr> {
 ///
 /// Example: "1.5,2.7,3.0,," -> [1, 2, 3]
 #[pyfunction(name = "parse_csv_ints_via_float")]
-fn python_parse_csv_ints_via_float(value: &str) -> Result<Vec<i32>, PyErr> {
+fn python_parse_csv_ints_via_float(value: &str) -> Result<Vec<i64>, PyErr> {
     parse_csv_ints_via_float(value).map_err(|err| {
         error!("Error parsing comma-separated floats to ints: {err}; value:{value}");
         PyValueError::new_err(err.to_string())
@@ -94,14 +94,14 @@ pub fn parse_csv_ints(value: &str) -> Result<Vec<i64>, Box<dyn Error>> {
         .collect()
 }
 
-pub fn parse_csv_ints_via_float(value: &str) -> Result<Vec<i32>, Box<dyn Error>> {
+pub fn parse_csv_ints_via_float(value: &str) -> Result<Vec<i64>, Box<dyn Error>> {
     value
         .split(',')
         .filter(|s| !s.is_empty())
         .map(|s| {
             s.trim()
                 .parse::<f64>()
-                .map(|f| f as i32)
+                .map(|f| f as i64)
                 .map_err(|e| e.into())
         })
         .collect()
