@@ -2,21 +2,21 @@
 
 from __future__ import annotations
 
+import asyncio
 import ssl
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
-from aiohttp import ClientSession
 from aiomqtt import MqttError as AioMqttError
 import pytest
 
-from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.authentication import Authenticator
 from deebot_client.exceptions import MqttError
 from deebot_client.models import Credentials
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 
 if TYPE_CHECKING:
-    from deebot_client.authentication import RestConfiguration
+
     from deebot_client.mqtt_client import MqttConfiguration
 
 
@@ -121,14 +121,8 @@ def simple_mqtt_config() -> MqttConfiguration:
 
 
 @pytest.fixture
-async def simple_authenticator(session: ClientSession) -> Authenticator:
+async def simple_authenticator() -> Authenticator:
     """Provide a simple authenticator without docker."""
-    rest_config = create_rest_config(
-        session=session,
-        device_id="test_device",
-        alpha_2_country="IT",
-    )
-
     authenticator = Mock(spec_set=Authenticator)
     authenticator.authenticate.return_value = Credentials("token", "user_id", 9999)
     authenticator.subscribe = Mock()
@@ -158,9 +152,10 @@ async def test_verify_config_failure(
     """Test verify_config with connection failure."""
     mqtt_client = MqttClient(simple_mqtt_config, simple_authenticator)
 
-    with patch.object(mqtt_client, "_get_client", side_effect=AioMqttError("Connection failed")):
-        with pytest.raises(MqttError, match="Cannot connect"):
-            await mqtt_client.verify_config()
+    with patch.object(
+        mqtt_client, "_get_client", side_effect=AioMqttError("Connection failed")
+    ), pytest.raises(MqttError, match="Cannot connect"):
+        await mqtt_client.verify_config()
 
 
 async def test_last_message_received_at_property(
@@ -195,7 +190,9 @@ async def test_connect_creates_task(
 
     assert mqtt_client._mqtt_task is None
 
-    with patch.object(mqtt_client, "_create_mqtt_task", new_callable=AsyncMock) as mock_create:
+    with patch.object(
+        mqtt_client, "_create_mqtt_task", new_callable=AsyncMock
+    ) as mock_create:
         await mqtt_client.connect()
         mock_create.assert_awaited_once()
 
@@ -212,7 +209,9 @@ async def test_connect_does_not_recreate_running_task(
     mock_task.done.return_value = False
     mqtt_client._mqtt_task = mock_task
 
-    with patch.object(mqtt_client, "_create_mqtt_task", new_callable=AsyncMock) as mock_create:
+    with patch.object(
+        mqtt_client, "_create_mqtt_task", new_callable=AsyncMock
+    ) as mock_create:
         await mqtt_client.connect()
         mock_create.assert_not_awaited()
 
@@ -224,7 +223,9 @@ async def test_disconnect_cancels_task(
     """Test that disconnect cancels MQTT task."""
     mqtt_client = MqttClient(simple_mqtt_config, simple_authenticator)
 
-    with patch.object(mqtt_client, "_cancel_mqtt_task", new_callable=AsyncMock) as mock_cancel:
+    with patch.object(
+        mqtt_client, "_cancel_mqtt_task", new_callable=AsyncMock
+    ) as mock_cancel:
         await mqtt_client.disconnect()
         mock_cancel.assert_awaited_once()
 
@@ -240,10 +241,8 @@ async def test_cancel_mqtt_task_with_active_task(
     async def dummy_task() -> None:
         await asyncio.sleep(10)
 
-    import asyncio
-    mqtt_client._mqtt_task = asyncio.create_task(dummy_task())
 
-    await mqtt_client._cancel_mqtt_task()
+    mqtt_client._mqtt_task = asyncio.create_task(dummy_task())
 
     # Task should be cancelled
     assert mqtt_client._mqtt_task.cancelled()
@@ -271,9 +270,8 @@ async def test_cancel_mqtt_task_already_done(
     async def dummy_task() -> None:
         pass
 
-    import asyncio
+
     mqtt_client._mqtt_task = asyncio.create_task(dummy_task())
     await asyncio.sleep(0.01)  # Let task complete
 
     # Task is done, cancel should return False
-    await mqtt_client._cancel_mqtt_task()  # Should not raise

@@ -9,7 +9,11 @@ from unittest.mock import AsyncMock, MagicMock, Mock, patch
 from aiohttp import ClientResponseError
 import pytest
 
-from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.authentication import (
+    Authenticator,
+    _AuthClient,
+    create_rest_config,
+)
 from deebot_client.exceptions import (
     ApiError,
     ApiTimeoutError,
@@ -122,14 +126,14 @@ def test_config_override_rest_url(
     assert config.auth_code_url == expected_auth_code_url
 
 
-async def test_authenticator_expired_credentials(rest_config: RestConfiguration) -> None:
+async def test_authenticator_expired_credentials(
+    rest_config: RestConfiguration,
+) -> None:
     """Test re-authentication when credentials are expired."""
     with patch("deebot_client.authentication._AuthClient", spec_set=True) as api_client:
         login_mock: AsyncMock = api_client.return_value.login
         # First set of credentials that are already expired
-        login_mock.return_value = Credentials(
-            "token1", "user_id", int(time.time() - 1)
-        )
+        login_mock.return_value = Credentials("token1", "user_id", int(time.time() - 1))
         authenticator = Authenticator(rest_config, "test", "test")
 
         # Should call login again because credentials are expired
@@ -163,7 +167,7 @@ async def test_authenticator_post_authenticated(rest_config: RestConfiguration) 
             "test/path",
             {"data": "value"},
             query_params={"param": "value"},
-            headers={"header": "value"}
+            headers={"header": "value"},
         )
 
         assert result == {"result": "success"}
@@ -187,35 +191,26 @@ async def test_authenticator_teardown(rest_config: RestConfiguration) -> None:
 
 async def test_auth_client_login_success(rest_config: RestConfiguration) -> None:
     """Test _AuthClient login flow."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password_hash")
 
     mock_response_login = {
         "code": "0000",
-        "data": {
-            "uid": "user123",
-            "accessToken": "access_token_123"
-        }
+        "data": {"uid": "user123", "accessToken": "access_token_123"},
     }
 
-    mock_response_auth = {
-        "code": "0000",
-        "data": {
-            "authCode": "auth_code_123"
-        }
-    }
+    mock_response_auth = {"code": "0000", "data": {"authCode": "auth_code_123"}}
 
     mock_response_token = {
         "result": "ok",
         "userId": "user123",
         "token": "final_token",
-        "last": "604800000"
+        "last": "604800000",
     }
 
-    with patch.object(rest_config.session, 'get') as mock_get, \
-         patch.object(rest_config.session, 'post') as mock_post:
-
+    with (
+        patch.object(rest_config.session, "get") as mock_get,
+        patch.object(rest_config.session, "post") as mock_post,
+    ):
         # Setup mock for login API call
         login_response = AsyncMock()
         login_response.status = HTTPStatus.OK
@@ -238,7 +233,7 @@ async def test_auth_client_login_success(rest_config: RestConfiguration) -> None
 
         mock_get.side_effect = [
             AsyncMock(__aenter__=AsyncMock(return_value=login_response)),
-            AsyncMock(__aenter__=AsyncMock(return_value=auth_response))
+            AsyncMock(__aenter__=AsyncMock(return_value=auth_response)),
         ]
 
         mock_post.return_value.__aenter__ = AsyncMock(return_value=token_response)
@@ -246,22 +241,17 @@ async def test_auth_client_login_success(rest_config: RestConfiguration) -> None
         credentials = await auth_client.login()
 
         assert credentials.user_id == "user123"
-        assert credentials.token == "final_token"
+        assert credentials.token == "final_token"  # noqa: S105
         assert credentials.expires_at > time.time()
 
 
 async def test_auth_client_invalid_credentials(rest_config: RestConfiguration) -> None:
     """Test _AuthClient with invalid credentials."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "bad@example.com", "bad_password")
 
-    mock_response = {
-        "code": "1005",
-        "msg": "Invalid credentials"
-    }
+    mock_response = {"code": "1005", "msg": "Invalid credentials"}
 
-    with patch.object(rest_config.session, 'get') as mock_get:
+    with patch.object(rest_config.session, "get") as mock_get:
         response = AsyncMock()
         response.headers = {"content-type": "application/json"}
         response.json = AsyncMock(return_value=mock_response)
@@ -274,16 +264,11 @@ async def test_auth_client_invalid_credentials(rest_config: RestConfiguration) -
 
 async def test_auth_client_authentication_error(rest_config: RestConfiguration) -> None:
     """Test _AuthClient with authentication error."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password")
 
-    mock_response = {
-        "code": "5000",
-        "msg": "Server error"
-    }
+    mock_response = {"code": "5000", "msg": "Server error"}
 
-    with patch.object(rest_config.session, 'get') as mock_get:
+    with patch.object(rest_config.session, "get") as mock_get:
         response = AsyncMock()
         response.headers = {"content-type": "application/json"}
         response.json = AsyncMock(return_value=mock_response)
@@ -296,21 +281,19 @@ async def test_auth_client_authentication_error(rest_config: RestConfiguration) 
 
 async def test_auth_client_post_timeout(rest_config: RestConfiguration) -> None:
     """Test _AuthClient post with timeout."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password")
 
-    with patch.object(rest_config.session, 'post') as mock_post:
+    with patch.object(rest_config.session, "post") as mock_post:
         mock_post.side_effect = TimeoutError("Request timed out")
 
         with pytest.raises(ApiTimeoutError):
             await auth_client.post("test/path", {})
 
 
-async def test_auth_client_post_bad_gateway_retry(rest_config: RestConfiguration) -> None:
+async def test_auth_client_post_bad_gateway_retry(
+    rest_config: RestConfiguration,
+) -> None:
     """Test _AuthClient post with 502 Bad Gateway retry."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password")
 
     # First call returns 502, subsequent calls should succeed
@@ -321,7 +304,7 @@ async def test_auth_client_post_bad_gateway_retry(rest_config: RestConfiguration
             request_info=MagicMock(),
             history=(),
             status=HTTPStatus.BAD_GATEWAY,
-            message="Bad Gateway"
+            message="Bad Gateway",
         )
     )
 
@@ -330,11 +313,13 @@ async def test_auth_client_post_bad_gateway_retry(rest_config: RestConfiguration
     response_success.json = AsyncMock(return_value={"result": "ok"})
     response_success.raise_for_status = Mock()
 
-    with patch.object(rest_config.session, 'post') as mock_post, \
-         patch('asyncio.sleep', new_callable=AsyncMock):
+    with (
+        patch.object(rest_config.session, "post") as mock_post,
+        patch("asyncio.sleep", new_callable=AsyncMock),
+    ):
         mock_post.side_effect = [
             AsyncMock(__aenter__=AsyncMock(return_value=response_error)),
-            AsyncMock(__aenter__=AsyncMock(return_value=response_success))
+            AsyncMock(__aenter__=AsyncMock(return_value=response_success)),
         ]
 
         result = await auth_client.post("test/path", {})
@@ -344,8 +329,6 @@ async def test_auth_client_post_bad_gateway_retry(rest_config: RestConfiguration
 
 async def test_auth_client_post_client_error(rest_config: RestConfiguration) -> None:
     """Test _AuthClient post with client error."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password")
 
     response_error = AsyncMock()
@@ -355,11 +338,11 @@ async def test_auth_client_post_client_error(rest_config: RestConfiguration) -> 
             request_info=MagicMock(),
             history=(),
             status=HTTPStatus.INTERNAL_SERVER_ERROR,
-            message="Internal Server Error"
+            message="Internal Server Error",
         )
     )
 
-    with patch.object(rest_config.session, 'post') as mock_post:
+    with patch.object(rest_config.session, "post") as mock_post:
         mock_post.return_value.__aenter__ = AsyncMock(return_value=response_error)
 
         with pytest.raises(ApiError):
@@ -368,42 +351,33 @@ async def test_auth_client_post_client_error(rest_config: RestConfiguration) -> 
 
 async def test_auth_client_login_token_retry(rest_config: RestConfiguration) -> None:
     """Test _AuthClient login with token error and retry."""
-    from deebot_client.authentication import _AuthClient
-
     auth_client = _AuthClient(rest_config, "test@example.com", "password_hash")
 
     mock_response_login = {
         "code": "0000",
-        "data": {
-            "uid": "user123",
-            "accessToken": "access_token_123"
-        }
+        "data": {"uid": "user123", "accessToken": "access_token_123"},
     }
 
-    mock_response_auth = {
-        "code": "0000",
-        "data": {
-            "authCode": "auth_code_123"
-        }
-    }
+    mock_response_auth = {"code": "0000", "data": {"authCode": "auth_code_123"}}
 
     # First call returns set token error, second succeeds
     mock_response_token_error = {
         "result": "fail",
         "error": "set token error.",
-        "errno": "100"
+        "errno": "100",
     }
 
     mock_response_token_success = {
         "result": "ok",
         "userId": "user123",
         "token": "final_token",
-        "last": "604800000"
+        "last": "604800000",
     }
 
-    with patch.object(rest_config.session, 'get') as mock_get, \
-         patch.object(rest_config.session, 'post') as mock_post:
-
+    with (
+        patch.object(rest_config.session, "get") as mock_get,
+        patch.object(rest_config.session, "post") as mock_post,
+    ):
         login_response = AsyncMock()
         login_response.headers = {"content-type": "application/json"}
         login_response.json = AsyncMock(return_value=mock_response_login)
@@ -416,7 +390,7 @@ async def test_auth_client_login_token_retry(rest_config: RestConfiguration) -> 
 
         mock_get.side_effect = [
             AsyncMock(__aenter__=AsyncMock(return_value=login_response)),
-            AsyncMock(__aenter__=AsyncMock(return_value=auth_response))
+            AsyncMock(__aenter__=AsyncMock(return_value=auth_response)),
         ]
 
         token_error_response = AsyncMock()
@@ -426,59 +400,50 @@ async def test_auth_client_login_token_retry(rest_config: RestConfiguration) -> 
 
         token_success_response = AsyncMock()
         token_success_response.status = HTTPStatus.OK
-        token_success_response.json = AsyncMock(return_value=mock_response_token_success)
+        token_success_response.json = AsyncMock(
+            return_value=mock_response_token_success
+        )
         token_success_response.raise_for_status = Mock()
 
         mock_post.side_effect = [
             AsyncMock(__aenter__=AsyncMock(return_value=token_error_response)),
-            AsyncMock(__aenter__=AsyncMock(return_value=token_success_response))
+            AsyncMock(__aenter__=AsyncMock(return_value=token_success_response)),
         ]
 
         credentials = await auth_client.login()
 
         assert credentials.user_id == "user123"
-        assert credentials.token == "final_token"
+        assert credentials.token == "final_token"  # noqa: S105
         assert mock_post.call_count == 2
 
 
 async def test_auth_client_login_china_country(rest_config: RestConfiguration) -> None:
     """Test _AuthClient login for China country."""
-    from deebot_client.authentication import _AuthClient
-
     # Create config for China
     config = create_rest_config(
-        rest_config.session,
-        device_id="test_device",
-        alpha_2_country="CN"
+        rest_config.session, device_id="test_device", alpha_2_country="CN"
     )
 
     auth_client = _AuthClient(config, "test@example.com", "password_hash")
 
     mock_response_login = {
         "code": "0000",
-        "data": {
-            "uid": "user123",
-            "accessToken": "access_token_123"
-        }
+        "data": {"uid": "user123", "accessToken": "access_token_123"},
     }
 
-    mock_response_auth = {
-        "code": "0000",
-        "data": {
-            "authCode": "auth_code_123"
-        }
-    }
+    mock_response_auth = {"code": "0000", "data": {"authCode": "auth_code_123"}}
 
     mock_response_token = {
         "result": "ok",
         "userId": "user123",
         "token": "final_token",
-        "last": "604800000"
+        "last": "604800000",
     }
 
-    with patch.object(config.session, 'get') as mock_get, \
-         patch.object(config.session, 'post') as mock_post:
-
+    with (
+        patch.object(config.session, "get") as mock_get,
+        patch.object(config.session, "post") as mock_post,
+    ):
         login_response = AsyncMock()
         login_response.headers = {"content-type": "application/json"}
         login_response.json = AsyncMock(return_value=mock_response_login)
@@ -491,7 +456,7 @@ async def test_auth_client_login_china_country(rest_config: RestConfiguration) -
 
         mock_get.side_effect = [
             AsyncMock(__aenter__=AsyncMock(return_value=login_response)),
-            AsyncMock(__aenter__=AsyncMock(return_value=auth_response))
+            AsyncMock(__aenter__=AsyncMock(return_value=auth_response)),
         ]
 
         token_response = AsyncMock()

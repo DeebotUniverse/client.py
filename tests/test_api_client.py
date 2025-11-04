@@ -3,14 +3,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from deebot_client.api_client import ApiClient, Devices
 from deebot_client.const import (
     PATH_API_APPSVR_APP,
-    PATH_API_PIM_PRODUCT_IOT_MAP,
     PATH_API_USERS_USER,
 )
 from deebot_client.exceptions import ApiError
@@ -118,7 +116,9 @@ async def test_get_devices_unrecognized_class(
 
 
 async def test_get_devices_no_devices(
-    api_client_mock: ApiClient, authenticator: Authenticator, caplog: pytest.LogCaptureFixture
+    api_client_mock: ApiClient,
+    authenticator: Authenticator,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test device retrieval with no devices returned."""
     authenticator.post_authenticated.return_value = {}
@@ -132,7 +132,9 @@ async def test_get_devices_no_devices(
 
 
 async def test_get_devices_failed_response(
-    api_client_mock: ApiClient, authenticator: Authenticator, caplog: pytest.LogCaptureFixture
+    api_client_mock: ApiClient,
+    authenticator: Authenticator,
+    caplog: pytest.LogCaptureFixture,
 ) -> None:
     """Test device retrieval with failed response."""
     authenticator.post_authenticated.return_value = {"code": 500, "msg": "error"}
@@ -174,7 +176,7 @@ async def test_get_devices_merges_device_lists(
         "company": "eco-ng",
     }
 
-    def side_effect(path: str, json: dict[str, Any]) -> dict[str, Any]:
+    def side_effect(path: str, json: dict[str, Any]) -> dict[str, Any]:  # noqa: ARG001
         if path == PATH_API_USERS_USER:
             return {"devices": [device1]}
         if path == PATH_API_APPSVR_APP:
