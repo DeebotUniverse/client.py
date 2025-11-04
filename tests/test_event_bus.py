@@ -28,9 +28,7 @@ if TYPE_CHECKING:
     from deebot_client.events.base import Event
 
 
-@pytest.fixture(
-    params=["python"] + (["rust"] if RUST_AVAILABLE else [])
-)
+@pytest.fixture(params=["python"] + (["rust"] if RUST_AVAILABLE else []))
 def event_bus_test(
     request: pytest.FixtureRequest, execute_mock: AsyncMock, device_info: DeviceInfo
 ) -> EventBus:
@@ -77,12 +75,16 @@ async def test_subscription(
 ) -> None:
     # on first should subscription the refresh should be triggered
     unsubscribers = [
-        await _subscribeAndVerify(execute_mock, event_bus_test, event, expected_call=True)
+        await _subscribeAndVerify(
+            execute_mock, event_bus_test, event, expected_call=True
+        )
     ]
 
     # this time no refresh should be happening
     unsubscribers.append(
-        await _subscribeAndVerify(execute_mock, event_bus_test, event, expected_call=False)
+        await _subscribeAndVerify(
+            execute_mock, event_bus_test, event, expected_call=False
+        )
     )
 
     # unsubscribe from all
@@ -144,10 +146,14 @@ async def test_get_last_event(event_bus_test: EventBus) -> None:
     notify(10)
 
 
-async def test_request_refresh(execute_mock: AsyncMock, event_bus_test: EventBus) -> None:
+async def test_request_refresh(
+    execute_mock: AsyncMock, event_bus_test: EventBus
+) -> None:
     event = BatteryEvent
     event_bus_test.request_refresh(event)
-    _verify_event_command_called(execute_mock, event, event_bus_test, expected_call=False)
+    _verify_event_command_called(
+        execute_mock, event, event_bus_test, expected_call=False
+    )
 
     event_bus_test.subscribe(event, AsyncMock())
     execute_mock.reset_mock()
@@ -155,7 +161,9 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus_test: EventBus
     event_bus_test.request_refresh(event)
 
     await asyncio.sleep(0.1)
-    _verify_event_command_called(execute_mock, event, event_bus_test, expected_call=True)
+    _verify_event_command_called(
+        execute_mock, event, event_bus_test, expected_call=True
+    )
 
 
 @pytest.mark.parametrize(
@@ -204,7 +212,11 @@ async def test_debounce_time(event_bus_test: EventBus, debounce_time: float) -> 
     event_bus_test.subscribe(MapChangedEvent, mock)
 
     # Determine which module to patch based on the implementation type
-    module_to_patch = "deebot_client.event_bus_rust.asyncio" if (RustEventBus is not None and isinstance(event_bus_test, RustEventBus)) else "deebot_client.event_bus.asyncio"
+    module_to_patch = (
+        "deebot_client.event_bus_rust.asyncio"
+        if (RustEventBus is not None and isinstance(event_bus_test, RustEventBus))
+        else "deebot_client.event_bus.asyncio"
+    )
     with patch(module_to_patch, wraps=asyncio) as aio:
 
         async def test_cycle(*, call_expected: bool) -> MapChangedEvent:

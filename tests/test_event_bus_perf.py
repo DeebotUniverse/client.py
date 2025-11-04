@@ -26,9 +26,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-@pytest.fixture(
-    params=["python"] + (["rust"] if RUST_AVAILABLE else [])
-)
+@pytest.fixture(params=["python"] + (["rust"] if RUST_AVAILABLE else []))
 def event_bus_impl(request: pytest.FixtureRequest, execute_mock: AsyncMock) -> EventBus:
     """Fixture that provides both Python and Rust implementations."""
     capabilities = get_capabilities()
@@ -212,7 +210,9 @@ def test_debounce_check(benchmark: BenchmarkFixture, event_bus_impl: EventBus) -
 # Rust-only benchmarks to test Rust-specific optimizations
 @pytest.mark.benchmark
 @pytest.mark.skipif(not RUST_AVAILABLE, reason="Rust backend not available")
-def test_rust_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncMock) -> None:
+def test_rust_state_management(
+    benchmark: BenchmarkFixture, execute_mock: AsyncMock
+) -> None:
     """Benchmark Rust state management operations."""
     capabilities = get_capabilities()
     if RustEventBus is None:
@@ -233,7 +233,9 @@ def test_rust_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncM
 
 
 @pytest.mark.benchmark
-def test_python_state_management(benchmark: BenchmarkFixture, execute_mock: AsyncMock) -> None:
+def test_python_state_management(
+    benchmark: BenchmarkFixture, execute_mock: AsyncMock
+) -> None:
     """Benchmark Python state management operations."""
     capabilities = get_capabilities()
     python_bus = PythonEventBus(execute_mock, capabilities)

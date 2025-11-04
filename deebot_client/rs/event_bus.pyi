@@ -1,6 +1,5 @@
 """Type stubs for the Rust event_bus module."""
 
-
 from typing import Any
 
 class EventBus:

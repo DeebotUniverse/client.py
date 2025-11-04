@@ -110,10 +110,7 @@ impl EventBus {
 
         // Check if event is duplicate
         let is_duplicate = if let Some(ref last_event) = entry.last_event {
-            match event.bind(py).eq(last_event.bind(py)) {
-                Ok(result) => result,
-                Err(_) => false,
-            }
+            event.bind(py).eq(last_event.bind(py)).unwrap_or_default()
         } else {
             false
         };

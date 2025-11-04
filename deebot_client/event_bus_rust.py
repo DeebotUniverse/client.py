@@ -76,8 +76,11 @@ class EventBus:
     ) -> None:
         # Rust backend for state management
         if RustEventBus is None:
-            msg = "Rust backend not available. Please build the Rust extension with 'maturin develop' or use the Python implementation from deebot_client.event_bus"
-            raise ImportError(msg)
+            raise ImportError(
+                "Rust backend not available. Please build the Rust extension with "
+                "'maturin develop' or use the Python implementation from "
+                "deebot_client.event_bus"
+            )
 
         self._rust_bus: Final = RustEventBus()
 
@@ -147,10 +150,7 @@ class EventBus:
             event_processing_data.notify_handle = None
 
             # Special handling for StateEvent
-            if (
-                isinstance(event, StateEvent)
-                and event.state == State.IDLE
-            ):
+            if isinstance(event, StateEvent) and event.state == State.IDLE:
                 last_event = self._rust_bus.get_last_event(event_id)
                 if (
                     last_event is not None
@@ -170,7 +170,9 @@ class EventBus:
                     and not last_event.available
                 ):
                     # unavailable -> available: refresh everything
-                    for subscribed_event_id in self._rust_bus.get_subscribed_event_types():
+                    for (
+                        subscribed_event_id
+                    ) in self._rust_bus.get_subscribed_event_types():
                         # Find the event type from our dict
                         for evt_type in self._event_processing_dict:
                             if _get_event_type_id(evt_type) == subscribed_event_id:
@@ -180,8 +182,8 @@ class EventBus:
 
             # Check if notification should proceed (not a duplicate)
             debounce_ms = int(debounce_time * 1000)
-            _should_notify, should_debounce, is_duplicate = self._rust_bus.should_notify(
-                event_id, event, debounce_ms
+            _should_notify, should_debounce, is_duplicate = (
+                self._rust_bus.should_notify(event_id, event, debounce_ms)
             )
 
             if is_duplicate:
@@ -191,8 +193,8 @@ class EventBus:
             if should_debounce:
                 # Schedule for later
                 self._rust_bus.set_pending_notification(event_id, True)
-                event_processing_data.notify_handle = asyncio.get_running_loop().call_later(
-                    debounce_time, _notify, event
+                event_processing_data.notify_handle = (
+                    asyncio.get_running_loop().call_later(debounce_time, _notify, event)
                 )
                 return
 
