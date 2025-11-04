@@ -70,7 +70,7 @@ def test_parse_csv_ints_correctness(value: str, expected: list[int]) -> None:
 )
 def test_parse_csv_ints_errors(value: str) -> None:
     """Test that parse_csv_ints raises errors for invalid input."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid digit found in string"):
         parse_csv_ints(value)
 
 
@@ -95,9 +95,7 @@ def test_parse_csv_ints_errors(value: str) -> None:
         "negative",
     ],
 )
-def test_parse_csv_ints_via_float_correctness(
-    value: str, expected: list[int]
-) -> None:
+def test_parse_csv_ints_via_float_correctness(value: str, expected: list[int]) -> None:
     """Test that parse_csv_ints_via_float produces correct results."""
     result = parse_csv_ints_via_float(value)
     assert result == expected
@@ -109,7 +107,7 @@ def test_parse_csv_ints_via_float_correctness(
 
 def test_parse_csv_ints_via_float_errors() -> None:
     """Test that parse_csv_ints_via_float raises errors for invalid input."""
-    with pytest.raises(ValueError):
+    with pytest.raises(ValueError, match="invalid float literal"):
         parse_csv_ints_via_float("1,2,invalid,3")
 
 
@@ -146,9 +144,7 @@ def test_parse_csv_ints_python(benchmark: BenchmarkFixture, data: str) -> None:
     [SMALL_FLOAT_DATA, MEDIUM_FLOAT_DATA, LARGE_FLOAT_DATA],
     ids=["small_5_values", "medium_50_values", "large_200_values"],
 )
-def test_parse_csv_ints_via_float_rust(
-    benchmark: BenchmarkFixture, data: str
-) -> None:
+def test_parse_csv_ints_via_float_rust(benchmark: BenchmarkFixture, data: str) -> None:
     """Benchmark Rust implementation of parse_csv_ints_via_float."""
     result = benchmark(parse_csv_ints_via_float, data)
     assert len(result) > 0

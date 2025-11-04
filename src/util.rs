@@ -66,7 +66,7 @@ fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
 ///
 /// Example: "1,2,3,," -> [1, 2, 3]
 #[pyfunction(name = "parse_csv_ints")]
-fn python_parse_csv_ints(value: &str) -> Result<Vec<i32>, PyErr> {
+fn python_parse_csv_ints(value: &str) -> Result<Vec<i64>, PyErr> {
     parse_csv_ints(value).map_err(|err| {
         error!("Error parsing comma-separated integers: {err}; value:{value}");
         PyValueError::new_err(err.to_string())
@@ -86,11 +86,11 @@ fn python_parse_csv_ints_via_float(value: &str) -> Result<Vec<i32>, PyErr> {
     })
 }
 
-pub fn parse_csv_ints(value: &str) -> Result<Vec<i32>, Box<dyn Error>> {
+pub fn parse_csv_ints(value: &str) -> Result<Vec<i64>, Box<dyn Error>> {
     value
         .split(',')
         .filter(|s| !s.is_empty())
-        .map(|s| s.trim().parse::<i32>().map_err(|e| e.into()))
+        .map(|s| s.trim().parse::<i64>().map_err(|e| e.into()))
         .collect()
 }
 
