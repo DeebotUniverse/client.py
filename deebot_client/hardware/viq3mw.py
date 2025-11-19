@@ -1,4 +1,4 @@
-"""Deebot T30C Gen2 Capabilities. Previously symlinked to qdajz8.py and p1jij8.py"""
+"""Deebot T30C Gen2 Capabilities."""
 
 from __future__ import annotations
 
@@ -79,6 +79,7 @@ from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
+from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -276,7 +277,7 @@ def get_device_info() -> StaticDeviceInfo:
                         auto_empty.Frequency.SMART,
                     ),
                 ),
-                state=CapabilityEvent(StationEvent, [GetWorkMode()]),
+                state=CapabilityEvent(StationEvent, [GetStationState()]),
             ),
             stats=CapabilityStats(
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
