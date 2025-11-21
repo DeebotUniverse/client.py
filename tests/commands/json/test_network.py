@@ -32,6 +32,7 @@ async def test_GetNetInfo() -> None:
         ),
     )
 
+
 async def test_GetNetInfoRSSIdot() -> None:
     json, firmware_event = get_request_json(
         get_success_body(
@@ -54,6 +55,7 @@ async def test_GetNetInfoRSSIdot() -> None:
             ),
         ),
     )
+
 
 async def test_GetNetInfoLegacy() -> None:
     json = {
