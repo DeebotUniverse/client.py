@@ -18,7 +18,8 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read
+  contents: read # required for actions/checkout
+  id-token: write # required for OIDC authentication with CodSpeed
 
 jobs:
   info:
@@ -394,7 +395,6 @@ jobs:
         uses: CodSpeedHQ/action@346a2d8a8d9d38909abd0bc3d23f773110f076ad # v4.4.1
         with:
           run: pytest tests/ --codspeed
-          token: ${{ secrets.CODSPEED_TOKEN }}
           mode: instrumentation
 
   sdist:
