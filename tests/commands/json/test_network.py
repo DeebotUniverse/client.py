@@ -55,7 +55,6 @@ async def test_GetNetInfoRSSIdot() -> None:
         ),
     )
 
-
 async def test_GetNetInfoLegacy() -> None:
     json = {
         "ret": "ok",
