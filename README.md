@@ -83,9 +83,12 @@ async def main():
 
 
 if __name__ == '__main__':
-  loop = asyncio.get_event_loop()
-  loop.create_task(main())
-  loop.run_forever()
+    loop = asyncio.new_event_loop()
+    asyncio.set_event_loop(loop)
+    try:
+        asyncio.run(main())
+    except KeyboardInterrupt:
+        pass
 ```
 
 A more advanced example can be found [here](https://github.com/And3rsL/Deebot-for-Home-Assistant).
