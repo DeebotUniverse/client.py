@@ -33,6 +33,30 @@ async def test_GetNetInfo() -> None:
     )
 
 
+async def test_GetNetInfoRSSIdot() -> None:
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "ip": "192.168.1.100",
+                "ssid": "WLAN",
+                "rssi": "42.",
+                "wkVer": "0.1.2",
+                "mac": "AA:BB:CC:DD:EE:FF",
+            }
+        )
+    )
+    await assert_command(
+        GetNetInfo(),
+        json,
+        (
+            firmware_event,
+            NetworkInfoEvent(
+                ip="192.168.1.100", ssid="WLAN", rssi=42, mac="AA:BB:CC:DD:EE:FF"
+            ),
+        ),
+    )
+
+
 async def test_GetNetInfoLegacy() -> None:
     json = {
         "ret": "ok",

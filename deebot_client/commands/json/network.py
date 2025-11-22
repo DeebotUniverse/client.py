@@ -35,7 +35,7 @@ class GetNetInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             NetworkInfoEvent(
                 ip=data["ip"],
                 ssid=data["ssid"],
-                rssi=int(data["rssi"]),
+                rssi=int(float(data["rssi"])),
                 mac=data["mac"],
             )
         )
