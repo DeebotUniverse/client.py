@@ -19,11 +19,13 @@ from .logging_filter import get_logger
 from .message import HandlingResult, HandlingState, Message
 
 if TYPE_CHECKING:
-    from types import MappingProxyType
+    from types import MappingProxyType, TracebackType
 
     from .authentication import Authenticator
     from .event_bus import EventBus
     from .models import ApiDeviceInfo
+import sys
+import traceback
 
 _LOGGER = get_logger(__name__)
 
@@ -97,6 +99,23 @@ class Command(ABC):
                 device_info["class"],
                 exc_info=True,
             )
+            tb = sys.exc_info()[2]
+            if tb is not None:
+                _LOGGER.warning("=== TRACEBACK ===")
+                traceback.print_exc()
+
+                _LOGGER.warning("=== CALL STACK WITH LOCALS ===")
+                current_tb: TracebackType | None = tb
+                while current_tb is not None:
+                    frame = current_tb.tb_frame
+                    _LOGGER.warning("\nFile: %s", frame.f_code.co_filename)
+                    _LOGGER.warning("Function: %s", frame.f_code.co_name)
+                    _LOGGER.warning("Line %s", current_tb.tb_lineno)
+                    _LOGGER.warning("Local variables: %s", list(frame.f_locals.keys()))
+                    for var_name, var_value in frame.f_locals.items():
+                        _LOGGER.warning("  %s = %s", var_name, repr(var_value))
+                    current_tb = current_tb.tb_next
+
         return DeviceCommandResult(device_reached=False)
 
     async def _execute(
@@ -257,8 +276,9 @@ class CommandWithMessageHandling(Command, Message, ABC):
                         )
                     else:
                         _LOGGER.warning(
-                            'No response received for command "%s". This can happen if the device has network issues or does not support the command',
+                            'No response received for command "%s" - errno "%d". This can happen if the device has network issues or does not support the command',
                             self.NAME,
+                            errno,
                         )
                     return HandlingResult(HandlingState.FAILED)
 
