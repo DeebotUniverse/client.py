@@ -150,7 +150,7 @@ def get_device_info() -> StaticDeviceInfo:
                         WorkMode.VACUUM,
                         WorkMode.VACUUM_AND_MOP,
                     ),
-                ),                
+                ),
             ),
             custom=CapabilityCustomCommand(
                 event=CustomCommandEvent, get=[], set=CustomCommand
@@ -256,7 +256,7 @@ def get_device_info() -> StaticDeviceInfo:
             state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
             station=CapabilityStation(
                 action=CapabilityExecuteTypes(
-                    station_action.StationAction, 
+                    station_action.StationAction,
                     types=(
                         StationAction.EMPTY_DUSTBIN,
                         StationAction.WASH_MOP,
