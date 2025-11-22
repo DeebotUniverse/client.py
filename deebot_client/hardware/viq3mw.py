@@ -75,7 +75,6 @@ from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
-from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
