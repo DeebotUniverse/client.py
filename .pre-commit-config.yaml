@@ -52,6 +52,7 @@ repos:
     rev: v3.7.1
     hooks:
       - id: prettier
+        language: node
         additional_dependencies:
           - prettier@3.7.1
           - prettier-plugin-sort-json@4.1.1
