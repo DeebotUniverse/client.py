@@ -184,13 +184,16 @@ jobs:
         with:
           fail_ci_if_error: true
           disable_telem: true
+          use_oidc: true
           files: coverage.lcov,coverage.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
-        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: true
+          disable_telem: true
           verbose: true
+          use_oidc: true
 
   build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
