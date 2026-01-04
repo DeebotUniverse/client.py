@@ -30,7 +30,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: ⤵️  Check out code from GitHub
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Collect information
         id: info
         run: |
@@ -57,18 +57,18 @@ jobs:
           echo "python_versions: ${all_python_versions}"
           echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       - name: Generate requirements files
         run: |
           uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
           uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
       - name: Upload requirements-test.txt
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: requirements-test.txt
           path: requirements-test.txt
       - name: Upload requirements-dev.txt
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: requirements-dev.txt
           path: requirements-dev.txt
@@ -78,14 +78,14 @@ jobs:
     name: Check Python code quality
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
 
       - name: 🏗 Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         id: setup-python
 
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
 
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
@@ -110,12 +110,12 @@ jobs:
       RUSTFLAGS: "-Dwarnings"
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
           components: rustfmt,clippy
       - name: Rust format
-        uses: actions-rust-lang/rustfmt@559aa3035a47390ba96088dffa783b5d26da9326 # v1.1.1
+        uses: actions-rust-lang/rustfmt@4066006ec54a31931b9b1fddfd38f2fdf2d27143 # v1.1.2
       - uses: clechasseur/rs-clippy-check@286fd9545eb133adad54b4af34bcb642e266ddd1 # v5.0.2
         with:
           args: --all-features
@@ -125,7 +125,7 @@ jobs:
     name: Run prek checks
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: Run prek
         uses: j178/prek-action@91fd7d7cf70ae1dee9f4f44e7dfa5d1073fe6623 # v1.0.11
         env:
@@ -145,13 +145,13 @@ jobs:
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
           python-version: ${{ matrix.python-version }}
         id: setup-python
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
           components: llvm-tools
@@ -159,7 +159,7 @@ jobs:
       - name: Install cargo-llvm-cov
         run: cargo install cargo-llvm-cov
       - name: Download requirements-dev.txt
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: requirements-dev.txt
       - name: Prepare env and install requirements
@@ -180,17 +180,20 @@ jobs:
           pytest tests -n auto --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov report --lcov --output-path coverage.lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@5a1091511ad55cbe89839c7260b706298ca349f7 # v5.5.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: true
           disable_telem: true
+          use_oidc: true
           files: coverage.lcov,coverage.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
-        uses: codecov/test-results-action@47f89e9acb64b76debcd5ea40642d25a4adced9f # v1.1.1
+        uses: codecov/codecov-action@671740ac38dd9b0130fbe1cec585b89eea48d3de # v5.5.2
         with:
           fail_ci_if_error: true
+          disable_telem: true
           verbose: true
+          use_oidc: true
 
   build-test-native:
     name: ${{ matrix.platform.name }} ${{ matrix.platform.target }} ${{ matrix.python-version }}
@@ -224,8 +227,8 @@ jobs:
             target: aarch64
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
@@ -246,14 +249,14 @@ jobs:
           manylinux: ${{ matrix.manylinux }}
           before-script-linux: python3 -m ensurepip
       - name: Upload wheels
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       - name: Download requirements-test.txt
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: requirements-test.txt
       - name: Prepare env and install wheel
@@ -289,15 +292,7 @@ jobs:
         target:
           - x86_64
           - aarch64
-          - armv7
-          - x86
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
-        exclude:
-          # Exclude deprecated HA architectures
-          - target: x86
-            python-version: "3.14"
-          - target: armv7
-            python-version: "3.14"
         include:
           # x86_64
           - target: x86_64
@@ -306,18 +301,9 @@ jobs:
           - target: aarch64
             docker_arch: arm64
             os: ubuntu-24.04-arm
-          # armv7
-          - target: armv7
-            docker_arch: arm/v7
-            os: ubuntu-24.04-arm
-            qemu: true
-          # x86
-          - target: x86
-            docker_arch: 386
-            qemu: true
     steps:
-      - uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
-      - uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+      - uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
+      - uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: 🏗 Set package version
@@ -332,17 +318,14 @@ jobs:
           sccache: "false"
           manylinux: musllinux_1_2
       - name: Upload wheels
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: wheels-musllinux-${{ matrix.target }}-${{ matrix.python-version }}
           path: dist
       - name: Download requirements-test.txt
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: requirements-test.txt
-      - name: Install Qemu
-        if: ${{ matrix.qemu || false }}
-        uses: docker/setup-qemu-action@c7c53464625b32c7a7e944ae62b3e17d2b600130 # v3.7.0
       - name: Install Docker Buildx
         uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435 # v3.11.1
       - name: Build image
@@ -372,15 +355,15 @@ jobs:
       - tests
     steps:
       - name: ⤵️ Checkout repository
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       - name: 🏗 Setup Python
-        uses: actions/setup-python@e797f83bcb11b83ae66e0230d6156d7c80228e7c # v6.0.0
+        uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
           python-version: ${{ needs.info.outputs.default_python_version }}
       - name: Download requirements-dev.txt
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           name: requirements-dev.txt
       - name: 🏗 Install the project
@@ -403,9 +386,9 @@ jobs:
     needs: tests
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: 🏗 Set up uv
-        uses: astral-sh/setup-uv@1e862dfacbd1d6d858c55d9b792c756523627244 # v7.1.4
+        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |
@@ -413,7 +396,7 @@ jobs:
       - name: 📦 Build source package
         run: uv build --sdist
       - name: Upload sdist
-        uses: actions/upload-artifact@330a01c490aca151604b8cf639adc76d48f6c5d4 # v5.0.0
+        uses: actions/upload-artifact@b7c566a772e6b6bfb58ed0dc250532a479d7789f # v6.0.0
         with:
           name: wheels-sdist
           path: dist
@@ -434,9 +417,9 @@ jobs:
       id-token: write
     steps:
       - name: ⤵️ Check out code from GitHub
-        uses: actions/checkout@1af3b93b6815bc44a9784bd300feb67ff0d1eeb3 # v6.0.0
+        uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: ⬇️ Download wheels
-        uses: actions/download-artifact@018cc2cf5baa6db3ef3c5f8a56943fffe632ef53 # v6.0.0
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
           pattern: wheels-*
           path: dist
@@ -447,7 +430,7 @@ jobs:
           verbose: true
           print-hash: true
       - name: ✍️ Sign published artifacts
-        uses: sigstore/gh-action-sigstore-python@f832326173235dcb00dd5d92cd3f353de3188e6c # v3.1.0
+        uses: sigstore/gh-action-sigstore-python@a5caf349bc536fbef3668a10ed7f5cd309a4b53d # v3.2.0
         with:
           inputs: ./dist/*.tar.gz ./dist/*.whl
           release-signing-artifacts: true
