@@ -57,7 +57,7 @@ jobs:
           echo "python_versions: ${all_python_versions}"
           echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - name: Generate requirements files
         run: |
           uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
@@ -85,7 +85,7 @@ jobs:
         id: setup-python
 
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
 
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
@@ -151,7 +151,7 @@ jobs:
           python-version: ${{ matrix.python-version }}
         id: setup-python
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - uses: actions-rust-lang/setup-rust-toolchain@1780873c7b576612439a134613cc4cc74ce5538c # v1.15.2
         with:
           components: llvm-tools
@@ -254,7 +254,7 @@ jobs:
           name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - name: Download requirements-test.txt
         uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7.0.0
         with:
@@ -357,7 +357,7 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - name: 🏗 Setup Python
         uses: actions/setup-python@83679a892e2d95755f2dac6acb0bfd1e9ac5d548 # v6.1.0
         with:
@@ -388,7 +388,7 @@ jobs:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@8e8c483db84b4bee98b60c0593521ed34d9990e8 # v6.0.1
       - name: 🏗 Set up uv
-        uses: astral-sh/setup-uv@681c641aba71e4a1c380be3ab5e12ad51f415867 # v7.1.6
+        uses: astral-sh/setup-uv@61cb8a9741eeb8a550a1b8544337180c0fc8476b # v7.2.0
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |
