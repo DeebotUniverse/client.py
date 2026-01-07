@@ -27,7 +27,7 @@ classifiers = [
 ]
 requires-python = ">=3.13.0"
 dependencies = [
-    "aiohttp~=3.10",
+    "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
     "cachetools>=5.0.0,<7.0",
     "defusedxml>=0.7.1",
@@ -52,12 +52,12 @@ cache-keys = [
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    "maturin[patchelf]==1.10.2",
+    "maturin[patchelf]==1.11.2",
     "maturin-import-hook==0.3.0",
 ]
 lint = [
     "mypy==1.19.1",
-    "prek==0.2.22",
+    "prek==0.2.25",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
