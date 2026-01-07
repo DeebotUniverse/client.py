@@ -216,9 +216,12 @@ class MqttClient:
                         ]
                         try:
                             _LOGGER.debug("All mqtt tasks created")
-                            await asyncio.wait(
+                            done, _ = await asyncio.wait(
                                 tasks, return_when=asyncio.FIRST_COMPLETED
                             )
+                            # Re-raise any exceptions from completed tasks
+                            for task in done:
+                                task.result()
                         finally:
                             for task in tasks:
                                 task.cancel()
