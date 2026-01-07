@@ -27,7 +27,7 @@ classifiers = [
 ]
 requires-python = ">=3.13.0"
 dependencies = [
-    "aiohttp~=3.10",
+    "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.0.0,<3.0",
     "cachetools>=5.0.0,<7.0",
     "defusedxml>=0.7.1",
