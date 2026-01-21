@@ -54,7 +54,7 @@ repos:
       - id: prettier
         language: node
         additional_dependencies:
-          - prettier@3.8.0
+          - prettier@3.8.1
           - prettier-plugin-sort-json@4.2.0
         exclude_types:
           - python
