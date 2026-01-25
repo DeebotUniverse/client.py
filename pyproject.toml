@@ -72,7 +72,7 @@ test = [
     "testfixtures==10.0.0",
     "pytest-github-actions-annotate-failures==0.3.0",
     "pytest-xdist==3.8.0",
-    "syrupy==5.0.0",
+    "syrupy==5.1.0",
 ]
 
 [tool.maturin]
