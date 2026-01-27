@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  ADDITIONAL_PYTHON_VERSIONS: "['3.14']"
+  ADDITIONAL_PYTHON_VERSIONS: "[]"
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}

@@ -20,12 +20,11 @@ keywords = [
 classifiers = [
     "Development Status :: 4 - Beta",
     "Intended Audience :: Developers",
-    "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Topic :: Home Automation",
     "Topic :: Software Development :: Libraries :: Python Modules",
 ]
-requires-python = ">=3.13.0"
+requires-python = ">=3.14.0"
 dependencies = [
     "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
