@@ -375,7 +375,7 @@ jobs:
         run: |
           rm -rf deebot_client/
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@ac0b0207a067aeb38de75cda57d2662345cac92a # v4.10.0
+        uses: CodSpeedHQ/action@df47568b033d58cefcc54680a649123fc87b7573 # v4.10.1
         with:
           run: pytest tests/ --codspeed
           mode: instrumentation
