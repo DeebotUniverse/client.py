@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from enum import Enum, unique
+from enum import StrEnum, unique
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import Event
@@ -74,7 +74,7 @@ class MinorMapEvent(Event):
 
 
 @unique
-class MapSetType(str, Enum):
+class MapSetType(StrEnum):
     """Map set type enum."""
 
     ROOMS = "ar"
