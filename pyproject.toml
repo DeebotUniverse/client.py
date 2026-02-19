@@ -124,7 +124,6 @@ fixture-parentheses = false
 combine-as-imports = true
 force-sort-within-sections = true
 known-first-party = ["deebot_client"]
-required-imports = ["from __future__ import annotations"]
 
 
 [tool.ruff.lint.per-file-ignores]

@@ -1,7 +1,5 @@
 """Test rust map module."""
 
-from __future__ import annotations
-
 import pytest
 from testfixtures import LogCapture
 

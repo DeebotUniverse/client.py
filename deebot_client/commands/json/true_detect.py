@@ -1,7 +1,5 @@
 """True detect command module."""
 
-from __future__ import annotations
-
 from deebot_client.events import TrueDetectEvent
 
 from .common import GetEnableCommand, SetEnableCommand

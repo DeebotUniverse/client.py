@@ -1,7 +1,5 @@
 """Water info event module."""
 
-from __future__ import annotations
-
 from enum import IntEnum, unique
 
 from .base import ValueEvent

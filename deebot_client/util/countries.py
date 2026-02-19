@@ -1,7 +1,5 @@
 """Countries util."""
 
-from __future__ import annotations
-
 _MAP_COUNTRY: dict[str, str] = {"GB": "UK"}
 
 

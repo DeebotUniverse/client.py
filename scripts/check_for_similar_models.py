@@ -1,7 +1,5 @@
 """Script to check for similar models and link them to the same hardware implementation."""
 
-from __future__ import annotations
-
 import asyncio
 import logging
 import os

@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import asyncio
 from typing import TYPE_CHECKING, cast
 from unittest.mock import ANY, AsyncMock, Mock, call, patch

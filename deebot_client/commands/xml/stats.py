@@ -1,7 +1,5 @@
 """CleanSum command module."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from deebot_client.events import TotalStatsEvent

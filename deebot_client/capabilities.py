@@ -1,7 +1,5 @@
 """Device capabilities module."""
 
-from __future__ import annotations
-
 from abc import ABC
 from dataclasses import dataclass, field, fields, is_dataclass
 from enum import StrEnum

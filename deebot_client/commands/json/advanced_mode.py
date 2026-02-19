@@ -1,7 +1,5 @@
 """Advanced mode command module."""
 
-from __future__ import annotations
-
 from deebot_client.events import AdvancedModeEvent
 
 from .common import GetEnableCommand, SetEnableCommand

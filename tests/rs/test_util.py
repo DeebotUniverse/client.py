@@ -1,7 +1,5 @@
 """Test rust functions."""
 
-from __future__ import annotations
-
 import base64
 import lzma
 from typing import TYPE_CHECKING

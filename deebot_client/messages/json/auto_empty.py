@@ -1,7 +1,5 @@
 """Auto empty messages."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events.auto_empty import AutoEmptyEvent, Frequency

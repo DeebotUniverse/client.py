@@ -1,7 +1,5 @@
 """Work state commands."""
 
-from __future__ import annotations
-
 from deebot_client.messages.json.work_state import OnWorkState
 
 from .common import JsonCommandWithMessageHandling
