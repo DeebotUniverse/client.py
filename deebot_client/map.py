@@ -270,11 +270,13 @@ class MapRoomHandling:
         self._amount_rooms: int = 0
         self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
         self._unsubscribers: list[Callable[[], None]] = []
+        self._map_id: str = ""
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type != MapSetType.ROOMS:
                 return
 
+            self._map_id = event.map_id
             self._amount_rooms = len(event.subsets)
             for room_id in self._rooms.copy():
                 if room_id not in event.subsets:
@@ -291,7 +293,9 @@ class MapRoomHandling:
                 self._rooms[room.id] = room
 
                 if len(self._rooms) == self._amount_rooms:
-                    event_bus.notify(RoomsEvent(list(self._rooms.values())))
+                    event_bus.notify(
+                        RoomsEvent(self._map_id, list(self._rooms.values()))
+                    )
 
         self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
 

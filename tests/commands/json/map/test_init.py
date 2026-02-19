@@ -206,7 +206,7 @@ async def test_getMapSet() -> None:
             for subset in subsets
         ),
     )
-    events = [firmware_event, MapSetEvent(MapSetType.ROOMS, subsets)]
+    events = [firmware_event, MapSetEvent(MapSetType.ROOMS, subsets, mid)]
     for subset in subsets:
         events.extend(
             [
@@ -255,7 +255,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['2120', '-4581', '2106', '-6271']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1], "1132127808"),
             ],
         ),
         (
@@ -276,7 +276,7 @@ async def test_getMapSet() -> None:
                     MapSetType.NO_MOP_ZONES,
                     "['-6217', '3919', '-6217', '231', '-2642', '231', '-2642', '3919']",
                 ),
-                MapSetEvent(MapSetType.NO_MOP_ZONES, [4]),
+                MapSetEvent(MapSetType.NO_MOP_ZONES, [4], "199390082"),
             ],
         ),
         (
@@ -312,7 +312,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['-5667', '317', '-4888', '-56']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1, 2, 3]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1, 2, 3], "199390082"),
             ],
         ),
         (
@@ -338,7 +338,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['3315', '3754', '3353', '-655']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1], "199390082"),
             ],
         ),
     ],
@@ -390,7 +390,7 @@ async def test_getMapSetV2_rooms() -> None:
             for subset in subsets
         ),
     )
-    events = [firmware_event, MapSetEvent(MapSetType(set_type), subsets)]
+    events = [firmware_event, MapSetEvent(MapSetType(set_type), subsets, mid)]
     for subset in subsets:
         events.extend(
             [
@@ -454,7 +454,7 @@ async def test_getMapSetV2_rooms_v2() -> None:
         Room(room_name, subset, "")
         for subset, room_name in zip(subsets, rooms_names, strict=False)
     ]
-    events = [firmware_event, RoomsEvent(rooms)]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
 
     await assert_command(
         GetMapSetV2(mid, set_type),

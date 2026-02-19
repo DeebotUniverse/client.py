@@ -170,6 +170,7 @@ class LifeSpanEvent(Event):
 class RoomsEvent(Event):
     """Room event representation."""
 
+    map_id: str
     rooms: list[Room]
 
 

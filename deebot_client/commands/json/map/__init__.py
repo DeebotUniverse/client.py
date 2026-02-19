@@ -84,7 +84,7 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         subset_ids = [int(subset["mssid"]) for subset in data["subsets"]]
-        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subset_ids))
+        event_bus.notify(MapSetEvent(MapSetType(data["type"]), subset_ids, data["mid"]))
         return cls._get_handling_success_with_subset_command_args(data, subset_ids)
 
     @classmethod
@@ -236,10 +236,11 @@ class GetMapSetV2(GetMapSet):
         """
         # subset is based64 7z compressed
         subsets = orjson.loads(decompress_base64_data(data["subsets"]).decode())
+        map_id = data["mid"]
 
         match map_type := data["type"]:
             case MapSetType.ROOMS:
-                return cls._handle_rooms_subsets(event_bus, data, subsets)
+                return cls._handle_rooms_subsets(event_bus, data, subsets, map_id)
 
             case MapSetType.VIRTUAL_WALLS | MapSetType.NO_MOP_ZONES:
                 subset_ids = []
@@ -258,7 +259,7 @@ class GetMapSetV2(GetMapSet):
                     )
                     subset_ids.append(int(mssid))
 
-                event_bus.notify(MapSetEvent(MapSetType(map_type), subset_ids))
+                event_bus.notify(MapSetEvent(MapSetType(map_type), subset_ids, map_id))
                 return HandlingResult.success()
 
         return HandlingResult.analyse()
@@ -269,6 +270,7 @@ class GetMapSetV2(GetMapSet):
         event_bus: EventBus,
         data: dict[str, Any],
         subsets: list[list[str]],
+        map_id: str,
     ) -> HandlingResult:
         # there are two versions of this message, depending on the number of values
         if subsets and len(subsets[0]) == 10:
@@ -286,7 +288,9 @@ class GetMapSetV2(GetMapSet):
 
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
-                RoomsEvent([Room(subset[1], int(subset[0]), "") for subset in subsets])
+                RoomsEvent(
+                    map_id, [Room(subset[1], int(subset[0]), "") for subset in subsets]
+                )
             )
 
             # GetMapSubSet isn't supported for this robot and not needed
@@ -303,7 +307,7 @@ class GetMapSetV2(GetMapSet):
         # 8 -> named all as 'settingName1'
         # return the subset ids to trigger GetMapSubSet for each one
         subset_ids = [int(subset[0]) for subset in subsets]
-        event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids))
+        event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids, map_id))
         return cls._get_handling_success_with_subset_command_args(data, subset_ids)
 
 

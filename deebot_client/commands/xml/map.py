@@ -125,7 +125,9 @@ class GetMapSet(XmlCommandWithMessageHandling):
 
         xml_subsets = xml.findall("m")
         subsets = cls._find_subsets(xml_subsets)
-        event_bus.notify(MapSetEvent(MapSetType(area_type), subsets=subsets))
+        event_bus.notify(
+            MapSetEvent(MapSetType(area_type), subsets=subsets, map_id=msid)
+        )
         args = {
             cls._ARGS_MSID: msid,
             cls._ARGS_TYPE: area_type,
