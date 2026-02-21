@@ -216,9 +216,12 @@ class MqttClient:
                         ]
                         try:
                             _LOGGER.debug("All mqtt tasks created")
-                            await asyncio.wait(
+                            done, _ = await asyncio.wait(
                                 tasks, return_when=asyncio.FIRST_COMPLETED
                             )
+                            # Re-raise any exceptions from completed tasks
+                            for task in done:
+                                task.result()
                         finally:
                             for task in tasks:
                                 task.cancel()
@@ -248,14 +251,6 @@ class MqttClient:
         )
         self._last_message_received_at = datetime.now(tz=UTC)
 
-        if message.payload is None or isinstance(message.payload, int | float):
-            _LOGGER.warning(
-                "Unexpected message: topic=%s, payload=%s",
-                message.topic,
-                message.payload,
-            )
-            return
-
         topic_split = message.topic.value.split("/")
         if message.topic.matches("iot/atr/#"):
             self._handle_atr(topic_split, message.payload)
@@ -282,18 +277,14 @@ class MqttClient:
 
             self._subscription_changes.task_done()
 
-    def _handle_atr(
-        self, topic_split: list[str], payload: str | bytes | bytearray
-    ) -> None:
+    def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
         try:
             if sub_info := self._subscriptions.get(topic_split[3]):
                 sub_info.callback(topic_split[2], payload)
         except Exception:
             _LOGGER.exception("An exception occurred during handling atr message")
 
-    def _handle_p2p(
-        self, topic_split: list[str], payload: str | bytes | bytearray
-    ) -> None:
+    def _handle_p2p(self, topic_split: list[str], payload: bytes) -> None:
         try:
             if (data_type := DataType.get(topic_split[11])) is None:
                 _LOGGER.warning('Unsupported data type: "%s"', topic_split[11])

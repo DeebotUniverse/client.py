@@ -116,7 +116,17 @@ class BaseContainer(ABC):
         if self.container is None:
             raise ContainerNotStartedError
 
-        host: str = self.container.attrs["NetworkSettings"]["IPAddress"]
+        network_settings = self.container.attrs["NetworkSettings"]
+        # Try to get IPAddress from top level (default bridge network)
+        host: str = network_settings.get("IPAddress", "")
+
+        # If not found, try to get it from custom networks
+        if not host:
+            networks = network_settings.get("Networks", {})
+            for network in networks.values():
+                if ip := network.get("IPAddress"):
+                    host = ip
+                    break
 
         if host != "":
             if os.environ.get("TESTING", "") == "jenkins":

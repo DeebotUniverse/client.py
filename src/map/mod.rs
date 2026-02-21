@@ -75,7 +75,7 @@ fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSC
     Ok((css_key, svg_object))
 }
 
-#[pyclass(eq, eq_int)]
+#[pyclass(from_py_object, eq, eq_int)]
 #[derive(PartialEq, Debug, Clone)]
 enum PositionType {
     #[pyo3(name = "DEEBOT")]
@@ -122,7 +122,7 @@ impl PositionType {
     }
 }
 
-#[pyclass(eq, eq_int, frozen, hash)]
+#[pyclass(from_py_object, eq, eq_int, frozen, hash)]
 #[derive(Default, PartialEq, Debug, Clone, Copy, Hash)]
 pub(super) enum RotationAngle {
     #[pyo3(name = "DEG_0")]

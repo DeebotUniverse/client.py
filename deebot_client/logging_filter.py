@@ -56,7 +56,7 @@ class SanitizeFilter(Filter):
                         sanitized_data = dict(data)
                     sanitized_data[key] = sanitized_value
 
-        return sanitized_data if sanitized_data else data
+        return sanitized_data or data
 
 
 def get_logger(name: str) -> Logger:
