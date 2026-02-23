@@ -141,7 +141,7 @@ class CapabilityCleanAction:
     """Capabilities for clean action."""
 
     command: Callable[[CleanAction], Command]
-    area: Callable[[CleanMode, str, int], Command] | None = None
+    area: Callable[[CleanMode, list[int | float], int], Command] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

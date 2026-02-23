@@ -32,8 +32,8 @@ async def test_Clean(command: Clean) -> None:
 @pytest.mark.parametrize(
     "command",
     [
-        CleanArea(CleanMode.SPOT_AREA, "4", 1),
-        CleanArea(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+        CleanArea(CleanMode.SPOT_AREA, [4], 1),
+        CleanArea(CleanMode.CUSTOM_AREA, [1580.0, -4087.0, 3833.0, -7525.0]),
     ],
 )
 async def test_CleanArea(command: CleanArea) -> None:

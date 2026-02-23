@@ -110,15 +110,15 @@ async def test_Clean_act(
     ("command", "args"),
     [
         (
-            CleanArea(CleanMode.SPOT_AREA, "5,8"),
+            CleanArea(CleanMode.SPOT_AREA, [5, 8]),
             {"act": "start", "type": "spotArea", "content": "5,8", "count": 1},
         ),
         (
-            CleanAreaV2(CleanMode.SPOT_AREA, "5,8"),
+            CleanAreaV2(CleanMode.SPOT_AREA, [5, 8]),
             {"act": "start", "content": {"type": "spotArea", "value": "5,8"}},
         ),
         (
-            CleanArea(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            CleanArea(CleanMode.CUSTOM_AREA, [1580.0, -4087.0, 3833.0, -7525.0]),
             {
                 "act": "start",
                 "type": "customArea",
@@ -127,7 +127,7 @@ async def test_Clean_act(
             },
         ),
         (
-            CleanAreaV2(CleanMode.CUSTOM_AREA, "1580.0,-4087.0,3833.0,-7525.0"),
+            CleanAreaV2(CleanMode.CUSTOM_AREA, [1580.0, -4087.0, 3833.0, -7525.0]),
             {
                 "act": "start",
                 "content": {
