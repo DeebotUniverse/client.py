@@ -1,9 +1,12 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 from testfixtures import LogCapture
+
+from deebot_client.event_bus import EventBus
 
 from deebot_client.commands.json import (
     GetMapSet,
@@ -461,6 +464,66 @@ async def test_getMapSetV2_rooms_v2() -> None:
         json,
         events,
     )
+
+
+@pytest.mark.parametrize(
+    ("subsets", "expected_rooms"),
+    [
+        # 10-field subsets (standard)
+        (
+            [
+                ["3", "Kitchen", "1", "1", "0", "100", "200", "1-1-1", "0", "1"],
+                ["5", "Bedroom", "2", "2", "0", "300", "400", "1-1-1", "0", "0"],
+            ],
+            [Room("Kitchen", 3, ""), Room("Bedroom", 5, "")],
+        ),
+        # 11-field subsets (e.g. DEEBOT X11 OmniCyclone)
+        (
+            [
+                [
+                    "0",
+                    "Bathroom",
+                    "1",
+                    "1",
+                    "0",
+                    "100",
+                    "200",
+                    "1-1-1",
+                    "0",
+                    "0",
+                    "1",
+                ],
+                [
+                    "1",
+                    "Hallway",
+                    "2",
+                    "2",
+                    "0",
+                    "300",
+                    "400",
+                    "1-1-1",
+                    "0",
+                    "0",
+                    "0",
+                ],
+            ],
+            [Room("Bathroom", 0, ""), Room("Hallway", 1, "")],
+        ),
+    ],
+    ids=["10-field", "11-field"],
+)
+def test_handle_rooms_subsets_field_count(
+    subsets: list[list[str]], expected_rooms: list[Room]
+) -> None:
+    """Test that _handle_rooms_subsets handles both 10 and 11 field subsets."""
+    event_bus = Mock(spec_set=EventBus)
+    mid = "123456"
+    data: dict[str, Any] = {"mid": mid, "type": MapSetType.ROOMS}
+
+    result = GetMapSetV2._handle_rooms_subsets(event_bus, data, subsets, mid)
+
+    assert result == HandlingResult.success()
+    event_bus.notify.assert_called_once_with(RoomsEvent(mid, expected_rooms))
 
 
 async def test_getMapTrace() -> None:

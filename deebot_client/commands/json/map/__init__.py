@@ -273,7 +273,7 @@ class GetMapSetV2(GetMapSet):
         map_id: str,
     ) -> HandlingResult:
         # there are two versions of this message, depending on the number of values
-        if subsets and len(subsets[0]) == 10:
+        if subsets and len(subsets[0]) >= 10:
             # subset values
             # 1 -> id
             # 2 -> name
