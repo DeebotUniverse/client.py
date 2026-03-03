@@ -272,7 +272,8 @@ class GetMapSetV2(GetMapSet):
         subsets: list[list[str]],
         map_id: str,
     ) -> HandlingResult:
-        # there are two versions of this message, depending on the number of values
+        # There are multiple versions of this message, depending on the number
+        # of values per room subset.
         if subsets and len(subsets[0]) >= 10:
             # subset values
             # 1 -> id
@@ -285,6 +286,7 @@ class GetMapSetV2(GetMapSet):
             # 8 -> room clean configs as '<count>-<speed>-<water>'
             # 9 -> unknown
             # 10 -> floor type
+            # 11 -> unknown (seen on newer models, e.g. X11)
 
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
