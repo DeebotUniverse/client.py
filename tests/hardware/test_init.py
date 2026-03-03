@@ -114,6 +114,12 @@ async def test_get_static_device_info(
         mock_import.assert_not_called()
 
 
+async def test_get_static_device_info_o073ti() -> None:
+    """Test loading static device info for o073ti."""
+    static_device_info = await hardware.get_static_device_info("o073ti")
+    assert isinstance(static_device_info, StaticDeviceInfo)
+
+
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [

@@ -463,6 +463,58 @@ async def test_getMapSetV2_rooms_v2() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
+    """Test newer room subset format with an extra trailing field."""
+    mid = "2085019938"
+    msid = "1625821963"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WBkAc0IAOJPLSVwt0kH/P+xqqpeMAKDNMF+IYzpZcULRMLOmxEjlmxK25T5/"
+        "+EFByTXHVmYrmkHzzlN4HAOYtEMCvcFLQwTVJj3THeHYTQNRuGuJIkqQXRfd/eYh2"
+        "kU7iwlrjtjmI5TvLY4EBIO1yRI3dV9SXfFY57HOQH3xRBUMN0CgrtCTK0FFUweIxU"
+        "ESfe8L1T35P48piEOlzhc07QBQw+je7of90SE6b4y8b4Ycl/Y3TGOS7zWALijDYYo"
+        "IFACQQJifKBZ0ZVL24gxxwvXGEPiXtQyuBuQSmEYC65AkaoHGmuccJCiEPHAzaMd3"
+        "dFXzof7/Q3eAmkP20uBHNo2puBeRgGG/yWN4NzRzBp0xgdWrlYOZ/D23CCeM84E"
+    )
+    subsets = [0, 1, 2, 3, 5, 6, 7, 8, 9]
+    rooms_names = [
+        "Buanderie",
+        "Salle de bains",
+        "Salon",
+        "Wc",
+        "Dressing",
+        "Salle \u00e0 manger",
+        "Cuisine",
+        "Couloir",
+        "Chambre Parentale",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gfhhhi",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 612,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, subset, "")
+        for subset, room_name in zip(subsets, rooms_names, strict=False)
+    ]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        events,
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160
