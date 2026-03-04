@@ -272,9 +272,10 @@ class GetMapSetV2(GetMapSet):
         subsets: list[list[str]],
         map_id: str,
     ) -> HandlingResult:
-        # There are multiple versions of this message, depending on the number
-        # of values per room subset.
-        if subsets and len(subsets[0]) >= 10:
+        # There are currently two known room subset formats:
+        # - 10 fields: standard V2 format
+        # - 11 fields: newer models (e.g. X11) with an extra trailing field
+        if subsets and len(subsets[0]) in (10, 11):
             # subset values
             # 1 -> id
             # 2 -> name
@@ -286,7 +287,7 @@ class GetMapSetV2(GetMapSet):
             # 8 -> room clean configs as '<count>-<speed>-<water>'
             # 9 -> unknown
             # 10 -> floor type
-            # 11 -> unknown (seen on newer models, e.g. X11)
+            # 11 -> unknown extra trailing field (seen on newer models, e.g. X11)
 
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
