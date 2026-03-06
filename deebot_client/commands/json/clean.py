@@ -108,6 +108,29 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class CleanAreaFreeClean(CleanV2):
+    """Clean area command using freeClean type.
+
+    Used by newer robots (e.g. DEEBOT X11 OmniCyclone) that use the freeClean
+    clean type instead of spotArea. The value format is "<cleanings>,<room_ids>".
+    """
+
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        self._additional_content = {
+            "type": CleanMode.FREE_CLEAN.value,
+            "value": f"{cleanings},{','.join(str(int(i)) for i in area)}",
+        }
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
