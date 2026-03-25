@@ -68,7 +68,7 @@ test = [
     "pytest-docker-fixtures==1.4.2",
     "pytest-timeout==2.4.0",
     "pytest==9.0.2",
-    "testfixtures==10.0.0",
+    "testfixtures==11.0.0",
     "pytest-github-actions-annotate-failures==0.3.0",
     "pytest-xdist==3.8.0",
     "syrupy==5.1.0",

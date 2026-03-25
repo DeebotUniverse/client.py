@@ -296,7 +296,7 @@ dev = [
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "syrupy", specifier = "==5.1.0" },
-    { name = "testfixtures", specifier = "==10.0.0" },
+    { name = "testfixtures", specifier = "==11.0.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
 ]
@@ -317,7 +317,7 @@ test = [
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
     { name = "syrupy", specifier = "==5.1.0" },
-    { name = "testfixtures", specifier = "==10.0.0" },
+    { name = "testfixtures", specifier = "==11.0.0" },
 ]
 
 [[package]]
@@ -916,11 +916,11 @@ wheels = [
 
 [[package]]
 name = "testfixtures"
-version = "10.0.0"
+version = "11.0.0"
 source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/4d/53/d7439458a89dc5be4780b23af09432a8347c798ea52ba0b53fd158f86653/testfixtures-10.0.0.tar.gz", hash = "sha256:2b9829bf7f42f0ca8600250762e6725575da59af18d9a7f82aae2c97b14f0f66", size = 147464, upload-time = "2025-10-29T08:42:20.733Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/13/b4/8f36d45d9fc00a24dcfeb131618cdfbfe77dfedd88c06a80d17f51f49fef/testfixtures-11.0.0.tar.gz", hash = "sha256:06dfeb3792e06c4ea7217e14114391f6c7735c36e0a57e6f4641c6ae5d790ee7", size = 152532, upload-time = "2026-03-09T13:57:58.683Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/15/30/70da9c7cd9931f2299ab2a353cf082427ba5dbea5f34db57e6a9ef89c8a5/testfixtures-10.0.0-py3-none-any.whl", hash = "sha256:c54ed5c4cd93ad271a6add94a575a5843964ea3aaf590f4c3cb4df16a261b15f", size = 111285, upload-time = "2025-10-29T08:42:19.647Z" },
+    { url = "https://files.pythonhosted.org/packages/40/05/598b83e009299694299047ad4d21a7d4c3ca13c2e6ff2d5c26623bd59c97/testfixtures-11.0.0-py3-none-any.whl", hash = "sha256:371385596e87388469f2635decba00619cc416cd034671ecde8a059f6625634e", size = 51639, upload-time = "2026-03-09T13:57:57.451Z" },
 ]
 
 [[package]]
