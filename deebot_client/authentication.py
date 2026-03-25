@@ -3,11 +3,12 @@
 from __future__ import annotations
 
 import asyncio
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, fields, is_dataclass
 from http import HTTPStatus
 import time
 from typing import TYPE_CHECKING, Any
-from urllib.parse import urljoin
+from urllib.parse import urljoin, urlparse
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
@@ -25,7 +26,11 @@ from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
 
 if TYPE_CHECKING:
-    from collections.abc import Callable, Coroutine, Mapping
+    from collections.abc import Callable, Coroutine
+
+    from .models import ApiDeviceInfo, StaticDeviceInfo
+    from .ngiot_client import NgiotClient
+    from .sst_authentication import SstAuthenticator
 
 
 _LOGGER = get_logger(__name__)
@@ -44,6 +49,8 @@ _META = {
     "deviceType": "1",
 }
 MAX_RETRIES = 3
+_NGIOT_BASE_URL_TEMPLATE = "https://api-base.dc-{region}.ww.ecouser.net"
+_NGIOT_COMMAND_MODULE_PREFIX = "deebot_client.commands.ngiot"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -56,6 +63,21 @@ class RestConfiguration:
     portal_url: str
     login_url: str
     auth_code_url: str
+
+
+@dataclass(frozen=True, kw_only=True)
+class NgiotConfiguration:
+    """Optional overrides and defaults for NGIOT-backed devices."""
+
+    base_url: str | None = None
+    region: str | None = None
+    user_agent: str = "okhttp/4.9.1"
+    channel: str = "Android"
+    protocol_version: str = "0.0.22"
+    timezone_name: str = "UTC"
+    timezone_offset_minutes: int = 0
+    requested_ttl: int = 600
+    refresh_skew: int = 60
 
 
 def create_rest_config(
@@ -127,9 +149,6 @@ class _AuthClient:
             user_id = login_token_resp["userId"]
 
         user_access_token = login_token_resp["token"]
-        # last is validity in milliseconds. Usually 7 days
-        # we set the expiry at 99% of the validity
-        # 604800 = 7 days
         expires_at = int(
             time.time() + int(login_token_resp.get("last", 604800)) / 1000 * 0.99
         )
@@ -149,11 +168,9 @@ class _AuthClient:
         ) as res:
             res.raise_for_status()
 
-            # ecovacs returns a json but content_type header is set to text
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
             _LOGGER.debug("got %s", json)
-            # TODO better error handling
             if json["code"] == "0000":
                 data: dict[str, Any] = json["data"]
                 return data
@@ -246,7 +263,6 @@ class _AuthClient:
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
-                # If it is a set token error try again
                 _LOGGER.warning("loginByItToken set token error, attempt %d/3", i + 2)
                 continue
 
@@ -348,6 +364,7 @@ class Authenticator:
         account_id: str,
         password_hash: str,
     ) -> None:
+        self._config = config
         self._auth_client = _AuthClient(
             config,
             account_id,
@@ -361,6 +378,122 @@ class Authenticator:
         self._credentials: Credentials | None = None
         self._refresh_handle: asyncio.TimerHandle | None = None
         self._tasks: set[asyncio.Future[Any]] = set()
+        self._ngiot_config = NgiotConfiguration()
+        self._ngiot_base_url: str | None = None
+        self.sst_authenticator: SstAuthenticator | None = None
+        self.ngiot_client: NgiotClient | None = None
+
+    def configure_ngiot(
+        self,
+        *,
+        base_url: str | None = None,
+        region: str | None = None,
+        user_agent: str = "okhttp/4.9.1",
+        channel: str = "Android",
+        protocol_version: str = "0.0.22",
+        timezone_name: str = "UTC",
+        timezone_offset_minutes: int = 0,
+        requested_ttl: int = 600,
+        refresh_skew: int = 60,
+    ) -> None:
+        """Store NGIOT defaults and optional region/base-url overrides.
+
+        ``base_url`` wins over ``region``. If neither is configured, the
+        runtime derives the SST endpoint from the device ``service.mqs`` host.
+        """
+
+        normalized_base_url = (
+            self._normalize_base_url(base_url) if base_url is not None else None
+        )
+        normalized_region = (
+            self._normalize_region(region) if region is not None else None
+        )
+        self._ngiot_config = NgiotConfiguration(
+            base_url=normalized_base_url,
+            region=normalized_region,
+            user_agent=user_agent,
+            channel=channel,
+            protocol_version=protocol_version,
+            timezone_name=timezone_name,
+            timezone_offset_minutes=timezone_offset_minutes,
+            requested_ttl=requested_ttl,
+            refresh_skew=refresh_skew,
+        )
+
+    def attach_ngiot(
+        self,
+        *,
+        base_url: str | None = None,
+        region: str | None = None,
+        user_agent: str = "okhttp/4.9.1",
+        channel: str = "Android",
+        protocol_version: str = "0.0.22",
+        timezone_name: str = "UTC",
+        timezone_offset_minutes: int = 0,
+        requested_ttl: int = 600,
+        refresh_skew: int = 60,
+    ) -> None:
+        """Attach NGIOT helpers immediately using an explicit base URL or region."""
+
+        self.configure_ngiot(
+            base_url=base_url,
+            region=region,
+            user_agent=user_agent,
+            channel=channel,
+            protocol_version=protocol_version,
+            timezone_name=timezone_name,
+            timezone_offset_minutes=timezone_offset_minutes,
+            requested_ttl=requested_ttl,
+            refresh_skew=refresh_skew,
+        )
+        resolved_base_url = self._resolve_configured_ngiot_base_url()
+        if resolved_base_url is None:
+            msg = (
+                "attach_ngiot() requires base_url or region. "
+                "For automatic per-device attachment, call configure_ngiot() and let "
+                "ApiClient.get_devices() bootstrap NGIOT for matching hardware classes."
+            )
+            raise ApiError(msg)
+
+        if self.ngiot_client is not None:
+            if self._ngiot_base_url == resolved_base_url:
+                return
+            msg = (
+                "NGIOT transport already attached with a different base URL. "
+                "Use configure_ngiot() plus automatic device bootstrap, or call teardown() first."
+            )
+            raise ApiError(msg)
+
+        self._create_ngiot_stack(resolved_base_url)
+
+    async def ensure_ngiot_for_device(
+        self,
+        device_info: ApiDeviceInfo,
+        static_device_info: StaticDeviceInfo,
+    ) -> bool:
+        """Attach NGIOT transport if the hardware profile uses NGIOT commands."""
+
+        if not self._uses_ngiot(static_device_info):
+            return False
+
+        desired_base_url = self._resolve_ngiot_base_url(device_info)
+        if self.ngiot_client is not None and self._ngiot_base_url == desired_base_url:
+            return True
+
+        if self.sst_authenticator is not None:
+            if self._ngiot_base_url != desired_base_url:
+                _LOGGER.info(
+                    "Re-attaching NGIOT transport with region/base URL %s for %s",
+                    desired_base_url,
+                    device_info["class"],
+                )
+            await self.sst_authenticator.teardown()
+
+        self.sst_authenticator = None
+        self.ngiot_client = None
+        self._ngiot_base_url = None
+        self._create_ngiot_stack(desired_base_url)
+        return True
 
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
@@ -411,6 +544,11 @@ class Authenticator:
     async def teardown(self) -> None:
         """Teardown authenticator."""
         self._cancel_refresh_task()
+        if self.sst_authenticator is not None:
+            await self.sst_authenticator.teardown()
+            self.sst_authenticator = None
+        self.ngiot_client = None
+        self._ngiot_base_url = None
         await cancel(self._tasks)
 
     def _cancel_refresh_task(self) -> None:
@@ -418,7 +556,6 @@ class Authenticator:
             self._refresh_handle.cancel()
 
     def _create_refresh_task(self, credentials: Credentials) -> None:
-        # refresh at 99% of validity
         def refresh() -> None:
             _LOGGER.debug("Refresh token")
 
@@ -432,5 +569,118 @@ class Authenticator:
             self._refresh_handle = None
 
         validity = (credentials.expires_at - time.time()) * 0.99
-
         self._refresh_handle = asyncio.get_event_loop().call_later(validity, refresh)
+
+    def _create_ngiot_stack(self, base_url: str) -> None:
+        from .ngiot_client import NgiotClient
+        from .sst_authentication import SstAuthenticator
+
+        normalized_base_url = self._normalize_base_url(base_url)
+        self.sst_authenticator = SstAuthenticator(
+            self._config.session,
+            self,
+            base_url=normalized_base_url,
+            requested_ttl=self._ngiot_config.requested_ttl,
+            refresh_skew=self._ngiot_config.refresh_skew,
+        )
+        self.ngiot_client = NgiotClient(
+            self._config.session,
+            self.sst_authenticator,
+            user_agent=self._ngiot_config.user_agent,
+            channel=self._ngiot_config.channel,
+            protocol_version=self._ngiot_config.protocol_version,
+            timezone_name=self._ngiot_config.timezone_name,
+            timezone_offset_minutes=self._ngiot_config.timezone_offset_minutes,
+        )
+        self._ngiot_base_url = normalized_base_url
+
+    def _resolve_configured_ngiot_base_url(self) -> str | None:
+        if self._ngiot_config.base_url is not None:
+            return self._ngiot_config.base_url
+        if self._ngiot_config.region is not None:
+            return self._format_ngiot_base_url(self._ngiot_config.region)
+        return None
+
+    def _resolve_ngiot_base_url(self, device_info: ApiDeviceInfo) -> str:
+        configured_base_url = self._resolve_configured_ngiot_base_url()
+        if configured_base_url is not None:
+            return configured_base_url
+
+        service = device_info.get("service")
+        if isinstance(service, Mapping):
+            mqs_host = service.get("mqs")
+            if isinstance(mqs_host, str) and mqs_host:
+                return self._derive_ngiot_base_url_from_mqs(mqs_host)
+
+        msg = (
+            f'Could not resolve NGIOT base URL for device class "{device_info["class"]}". '
+            "Configure an explicit region or base_url before device bootstrap."
+        )
+        raise ApiError(msg)
+
+    @classmethod
+    def _uses_ngiot(cls, static_device_info: StaticDeviceInfo) -> bool:
+        return cls._object_uses_ngiot(getattr(static_device_info, "capabilities", None))
+
+    @classmethod
+    def _object_uses_ngiot(cls, value: object) -> bool:
+        if value is None:
+            return False
+        if isinstance(value, type):
+            return cls._is_ngiot_module(value.__module__)
+        if cls._is_ngiot_module(value.__class__.__module__):
+            return True
+        if isinstance(value, Mapping):
+            return any(
+                cls._object_uses_ngiot(key) or cls._object_uses_ngiot(item)
+                for key, item in value.items()
+            )
+        if isinstance(value, (list, tuple, set, frozenset)):
+            return any(cls._object_uses_ngiot(item) for item in value)
+        if is_dataclass(value):
+            return any(
+                cls._object_uses_ngiot(getattr(value, field.name))
+                for field in fields(value)
+            )
+        return False
+
+    @staticmethod
+    def _is_ngiot_module(module_name: str) -> bool:
+        return module_name.startswith(_NGIOT_COMMAND_MODULE_PREFIX)
+
+    @staticmethod
+    def _normalize_base_url(base_url: str) -> str:
+        parsed = urlparse(base_url)
+        if parsed.scheme and parsed.netloc:
+            host = parsed.netloc
+        else:
+            host = base_url
+        return f"https://{host.strip().rstrip('/')}"
+
+    @staticmethod
+    def _normalize_region(region: str) -> str:
+        normalized = region.strip().lower()
+        if normalized.startswith("dc-"):
+            normalized = normalized[3:]
+        return normalized
+
+    @classmethod
+    def _format_ngiot_base_url(cls, region: str) -> str:
+        return _NGIOT_BASE_URL_TEMPLATE.format(region=cls._normalize_region(region))
+
+    @classmethod
+    def _derive_ngiot_base_url_from_mqs(cls, mqs_host: str) -> str:
+        parsed = urlparse(mqs_host)
+        host = parsed.netloc or parsed.path
+        host = host.strip().rstrip("/")
+        if not host:
+            msg = f'Could not derive NGIOT base URL from mqs host "{mqs_host}"'
+            raise ApiError(msg)
+        if host.startswith("api-base."):
+            return cls._normalize_base_url(host)
+        if host.startswith("api-ngiot."):
+            return cls._normalize_base_url("api-base." + host.split(".", 1)[1])
+        if "." in host:
+            return cls._normalize_base_url("api-base." + host.split(".", 1)[1])
+        msg = f'Could not derive NGIOT base URL from mqs host "{mqs_host}"'
+        raise ApiError(msg)
