@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from deebot_client import commands
 from deebot_client.capabilities import (
+    Capabilities,
     CapabilityClean,
     CapabilityCleanAction,
     CapabilityCustomCommand,
@@ -20,13 +21,15 @@ from deebot_client.capabilities import (
     CapabilityStation,
     CapabilityStats,
     CapabilityWater,
-    Capabilities,
     DeviceType,
 )
 from deebot_client.commands.json import station_action
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
 from deebot_client.commands.json.battery import GetBattery
-from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
+from deebot_client.commands.json.carpet import (
+    GetCarpetAutoFanBoost,
+    SetCarpetAutoFanBoost,
+)
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
@@ -64,8 +67,8 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.relocation import SetRelocationState
-from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.station_state import GetStationState
+from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
@@ -95,8 +98,8 @@ from deebot_client.events import (
     ReportStatsEvent,
     RoomsEvent,
     StateEvent,
-    StatsEvent,
     StationEvent,
+    StatsEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VolumeEvent,
