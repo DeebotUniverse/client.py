@@ -258,21 +258,11 @@ class NgiotClient:
         *,
         pause: bool,
     ) -> Any:
-        """Pause the current job.
-
-        Resume is action-specific on NGIOT: cleaning resumes via clean start, and
-        returning resumes via charge start. There is no captured generic
-        ``pauseSwitch: false`` control for this ruleset.
-        """
-        if not pause:
-            raise ApiError(
-                "NGIOT resume is action-specific and is not exposed as pauseSwitch=false"
-            )
-
+        """Pause or resume the current cleaning job."""
         return await self.write_data(
             device,
-            apn=APN_PAUSE,
-            data={"pauseSwitch": True},
+            apn=APN_PAUSE if pause else APN_RESUME,
+            data={"pauseSwitch": pause},
         )
 
     async def set_charge(

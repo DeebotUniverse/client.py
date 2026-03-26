@@ -91,7 +91,22 @@ from deebot_client.models import StaticDeviceInfo
 if TYPE_CHECKING:
     from deebot_client.command import Command
     from deebot_client.events.base import Event
-
+from deebot_client.commands.ngiot.battery import GetBattery as GetNgiotBattery
+from deebot_client.commands.ngiot.clean import GetCleanInfo as GetNgiotCleanInfo
+from deebot_client.commands.ngiot.error import GetError as GetNgiotError
+from deebot_client.commands.ngiot.map import (
+    GetCachedMapInfo as GetNgiotCachedMapInfo,
+    GetMajorMap as GetNgiotMajorMap,
+    GetMapTrace as GetNgiotMapTrace,
+)
+from deebot_client.commands.ngiot.network import GetNetInfo as GetNgiotNetInfo
+from deebot_client.commands.ngiot.pos import GetPos as GetNgiotPos
+from deebot_client.commands.ngiot.stats import (
+    GetReportStats as GetNgiotReportStats,
+    GetStats as GetNgiotStats,
+    GetTotalStats as GetNgiotTotalStats,
+)
+from deebot_client.hardware.eyfj07 import get_device_info as get_eyfj07_info
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
@@ -243,9 +258,32 @@ async def test_get_static_device_info(
                 VolumeEvent: [GetVolume()],
                 WaterAmountEvent: [GetWaterInfo()],
             },
+            (
+            "eyfj07",
+            {       
+                AvailabilityEvent: [GetNgiotBattery(is_available_check=True)],
+                BatteryEvent: [GetNgiotBattery()],
+                CachedMapInfoEvent: [GetNgiotCachedMapInfo()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetNgiotError()],
+                FanSpeedEvent: [GetFanSpeed()],
+                LifeSpanEvent: [GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH, LifeSpan.UNIT_CARE])],
+                MajorMapEvent: [GetNgiotMajorMap()],
+                MapChangedEvent: [],
+                MapTraceEvent: [GetNgiotMapTrace()],
+                NetworkInfoEvent: [GetNgiotNetInfo()],
+                PositionsEvent: [GetNgiotPos()],
+                ReportStatsEvent: [GetNgiotReportStats()],
+                RoomsEvent: [GetNgiotCachedMapInfo()],
+                StateEvent: [GetNgiotCleanInfo()],
+                StatsEvent: [GetNgiotStats()],
+                TotalStatsEvent: [GetNgiotTotalStats()],
+            }
+    
+),
         ),
     ],
-    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv", "eyfj07"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]

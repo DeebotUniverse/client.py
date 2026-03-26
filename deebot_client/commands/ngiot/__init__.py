@@ -14,6 +14,8 @@ from .life_span import GetLifeSpan, ResetLifeSpan
 from .network import GetNetInfo
 from .play_sound import PlaySound
 from .stats import GetReportStats, GetStats, GetTotalStats
+from .map import GetCachedMapInfo, GetMajorMap, GetMapSet, GetMapTrace, GetMinorMap
+from .pos import GetPos
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
@@ -35,6 +37,12 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetFanSpeed",
+    "GetCachedMapInfo",
+    "GetMajorMap",
+    "GetMapSet",
+    "GetMapTrace",
+    "GetMinorMap",
+    "GetPos",
 ]
 
 _COMMANDS: list[type[Command]] = [
@@ -54,6 +62,12 @@ _COMMANDS: list[type[Command]] = [
     GetReportStats,
     GetStats,
     GetTotalStats,
+    GetCachedMGetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapTrace,
+    GetMinorMap,
+    GetPos,apInfo,
 ]
 
 COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}

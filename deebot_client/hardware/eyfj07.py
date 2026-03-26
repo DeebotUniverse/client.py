@@ -19,6 +19,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilityStats,
     DeviceType,
+    CapabilityMap,
 )
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -35,6 +36,8 @@ from deebot_client.events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
+    PositionsEvent,
+    RoomsEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 
@@ -48,6 +51,20 @@ from deebot_client.commands.ngiot.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.ngiot.network import GetNetInfo
 from deebot_client.commands.ngiot.play_sound import PlaySound
 from deebot_client.commands.ngiot.stats import GetReportStats, GetStats, GetTotalStats
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MajorMapEvent,
+    MapChangedEvent,
+    MapTraceEvent,
+)
+from deebot_client.commands.ngiot.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapTrace,
+    GetMinorMap,
+)
+from deebot_client.commands.ngiot.pos import GetPos
 
 
 def get_device_info() -> StaticDeviceInfo:
@@ -103,7 +120,18 @@ def get_device_info() -> StaticDeviceInfo:
                 get=[GetLifeSpan()],
                 reset=ResetLifeSpan,
             ),
-            map=None,
+            map=CapabilityMap(
+                    cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+                    changed=CapabilityEvent(MapChangedEvent, []),
+                    info=None,
+                    major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
+                    minor=CapabilityExecute(GetMinorMap),
+                    multi_state=None,
+                    position=CapabilityEvent(PositionsEvent, [GetPos()]),
+                    rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+                    set=CapabilityExecute(GetMapSet),
+                    trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
+            ),
             network=CapabilityEvent(
                 NetworkInfoEvent,
                 [GetNetInfo()],

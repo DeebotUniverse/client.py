@@ -9,14 +9,20 @@ from deebot_client.events import StateEvent
 from deebot_client.exceptions import ApiError
 from deebot_client.message import HandlingResult
 from deebot_client.models import CleanAction, CleanMode, State
-from deebot_client.ngiot_client import APN_AREA_CLEAN, APN_CLEAN_START, APN_PAUSE
+from deebot_client.ngiot_client import (
+    APN_AREA_CLEAN,
+    APN_CLEAN_START,
+    APN_PAUSE,
+    APN_RESUME,
+)
 
 from .common import NgiotExecuteCommand, RobotDetailGetCommand
 
 if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo
     from deebot_client.ngiot_client import NgiotClient
-
 
 class Clean(NgiotExecuteCommand):
     """Translate generic clean actions into captured NGIOT control payloads."""
@@ -27,17 +33,20 @@ class Clean(NgiotExecuteCommand):
         super().__init__({})
         self._action = action
 
-    async def _request_ngiot(
+    async def _execute(
         self,
-        client: NgiotClient,
+        authenticator: Authenticator,
         device_info: ApiDeviceInfo,
-    ) -> dict[str, Any]:
-        apn, body_data = self._get_request()
-        return await client.request(
-            device_info,
-            apn=apn,
-            body_data=body_data,
-        )
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        state = event_bus.get_last_event(StateEvent)
+        if state is not None:
+            if self._action is CleanAction.RESUME and state.state != State.PAUSED:
+                self._action = CleanAction.START
+            elif self._action is CleanAction.START and state.state == State.PAUSED:
+                self._action = CleanAction.RESUME
+
+        return await super()._execute(authenticator, device_info, event_bus)
 
     def _get_request(self) -> tuple[str, dict[str, Any]]:
         if self._action is CleanAction.START:
@@ -71,11 +80,6 @@ class CleanArea(NgiotExecuteCommand):
         client: NgiotClient,
         device_info: ApiDeviceInfo,
     ) -> dict[str, Any]:
-        if self._mode not in (CleanMode.CUSTOM_AREA, CleanMode.SPOT_AREA):
-            raise ApiError(
-                f"Clean mode {self._mode!s} is not mapped for NGIOT room cleaning"
-            )
-
         if self._cleanings != 1:
             raise ApiError(
                 "NGIOT room cleaning repeat count has not been captured yet"
