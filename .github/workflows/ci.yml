@@ -180,7 +180,7 @@ jobs:
           pytest tests -n auto --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov report --lcov --output-path coverage.lcov
       - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           fail_ci_if_error: true
           disable_telem: true
@@ -188,7 +188,7 @@ jobs:
           files: coverage.lcov,coverage.xml
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
-        uses: codecov/codecov-action@1af58845a975a7985b0beb0cbe6fbbb71a41dbad # v5.5.3
+        uses: codecov/codecov-action@57e3a136b779b570ffcdbf80b3bdc90e7fab3de2 # v6.0.0
         with:
           fail_ci_if_error: true
           disable_telem: true
