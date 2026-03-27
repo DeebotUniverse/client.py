@@ -358,8 +358,11 @@ class NgiotClient:
         return body.get("data", {})
 
     @staticmethod
-    def _validate_response(response: Mapping[str, Any]) -> None:
+    def _validate_response(response: Mapping[str, Any] | None) -> None:
         """Validate NGIOT envelope and raise ApiError on device-side failures."""
+        if response is None:
+            raise ApiError("Invalid NGIOT response: server returned null/empty body")
+
         body = response.get("body")
         if not isinstance(body, Mapping):
             raise ApiError("Invalid NGIOT response: missing body")

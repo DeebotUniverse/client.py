@@ -17,6 +17,7 @@ from deebot_client.capabilities import (
     CapabilityLifeSpan,
     CapabilitySetTypes,
     CapabilitySettings,
+    CapabilitySetEnable,
     CapabilityStats,
     DeviceType,
     CapabilityMap,
@@ -26,6 +27,7 @@ from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
     CustomCommandEvent,
+    ChildLockEvent,
     ErrorEvent,
     FanSpeedEvent,
     FanSpeedLevel,
@@ -50,7 +52,15 @@ from deebot_client.commands.ngiot.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.ngiot.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.ngiot.network import GetNetInfo
 from deebot_client.commands.ngiot.play_sound import PlaySound
+from deebot_client.commands.ngiot.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.ngiot.stats import GetReportStats, GetStats, GetTotalStats
+from deebot_client.commands.ngiot.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapTrace,
+    GetMinorMap,
+)
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
@@ -127,7 +137,7 @@ def get_device_info() -> StaticDeviceInfo:
                     major=CapabilityEvent(MajorMapEvent, [GetMajorMap()]),
                     minor=CapabilityExecute(GetMinorMap),
                     multi_state=None,
-                    position=CapabilityEvent(PositionsEvent, [GetPos()]),
+                    position=None,
                     rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
                     set=CapabilityExecute(GetMapSet),
                     trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
@@ -137,7 +147,13 @@ def get_device_info() -> StaticDeviceInfo:
                 [GetNetInfo()],
             ),
             play_sound=CapabilityExecute(PlaySound),
-            settings=CapabilitySettings(),
+            settings=CapabilitySettings(
+            child_lock=CapabilitySetEnable(
+                ChildLockEvent,
+                [GetChildLock()],
+                SetChildLock,
+                ),
+            ),
             state=CapabilityEvent(
                 StateEvent,
                 [GetCleanInfo()],

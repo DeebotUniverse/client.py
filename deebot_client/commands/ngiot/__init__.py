@@ -14,7 +14,14 @@ from .life_span import GetLifeSpan, ResetLifeSpan
 from .network import GetNetInfo
 from .play_sound import PlaySound
 from .stats import GetReportStats, GetStats, GetTotalStats
-from .map import GetCachedMapInfo, GetMajorMap, GetMapSet, GetMapTrace, GetMinorMap
+from .child_lock import GetChildLock, SetChildLock
+from .map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSet,
+    GetMapTrace,
+    GetMinorMap,
+)
 from .pos import GetPos
 
 if TYPE_CHECKING:
@@ -37,6 +44,8 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetFanSpeed",
+    "GetChildLock",
+    "SetChildLock",
     "GetCachedMapInfo",
     "GetMajorMap",
     "GetMapSet",
@@ -62,12 +71,14 @@ _COMMANDS: list[type[Command]] = [
     GetReportStats,
     GetStats,
     GetTotalStats,
-    GetCachedMGetCachedMapInfo,
+    GetChildLock,
+    SetChildLock,
+    GetCachedMapInfo,
     GetMajorMap,
     GetMapSet,
     GetMapTrace,
     GetMinorMap,
-    GetPos,apInfo,
+    GetPos,
 ]
 
 COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}

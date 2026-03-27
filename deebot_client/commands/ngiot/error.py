@@ -17,14 +17,14 @@ class GetError(RobotDetailGetCommand):
     FIELDS = ('error',)
 
     @classmethod
-    def _handle_body_data_dict(
-        cls,
-        event_bus,
-        data: dict[str, Any],
-    ) -> HandlingResult:
-        event_bus.notify(ErrorEvent(_extract_first_int(data.get('error'))))
-        return HandlingResult.success()
+    def _handle_body_data_dict(cls, event_bus: EventBus, data: dict[str, Any]) -> HandlingResult:
+        code = _extract_first_int(data.get("error"))
 
+        if code == 0:
+            return HandlingResult.success()
+
+        event_bus.notify(ErrorEvent(code, f"NGIOT error {code}"))
+        return HandlingResult.success()
 
 def _extract_first_int(value: Any) -> int:
     if isinstance(value, list) and value:

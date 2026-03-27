@@ -264,6 +264,7 @@ async def test_get_static_device_info(
                 AvailabilityEvent: [GetNgiotBattery(is_available_check=True)],
                 BatteryEvent: [GetNgiotBattery()],
                 CachedMapInfoEvent: [GetNgiotCachedMapInfo()],
+                ChildLockEvent: [GetNgiotChildLock()],
                 CustomCommandEvent: [],
                 ErrorEvent: [GetNgiotError()],
                 FanSpeedEvent: [GetFanSpeed()],

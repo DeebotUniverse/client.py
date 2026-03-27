@@ -1,14 +1,12 @@
-"""Play-sound commands."""
-
-# deebot_client/commands/json/seek_sound.py
-"""Seek sound / locate command for NGIOT eyfj07."""
+"""NGIOT play-sound commands."""
 
 from __future__ import annotations
 
-from .common import ExecuteCommand
+from .common import NgiotExecuteCommand
 
-class SeekSound(ExecuteCommand):
-    """Trigger device locate sound on eyfj07-like devices."""
+
+class PlaySound(NgiotExecuteCommand):
+    """Trigger device locate sound."""
 
     NAME = "seek"
 
