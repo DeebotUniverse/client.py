@@ -95,11 +95,16 @@ class CleanAreaV2(CleanV2):
     """Clean area command."""
 
     def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
-        mode = CleanMode.FREE_CLEAN
-        self._additional_content = {
-            "type": mode.value,
-            "value": ";".join(("1," + str(i)) for i in area),
-        }
+        if mode == CleanMode.SPOT_AREA
+            self._additional_content = {
+                "type": CleanMode.FREE_CLEAN.value,
+                "value": ";".join(("1," + str(i)) for i in area),
+            }
+        else
+            self._additional_content = {
+                "type": mode,
+                "value": ",".join(str(i) for i in area),
+            }
         super().__init__(CleanAction.START)
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
