@@ -115,7 +115,7 @@ async def test_Clean_act(
         ),
         (
             CleanAreaV2(CleanMode.SPOT_AREA, [5, 8]),
-            {"act": "start", "content": {"type": "spotArea", "value": "5,8"}},
+            {"act": "start", "content": {"type": "freeClean", "value": "1,5;1,8"}},
         ),
         (
             CleanArea(CleanMode.CUSTOM_AREA, [1580.0, -4087.0, 3833.0, -7525.0]),
