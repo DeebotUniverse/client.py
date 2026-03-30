@@ -96,8 +96,8 @@ class CleanAreaV2(CleanV2):
 
     def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
         self._additional_content = {
-            "type": mode.value,
-            "value": ",".join(str(i) for i in area),
+            "type": CleanMode.FREE_CLEAN.value,
+            "value": ";".join(("1," + str(i)) for i in area),
         }
         super().__init__(CleanAction.START)
 
