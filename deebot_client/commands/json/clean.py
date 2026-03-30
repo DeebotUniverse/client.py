@@ -95,7 +95,7 @@ class CleanAreaV2(CleanV2):
     """Clean area command."""
 
     def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
-        if mode == CleanMode.SPOT_AREA
+        if mode == CleanMode.SPOT_AREA:
             self._additional_content = {
                 "type": CleanMode.FREE_CLEAN.value,
                 "value": ";".join(("1," + str(i)) for i in area),
