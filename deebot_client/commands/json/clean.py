@@ -95,8 +95,9 @@ class CleanAreaV2(CleanV2):
     """Clean area command."""
 
     def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
+        mode = CleanMode.FREE_CLEAN
         self._additional_content = {
-            "type": CleanMode.FREE_CLEAN.value,
+            "type": mode.value,
             "value": ";".join(("1," + str(i)) for i in area),
         }
         super().__init__(CleanAction.START)
