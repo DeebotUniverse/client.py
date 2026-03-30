@@ -100,7 +100,7 @@ class CleanAreaV2(CleanV2):
                 "type": CleanMode.FREE_CLEAN.value,
                 "value": ";".join(("1," + str(i)) for i in area),
             }
-        else
+        else:
             self._additional_content = {
                 "type": mode,
                 "value": ",".join(str(i) for i in area),
