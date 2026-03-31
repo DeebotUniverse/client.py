@@ -321,13 +321,16 @@ class GetMapTrace(NgiotMapGetCommand):
         trace_data = data.get("mapTraceData")
         if not isinstance(trace_data, dict):
             return HandlingResult.analyse()
-
+    
         trace = str(trace_data.get("trace", "")).strip()
+        lz4_len = int(trace_data.get("lz4Len", 0)) or None
+    
         event_bus.notify(
             MapTraceEvent(
                 start=int(trace_data.get("start", 0)),
                 total=int(trace_data.get("totalCount", 0)),
                 data=trace,
+                lz4_len=lz4_len,
             )
         )
         return HandlingResult.success()
