@@ -107,8 +107,52 @@ class GetCachedMapInfo(NgiotMapGetCommand):
         return ("mapInfos",)
 
     @classmethod
-    def _handle_body_data_dict(cls, event_bus: EventBus, data: dict[str, Any]) -> HandlingResult:
-        return HandlingResult.analyse()
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        map_infos = data.get("mapInfos")
+        if not isinstance(map_infos, list) or not map_infos:
+            return HandlingResult.analyse()
+    
+        maps: set[Map] = set()
+        active_map_id: str | None = None
+        fallback_map_id: str | None = None
+    
+        for map_info in map_infos:
+            if not isinstance(map_info, dict):
+                continue
+    
+            map_id = str(map_info.get("mapId", "")).strip()
+            if not map_id or map_id == "0":
+                continue
+    
+            if fallback_map_id is None:
+                fallback_map_id = map_id
+    
+            using = int(map_info.get("status", 0)) == 1
+            if using:
+                active_map_id = map_id
+    
+            maps.add(
+                Map(
+                    id=map_id,
+                    name=str(map_info.get("name", "")),
+                    using=using,
+                    built=True,
+                    angle=RotationAngle.from_int(int(map_info.get("angle", 0))),
+                )
+            )
+    
+        if not maps:
+            return HandlingResult.analyse()
+    
+        event_bus.notify(CachedMapInfoEvent(maps=maps))
+    
+        resolved_map_id = active_map_id or fallback_map_id
+        if resolved_map_id is None:
+            return HandlingResult.analyse()
+    
+        return HandlingResult(HandlingState.SUCCESS, {"map_id": resolved_map_id})
 
     def _handle_response(
         self,
@@ -125,6 +169,8 @@ class GetCachedMapInfo(NgiotMapGetCommand):
             result.requested_commands.extend(
                 [map_obj.set.execute(map_id, entry) for entry in MapSetType]
             )
+            if map_obj.info:
+                result.requested_commands.append(map_obj.info.execute(map_id))
         return result
 
 
