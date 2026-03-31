@@ -225,9 +225,17 @@ class MapData:
         self._on_change()
 
     def update_positions(self, value: list[Position]) -> None:
-        """Update positions."""
-        self._positions = value
-        self._on_change()
+        """Merge partial position updates by type."""
+        merged: dict[PositionType, Position] = {
+            position.type: position for position in self._positions
+        }
+        for position in value:
+            merged[position.type] = position
+    
+        new_positions = list(merged.values())
+        if new_positions != self._positions:
+            self._positions = new_positions
+            self._on_change()
 
     def update_map_piece(self, index: int, base64_data: str) -> None:
         """Update map piece."""
