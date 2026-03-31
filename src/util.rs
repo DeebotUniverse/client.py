@@ -5,6 +5,7 @@ use std::io::{Cursor, Read};
 use base64::{Engine as _, engine::general_purpose};
 use liblzma::read::XzDecoder;
 use liblzma::stream::Stream;
+use lz4_flex::block;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 
@@ -25,13 +26,37 @@ pub fn decompress_base64_data(value: &str) -> Result<Vec<u8>, Box<dyn Error>> {
     }
 }
 
+/// Dedicated helper for NGIOT LZ4 block payloads.
+/// expected_len should come from mapTraceData.lz4Len.
+pub fn decompress_base64_lz4_data(
+    value: &str,
+    expected_len: usize,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    let bytes = general_purpose::STANDARD.decode(value)?;
+
+    if expected_len == 0 {
+        return Err("Invalid LZ4 expected length: 0".into());
+    }
+
+    let mut output = vec![0_u8; expected_len];
+    let written = block::decompress_into(&bytes, &mut output)
+        .map_err(|err| format!("LZ4 decompress failed: {err}"))?;
+
+    if written != expected_len {
+        return Err(
+            format!("LZ4 size mismatch: expected {expected_len}, got {written}").into(),
+        );
+    }
+
+    Ok(output)
+}
+
 /// Decompress LZMA data, avoiding Vec insert overhead.
 fn decompress_lzma(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     if bytes.len() < 8 {
         return Err("Invalid 7z compressed data".into());
     }
 
-    // Form tailored header without repeated inserts (much faster)
     let mut full = Vec::with_capacity(bytes.len() + 4);
     full.extend_from_slice(&bytes[..8]);
     full.extend_from_slice(&[0, 0, 0, 0]);
@@ -52,7 +77,7 @@ fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(result)
 }
 
-/// Decompress base64 decoded compressed string by using lzma or zstd
+/// Existing legacy helper: lzma or zstd only.
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     decompress_base64_data(value).map_err(|err| {
@@ -61,7 +86,19 @@ fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     })
 }
 
+/// New NGIOT-only helper.
+#[pyfunction(name = "decompress_base64_lz4_data")]
+fn python_decompress_base64_lz4_data(value: &str, expected_len: usize) -> Result<Vec<u8>, PyErr> {
+    decompress_base64_lz4_data(value, expected_len).map_err(|err| {
+        error!(
+            "Error decompressing LZ4 base64 data: {err}; expected_len:{expected_len}; value:{value}"
+        );
+        PyValueError::new_err(err.to_string())
+    })
+}
+
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python_decompress_base64_data, m)?)?;
+    m.add_function(wrap_pyfunction!(python_decompress_base64_lz4_data, m)?)?;
     Ok(())
 }
