@@ -46,6 +46,7 @@ class MapTraceEvent(Event):
     start: int
     total: int
     data: str
+    lz4_len: int | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True)
