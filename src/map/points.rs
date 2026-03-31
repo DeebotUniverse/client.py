@@ -1,7 +1,7 @@
 use std::fmt::Write as FmtWrite;
 
 use super::{ROUND_TO_DIGITS, RotationAngle, common::round};
-use crate::util::decompress_base64_data;
+use crate::util::{decompress_base64_data, decompress_base64_lz4_data};
 use log::error;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -118,6 +118,14 @@ fn extract_trace_points(value: &str) -> Result<Vec<TracePoint>, Box<dyn Error>> 
     process_trace_points(&decompressed_data)
 }
 
+fn extract_trace_points_lz4(
+    value: &str,
+    expected_len: usize,
+) -> Result<Vec<TracePoint>, Box<dyn Error>> {
+    let decompressed_data = decompress_base64_lz4_data(value, expected_len)?;
+    process_trace_points(&decompressed_data)
+}
+
 fn trace_point_to_point(trace_point: &TracePoint, rotation: RotationAngle) -> Point {
     let (x, y) = match rotation {
         RotationAngle::Deg0 => (trace_point.x.into(), trace_point.y.into()),
@@ -170,12 +178,21 @@ impl TracePoints {
 
 #[pymethods]
 impl TracePoints {
-    fn add(&mut self, value: String) -> Result<(), PyErr> {
-        self.trace_points
-            .extend(extract_trace_points(&value).map_err(|err| {
-                error!("Failed to extract trace points: {err};value:{value}");
-                PyValueError::new_err(err.to_string())
-            })?);
+    #[pyo3(signature = (value, lz4_len=None))]
+    fn add(&mut self, value: String, lz4_len: Option<usize>) -> Result<(), PyErr> {
+        let parsed = match lz4_len {
+            Some(expected_len) => extract_trace_points_lz4(&value, expected_len),
+            None => extract_trace_points(&value),
+        }
+        .map_err(|err| {
+            error!(
+                "Failed to extract trace points: {err};value:{value};lz4_len:{:?}",
+                lz4_len
+            );
+            PyValueError::new_err(err.to_string())
+        })?;
+
+        self.trace_points.extend(parsed);
         Ok(())
     }
 
