@@ -136,7 +136,7 @@ class Map:
                 self._map_data.clear_trace_points()
 
             if data := event.data.strip():
-                self._map_data.add_trace_points(data)
+                self._map_data.add_trace_points(data, event.lz4_len)
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
@@ -214,9 +214,9 @@ class MapData:
         """Reset changed value."""
         self._changed = False
 
-    def add_trace_points(self, value: str) -> None:
+    def add_trace_points(self, value: str, lz4_len: int | None = None) -> None:
         """Add trace points to the map data."""
-        self._data.trace_points.add(value)
+        self._data.trace_points.add(value, lz4_len)
         self._on_change()
 
     def clear_trace_points(self) -> None:
