@@ -67,13 +67,6 @@ from deebot_client.events.map import (
     MapChangedEvent,
     MapTraceEvent,
 )
-from deebot_client.commands.ngiot.map import (
-    GetCachedMapInfo,
-    GetMajorMap,
-    GetMapSet,
-    GetMapTrace,
-    GetMinorMap,
-)
 from deebot_client.commands.ngiot.pos import GetPos
 
 
