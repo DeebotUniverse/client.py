@@ -8,7 +8,10 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.rs.util import decompress_base64_data
+from deebot_client.rs.util import (
+    decompress_base64_data,
+    decompress_base64_lz4_data,
+)
 
 if TYPE_CHECKING:
     from pytest_codspeed import BenchmarkFixture
@@ -47,7 +50,6 @@ def test_decompress_base64_data_lzma(
     # Verify that the old python function is producing the same result
     assert _decompress_7z_base64_data_python(value) == result
 
-
 @pytest.mark.parametrize(
     ("value", "expected"),
     [
@@ -84,6 +86,27 @@ def test_decompress_base64_data_zstd(
         ),
     ],
 )
+
+def test_decompress_base64_lz4_data() -> None:
+    """Test dedicated NGIOT LZ4 helper."""
+    import lz4.block
+
+    expected = b"0,0;100,100;200,200"
+    compressed = lz4.block.compress(expected, store_size=False)
+    value = base64.b64encode(compressed).decode()
+
+    assert decompress_base64_lz4_data(value, len(expected)) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected_len", "expected_error"),
+    [
+        ("@@not-base64@@", 10, "Invalid symbol"),
+        (base64.b64encode(b"abc").decode(), 0, "Invalid LZ4 expected length: 0"),
+        (base64.b64encode(b"abc").decode(), 10, "LZ4 decompress failed"),
+    ],
+)
+
 def test_decompress_base64_data_errors(value: str, expected_error: str) -> None:
     """Test decompress_base64_data function."""
     with pytest.raises(ValueError, match=expected_error):
@@ -104,3 +127,10 @@ def _decompress_7z_base64_data_python(data: str) -> bytes:
 
     dec = lzma.LZMADecompressor(lzma.FORMAT_AUTO, None, None)
     return dec.decompress(final_array)
+
+def test_decompress_base64_lz4_data_errors(
+    value: str, expected_len: int, expected_error: str
+) -> None:
+    """Test NGIOT LZ4 helper failure cases."""
+    with pytest.raises(ValueError, match=expected_error):
+        decompress_base64_lz4_data(value, expected_len)
