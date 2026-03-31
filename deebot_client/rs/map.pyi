@@ -15,11 +15,8 @@ class BackgroundImage:
 class TracePoints:
     """Trace points in rust."""
 
-    def add(self, value: str) -> None:
-        """Add trace points to the trace points object."""
-
-    def clear(self) -> None:
-        """Clear all trace points."""
+    def add(self, value: str, lz4_len: int | None = None) -> None:
+        """Add trace points to the trace points object.""
 
 class MapInfo:
     """Map info."""
