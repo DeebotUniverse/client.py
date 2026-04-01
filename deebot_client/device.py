@@ -63,12 +63,18 @@ class Device:
         self._available_task: asyncio.Task[Any] | None = None
         self._running_tasks: set[asyncio.Future[Any]] = set()
         self._unsubscribe: Callable[[], None] | None = None
-        self.ngiot_map_state = NgiotMapStateStore()
-        self.events.ngiot_map_state = self.ngiot_map_state
 
         self.fw_version: str | None = None
         self.mac: str | None = None
+
         self.events: Final[EventBus] = EventBus(self.execute_command, self.capabilities)
+
+        # Shared NGIOT map aggregation store.
+        # Commands look for _ngiot_map_state_store on the event bus.
+        self.ngiot_map_state = NgiotMapStateStore()
+        setattr(self.events, "_ngiot_map_state_store", self.ngiot_map_state)
+        # Optional public alias for debugging/introspection.
+        self.events.ngiot_map_state = self.ngiot_map_state
 
         self.map: Final[Map | None] = (
             Map(self.execute_command, self.events, self.capabilities.map)
@@ -98,6 +104,7 @@ class Device:
         self.events.subscribe(PositionsEvent, on_pos)
 
         async def on_state(event: StateEvent) -> None:
+            self._state = event
             if event.state == State.DOCKED:
                 self.events.request_refresh(CleanLogEvent)
                 self.events.request_refresh(TotalStatsEvent)

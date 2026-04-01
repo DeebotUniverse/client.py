@@ -2,20 +2,17 @@
 
 from __future__ import annotations
 
-import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .events import (
-    MajorMapEvent,
     MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
-    MinorMapEvent,
     Position,
     PositionsEvent,
     RoomsEvent,
@@ -78,33 +75,12 @@ class Map:
 
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
 
-    # ---------------------------- METHODS ----------------------------
-
-    async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
-        async def on_major_map(event: MajorMapEvent) -> None:
-            async with asyncio.TaskGroup() as tg:
-                for idx, value in enumerate(event.values):
-                    if (
-                        self._map_data.map_piece_crc32_indicates_update(idx, value)
-                        and event.requested
-                    ):
-                        tg.create_task(
-                            self._execute_command(
-                                self._capabilities.minor.execute(idx, event.map_id)
-                            )
-                        )
-
-        async def on_minor_map(event: MinorMapEvent) -> None:
-            self._map_data.update_map_piece(event.index, event.value)
-
-        return [
-            self._event_bus.subscribe(MajorMapEvent, on_major_map),
-            self._event_bus.subscribe(MinorMapEvent, on_minor_map),
-        ]
-
     async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
-        """On first MapChanged subscription."""
-        unsubscribers = await self._subscribe_minor_major_map_events()
+        """On first MapChanged subscription.
+
+        Geometry-map V1 deliberately ignores legacy major/minor background tiles.
+        """
+        unsubscribers: list[Callable[[], None]] = []
 
         async def on_cached_info(event: CachedMapInfoEvent) -> None:
             used_map = next((m for m in event.maps if m.using), None)
@@ -116,7 +92,6 @@ class Map:
             self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
         )
         if cached_map_subscribers:
-            # Request update only if there was already a subscriber before
             self._event_bus.request_refresh(CachedMapInfoEvent)
 
         async def on_position(event: PositionsEvent) -> None:
@@ -128,14 +103,30 @@ class Map:
             if event.start == 0:
                 self._map_data.clear_trace_points()
 
-            if data := event.data.strip():
+            if not (data := event.data.strip()):
+                return
+
+            try:
                 self._map_data.add_trace_points(data, event.lz4_len)
+            except ValueError as err:
+                _LOGGER.warning(
+                    "Skipping invalid trace payload for geometry map "
+                    "(start=%s total=%s lz4_len=%s): %s",
+                    event.start,
+                    event.total,
+                    event.lz4_len,
+                    err,
+                )
+            except Exception:
+                _LOGGER.exception(
+                    "Unexpected error while processing trace payload; continuing without trace"
+                )
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
         def unsub() -> None:
-            for unsub in unsubscribers:
-                unsub()
+            for unsubscribe in unsubscribers:
+                unsubscribe()
 
         return unsub
 
@@ -144,11 +135,9 @@ class Map:
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
-        # TODO make it nice
         self._event_bus.request_refresh(CachedMapInfoEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
-        self._event_bus.request_refresh(MajorMapEvent)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""
@@ -161,17 +150,9 @@ class Map:
 
         _LOGGER.debug("[get_svg_map] Begin")
 
-        self._map_data.sync_ngiot_background(self._event_bus)
-
-        # Reset change before starting to build the SVG
         self._map_data.reset_changed()
-
         self._last_image = self._map_data.generate_svg()
 
-        # Reset change before starting to build the SVG
-        self._map_data.reset_changed()
-
-        self._last_image = self._map_data.generate_svg()
         _LOGGER.debug("[get_svg_map] Finish")
         return self._last_image
 
@@ -244,17 +225,6 @@ class MapData:
             self._positions = new_positions
             self._on_change()
 
-    def update_map_piece(self, index: int, base64_data: str) -> None:
-        """Update map piece."""
-        if self._data.background_image.update_map_piece(index, base64_data):
-            self._on_change()
-
-    def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
-        """Return True if update is required."""
-        return self._data.background_image.map_piece_crc32_indicates_update(
-            index, crc32
-        )
-
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
         return self._data.generate_svg(
@@ -272,37 +242,6 @@ class MapData:
         """Set clockwise rotation angle for SVG image."""
         self._rotation = rotation
         self._on_change()
-
-    def sync_ngiot_background(self, event_bus: EventBus) -> None:
-        """Push active NGIOT base-map metadata into the Rust holder.
-
-        Phase 4A only stores the payload and metadata. Phase 4B will decode it.
-        """
-        store = getattr(event_bus, "_ngiot_map_state_store", None)
-        if store is None:
-            if self._data.ngiot_background.clear():
-                self._on_change()
-            return
-
-        snapshot = store.get_active()
-        if snapshot is None or snapshot.base_map is None:
-            if self._data.ngiot_background.clear():
-                self._on_change()
-            return
-
-        base_map = snapshot.base_map
-        changed = self._data.ngiot_background.set_map_data(
-            base_map.data,
-            base_map.width,
-            base_map.height,
-            base_map.total_width,
-            base_map.total_height,
-            base_map.resolution,
-            base_map.x_min,
-            base_map.y_max,
-        )
-        if changed:
-            self._on_change()
 
     def teardown(self) -> None:
         """Teardown map data."""
