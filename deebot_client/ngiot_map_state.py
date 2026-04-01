@@ -48,9 +48,37 @@ class NgiotMapSnapshot:
             return self.map_info.charge_pos
         return None
 
-    def is_renderable(self) -> bool:
-        """Return True when the snapshot contains a base map."""
+    def has_background(self) -> bool:
+        """Return True when a decoded/normalizable base-map payload is present."""
         return self.base_map is not None
+
+    def has_geometry(self) -> bool:
+        """Return True when enough geometry/state exists to render a useful map.
+
+        Geometry-map V1 intentionally does not require a base map.
+        """
+        return bool(
+            self.areas
+            or self.overlays
+            or self.pose is not None
+            or self.charge_pos is not None
+            or (
+                self.trace is not None
+                and (
+                    self.trace.total_count > 0
+                    or bool(self.trace.encoded)
+                )
+            )
+        )
+
+    def is_renderable(self) -> bool:
+        """Return True when the snapshot can produce a visible map.
+
+        For geometry-map V1, either:
+        - a base map is present, or
+        - enough geometry/state exists to render without a background
+        """
+        return self.has_background() or self.has_geometry()
 
 
 class NgiotMapStateStore:
@@ -87,6 +115,13 @@ class NgiotMapStateStore:
         if self._active_map_id is None:
             return None
         return self._maps.get(self._active_map_id)
+
+    def get_active_renderable(self) -> NgiotMapSnapshot | None:
+        """Return the active snapshot only if it is renderable."""
+        snapshot = self.get_active()
+        if snapshot is None or not snapshot.is_renderable():
+            return None
+        return snapshot
 
     def set_active_map_id(self, map_id: str | None) -> None:
         if map_id:

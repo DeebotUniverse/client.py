@@ -3,14 +3,27 @@ from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
 
-class BackgroundImage:
-    """Map background image."""
+class NgiotBackground:
+    """NGIOT background placeholder."""
 
-    def update_map_piece(self, index: int, base64_data: str) -> bool:
-        """Update map piece."""
+    def set_map_data(
+        self,
+        encoded: str,
+        width: int,
+        height: int,
+        total_width: int,
+        total_height: int,
+        resolution: int,
+        x_min: int,
+        y_max: int,
+    ) -> bool:
+        """Store NGIOT background metadata and encoded payload."""
 
-    def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
-        """Return True if update is required."""
+    def clear(self) -> bool:
+        """Clear NGIOT background metadata."""
+
+    def has_data(self) -> bool:
+        """Return True if NGIOT background data is present."""
 
 class TracePoints:
     """Trace points in rust."""
@@ -33,6 +46,10 @@ class MapData:
     @property
     def background_image(self) -> BackgroundImage:
         """Return background image."""
+
+    @property
+    def ngiot_background(self) -> NgiotBackground:
+        """Return NGIOT background placeholder."""
 
     @property
     def map_info(self) -> MapInfo:

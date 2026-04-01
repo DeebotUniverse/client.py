@@ -1,12 +1,14 @@
 mod background_image;
 mod common;
 mod map_info;
+mod ngiot_background;
 mod points;
 mod style;
 
 use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
+use ngiot_background::NgiotBackground;
 use ordermap::OrderSet;
 use points::{points_to_svg_path, Point, TracePoints};
 use style::{get_class_names, get_style, get_used_definitions, CSSClass};
@@ -247,6 +249,8 @@ struct MapData {
     #[pyo3(get)]
     background_image: Py<BackgroundImage>,
     #[pyo3(get)]
+    ngiot_background: Py<NgiotBackground>,
+    #[pyo3(get)]
     map_info: Py<MapInfo>,
 }
 
@@ -257,6 +261,7 @@ impl MapData {
         Ok(MapData {
             trace_points: Py::new(py, TracePoints::new())?,
             background_image: Py::new(py, BackgroundImage::new())?,
+            ngiot_background: Py::new(py, NgiotBackground::new())?,
             map_info: Py::new(py, MapInfo::new())?,
         })
     }
@@ -328,6 +333,21 @@ impl MapData {
             }
             _ => {
                 if let Some((base64_image, viewbox)) = self
+                    .ngiot_background
+                    .borrow(py)
+                    .generate()
+                    .map_err(|err| PyValueError::new_err(err.to_string()))?
+                {
+                    let image = Image::new()
+                        .set("x", viewbox.min_x)
+                        .set("y", viewbox.min_y)
+                        .set("width", viewbox.width)
+                        .set("height", viewbox.height)
+                        .set("style", "image-rendering: pixelated")
+                        .set("href", format!("data:image/png;base64,{base64_image}"));
+                    document.append(image);
+                    viewbox
+                } else if let Some((base64_image, viewbox)) = self
                     .background_image
                     .borrow(py)
                     .generate()

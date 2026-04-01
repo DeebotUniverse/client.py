@@ -161,6 +161,13 @@ class Map:
 
         _LOGGER.debug("[get_svg_map] Begin")
 
+        self._map_data.sync_ngiot_background(self._event_bus)
+
+        # Reset change before starting to build the SVG
+        self._map_data.reset_changed()
+
+        self._last_image = self._map_data.generate_svg()
+
         # Reset change before starting to build the SVG
         self._map_data.reset_changed()
 
@@ -265,6 +272,37 @@ class MapData:
         """Set clockwise rotation angle for SVG image."""
         self._rotation = rotation
         self._on_change()
+
+    def sync_ngiot_background(self, event_bus: EventBus) -> None:
+        """Push active NGIOT base-map metadata into the Rust holder.
+
+        Phase 4A only stores the payload and metadata. Phase 4B will decode it.
+        """
+        store = getattr(event_bus, "_ngiot_map_state_store", None)
+        if store is None:
+            if self._data.ngiot_background.clear():
+                self._on_change()
+            return
+
+        snapshot = store.get_active()
+        if snapshot is None or snapshot.base_map is None:
+            if self._data.ngiot_background.clear():
+                self._on_change()
+            return
+
+        base_map = snapshot.base_map
+        changed = self._data.ngiot_background.set_map_data(
+            base_map.data,
+            base_map.width,
+            base_map.height,
+            base_map.total_width,
+            base_map.total_height,
+            base_map.resolution,
+            base_map.x_min,
+            base_map.y_max,
+        )
+        if changed:
+            self._on_change()
 
     def teardown(self) -> None:
         """Teardown map data."""
