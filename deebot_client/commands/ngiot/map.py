@@ -5,7 +5,6 @@ from __future__ import annotations
 import binascii
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
-from deebot_client.logging_filter import get_logger
 
 from deebot_client.events import Position, PositionsEvent, RoomsEvent
 from deebot_client.events.map import (
@@ -495,29 +494,29 @@ class GetMapSet(NgiotMapGetCommand):
 
         if self._map_type == MapSetType.ROOMS:
             areas = parse_areas(data)
-            
             if not areas:
                 return HandlingResult.analyse()
 
             if map_id:
                 store.update_areas(map_id, areas)
 
-            subset_ids: list[int] = []
+            drawable_subset_ids: list[int] = []
             rooms: list[Room] = []
 
             for index, area in enumerate(areas):
                 subset_id = _coerce_int(area.area_id, index)
                 coordinates = _polygon_to_coordinates(area.polygon)
-                subset_ids.append(subset_id)
 
-                event_bus.notify(
-                    MapSubsetEvent(
-                        id=subset_id,
-                        type=MapSetType.ROOMS,
-                        coordinates=coordinates,
-                        name=area.name,
+                if coordinates:
+                    drawable_subset_ids.append(subset_id)
+                    event_bus.notify(
+                        MapSubsetEvent(
+                            id=subset_id,
+                            type=MapSetType.ROOMS,
+                            coordinates=coordinates,
+                            name=area.name,
+                        )
                     )
-                )
 
                 rooms.append(
                     Room(
@@ -527,7 +526,11 @@ class GetMapSet(NgiotMapGetCommand):
                     )
                 )
 
-            event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids, map_id))
+            if drawable_subset_ids:
+                event_bus.notify(
+                    MapSetEvent(MapSetType.ROOMS, drawable_subset_ids, map_id)
+                )
+
             event_bus.notify(RoomsEvent(map_id=map_id, rooms=rooms))
             return HandlingResult.success()
 

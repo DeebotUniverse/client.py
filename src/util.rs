@@ -42,10 +42,13 @@ pub fn decompress_base64_lz4_data(
     let written = block::decompress_into(&bytes, &mut output)
         .map_err(|err| format!("LZ4 decompress failed: {err}"))?;
 
-    if written != expected_len {
-        return Err(
-            format!("LZ4 size mismatch: expected {expected_len}, got {written}").into(),
-        );
+    if written == 0 {
+        return Err("LZ4 decompress produced no output".into());
+    }
+
+    if written < expected_len {
+        output.truncate(written);
+        return Ok(output);
     }
 
     Ok(output)
