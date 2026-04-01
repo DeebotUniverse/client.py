@@ -16,7 +16,6 @@ from .play_sound import PlaySound
 from .stats import GetReportStats, GetStats, GetTotalStats
 from .child_lock import GetChildLock, SetChildLock
 from .map import (
-    GetCachedMapInfo,
     GetMajorMap,
     GetMapSet,
     GetMapTrace,
@@ -46,7 +45,6 @@ __all__ = [
     "SetFanSpeed",
     "GetChildLock",
     "SetChildLock",
-    "GetCachedMapInfo",
     "GetMajorMap",
     "GetMapSet",
     "GetMapTrace",
@@ -73,7 +71,6 @@ _COMMANDS: list[type[Command]] = [
     GetTotalStats,
     GetChildLock,
     SetChildLock,
-    GetCachedMapInfo,
     GetMajorMap,
     GetMapSet,
     GetMapTrace,

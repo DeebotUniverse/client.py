@@ -226,12 +226,16 @@ class MapData:
 
     def update_positions(self, value: list[Position]) -> None:
         """Merge partial position updates by type."""
-        merged: dict[PositionType, Position] = {
-            position.type: position for position in self._positions
+        def _position_key(position: Position) -> str:
+            return str(position.type)
+
+        merged: dict[str, Position] = {
+            _position_key(position): position for position in self._positions
         }
+
         for position in value:
-            merged[position.type] = position
-    
+            merged[_position_key(position)] = position
+
         new_positions = list(merged.values())
         if new_positions != self._positions:
             self._positions = new_positions

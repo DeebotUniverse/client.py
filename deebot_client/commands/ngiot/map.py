@@ -20,6 +20,16 @@ from deebot_client.events.map import (
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
 from deebot_client.ngiot_client import APN_MAP_DETAILS
+from deebot_client.ngiot_map_parser import (
+    parse_areas,
+    parse_base_map,
+    parse_map_infos,
+    parse_overlays,
+    parse_pose,
+    parse_trace,
+    resolve_map_id,
+)
+from deebot_client.ngiot_map_state import NgiotMapStateStore
 from deebot_client.rs.map import PositionType, RotationAngle
 
 from .common import NgiotJsonGetCommand
@@ -30,6 +40,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo
     from deebot_client.ngiot_client import NgiotClient
+
 
 def _coerce_int(value: Any, default: int = 0) -> int:
     try:
@@ -51,6 +62,46 @@ def _build_position(raw: Any, type_name: str) -> Position | None:
         y=_coerce_int(raw.get("y")),
         a=_coerce_int(raw.get("a")),
     )
+
+
+def _build_position_from_point(raw_point: Any, type_name: str) -> Position | None:
+    if raw_point is None:
+        return None
+
+    x = getattr(raw_point, "x", None)
+    y = getattr(raw_point, "y", None)
+    a = getattr(raw_point, "a", 0)
+
+    if x is None or y is None:
+        return None
+
+    return Position(
+        type=PositionType.from_str(type_name),
+        x=_coerce_int(x),
+        y=_coerce_int(y),
+        a=_coerce_int(a),
+    )
+
+
+def _get_ngiot_map_state_store(event_bus: EventBus) -> NgiotMapStateStore:
+    store = getattr(event_bus, "_ngiot_map_state_store", None)
+    if store is None:
+        store = NgiotMapStateStore()
+        setattr(event_bus, "_ngiot_map_state_store", store)
+    return store
+
+
+def _resolve_effective_map_id(
+    event_bus: EventBus,
+    data: dict[str, Any],
+    explicit: str = "",
+) -> str:
+    store = _get_ngiot_map_state_store(event_bus)
+    return resolve_map_id(data, fallback=explicit or store.active_map_id or "")
+
+
+def _polygon_to_coordinates(points: list[Any]) -> str:
+    return ",".join(f"{point.x},{point.y}" for point in points)
 
 
 class NgiotMapGetCommand(NgiotJsonGetCommand, ABC):
@@ -117,66 +168,42 @@ class NgiotMapGetCommand(NgiotJsonGetCommand, ABC):
             body_data=body_data,
         )
 
-
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
-        map_infos = data.get("mapInfos")
-        if not isinstance(map_infos, list) or not map_infos:
+        infos = parse_map_infos(data)
+        if not infos:
             return HandlingResult.analyse()
-    
-        maps: set[Map] = set()
-        active_map_id: str | None = None
-        fallback_map_id: str | None = None
-        active_charge_pos: Position | None = None
-        fallback_charge_pos: Position | None = None
-    
-        for map_info in map_infos:
-            if not isinstance(map_info, dict):
-                continue
-    
-            map_id = str(map_info.get("mapId", "")).strip()
-            if not map_id or map_id == "0":
-                continue
-    
-            if fallback_map_id is None:
-                fallback_map_id = map_id
-    
-            using = _coerce_int(map_info.get("status", 0)) == 1
-            if using:
-                active_map_id = map_id
-    
-            charge_pos = _build_position(map_info.get("chargePos"), "chargePos")
-            if charge_pos and fallback_charge_pos is None:
-                fallback_charge_pos = charge_pos
-            if charge_pos and using:
-                active_charge_pos = charge_pos
-    
-            maps.add(
-                Map(
-                    id=map_id,
-                    name=str(map_info.get("name", "")),
-                    using=using,
-                    built=True,
-                    angle=RotationAngle.from_int(_coerce_int(map_info.get("angle", 0))),
-                )
+
+        store = _get_ngiot_map_state_store(event_bus)
+        store.update_map_infos(infos)
+
+        maps = {
+            Map(
+                id=info.map_id,
+                name=info.name,
+                using=info.using,
+                built=True,
+                angle=RotationAngle.from_int(info.angle),
             )
-    
-        if not maps:
-            return HandlingResult.analyse()
-    
+            for info in infos
+        }
         event_bus.notify(CachedMapInfoEvent(maps=maps))
-    
-        charger_pos = active_charge_pos or fallback_charge_pos
+
+        active_info = next((info for info in infos if info.using), None)
+        resolved_info = active_info or infos[0]
+
+        charger_pos = _build_position_from_point(
+            resolved_info.charge_pos, "chargePos"
+        )
         if charger_pos is not None:
             event_bus.notify(PositionsEvent(positions=[charger_pos]))
-    
-        resolved_map_id = active_map_id or fallback_map_id
-        if resolved_map_id is None:
-            return HandlingResult.analyse()
-    
-        return HandlingResult(HandlingState.SUCCESS, {"map_id": resolved_map_id})
+
+        return HandlingResult(
+            HandlingState.SUCCESS,
+            {"map_id": resolved_info.map_id},
+        )
 
     def _handle_response(
         self,
@@ -208,56 +235,78 @@ class GetMajorMap(NgiotMapGetCommand):
         return ("mapData", "areas", "pos")
 
     @classmethod
-    @classmethod
     def _handle_body_data_dict(
         cls,
         event_bus: EventBus,
         data: dict[str, Any],
     ) -> HandlingResult:
+        store = _get_ngiot_map_state_store(event_bus)
+        map_id = _resolve_effective_map_id(event_bus, data)
         handled = False
-    
+
         map_data = data.get("mapData")
         if isinstance(map_data, dict):
-            map_id = str(data.get("mapId") or map_data.get("mapId") or "")
-    
             legacy_map_blob = map_data.get("map")
             if isinstance(legacy_map_blob, str) and legacy_map_blob:
                 crc = binascii.crc32(legacy_map_blob.encode("utf-8")) & 0xFFFFFFFF
-                event_bus.notify(MajorMapEvent(map_id=map_id, values=[crc], requested=False))
+                event_bus.notify(
+                    MajorMapEvent(map_id=map_id, values=[crc], requested=False)
+                )
                 handled = True
-    
-            # NGIOT native map surface exists, but Phase 1 does not render it yet.
-            native_map_blob = map_data.get("data")
-            if isinstance(native_map_blob, str) and native_map_blob:
-                handled = True
-    
+
+        base_map = parse_base_map(data, map_id)
+        if base_map is not None and base_map.map_id:
+            store.update_base_map(base_map)
+            map_id = base_map.map_id
+            handled = True
+
+        areas = parse_areas(data)
+        if areas and map_id:
+            store.update_areas(map_id, areas)
+            handled = True
+
         positions: list[Position] = []
-    
-        robot_pos = _build_position(data.get("pos"), "deebotPos")
-        if robot_pos is not None:
-            positions.append(robot_pos)
-    
-        deebot_pos = _build_position(data.get("deebotPos"), "deebotPos")
-        if deebot_pos is not None:
-            positions.append(deebot_pos)
-    
+
+        pose = parse_pose(data)
+        if pose is not None:
+            if map_id:
+                store.update_pose(map_id, pose)
+            positions.append(
+                Position(
+                    type=PositionType.from_str("deebotPos"),
+                    x=pose.x,
+                    y=pose.y,
+                    a=pose.a,
+                )
+            )
+            handled = True
+
         if isinstance(map_data, dict):
             charger_pos = _build_position(map_data.get("chargePos"), "chargePos")
             if charger_pos is not None:
                 positions.append(charger_pos)
-    
+                handled = True
+
         legacy_charge_pos = data.get("chargePos")
         if isinstance(legacy_charge_pos, list):
             for entry in legacy_charge_pos:
                 charger_pos = _build_position(entry, "chargePos")
                 if charger_pos is not None:
                     positions.append(charger_pos)
-    
+                    handled = True
+
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))
-            handled = True
-    
+
         return HandlingResult.success() if handled else HandlingResult.analyse()
+
+
+class GetCachedMapInfo(NgiotMapGetCommand):
+    NAME = "getCachedMapInfo"
+
+    @property
+    def _fields(self) -> Sequence[str]:
+        return ("mapInfos",)
 
 
 class GetMinorMap(NgiotMapGetCommand):
@@ -279,7 +328,7 @@ class GetMinorMap(NgiotMapGetCommand):
         event_bus: EventBus,
         data: dict[str, Any],
     ) -> HandlingResult:
-        # Instance-specific handling is done in _handle_response
+        del event_bus, data
         return HandlingResult.analyse()
 
     def _handle_response(
@@ -322,19 +371,21 @@ class GetMapTrace(NgiotMapGetCommand):
         event_bus: EventBus,
         data: dict[str, Any],
     ) -> HandlingResult:
-        trace_data = data.get("mapTraceData")
-        if not isinstance(trace_data, dict):
+        trace = parse_trace(data)
+        if trace is None:
             return HandlingResult.analyse()
-    
-        trace = str(trace_data.get("trace", "")).strip()
-        lz4_len = int(trace_data.get("lz4Len", 0)) or None
-    
+
+        store = _get_ngiot_map_state_store(event_bus)
+        map_id = _resolve_effective_map_id(event_bus, data)
+        if map_id:
+            store.update_trace(map_id, trace)
+
         event_bus.notify(
             MapTraceEvent(
-                start=int(trace_data.get("start", 0)),
-                total=int(trace_data.get("totalCount", 0)),
-                data=trace,
-                lz4_len=lz4_len,
+                start=trace.start,
+                total=trace.total_count,
+                data=trace.encoded,
+                lz4_len=trace.lz4_len,
             )
         )
         return HandlingResult.success()
@@ -355,29 +406,42 @@ class GetPos(NgiotMapGetCommand):
         event_bus: EventBus,
         data: dict[str, Any],
     ) -> HandlingResult:
+        store = _get_ngiot_map_state_store(event_bus)
+        map_id = _resolve_effective_map_id(event_bus, data)
+
         positions: list[Position] = []
-    
-        robot_pos = _build_position(data.get("pos"), "deebotPos")
-        if robot_pos is not None:
-            positions.append(robot_pos)
-    
+
+        pose = parse_pose(data)
+        if pose is not None:
+            if map_id:
+                store.update_pose(map_id, pose)
+
+            positions.append(
+                Position(
+                    type=PositionType.from_str("deebotPos"),
+                    x=pose.x,
+                    y=pose.y,
+                    a=pose.a,
+                )
+            )
+
         map_data = data.get("mapData")
         if isinstance(map_data, dict):
             charger_pos = _build_position(map_data.get("chargePos"), "chargePos")
             if charger_pos is not None:
                 positions.append(charger_pos)
-    
+
         legacy_charge_pos = data.get("chargePos")
         if isinstance(legacy_charge_pos, list):
             for entry in legacy_charge_pos:
                 charger_pos = _build_position(entry, "chargePos")
                 if charger_pos is not None:
                     positions.append(charger_pos)
-    
+
         if positions:
             event_bus.notify(PositionsEvent(positions=positions))
             return HandlingResult.success()
-    
+
         return HandlingResult.analyse()
 
 
@@ -409,7 +473,7 @@ class GetMapSet(NgiotMapGetCommand):
         event_bus: EventBus,
         data: dict[str, Any],
     ) -> HandlingResult:
-        # Instance-specific handling is done in _handle_response
+        del event_bus, data
         return HandlingResult.analyse()
 
     def _handle_response(
@@ -425,24 +489,60 @@ class GetMapSet(NgiotMapGetCommand):
         if not isinstance(data, dict):
             return HandlingResult.analyse()
 
-        map_id = str(data.get("mapId") or self._map_id)
+        store = _get_ngiot_map_state_store(event_bus)
+        map_id = _resolve_effective_map_id(event_bus, data, self._map_id)
 
         if self._map_type == MapSetType.ROOMS:
-            areas = data.get("areas")
-            if not isinstance(areas, list):
+            areas = parse_areas(data)
+            if not areas:
                 return HandlingResult.analyse()
+
+            if map_id:
+                store.update_areas(map_id, areas)
 
             rooms = [
                 Room(
-                    name=(str(area.get("name", "")).strip() or f"Area {int(area['id'])}"),
-                    id=int(area["id"]),
-                    coordinates="",
+                    name=(area.name or f"Area {_coerce_int(area.area_id, index)}"),
+                    id=_coerce_int(area.area_id, index),
+                    coordinates=_polygon_to_coordinates(area.polygon),
                 )
-                for area in areas
-                if isinstance(area, dict) and area.get("id") is not None
+                for index, area in enumerate(areas)
             ]
             event_bus.notify(RoomsEvent(map_id=map_id, rooms=rooms))
             return HandlingResult.success()
+
+        overlays = parse_overlays(data)
+        if map_id and overlays:
+            store.update_overlays(map_id, overlays)
+
+        overlay_type_map = {
+            MapSetType.VIRTUAL_WALLS: "virtual_walls",
+            MapSetType.NO_MOP_ZONES: "mop_walls",
+        }
+        target_overlay_type = overlay_type_map.get(self._map_type)
+
+        if target_overlay_type:
+            parsed_for_type = [
+                overlay
+                for overlay in overlays
+                if overlay.overlay_type == target_overlay_type
+            ]
+
+            if parsed_for_type:
+                subset_ids: list[int] = []
+                for index, overlay in enumerate(parsed_for_type):
+                    subset_id = _coerce_int(overlay.overlay_id, index)
+                    subset_ids.append(subset_id)
+                    event_bus.notify(
+                        MapSubsetEvent(
+                            id=subset_id,
+                            type=self._map_type,
+                            coordinates=_polygon_to_coordinates(overlay.polygon),
+                        )
+                    )
+
+                event_bus.notify(MapSetEvent(self._map_type, subset_ids, map_id))
+                return HandlingResult.success()
 
         data_key = {
             MapSetType.VIRTUAL_WALLS: "virtualWalls",

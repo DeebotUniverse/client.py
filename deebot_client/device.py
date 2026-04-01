@@ -30,6 +30,7 @@ from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
 from .models import DeviceInfo, State
+from .ngiot_map_state import NgiotMapStateStore
 from .rs.map import PositionType
 
 if TYPE_CHECKING:
@@ -62,6 +63,8 @@ class Device:
         self._available_task: asyncio.Task[Any] | None = None
         self._running_tasks: set[asyncio.Future[Any]] = set()
         self._unsubscribe: Callable[[], None] | None = None
+        self.ngiot_map_state = NgiotMapStateStore()
+        self.events.ngiot_map_state = self.ngiot_map_state
 
         self.fw_version: str | None = None
         self.mac: str | None = None
