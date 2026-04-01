@@ -39,6 +39,21 @@ class GpsPositionEvent(Event):
     latitude: float
 
 
+@unique
+class MapSetType(StrEnum):
+    """Map set type enum."""
+
+    ROOMS = "ar"
+    VIRTUAL_WALLS = "vw"
+    NO_MOP_ZONES = "mw"
+    CARPETS = "cp"
+
+    @classmethod
+    def has_value(cls, value: Any) -> bool:
+        """Check if value exists."""
+        return value in cls._value2member_map_
+
+
 @dataclass(frozen=True)
 class MapTraceEvent(Event):
     """Map trace event representation."""
@@ -72,20 +87,6 @@ class MinorMapEvent(Event):
 
     index: int
     value: str
-
-
-@unique
-class MapSetType(StrEnum):
-    """Map set type enum."""
-
-    ROOMS = "ar"
-    VIRTUAL_WALLS = "vw"
-    NO_MOP_ZONES = "mw"
-
-    @classmethod
-    def has_value(cls, value: Any) -> bool:
-        """Check if value exists."""
-        return value in cls._value2member_map_
 
 
 @dataclass(frozen=True)

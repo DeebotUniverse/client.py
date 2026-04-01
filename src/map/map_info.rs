@@ -1,5 +1,6 @@
 use super::style::{CSSClass, ROOM_COLORS, get_class_names, get_style};
-use super::{RotationAngle, ViewBox, calc_point, decompress_base64_data};
+use super::{RotationAngle, ViewBox, calc_point};
+use crate::util::decompress_base64_data;
 
 use super::points::{Point, points_to_svg_path};
 use ordermap::OrderSet;
@@ -212,8 +213,9 @@ impl MapInfo {
 #[pymethods]
 impl MapInfo {
     fn set(&mut self, base64_data: String) -> PyResult<()> {
-        let raw = decompress_base64_data(&base64_data)
-            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        let raw = decompress_base64_data(&base64_data).map_err(
+            |err: Box<dyn std::error::Error>| PyValueError::new_err(err.to_string()),
+        )?;
         let entries: Vec<MapInfoTypeEntry> = serde_json::from_slice(&raw)
             .map_err(|err| PyValueError::new_err(format!("Invalid map info: {err}")))?;
         entries.into_iter().for_each(|MapInfoTypeEntry(t, v)| {

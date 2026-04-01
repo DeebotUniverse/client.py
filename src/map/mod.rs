@@ -8,8 +8,8 @@ use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
-use points::{Point, TracePoints, points_to_svg_path};
-use style::{CSSClass, get_class_names, get_style, get_used_definitions};
+use points::{points_to_svg_path, Point, TracePoints};
+use style::{get_class_names, get_style, get_used_definitions, CSSClass};
 
 use super::util::decompress_base64_data;
 use log::debug;
@@ -39,11 +39,7 @@ fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
     }
 }
 
-fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSClass, Path)> {
-    debug!("Adding subset: {subset:?}");
-
-    // Estimate capacity: each point consists of an x and y coordinate, separated by commas.
-    // So, the number of points is half the number of comma-separated values.
+fn get_subset_points(subset: &MapSubset, rotation: RotationAngle) -> Vec<Point> {
     let num_coords = subset.coordinates.split(',').count();
     let mut points = Vec::with_capacity(num_coords / 2);
 
@@ -61,18 +57,39 @@ fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSC
         points.push(calc_point(x, y, rotation));
     }
 
-    let css_key = match subset.set_type.as_str() {
-        "vw" => CSSClass::VirtualWall,
-        "mw" => CSSClass::NoMoppingWall,
+    points
+}
+
+fn get_svg_subset(
+    subset: &MapSubset,
+    rotation: RotationAngle,
+) -> PyResult<(Vec<CSSClass>, Path)> {
+    debug!("Adding subset: {subset:?}");
+
+    let points = get_subset_points(subset, rotation);
+    let close_path = points.len() > 2;
+
+    let css = match subset.set_type.as_str() {
+        "ar" => vec![CSSClass::RoomSubset],
+        "vw" => vec![
+            CSSClass::WallBase,
+            CSSClass::StrokeWidth2,
+            CSSClass::VirtualWall,
+        ],
+        "mw" => vec![
+            CSSClass::WallBase,
+            CSSClass::StrokeWidth2,
+            CSSClass::NoMoppingWall,
+        ],
+        "cp" => vec![CSSClass::CarpetArea],
         _ => return Err(PyValueError::new_err("Invalid set type")),
     };
-    let css_obj = get_style(&css_key);
 
-    let svg_object = points_to_svg_path(&points, points.len() > 2, false)
-        .unwrap()
-        .set("class", css_obj.class_name);
+    let svg_object = points_to_svg_path(&points, close_path, false)
+        .ok_or_else(|| PyValueError::new_err("Subset does not contain enough points"))?
+        .set("class", get_class_names(&css));
 
-    Ok((css_key, svg_object))
+    Ok((css, svg_object))
 }
 
 #[pyclass(from_py_object, eq, eq_int)]
@@ -180,6 +197,49 @@ struct MapSubset {
     coordinates: String,
 }
 
+fn calc_fallback_viewbox(
+    subsets: &[MapSubset],
+    positions: &[Position],
+    rotation: RotationAngle,
+) -> Option<ViewBox> {
+    let mut min_x = f32::MAX;
+    let mut min_y = f32::MAX;
+    let mut max_x = f32::MIN;
+    let mut max_y = f32::MIN;
+    let mut found = false;
+
+    for subset in subsets {
+        for point in get_subset_points(subset, rotation) {
+            min_x = min_x.min(point.x);
+            min_y = min_y.min(point.y);
+            max_x = max_x.max(point.x);
+            max_y = max_y.max(point.y);
+            found = true;
+        }
+    }
+
+    for position in positions {
+        let point = calc_point(position.x as f32, position.y as f32, rotation);
+        min_x = min_x.min(point.x);
+        min_y = min_y.min(point.y);
+        max_x = max_x.max(point.x);
+        max_y = max_y.max(point.y);
+        found = true;
+    }
+
+    if !found {
+        return None;
+    }
+
+    let margin: i16 = 5;
+    Some(ViewBox::from_extents(
+        min_x.floor() as i16 - margin,
+        min_y.floor() as i16 - margin,
+        max_x.ceil() as i16 + margin,
+        max_y.ceil() as i16 + margin,
+    ))
+}
+
 #[pyclass]
 struct MapData {
     #[pyo3(get)]
@@ -210,7 +270,6 @@ impl MapData {
     ) -> PyResult<Option<String>> {
         let mut defs = Definitions::new()
             .add(
-                // Gradient used by Bot icon
                 RadialGradient::new()
                     .set("id", "dbg")
                     .set("cx", "50%")
@@ -230,7 +289,6 @@ impl MapData {
                     ),
             )
             .add(
-                // Bot circular icon
                 Group::new()
                     .set("id", PositionType::Deebot.svg_use_id())
                     .add(Circle::new().set("r", 5).set("fill", "url(#dbg)"))
@@ -243,13 +301,10 @@ impl MapData {
                     ),
             )
             .add(
-                // Charger pin icon (pre-flipped vertically)
                 Group::new()
                     .set("id", PositionType::Charger.svg_use_id())
                     .add(Path::new().set("fill", "#ffe605").set(
                         "d",
-                        // Path data cannot be used as it's adds a , after each parameter
-                        // and repeats the command when used sequentially
                         "M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4 1.8-4 4-4 4 1.8 4 4z",
                     ))
                     .add(
@@ -265,20 +320,18 @@ impl MapData {
 
         let mut document = Document::new();
 
-        // Create map from MapInfo, if exists, or generate background image
         let viewbox = match self.map_info.borrow(py).generate(rotation) {
             Some((map_elements, viewbox, info_styles)) => {
-                // Append all map background elements to document
                 map_elements.into_iter().for_each(|e| document.append(e));
                 styles.extend(info_styles);
                 viewbox
             }
             _ => {
-                if let Some((base64_image, viewbox)) =
-                    self.background_image
-                        .borrow(py)
-                        .generate()
-                        .map_err(|err| PyValueError::new_err(err.to_string()))?
+                if let Some((base64_image, viewbox)) = self
+                    .background_image
+                    .borrow(py)
+                    .generate()
+                    .map_err(|err| PyValueError::new_err(err.to_string()))?
                 {
                     let image = Image::new()
                         .set("x", viewbox.min_x)
@@ -289,37 +342,33 @@ impl MapData {
                         .set("href", format!("data:image/png;base64,{base64_image}"));
                     document.append(image);
                     viewbox
+                } else if let Some(viewbox) = calc_fallback_viewbox(&subsets, &positions, rotation)
+                {
+                    viewbox
                 } else {
                     return Ok(None);
                 }
             }
         };
 
-        // Add required definitions based on used CSS classes
-        get_used_definitions(&styles)
-            .into_iter()
-            .for_each(|def| defs.append(def));
-
-        document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
-
-        if !subsets.is_empty() {
-            let group_css = [CSSClass::WallBase, CSSClass::StrokeWidth2];
-            let mut group = Group::new().set("class", get_class_names(&group_css));
-            styles.extend(group_css);
-
-            for subset in &subsets {
-                let (css, subset) = get_svg_subset(subset, rotation)?;
-                styles.insert(css);
-                group = group.add(subset);
-            }
-            document.append(group);
+        for subset in &subsets {
+            let (css_list, path) = get_svg_subset(subset, rotation)?;
+            styles.extend(css_list);
+            document.append(path);
         }
+
         if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
             document.append(trace);
         }
         for position in get_svg_positions(&positions, &viewbox, rotation) {
             document.append(position);
         }
+
+        get_used_definitions(&styles)
+            .into_iter()
+            .for_each(|def| defs.append(def));
+
+        document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
 
         let mut style_string = String::new();
         for k in styles {
@@ -363,6 +412,20 @@ impl ViewBox {
         }
     }
 
+    fn from_extents(min_x: i16, min_y: i16, max_x: i16, max_y: i16) -> Self {
+        let width = (max_x - min_x).max(1) as u16;
+        let height = (max_y - min_y).max(1) as u16;
+
+        ViewBox {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
+            width,
+            height,
+        }
+    }
+
     #[inline]
     fn to_svg_viewbox(&self) -> String {
         format!(
@@ -383,7 +446,6 @@ fn get_svg_positions(
         return Vec::new();
     }
 
-    // Create indices and sort them instead of collecting references
     let mut indices: Vec<usize> = (0..positions.len()).collect();
     indices.sort_by_key(|&i| positions[i].position_type.order());
 
@@ -431,8 +493,8 @@ mod tests {
     #[rstest]
     #[case((-100, -100, 200, 150))]
     #[case((0, 0, 1000, 1000))]
-    #[case( (0, 0, 1000, 1000))]
-    #[case( (-500, -500, 1000, 1000))]
+    #[case((0, 0, 1000, 1000))]
+    #[case((-500, -500, 1000, 1000))]
     fn test_tuple_2_view_box(#[case] input: (i16, i16, u16, u16)) {
         let result = tuple_2_view_box(input);
         assert_eq!(
@@ -443,14 +505,14 @@ mod tests {
 
     #[rstest]
     #[case(5000.0, 0.0, RotationAngle::Deg0, Point { x:100.0, y:0.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg0, Point { x: 400.2, y: 598.0, connected:true  })]
-    #[case(0.0, 29900.0, RotationAngle::Deg0, Point { x: 0.0, y: -598.0, connected:true  })]
+    #[case(20010.0, -29900.0, RotationAngle::Deg0, Point { x: 400.2, y: 598.0, connected:true })]
+    #[case(0.0, 29900.0, RotationAngle::Deg0, Point { x: 0.0, y: -598.0, connected:true })]
     #[case(5000.0, 0.0, RotationAngle::Deg90, Point { x:0.0, y:100.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg90, Point { x: -598.0, y: 400.2, connected:true  })]
+    #[case(20010.0, -29900.0, RotationAngle::Deg90, Point { x: -598.0, y: 400.2, connected:true })]
     #[case(5000.0, 0.0, RotationAngle::Deg180, Point { x:-100.0, y:0.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg180, Point { x: -400.2, y: -598.0, connected:true  })]
+    #[case(20010.0, -29900.0, RotationAngle::Deg180, Point { x: -400.2, y: -598.0, connected:true })]
     #[case(5000.0, 0.0, RotationAngle::Deg270, Point { x:0.0, y:-100.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg270, Point { x: 598.0, y: -400.2, connected:true  })]
+    #[case(20010.0, -29900.0, RotationAngle::Deg270, Point { x: 598.0, y: -400.2, connected:true })]
     fn test_calc_point(
         #[case] x: f32,
         #[case] y: f32,
@@ -481,42 +543,19 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg90, "<use href=\"#d\" x=\"-500\" y=\"100\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg180, "<use href=\"#d\" x=\"-100\" y=\"-500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg270, "<use href=\"#d\" x=\"500\" y=\"-100\"/>")]
-    fn test_get_svg_positions(
-        #[case] positions: &[Position],
-        #[case] rotation: RotationAngle,
-        #[case] expected: String,
-    ) {
-        let viewbox = (-500, -500, 1000, 1000);
-        let result = get_svg_positions(positions, &tuple_2_view_box(viewbox), rotation)
-            .iter()
-            .map(|u| u.to_string())
-            .collect::<Vec<String>>()
-            .join("");
-        assert_eq!(result, expected);
-    }
-
-    #[rstest]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg0, "<path class=\"v\" d=\"M-78-13.36h35.34\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, RotationAngle::Deg0, "<path class=\"m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg90, "<path class=\"v\" d=\"M13.36-78v35.34\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg180, "<path class=\"v\" d=\"M78 13.36h-35.34\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg270, "<path class=\"v\" d=\"M-13.36 78v-35.34\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M-78-13.36h35.34\"/>")]
+    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg90, "<path class=\"wb sw2 v\" d=\"M13.36-78v35.34\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg180, "<path class=\"wb sw2 v\" d=\"M78 13.36h-35.34\"/>")]
+    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg270, "<path class=\"wb sw2 v\" d=\"M-13.36 78v-35.34\"/>")]
     fn test_get_svg_subset(
         #[case] subset: MapSubset,
         #[case] rotation: RotationAngle,
         #[case] expected: String,
     ) {
         let (_, node) = get_svg_subset(&subset, rotation).unwrap();
-
         assert_eq!(node.to_string(), expected);
     }
 

@@ -24,9 +24,7 @@ from .exceptions import MapError
 from .logging_filter import get_logger
 from .models import Room
 from .rs.map import MapData as MapDataRs, RotationAngle
-from .util import (
-    OnChangedDict,
-)
+from .util import OnChangedDict
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -56,21 +54,16 @@ class Map:
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
-            if event.type == MapSetType.ROOMS:
-                return
-
-            for subset_id, subset in self._map_data.map_subsets.copy().items():
-                if subset.type == event.type and subset_id not in event.subsets:
-                    self._map_data.map_subsets.pop(subset_id, None)
+            for subset_key, subset in self._map_data.map_subsets.copy().items():
+                if subset.type == event.type and subset.id not in event.subsets:
+                    self._map_data.map_subsets.pop(subset_key, None)
 
         self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
-            if (
-                event.type != MapSetType.ROOMS
-                and self._map_data.map_subsets.get(event.id, None) != event
-            ):
-                self._map_data.map_subsets[event.id] = event
+            subset_key = (str(event.type), event.id)
+            if self._map_data.map_subsets.get(subset_key, None) != event:
+                self._map_data.map_subsets[subset_key] = event
 
         self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
 
@@ -194,7 +187,9 @@ class MapData:
             event_bus.notify(MapChangedEvent(datetime.now(UTC)), debounce_time=1)
 
         self._on_change = on_change
-        self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
+        self._map_subsets: OnChangedDict[tuple[str, int], MapSubsetEvent] = (
+            OnChangedDict(on_change)
+        )
         self._positions: list[Position] = []
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
@@ -206,7 +201,7 @@ class MapData:
         return self._changed
 
     @property
-    def map_subsets(self) -> dict[int, MapSubsetEvent]:
+    def map_subsets(self) -> dict[tuple[str, int], MapSubsetEvent]:
         """Return map subsets."""
         return self._map_subsets
 
@@ -226,6 +221,7 @@ class MapData:
 
     def update_positions(self, value: list[Position]) -> None:
         """Merge partial position updates by type."""
+
         def _position_key(position: Position) -> str:
             return str(position.type)
 

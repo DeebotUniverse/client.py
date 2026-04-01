@@ -84,8 +84,10 @@ pub(super) enum CSSClass {
     RoomColor5,
 
     WallBase,
+    RoomSubset,
     VirtualWall,
     NoMoppingWall,
+    CarpetArea,
 }
 
 pub(super) const ROOM_COLORS: [CSSClass; 6] = [
@@ -208,12 +210,30 @@ fn get_styles() -> &'static HashMap<CSSClass, CSSEntry> {
                 },
             ),
             (
+                CSSClass::RoomSubset,
+                CSSEntry {
+                    class_name: "rs",
+                    value: "fill: #deebfb; stroke: #9fb7d8; stroke-width: 0.8",
+                    required_def: None,
+                    identifier: ".rs",
+                },
+            ),
+            (
                 CSSClass::VirtualWall,
                 css_entry!("v", "stroke: #f00000; fill: #f0000030"),
             ),
             (
                 CSSClass::NoMoppingWall,
                 css_entry!("m", "stroke: #ffa500; fill: #ffa50030"),
+            ),
+            (
+                CSSClass::CarpetArea,
+                CSSEntry {
+                    class_name: "ca",
+                    value: "fill: #1a81ed30; stroke: #1a81ed; stroke-width: 1",
+                    required_def: None,
+                    identifier: ".ca",
+                },
             ),
         ])
     })

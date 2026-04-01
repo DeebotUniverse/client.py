@@ -500,14 +500,32 @@ class GetMapSet(NgiotMapGetCommand):
             if map_id:
                 store.update_areas(map_id, areas)
 
-            rooms = [
-                Room(
-                    name=(area.name or f"Area {_coerce_int(area.area_id, index)}"),
-                    id=_coerce_int(area.area_id, index),
-                    coordinates=_polygon_to_coordinates(area.polygon),
+            subset_ids: list[int] = []
+            rooms: list[Room] = []
+
+            for index, area in enumerate(areas):
+                subset_id = _coerce_int(area.area_id, index)
+                coordinates = _polygon_to_coordinates(area.polygon)
+                subset_ids.append(subset_id)
+
+                event_bus.notify(
+                    MapSubsetEvent(
+                        id=subset_id,
+                        type=MapSetType.ROOMS,
+                        coordinates=coordinates,
+                        name=area.name,
+                    )
                 )
-                for index, area in enumerate(areas)
-            ]
+
+                rooms.append(
+                    Room(
+                        name=(area.name or f"Area {subset_id}"),
+                        id=subset_id,
+                        coordinates=coordinates,
+                    )
+                )
+
+            event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids, map_id))
             event_bus.notify(RoomsEvent(map_id=map_id, rooms=rooms))
             return HandlingResult.success()
 
@@ -518,6 +536,7 @@ class GetMapSet(NgiotMapGetCommand):
         overlay_type_map = {
             MapSetType.VIRTUAL_WALLS: "virtual_walls",
             MapSetType.NO_MOP_ZONES: "mop_walls",
+            MapSetType.CARPETS: "carpets",
         }
         target_overlay_type = overlay_type_map.get(self._map_type)
 
@@ -547,7 +566,9 @@ class GetMapSet(NgiotMapGetCommand):
         data_key = {
             MapSetType.VIRTUAL_WALLS: "virtualWalls",
             MapSetType.NO_MOP_ZONES: "mopWalls",
+            MapSetType.CARPETS: "carpets",
         }[self._map_type]
+
         raw_value = str(data.get(data_key, "")).strip()
         subset_ids: list[int] = []
 
@@ -567,6 +588,9 @@ class GetMapSet(NgiotMapGetCommand):
                         coordinates=coordinates,
                     )
                 )
+
+        event_bus.notify(MapSetEvent(self._map_type, subset_ids, map_id))
+        return HandlingResult.success()
 
         event_bus.notify(MapSetEvent(self._map_type, subset_ids, map_id))
         return HandlingResult.success()

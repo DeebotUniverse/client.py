@@ -1,4 +1,5 @@
-use super::{ImageGenrationType, ViewBox, decompress_base64_data};
+use super::{ImageGenrationType, ViewBox};
+use crate::util::decompress_base64_data;
 use base64::Engine;
 use base64::engine::general_purpose;
 use crc32fast::Hasher;
