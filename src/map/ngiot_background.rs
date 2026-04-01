@@ -21,24 +21,24 @@ struct NgiotBackgroundData {
 }
 
 #[pyclass]
-pub(super) struct NgiotBackground {
+pub(crate) struct NgiotBackground {
     data: Option<NgiotBackgroundData>,
 }
 
 impl NgiotBackground {
-    pub(super) fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self { data: None }
     }
 
-    pub(super) fn position_origin(&self) -> Option<(i32, i32)> {
+    pub(crate) fn position_origin(&self) -> Option<(i32, i32)> {
         self.data.as_ref().map(|data| (data.x_min, data.y_max))
     }
 
-    pub(super) fn has_data(&self) -> bool {
+    pub(crate) fn has_data(&self) -> bool {
         self.data.is_some()
     }
 
-    pub(super) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
+    pub(crate) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let Some(data) = self.data.as_ref() else {
             return Ok(None);
         };
@@ -60,7 +60,8 @@ impl NgiotBackground {
 
         let mut png_data = Vec::new();
         {
-            let mut encoder = Encoder::new(&mut png_data, u32::from(data.width), u32::from(data.height));
+            let mut encoder =
+                Encoder::new(&mut png_data, u32::from(data.width), u32::from(data.height));
             encoder.set_compression(Compression::Balanced);
             encoder.set_color(ColorType::Rgba);
             encoder.set_depth(BitDepth::Eight);

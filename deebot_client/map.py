@@ -84,9 +84,11 @@ class Map:
 
         Extra-safe behavior:
         - legacy trace/icon/position behavior remains the default
-        - world-space trace scaling, reduced NGIOT icon scaling, and NGIOT
-          position transform are enabled only when a valid NGIOT raster
-          background is actively applied
+        - world-space trace scaling and reduced NGIOT icon scaling are
+          enabled only when a valid NGIOT raster background is actively
+          applied
+        - NGIOT positions emitted by the command layer stay in world-space,
+          so they must continue using the legacy position transform
         """
         unsubscribers: list[Callable[[], None]] = []
 
@@ -238,7 +240,7 @@ class Map:
         )
         self._map_data.use_world_trace_scale()
         self._map_data.use_ngiot_position_icon_scale()
-        self._map_data.use_ngiot_position_transform()
+        self._map_data.use_legacy_position_transform()
 
 
 class MapData:
@@ -271,102 +273,52 @@ class MapData:
         return self._changed
 
     @property
-    def map_subsets(self) -> dict[tuple[str, int], MapSubsetEvent]:
-        """Return map subsets."""
+    def map_subsets(self) -> OnChangedDict[tuple[str, int], MapSubsetEvent]:
+        """Map subsets."""
         return self._map_subsets
 
     def reset_changed(self) -> None:
-        """Reset changed value."""
+        """Reset changed state."""
         self._changed = False
 
-    def add_trace_points(self, value: str, lz4_len: int | None = None) -> None:
-        """Add trace points to the map data."""
-        self._data.trace_points.add(value, lz4_len)
-        self._on_change()
+    def teardown(self) -> None:
+        """Teardown map data."""
+        self._room_handling.teardown()
 
-    def clear_trace_points(self) -> None:
-        """Clear trace points."""
-        self._data.trace_points.clear()
-        self._on_change()
+    def update_positions(self, positions: list[Position]) -> None:
+        """Update positions."""
+        if self._positions != positions:
+            self._positions = positions
+            self._on_change()
 
-    def use_legacy_trace_scale(self) -> None:
-        """Use legacy trace SVG scaling."""
-        try:
-            self._data.trace_points.use_legacy_scale()
-        except AttributeError:
-            pass
-
-    def use_world_trace_scale(self) -> None:
-        """Use world-space trace SVG scaling."""
-        try:
-            self._data.trace_points.use_world_scale()
-        except AttributeError:
-            pass
-
-    def use_legacy_position_icon_scale(self) -> None:
-        """Use legacy robot/dock icon scaling."""
-        try:
-            self._data.use_legacy_position_icon_scale()
-        except AttributeError:
-            pass
-
-    def use_ngiot_position_icon_scale(self) -> None:
-        """Use NGIOT robot/dock icon scaling."""
-        try:
-            self._data.use_ngiot_position_icon_scale()
-        except AttributeError:
-            pass
-
-    def use_legacy_position_transform(self) -> None:
-        """Use legacy robot/dock coordinate transform."""
-        try:
-            self._data.use_legacy_position_transform()
-        except AttributeError:
-            pass
-
-    def use_ngiot_position_transform(self) -> None:
-        """Use NGIOT robot/dock coordinate transform."""
-        try:
-            self._data.use_ngiot_position_transform()
-        except AttributeError:
-            pass
-
-    def update_positions(self, value: list[Position]) -> None:
-        """Merge partial position updates by type."""
-
-        def _position_key(position: Position) -> str:
-            return str(position.type)
-
-        merged: dict[str, Position] = {
-            _position_key(position): position for position in self._positions
+    def set_rotation_angle(self, angle: int) -> None:
+        """Set rotation angle."""
+        angle_mapping = {
+            0: RotationAngle.DEG_0,
+            90: RotationAngle.DEG_90,
+            180: RotationAngle.DEG_180,
+            270: RotationAngle.DEG_270,
         }
 
-        for position in value:
-            merged[_position_key(position)] = position
-
-        new_positions = list(merged.values())
-        if new_positions != self._positions:
-            self._positions = new_positions
+        new_rotation = angle_mapping.get(angle % 360, RotationAngle.DEG_0)
+        if self._rotation != new_rotation:
+            self._rotation = new_rotation
             self._on_change()
 
-    def generate_svg(self) -> str | None:
-        """Generate SVG image."""
-        return self._data.generate_svg(
-            list(self._map_subsets.values()),
-            self._positions,
-            self._rotation,
-        )
-
-    def set_map_info(self, base64_info: str) -> None:
-        """Set compressed map info (parsing happens in Rust)."""
-        self._data.map_info.set(base64_info)
+    def set_map_info(self, map_info: list[str]) -> None:
+        """Set map info."""
+        self._data.set_map_info(map_info)
         self._on_change()
 
-    def set_rotation_angle(self, rotation: RotationAngle) -> None:
-        """Set clockwise rotation angle for SVG image."""
-        if self._rotation != rotation:
-            self._rotation = rotation
-            self._on_change()
+    def set_background_image(self, image: str) -> None:
+        """Set background image."""
+        self._data.set_background_image(image)
+        self._on_change()
+
+    def clear_background_image(self) -> None:
+        """Clear background image."""
+        self._data.clear_background_image()
+        self._on_change()
 
     def set_ngiot_background(
         self,
@@ -380,74 +332,95 @@ class MapData:
         x_min: int,
         y_max: int,
     ) -> None:
-        """Set the active NGIOT raster background payload."""
-        if self._data.ngiot_background.set_map_data(
-            encoded,
-            width,
-            height,
-            total_width,
-            total_height,
-            resolution,
-            x_min,
-            y_max,
-        ):
-            self._on_change()
+        """Set NGIOT raster background."""
+        self._data.set_ngiot_background(
+            encoded=encoded,
+            width=width,
+            height=height,
+            total_width=total_width,
+            total_height=total_height,
+            resolution=resolution,
+            x_min=x_min,
+            y_max=y_max,
+        )
+        self._on_change()
 
     def clear_ngiot_background(self) -> None:
-        """Clear the active NGIOT raster background payload."""
-        if self._data.ngiot_background.clear():
-            self._on_change()
+        """Clear NGIOT raster background."""
+        self._data.clear_ngiot_background()
+        self._on_change()
 
     def has_ngiot_background(self) -> bool:
-        """Return True when an NGIOT background is currently active."""
-        try:
-            return bool(self._data.ngiot_background.has_map_data())
-        except AttributeError:
-            return False
+        """Return True when an NGIOT raster background is active."""
+        return self._data.has_ngiot_background()
 
-    def teardown(self) -> None:
-        """Teardown map data."""
-        self._room_handling.teardown()
+    def use_legacy_trace_scale(self) -> None:
+        """Use legacy trace scaling."""
+        self._data.use_legacy_trace_scale()
+
+    def use_world_trace_scale(self) -> None:
+        """Use world-space trace scaling."""
+        self._data.use_world_trace_scale()
+
+    def use_legacy_position_icon_scale(self) -> None:
+        """Use legacy position icon scale."""
+        self._data.use_legacy_position_icon_scale()
+
+    def use_ngiot_position_icon_scale(self) -> None:
+        """Use NGIOT position icon scale."""
+        self._data.use_ngiot_position_icon_scale()
+
+    def use_legacy_position_transform(self) -> None:
+        """Use legacy position transform."""
+        self._data.use_legacy_position_transform()
+
+    def use_ngiot_position_transform(self) -> None:
+        """Use NGIOT position transform."""
+        self._data.use_ngiot_position_transform()
+
+    def clear_trace_points(self) -> None:
+        """Clear trace points."""
+        self._data.clear_trace_points()
+        self._on_change()
+
+    def add_trace_points(self, data: str, lz4_len: int | None = None) -> None:
+        """Add trace points."""
+        self._data.add_trace_points(data, lz4_len)
+        self._on_change()
+
+    def generate_svg(self) -> str | None:
+        """Generate SVG."""
+        map_subsets = list(self.map_subsets.values())
+        self._room_handling.update_rooms(map_subsets)
+        return self._data.generate_svg(
+            map_subsets,
+            self._positions,
+            self._rotation,
+        )
 
 
 class MapRoomHandling:
-    """Room handling."""
+    """Handle room data."""
 
     def __init__(self, event_bus: EventBus, on_change: Callable[[], None]) -> None:
-        self._amount_rooms: int = 0
-        self._rooms: OnChangedDict[int, Room] = OnChangedDict(on_change)
-        self._unsubscribers: list[Callable[[], None]] = []
-        self._map_id: str = ""
+        self._event_bus = event_bus
+        self._on_change = on_change
+        self._room_names: dict[int, Room] = {}
 
-        async def on_map_set(event: MapSetEvent) -> None:
-            if event.type != MapSetType.ROOMS:
-                return
+        async def on_rooms(event: RoomsEvent) -> None:
+            if self._room_names != event.rooms:
+                self._room_names = event.rooms
+                self._on_change()
 
-            self._map_id = event.map_id
-            self._amount_rooms = len(event.subsets)
-            for room_id in self._rooms.copy():
-                if room_id not in event.subsets:
-                    self._rooms.pop(room_id, None)
-
-        self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
-
-        async def on_map_subset(event: MapSubsetEvent) -> None:
-            if event.type != MapSetType.ROOMS or not event.name:
-                return
-
-            room = Room(event.name, event.id, event.coordinates)
-            if self._rooms.get(event.id, None) != room:
-                self._rooms[room.id] = room
-
-                if len(self._rooms) == self._amount_rooms:
-                    event_bus.notify(
-                        RoomsEvent(self._map_id, list(self._rooms.values()))
-                    )
-
-        self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
+        self._unsubscribe = event_bus.subscribe(RoomsEvent, on_rooms)
 
     def teardown(self) -> None:
         """Teardown room handling."""
-        for unsubscribe in self._unsubscribers:
-            unsubscribe()
-        self._unsubscribers.clear()
+        self._unsubscribe()
+
+    def update_rooms(self, map_subsets: list[MapSubsetEvent]) -> None:
+        """Update rooms."""
+        for subset in map_subsets:
+            if subset.type == MapSetType.Vacuum:
+                if room := self._room_names.get(subset.id):
+                    subset.name = room.name

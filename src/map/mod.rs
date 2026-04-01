@@ -510,15 +510,10 @@ fn get_svg_positions(
     for &i in &indices {
         let position = &positions[i];
         let pos = match ngiot_position_origin {
-            Some((x_min, y_max)) => {
-                let adjusted_x = position.x + x_min;
-                let adjusted_y = position.y + y_max;
-                let point = calc_point(adjusted_x as f32, adjusted_y as f32, rotation);
-                Point {
-                    x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
-                    y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
-                    connected: false,
-                }
+            Some(_) => {
+                // NGIOT positions are already emitted in world coordinates.
+                // Do not offset them again by x_min / y_max.
+                calc_point_in_viewbox(position.x, position.y, viewbox, rotation)
             }
             None => calc_point_in_viewbox(position.x, position.y, viewbox, rotation),
         };
