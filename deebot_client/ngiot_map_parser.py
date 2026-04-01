@@ -42,7 +42,7 @@ class NgiotMapInfo:
 
 @dataclass(slots=True, frozen=True)
 class NgiotBaseMap:
-    """Base map metadata and encoded grid payload."""
+    """Base map metadata and encoded raster payload."""
 
     map_id: str
     width: int
@@ -52,7 +52,8 @@ class NgiotBaseMap:
     resolution: int
     x_min: int
     y_max: int
-    data: str
+    encoded: str
+    lz4_len: int | None = None
 
 
 @dataclass(slots=True, frozen=True)
@@ -217,12 +218,12 @@ def parse_map_infos(data: dict[str, Any]) -> list[NgiotMapInfo]:
 
 
 def parse_base_map(data: dict[str, Any], map_id: str | None = None) -> NgiotBaseMap | None:
-    """Parse base map metadata and encoded grid payload."""
+    """Parse base map metadata and encoded raster payload."""
     raw = data.get("mapData")
     if not isinstance(raw, dict):
         return None
 
-    encoded = _coerce_str(raw.get("data"))
+    encoded = _coerce_str(raw.get("map")) or _coerce_str(raw.get("data"))
     if not encoded:
         return None
 
@@ -237,9 +238,9 @@ def parse_base_map(data: dict[str, Any], map_id: str | None = None) -> NgiotBase
         resolution=max(1, _coerce_int(raw.get("resolution"), 1)),
         x_min=_coerce_int(raw.get("xMin")),
         y_max=_coerce_int(raw.get("yMax")),
-        data=encoded,
+        encoded=encoded,
+        lz4_len=_coerce_int(raw.get("lz4Len")) or None,
     )
-
 
 
 def parse_pose(data: dict[str, Any]) -> NgiotPose | None:

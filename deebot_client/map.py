@@ -5,7 +5,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
-from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
+from deebot_client.events.map import CachedMapInfoEvent, MajorMapEvent, MapChangedEvent
 
 from .events import (
     MapInfoEvent,
@@ -78,7 +78,9 @@ class Map:
     async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
         """On first MapChanged subscription.
 
-        Geometry-map V1 deliberately ignores legacy major/minor background tiles.
+        For NGIOT devices, the visible base map comes from the raster payload stored
+        in the NGIOT map state store. This callback wires the Python map layer to
+        that store and keeps overlays layered on top.
         """
         unsubscribers: list[Callable[[], None]] = []
 
@@ -86,6 +88,7 @@ class Map:
             used_map = next((m for m in event.maps if m.using), None)
             if used_map:
                 self._map_data.set_rotation_angle(used_map.angle)
+            self._sync_ngiot_background_from_store()
 
         cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
         unsubscribers.append(
@@ -94,8 +97,14 @@ class Map:
         if cached_map_subscribers:
             self._event_bus.request_refresh(CachedMapInfoEvent)
 
+        async def on_major_map(_: MajorMapEvent) -> None:
+            self._sync_ngiot_background_from_store()
+
+        unsubscribers.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
+
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.update_positions(event.positions)
+            self._sync_ngiot_background_from_store()
 
         unsubscribers.append(self._event_bus.subscribe(PositionsEvent, on_position))
 
@@ -124,6 +133,8 @@ class Map:
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
+        self._sync_ngiot_background_from_store()
+
         def unsub() -> None:
             for unsubscribe in unsubscribers:
                 unsubscribe()
@@ -136,6 +147,7 @@ class Map:
             raise MapError("Please enable the map first")
 
         self._event_bus.request_refresh(CachedMapInfoEvent)
+        self._event_bus.request_refresh(MajorMapEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
 
@@ -162,6 +174,48 @@ class Map:
             unsubscribe()
         self._unsubscribers.clear()
         self._map_data.teardown()
+
+    def _sync_ngiot_background_from_store(self) -> None:
+        """Push the active NGIOT raster background into the renderer path."""
+        store = getattr(self._event_bus, "_ngiot_map_state_store", None)
+        if store is None:
+            self._map_data.clear_ngiot_background()
+            return
+
+        snapshot = None
+        get_active_renderable = getattr(store, "get_active_renderable", None)
+        if callable(get_active_renderable):
+            snapshot = get_active_renderable()
+
+        if snapshot is None:
+            get_active = getattr(store, "get_active", None)
+            if callable(get_active):
+                snapshot = get_active()
+
+        base_map = getattr(snapshot, "base_map", None) if snapshot is not None else None
+        encoded = ""
+        if base_map is not None:
+            encoded = getattr(base_map, "encoded", "") or getattr(base_map, "data", "")
+
+        if (
+            base_map is None
+            or not encoded
+            or int(getattr(base_map, "width", 0)) <= 0
+            or int(getattr(base_map, "height", 0)) <= 0
+        ):
+            self._map_data.clear_ngiot_background()
+            return
+
+        self._map_data.set_ngiot_background(
+            encoded=encoded,
+            width=int(getattr(base_map, "width", 0)),
+            height=int(getattr(base_map, "height", 0)),
+            total_width=int(getattr(base_map, "total_width", 0)),
+            total_height=int(getattr(base_map, "total_height", 0)),
+            resolution=int(getattr(base_map, "resolution", 1)),
+            x_min=int(getattr(base_map, "x_min", 0)),
+            y_max=int(getattr(base_map, "y_max", 0)),
+        )
 
 
 class MapData:
@@ -240,8 +294,39 @@ class MapData:
 
     def set_rotation_angle(self, rotation: RotationAngle) -> None:
         """Set clockwise rotation angle for SVG image."""
-        self._rotation = rotation
-        self._on_change()
+        if self._rotation != rotation:
+            self._rotation = rotation
+            self._on_change()
+
+    def set_ngiot_background(
+        self,
+        *,
+        encoded: str,
+        width: int,
+        height: int,
+        total_width: int,
+        total_height: int,
+        resolution: int,
+        x_min: int,
+        y_max: int,
+    ) -> None:
+        """Set the active NGIOT raster background payload."""
+        if self._data.ngiot_background.set_map_data(
+            encoded,
+            width,
+            height,
+            total_width,
+            total_height,
+            resolution,
+            x_min,
+            y_max,
+        ):
+            self._on_change()
+
+    def clear_ngiot_background(self) -> None:
+        """Clear the active NGIOT raster background payload."""
+        if self._data.ngiot_background.clear():
+            self._on_change()
 
     def teardown(self) -> None:
         """Teardown map data."""

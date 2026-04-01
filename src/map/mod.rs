@@ -22,7 +22,7 @@ use svg::node::element::{
 };
 use svg::{Document, Node};
 
-const PIXEL_WIDTH: f32 = 50.0;
+pub(super) const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
 
@@ -233,12 +233,12 @@ fn calc_fallback_viewbox(
         return None;
     }
 
-    let margin: i16 = 5;
+    let margin = 5.0;
     Some(ViewBox::from_extents(
-        min_x.floor() as i16 - margin,
-        min_y.floor() as i16 - margin,
-        max_x.ceil() as i16 + margin,
-        max_y.ceil() as i16 + margin,
+        min_x.floor() - margin,
+        min_y.floor() - margin,
+        max_x.ceil() + margin,
+        max_y.ceil() + margin,
     ))
 }
 
@@ -406,35 +406,35 @@ impl MapData {
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct ViewBox {
-    min_x: i16,
-    min_y: i16,
-    max_x: i16,
-    max_y: i16,
-    width: u16,
-    height: u16,
+    min_x: f32,
+    min_y: f32,
+    max_x: f32,
+    max_y: f32,
+    width: f32,
+    height: f32,
 }
 
 impl ViewBox {
     fn new(min_x: u16, min_y: u16, max_x: u16, max_y: u16) -> Self {
-        let new_min_x = min_x as i16 - MAP_OFFSET;
-        let new_min_y = min_y as i16 - MAP_OFFSET;
-        let width = max_x - min_x + 1;
-        let height = max_y - min_y + 1;
+        let new_min_x = min_x as f32 - MAP_OFFSET as f32;
+        let new_min_y = min_y as f32 - MAP_OFFSET as f32;
+        let width = (max_x - min_x + 1) as f32;
+        let height = (max_y - min_y + 1) as f32;
         ViewBox {
             min_x: new_min_x,
             min_y: new_min_y,
-            max_x: new_min_x + width as i16,
-            max_y: new_min_y + height as i16,
+            max_x: new_min_x + width,
+            max_y: new_min_y + height,
             width,
             height,
         }
     }
 
-    fn from_extents(min_x: i16, min_y: i16, max_x: i16, max_y: i16) -> Self {
-        let width = (max_x - min_x).max(1) as u16;
-        let height = (max_y - min_y).max(1) as u16;
+    fn from_extents(min_x: f32, min_y: f32, max_x: f32, max_y: f32) -> Self {
+        let width = (max_x - min_x).max(1.0);
+        let height = (max_y - min_y).max(1.0);
 
         ViewBox {
             min_x,
@@ -450,7 +450,10 @@ impl ViewBox {
     fn to_svg_viewbox(&self) -> String {
         format!(
             "{} {} {} {}",
-            self.min_x, self.min_y, self.width, self.height
+            round(self.min_x, ROUND_TO_DIGITS),
+            round(self.min_y, ROUND_TO_DIGITS),
+            round(self.width, ROUND_TO_DIGITS),
+            round(self.height, ROUND_TO_DIGITS)
         )
     }
 }
@@ -501,12 +504,12 @@ mod tests {
 
     fn tuple_2_view_box(tuple: (i16, i16, u16, u16)) -> ViewBox {
         ViewBox {
-            min_x: tuple.0,
-            min_y: tuple.1,
-            max_x: tuple.0 + tuple.2 as i16,
-            max_y: tuple.1 + tuple.3 as i16,
-            width: tuple.2,
-            height: tuple.3,
+            min_x: tuple.0 as f32,
+            min_y: tuple.1 as f32,
+            max_x: tuple.0 as f32 + tuple.2 as f32,
+            max_y: tuple.1 as f32 + tuple.3 as f32,
+            width: tuple.2 as f32,
+            height: tuple.3 as f32,
         }
     }
 

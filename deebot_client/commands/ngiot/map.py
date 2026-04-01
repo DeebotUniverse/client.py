@@ -5,6 +5,7 @@ from __future__ import annotations
 import binascii
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, Any
+from deebot_client.logging_filter import get_logger
 
 from deebot_client.events import Position, PositionsEvent, RoomsEvent
 from deebot_client.events.map import (
@@ -494,6 +495,7 @@ class GetMapSet(NgiotMapGetCommand):
 
         if self._map_type == MapSetType.ROOMS:
             areas = parse_areas(data)
+            
             if not areas:
                 return HandlingResult.analyse()
 

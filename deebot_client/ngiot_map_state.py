@@ -49,14 +49,17 @@ class NgiotMapSnapshot:
         return None
 
     def has_background(self) -> bool:
-        """Return True when a decoded/normalizable base-map payload is present."""
-        return self.base_map is not None
+        """Return True when a usable raster base map is present."""
+        base_map = self.base_map
+        return bool(
+            base_map is not None
+            and base_map.encoded
+            and base_map.width > 0
+            and base_map.height > 0
+        )
 
-    def has_geometry(self) -> bool:
-        """Return True when enough geometry/state exists to render a useful map.
-
-        Geometry-map V1 intentionally does not require a base map.
-        """
+    def has_overlay_content(self) -> bool:
+        """Return True when overlay/state content exists for the map."""
         return bool(
             self.areas
             or self.overlays
@@ -71,14 +74,13 @@ class NgiotMapSnapshot:
             )
         )
 
-    def is_renderable(self) -> bool:
-        """Return True when the snapshot can produce a visible map.
+    def is_overlay_only(self) -> bool:
+        """Return True when only non-background map content exists."""
+        return not self.has_background() and self.has_overlay_content()
 
-        For geometry-map V1, either:
-        - a base map is present, or
-        - enough geometry/state exists to render without a background
-        """
-        return self.has_background() or self.has_geometry()
+    def is_renderable(self) -> bool:
+        """Return True when the snapshot can produce the intended visible map."""
+        return self.has_background()
 
 
 class NgiotMapStateStore:

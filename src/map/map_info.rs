@@ -313,9 +313,12 @@ fn calc_viewbox(outlines: &[MapInfoTypeDataEntry]) -> Option<ViewBox> {
         .for_each(|e| minmax_points(e.points.iter(), &mut bounds));
 
     let (min_x_f, min_y_f, max_x_f, max_y_f) = bounds?;
-    let (min_x, min_y) = (min_x_f.round() as i16, min_y_f.round() as i16);
-    let (max_x, max_y) = (max_x_f.round() as i16, max_y_f.round() as i16);
-    let (width, height) = ((max_x - min_x).max(1) as u16, (max_y - min_y).max(1) as u16);
+    let min_x = min_x_f.round();
+    let min_y = min_y_f.round();
+    let max_x = max_x_f.round();
+    let max_y = max_y_f.round();
+    let width = (max_x - min_x).max(1.0);
+    let height = (max_y - min_y).max(1.0);
 
     Some(ViewBox {
         min_x,
