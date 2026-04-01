@@ -106,8 +106,8 @@ impl BackgroundImage {
             .view(
                 min_x.into(),
                 min_y.into(),
-                view_box.width.round() as u32,
-                view_box.height.round() as u32,
+                view_box.width.into(),
+                view_box.height.into(),
             )
             .to_image();
 

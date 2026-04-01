@@ -81,6 +81,12 @@ class Map:
         For NGIOT devices, the visible base map comes from the raster payload stored
         in the NGIOT map state store. This callback wires the Python map layer to
         that store and keeps overlays layered on top.
+
+        Extra-safe behavior:
+        - legacy trace/icon/position behavior remains the default
+        - world-space trace scaling, reduced NGIOT icon scaling, and NGIOT
+          position transform are enabled only when a valid NGIOT raster
+          background is actively applied
         """
         unsubscribers: list[Callable[[], None]] = []
 
@@ -116,6 +122,14 @@ class Map:
                 return
 
             try:
+                # Extra-safe rule:
+                # - if NGIOT background is active, keep world-space trace scaling
+                # - otherwise fall back to legacy scaling
+                if self._map_data.has_ngiot_background():
+                    self._map_data.use_world_trace_scale()
+                else:
+                    self._map_data.use_legacy_trace_scale()
+
                 self._map_data.add_trace_points(data, event.lz4_len)
             except ValueError as err:
                 _LOGGER.warning(
@@ -180,6 +194,9 @@ class Map:
         store = getattr(self._event_bus, "_ngiot_map_state_store", None)
         if store is None:
             self._map_data.clear_ngiot_background()
+            self._map_data.use_legacy_trace_scale()
+            self._map_data.use_legacy_position_icon_scale()
+            self._map_data.use_legacy_position_transform()
             return
 
         snapshot = None
@@ -204,6 +221,9 @@ class Map:
             or int(getattr(base_map, "height", 0)) <= 0
         ):
             self._map_data.clear_ngiot_background()
+            self._map_data.use_legacy_trace_scale()
+            self._map_data.use_legacy_position_icon_scale()
+            self._map_data.use_legacy_position_transform()
             return
 
         self._map_data.set_ngiot_background(
@@ -216,6 +236,9 @@ class Map:
             x_min=int(getattr(base_map, "x_min", 0)),
             y_max=int(getattr(base_map, "y_max", 0)),
         )
+        self._map_data.use_world_trace_scale()
+        self._map_data.use_ngiot_position_icon_scale()
+        self._map_data.use_ngiot_position_transform()
 
 
 class MapData:
@@ -236,6 +259,11 @@ class MapData:
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
+
+        # Extra-safe defaults for backward compatibility.
+        self.use_legacy_trace_scale()
+        self.use_legacy_position_icon_scale()
+        self.use_legacy_position_transform()
 
     @property
     def changed(self) -> bool:
@@ -260,6 +288,48 @@ class MapData:
         """Clear trace points."""
         self._data.trace_points.clear()
         self._on_change()
+
+    def use_legacy_trace_scale(self) -> None:
+        """Use legacy trace SVG scaling."""
+        try:
+            self._data.trace_points.use_legacy_scale()
+        except AttributeError:
+            pass
+
+    def use_world_trace_scale(self) -> None:
+        """Use world-space trace SVG scaling."""
+        try:
+            self._data.trace_points.use_world_scale()
+        except AttributeError:
+            pass
+
+    def use_legacy_position_icon_scale(self) -> None:
+        """Use legacy robot/dock icon scaling."""
+        try:
+            self._data.use_legacy_position_icon_scale()
+        except AttributeError:
+            pass
+
+    def use_ngiot_position_icon_scale(self) -> None:
+        """Use NGIOT robot/dock icon scaling."""
+        try:
+            self._data.use_ngiot_position_icon_scale()
+        except AttributeError:
+            pass
+
+    def use_legacy_position_transform(self) -> None:
+        """Use legacy robot/dock coordinate transform."""
+        try:
+            self._data.use_legacy_position_transform()
+        except AttributeError:
+            pass
+
+    def use_ngiot_position_transform(self) -> None:
+        """Use NGIOT robot/dock coordinate transform."""
+        try:
+            self._data.use_ngiot_position_transform()
+        except AttributeError:
+            pass
 
     def update_positions(self, value: list[Position]) -> None:
         """Merge partial position updates by type."""
@@ -327,6 +397,13 @@ class MapData:
         """Clear the active NGIOT raster background payload."""
         if self._data.ngiot_background.clear():
             self._on_change()
+
+    def has_ngiot_background(self) -> bool:
+        """Return True when an NGIOT background is currently active."""
+        try:
+            return bool(self._data.ngiot_background.has_map_data())
+        except AttributeError:
+            return False
 
     def teardown(self) -> None:
         """Teardown map data."""

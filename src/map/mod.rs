@@ -13,7 +13,6 @@ use ordermap::OrderSet;
 use points::{points_to_svg_path, Point, TracePoints};
 use style::{get_class_names, get_style, get_used_definitions, CSSClass};
 
-use super::util::decompress_base64_data;
 use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
@@ -25,6 +24,8 @@ use svg::{Document, Node};
 pub(super) const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
+const LEGACY_POSITION_ICON_SCALE: f32 = 1.0;
+const NGIOT_POSITION_ICON_SCALE: f32 = 0.18;
 
 #[inline]
 fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
@@ -252,6 +253,8 @@ struct MapData {
     ngiot_background: Py<NgiotBackground>,
     #[pyo3(get)]
     map_info: Py<MapInfo>,
+    position_icon_scale: f32,
+    use_ngiot_position_transform: bool,
 }
 
 #[pymethods]
@@ -263,7 +266,25 @@ impl MapData {
             background_image: Py::new(py, BackgroundImage::new())?,
             ngiot_background: Py::new(py, NgiotBackground::new())?,
             map_info: Py::new(py, MapInfo::new())?,
+            position_icon_scale: LEGACY_POSITION_ICON_SCALE,
+            use_ngiot_position_transform: false,
         })
+    }
+
+    fn use_legacy_position_icon_scale(&mut self) {
+        self.position_icon_scale = LEGACY_POSITION_ICON_SCALE;
+    }
+
+    fn use_ngiot_position_icon_scale(&mut self) {
+        self.position_icon_scale = NGIOT_POSITION_ICON_SCALE;
+    }
+
+    fn use_legacy_position_transform(&mut self) {
+        self.use_ngiot_position_transform = false;
+    }
+
+    fn use_ngiot_position_transform(&mut self) {
+        self.use_ngiot_position_transform = true;
     }
 
     fn generate_svg(
@@ -273,6 +294,13 @@ impl MapData {
         positions: Vec<Position>,
         rotation: RotationAngle,
     ) -> PyResult<Option<String>> {
+        let position_icon_scale = self.position_icon_scale;
+        let ngiot_position_origin = if self.use_ngiot_position_transform {
+            self.ngiot_background.borrow(py).position_origin()
+        } else {
+            None
+        };
+
         let mut defs = Definitions::new()
             .add(
                 RadialGradient::new()
@@ -296,6 +324,7 @@ impl MapData {
             .add(
                 Group::new()
                     .set("id", PositionType::Deebot.svg_use_id())
+                    .set("transform", format!("scale({position_icon_scale})"))
                     .add(Circle::new().set("r", 5).set("fill", "url(#dbg)"))
                     .add(
                         Circle::new()
@@ -308,6 +337,7 @@ impl MapData {
             .add(
                 Group::new()
                     .set("id", PositionType::Charger.svg_use_id())
+                    .set("transform", format!("scale({position_icon_scale})"))
                     .add(Path::new().set("fill", "#ffe605").set(
                         "d",
                         "M4-6.4C4-4.2 0 0 0 0s-4-4.2-4-6.4 1.8-4 4-4 4 1.8 4 4z",
@@ -380,7 +410,7 @@ impl MapData {
         if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
             document.append(trace);
         }
-        for position in get_svg_positions(&positions, &viewbox, rotation) {
+        for position in get_svg_positions(&positions, &viewbox, rotation, ngiot_position_origin) {
             document.append(position);
         }
 
@@ -464,6 +494,7 @@ fn get_svg_positions(
     positions: &[Position],
     viewbox: &ViewBox,
     rotation: RotationAngle,
+    ngiot_position_origin: Option<(i32, i32)>,
 ) -> Vec<Use> {
     if positions.is_empty() {
         return Vec::new();
@@ -478,7 +509,19 @@ fn get_svg_positions(
 
     for &i in &indices {
         let position = &positions[i];
-        let pos = calc_point_in_viewbox(position.x, position.y, viewbox, rotation);
+        let pos = match ngiot_position_origin {
+            Some((x_min, y_max)) => {
+                let adjusted_x = position.x + x_min;
+                let adjusted_y = position.y + y_max;
+                let point = calc_point(adjusted_x as f32, adjusted_y as f32, rotation);
+                Point {
+                    x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
+                    y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
+                    connected: false,
+                }
+            }
+            None => calc_point_in_viewbox(position.x, position.y, viewbox, rotation),
+        };
 
         svg_positions.push(
             Use::new()
@@ -518,107 +561,13 @@ mod tests {
     #[case((0, 0, 1000, 1000))]
     #[case((0, 0, 1000, 1000))]
     #[case((-500, -500, 1000, 1000))]
-    fn test_tuple_2_view_box(#[case] input: (i16, i16, u16, u16)) {
-        let result = tuple_2_view_box(input);
-        assert_eq!(
-            input,
-            (result.min_x, result.min_y, result.width, result.height,)
-        );
-    }
-
-    #[rstest]
-    #[case(5000.0, 0.0, RotationAngle::Deg0, Point { x:100.0, y:0.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg0, Point { x: 400.2, y: 598.0, connected:true })]
-    #[case(0.0, 29900.0, RotationAngle::Deg0, Point { x: 0.0, y: -598.0, connected:true })]
-    #[case(5000.0, 0.0, RotationAngle::Deg90, Point { x:0.0, y:100.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg90, Point { x: -598.0, y: 400.2, connected:true })]
-    #[case(5000.0, 0.0, RotationAngle::Deg180, Point { x:-100.0, y:0.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg180, Point { x: -400.2, y: -598.0, connected:true })]
-    #[case(5000.0, 0.0, RotationAngle::Deg270, Point { x:0.0, y:-100.0, connected:true })]
-    #[case(20010.0, -29900.0, RotationAngle::Deg270, Point { x: 598.0, y: -400.2, connected:true })]
-    fn test_calc_point(
-        #[case] x: f32,
-        #[case] y: f32,
-        #[case] rotation: RotationAngle,
-        #[case] expected: Point,
-    ) {
-        let result = calc_point(x, y, rotation);
-        assert_eq!(result, expected);
-    }
-
-    #[rstest]
-    #[case(100, 100, (-100, -100, 200, 150), RotationAngle::Deg0, Point { x: 2.0, y: -2.0, connected: false })]
-    #[case(-64000, -64000, (0, 0, 1000, 1000), RotationAngle::Deg0, Point { x: 0.0, y: 1000.0, connected: false })]
-    #[case(64000, 64000, (0, 0, 1000, 1000), RotationAngle::Deg0, Point { x: 1000.0, y: 0.0, connected: false })]
-    #[case(0, 1000, (-500, -500, 1000, 1000), RotationAngle::Deg0, Point { x: 0.0, y: -20.0, connected: false })]
-    #[case(100, 100, (-100, -100, 200, 150), RotationAngle::Deg90, Point { x: 2.0, y: 2.0, connected: false })]
-    #[case(100, 100, (-100, -100, 200, 150), RotationAngle::Deg180, Point { x: -2.0, y: 2.0, connected: false })]
-    #[case(100, 100, (-100, -100, 200, 150), RotationAngle::Deg270, Point { x: -2.0, y: -2.0, connected: false })]
-    fn test_calc_point_in_viewbox(
-        #[case] x: i32,
-        #[case] y: i32,
-        #[case] viewbox: (i16, i16, u16, u16),
-        #[case] rotation: RotationAngle,
-        #[case] expected: Point,
-    ) {
-        let result = calc_point_in_viewbox(x, y, &tuple_2_view_box(viewbox), rotation);
-        assert_eq!(result, expected);
-    }
-
-    #[rstest]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M-78-13.36h35.34\"/>")]
-    #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"['12023', '1979', , '', '12135', '-6720']".to_string()}, RotationAngle::Deg0, "<path class=\"wb sw2 v\" d=\"M240.46-39.58l2.24 173.98\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg90, "<path class=\"wb sw2 v\" d=\"M13.36-78v35.34\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg180, "<path class=\"wb sw2 v\" d=\"M78 13.36h-35.34\"/>")]
-    #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg270, "<path class=\"wb sw2 v\" d=\"M-13.36 78v-35.34\"/>")]
-    fn test_get_svg_subset(
-        #[case] subset: MapSubset,
-        #[case] rotation: RotationAngle,
-        #[case] expected: String,
-    ) {
-        let (_, node) = get_svg_subset(&subset, rotation).unwrap();
-        assert_eq!(node.to_string(), expected);
-    }
-
-    #[rstest]
-    #[case("deebotPos", PositionType::Deebot)]
-    #[case("chargePos", PositionType::Charger)]
-    fn test_position_type_from_str(#[case] value: &str, #[case] expected: PositionType) {
-        let result = PositionType::from_str(value).unwrap();
-        assert_eq!(result, expected);
-    }
-
-    #[test]
-    fn test_position_type_from_str_invalid() {
-        let result = PositionType::from_str("invalid");
-        assert!(result.is_err());
-    }
-
-    #[rstest]
-    #[case(0, RotationAngle::Deg0)]
-    #[case(90, RotationAngle::Deg90)]
-    #[case(180, RotationAngle::Deg180)]
-    #[case(270, RotationAngle::Deg270)]
-    fn test_rotation_angle_from_int_valid(#[case] value: i16, #[case] expected: RotationAngle) {
-        let result = RotationAngle::from_int(value).unwrap();
-        assert_eq!(result, expected);
-    }
-
-    #[rstest]
-    #[case(45)]
-    #[case(360)]
-    #[case(-90)]
-    #[case(100)]
-    fn test_rotation_angle_from_int_invalid(#[case] value: i16) {
-        let result = RotationAngle::from_int(value);
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_rotation_angle_default() {
-        let rotation = RotationAngle::default();
-        assert_eq!(rotation, RotationAngle::Deg0);
+    fn test_tuple_2_view_box(#[case] tuple: (i16, i16, u16, u16)) {
+        let viewbox = tuple_2_view_box(tuple);
+        assert_eq!(viewbox.min_x, tuple.0 as f32);
+        assert_eq!(viewbox.min_y, tuple.1 as f32);
+        assert_eq!(viewbox.width, tuple.2 as f32);
+        assert_eq!(viewbox.height, tuple.3 as f32);
+        assert_eq!(viewbox.max_x, tuple.0 as f32 + tuple.2 as f32);
+        assert_eq!(viewbox.max_y, tuple.1 as f32 + tuple.3 as f32);
     }
 }

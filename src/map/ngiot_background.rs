@@ -30,6 +30,14 @@ impl NgiotBackground {
         Self { data: None }
     }
 
+    pub(super) fn position_origin(&self) -> Option<(i32, i32)> {
+        self.data.as_ref().map(|data| (data.x_min, data.y_max))
+    }
+
+    pub(super) fn has_data(&self) -> bool {
+        self.data.is_some()
+    }
+
     pub(super) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let Some(data) = self.data.as_ref() else {
             return Ok(None);
@@ -81,14 +89,14 @@ impl NgiotBackground {
 #[inline]
 fn rgba_for_value(value: u8) -> [u8; 4] {
     match value {
-        127 => [255, 255, 255, 0],     // transparent / outside map
-        1 => [237, 237, 237, 255],     // light floor
-        0 => [210, 210, 210, 255],     // alternate floor / unknown floor
-        2 => [20, 20, 20, 255],        // dark occupied / blocked region
-        3 => [83, 132, 178, 255],      // observed alternate class
-        4 => [165, 92, 47, 255],       // observed alternate class
-        255 => [220, 30, 30, 255],     // marker / sentinel
-        _ => [255, 0, 255, 255],       // unknown class => magenta for visibility
+        127 => [255, 255, 255, 0], // transparent / outside map
+        1 => [237, 237, 237, 255], // light floor
+        0 => [210, 210, 210, 255], // alternate floor / unknown floor
+        2 => [20, 20, 20, 255],    // dark occupied / blocked region
+        3 => [83, 132, 178, 255],  // observed alternate class
+        4 => [165, 92, 47, 255],   // observed alternate class
+        255 => [220, 30, 30, 255], // marker / sentinel
+        _ => [255, 0, 255, 255],   // unknown class => magenta for visibility
     }
 }
 
@@ -140,7 +148,7 @@ impl NgiotBackground {
         true
     }
 
-    fn has_data(&self) -> bool {
+    fn has_map_data(&self) -> bool {
         self.data.is_some()
     }
 }

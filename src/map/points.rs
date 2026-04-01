@@ -1,12 +1,14 @@
 use std::fmt::Write as FmtWrite;
 
-use super::{ROUND_TO_DIGITS, RotationAngle, common::round};
+use super::{PIXEL_WIDTH, ROUND_TO_DIGITS, RotationAngle, common::round};
 use crate::util::{decompress_base64_data, decompress_base64_lz4_data};
 use log::error;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::error::Error;
 use svg::node::element::Path;
+
+const LEGACY_TRACE_SCALE: f32 = 0.2;
 
 #[derive(PartialEq)]
 enum SvgPathCommand {
@@ -143,12 +145,14 @@ fn trace_point_to_point(trace_point: &TracePoint, rotation: RotationAngle) -> Po
 #[pyclass]
 pub(super) struct TracePoints {
     trace_points: Vec<TracePoint>,
+    svg_scale: f32,
 }
 
 impl TracePoints {
     pub(super) fn new() -> Self {
         Self {
             trace_points: Vec::new(),
+            svg_scale: LEGACY_TRACE_SCALE,
         }
     }
 
@@ -171,7 +175,10 @@ impl TracePoints {
             path.set("fill", "none")
                 .set("stroke", "#fff")
                 .set("stroke-linejoin", "round")
-                .set("transform", "scale(0.2-0.2)"),
+                .set(
+                    "transform",
+                    format!("scale({} {})", self.svg_scale, -self.svg_scale),
+                ),
         )
     }
 }
@@ -198,6 +205,22 @@ impl TracePoints {
 
     fn clear(&mut self) {
         self.trace_points.clear();
+    }
+
+    fn use_legacy_scale(&mut self) {
+        self.svg_scale = LEGACY_TRACE_SCALE;
+    }
+
+    fn use_world_scale(&mut self) {
+        self.svg_scale = 1.0 / PIXEL_WIDTH;
+    }
+
+    fn set_scale(&mut self, scale: f32) -> Result<(), PyErr> {
+        if !scale.is_finite() || scale <= 0.0 {
+            return Err(PyValueError::new_err("scale must be a finite value > 0"));
+        }
+        self.svg_scale = scale;
+        Ok(())
     }
 }
 
