@@ -28,7 +28,7 @@ const LEGACY_POSITION_ICON_SCALE: f32 = 1.0;
 const NGIOT_POSITION_ICON_SCALE: f32 = 0.18;
 
 #[inline]
-fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
+pub(super) fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
     let (px, py) = match rotation {
         RotationAngle::Deg0 => (x / PIXEL_WIDTH, -y / PIXEL_WIDTH),
         RotationAngle::Deg90 => (y / PIXEL_WIDTH, x / PIXEL_WIDTH),
@@ -192,6 +192,24 @@ fn calc_point_in_viewbox(x: i32, y: i32, viewbox: &ViewBox, rotation: RotationAn
     }
 }
 
+#[inline]
+fn calc_ngiot_local_point_in_viewbox(
+    x: i32,
+    y: i32,
+    origin: (i32, i32),
+    viewbox: &ViewBox,
+    rotation: RotationAngle,
+) -> Point {
+    let world_x = origin.0 as f32 + x as f32;
+    let world_y = origin.1 as f32 + y as f32;
+    let point = calc_point(world_x, world_y, rotation);
+    Point {
+        x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
+        y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
+        connected: false,
+    }
+}
+
 #[derive(FromPyObject, Debug)]
 /// Map subset event
 struct MapSubset {
@@ -285,6 +303,64 @@ impl MapData {
 
     fn use_ngiot_position_transform(&mut self) {
         self.use_ngiot_position_transform = true;
+    }
+
+    fn set_map_info(&mut self, py: Python<'_>, base64_data: String) -> PyResult<()> {
+        self.map_info.borrow_mut(py).set_map_info(base64_data)
+    }
+
+    fn set_ngiot_background(
+        &mut self,
+        py: Python<'_>,
+        encoded: String,
+        width: u16,
+        height: u16,
+        total_width: u16,
+        total_height: u16,
+        resolution: i32,
+        x_min: i32,
+        y_max: i32,
+    ) -> bool {
+        self.ngiot_background.borrow_mut(py).set_background_data(
+            encoded,
+            width,
+            height,
+            total_width,
+            total_height,
+            resolution,
+            x_min,
+            y_max,
+        )
+    }
+
+    fn clear_ngiot_background(&mut self, py: Python<'_>) -> bool {
+        self.ngiot_background.borrow_mut(py).clear_background_data()
+    }
+
+    fn has_ngiot_background(&self, py: Python<'_>) -> bool {
+        self.ngiot_background.borrow(py).has_data()
+    }
+
+    #[pyo3(signature = (value, lz4_len=None))]
+    fn add_trace_points(
+        &mut self,
+        py: Python<'_>,
+        value: String,
+        lz4_len: Option<usize>,
+    ) -> PyResult<()> {
+        self.trace_points.borrow_mut(py).add_points(value, lz4_len)
+    }
+
+    fn clear_trace_points(&mut self, py: Python<'_>) {
+        self.trace_points.borrow_mut(py).clear_points();
+    }
+
+    fn use_legacy_trace_scale(&mut self, py: Python<'_>) {
+        self.trace_points.borrow_mut(py).use_legacy_trace_scale();
+    }
+
+    fn use_world_trace_scale(&mut self, py: Python<'_>) {
+        self.trace_points.borrow_mut(py).use_world_trace_scale();
     }
 
     fn generate_svg(
@@ -407,10 +483,21 @@ impl MapData {
             document.append(path);
         }
 
-        if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
+        if let Some(trace) = self
+            .trace_points
+            .borrow(py)
+            .get_path(rotation, ngiot_position_origin)
+        {
             document.append(trace);
         }
-        for position in get_svg_positions(&positions, &viewbox, rotation, ngiot_position_origin) {
+
+        for position in get_svg_positions(
+            &positions,
+            &viewbox,
+            rotation,
+            ngiot_position_origin,
+            self.use_ngiot_position_transform,
+        ) {
             document.append(position);
         }
 
@@ -495,6 +582,7 @@ fn get_svg_positions(
     viewbox: &ViewBox,
     rotation: RotationAngle,
     ngiot_position_origin: Option<(i32, i32)>,
+    use_ngiot_position_transform: bool,
 ) -> Vec<Use> {
     if positions.is_empty() {
         return Vec::new();
@@ -509,13 +597,11 @@ fn get_svg_positions(
 
     for &i in &indices {
         let position = &positions[i];
-        let pos = match ngiot_position_origin {
-            Some(_) => {
-                // NGIOT positions are already emitted in world coordinates.
-                // Do not offset them again by x_min / y_max.
-                calc_point_in_viewbox(position.x, position.y, viewbox, rotation)
+        let pos = match (ngiot_position_origin, use_ngiot_position_transform) {
+            (Some(origin), true) => {
+                calc_ngiot_local_point_in_viewbox(position.x, position.y, origin, viewbox, rotation)
             }
-            None => calc_point_in_viewbox(position.x, position.y, viewbox, rotation),
+            _ => calc_point_in_viewbox(position.x, position.y, viewbox, rotation),
         };
 
         svg_positions.push(

@@ -38,6 +38,44 @@ impl NgiotBackground {
         self.data.is_some()
     }
 
+    pub(crate) fn set_background_data(
+        &mut self,
+        encoded: String,
+        width: u16,
+        height: u16,
+        total_width: u16,
+        total_height: u16,
+        resolution: i32,
+        x_min: i32,
+        y_max: i32,
+    ) -> bool {
+        let new_data = NgiotBackgroundData {
+            encoded,
+            width,
+            height,
+            total_width,
+            total_height,
+            resolution,
+            x_min,
+            y_max,
+        };
+
+        if self.data.as_ref() == Some(&new_data) {
+            return false;
+        }
+
+        self.data = Some(new_data);
+        true
+    }
+
+    pub(crate) fn clear_background_data(&mut self) -> bool {
+        if self.data.is_none() {
+            return false;
+        }
+        self.data = None;
+        true
+    }
+
     pub(crate) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let Some(data) = self.data.as_ref() else {
             return Ok(None);
@@ -122,7 +160,7 @@ impl NgiotBackground {
         x_min: i32,
         y_max: i32,
     ) -> bool {
-        let new_data = NgiotBackgroundData {
+        self.set_background_data(
             encoded,
             width,
             height,
@@ -131,25 +169,14 @@ impl NgiotBackground {
             resolution,
             x_min,
             y_max,
-        };
-
-        if self.data.as_ref() == Some(&new_data) {
-            return false;
-        }
-
-        self.data = Some(new_data);
-        true
+        )
     }
 
     fn clear(&mut self) -> bool {
-        if self.data.is_none() {
-            return false;
-        }
-        self.data = None;
-        true
+        self.clear_background_data()
     }
 
     fn has_map_data(&self) -> bool {
-        self.data.is_some()
+        self.has_data()
     }
 }

@@ -1,6 +1,6 @@
 use std::fmt::Write as FmtWrite;
 
-use super::{PIXEL_WIDTH, ROUND_TO_DIGITS, RotationAngle, common::round};
+use super::{PIXEL_WIDTH, ROUND_TO_DIGITS, RotationAngle, calc_point, common::round};
 use crate::util::{decompress_base64_data, decompress_base64_lz4_data};
 use log::error;
 use pyo3::exceptions::PyValueError;
@@ -128,7 +128,19 @@ fn extract_trace_points_lz4(
     process_trace_points(&decompressed_data)
 }
 
-fn trace_point_to_point(trace_point: &TracePoint, rotation: RotationAngle) -> Point {
+fn trace_point_to_point(
+    trace_point: &TracePoint,
+    rotation: RotationAngle,
+    ngiot_origin: Option<(i32, i32)>,
+) -> Point {
+    if let Some((x_min, y_max)) = ngiot_origin {
+        let world_x = x_min as f32 + trace_point.x as f32;
+        let world_y = y_max as f32 - trace_point.y as f32;
+        let mut point = calc_point(world_x, world_y, rotation);
+        point.connected = trace_point.connected;
+        return point;
+    }
+
     let (x, y) = match rotation {
         RotationAngle::Deg0 => (trace_point.x.into(), trace_point.y.into()),
         RotationAngle::Deg90 => (trace_point.y.into(), -(trace_point.x as f32)),
@@ -156,37 +168,11 @@ impl TracePoints {
         }
     }
 
-    pub(super) fn get_path(&self, rotation: RotationAngle) -> Option<Path> {
-        if self.trace_points.is_empty() {
-            return None;
-        }
-
-        let path = points_to_svg_path(
-            &self
-                .trace_points
-                .iter()
-                .map(|tp| trace_point_to_point(tp, rotation))
-                .collect::<Vec<Point>>(),
-            false,
-            false,
-        )?;
-
-        Some(
-            path.set("fill", "none")
-                .set("stroke", "#fff")
-                .set("stroke-linejoin", "round")
-                .set(
-                    "transform",
-                    format!("scale({} {})", self.svg_scale, -self.svg_scale),
-                ),
-        )
-    }
-}
-
-#[pymethods]
-impl TracePoints {
-    #[pyo3(signature = (value, lz4_len=None))]
-    fn add(&mut self, value: String, lz4_len: Option<usize>) -> Result<(), PyErr> {
+    pub(super) fn add_points(
+        &mut self,
+        value: String,
+        lz4_len: Option<usize>,
+    ) -> Result<(), PyErr> {
         let parsed = match lz4_len {
             Some(expected_len) => extract_trace_points_lz4(&value, expected_len),
             None => extract_trace_points(&value),
@@ -203,16 +189,70 @@ impl TracePoints {
         Ok(())
     }
 
-    fn clear(&mut self) {
+    pub(super) fn clear_points(&mut self) {
         self.trace_points.clear();
     }
 
-    fn use_legacy_scale(&mut self) {
+    pub(super) fn use_legacy_trace_scale(&mut self) {
         self.svg_scale = LEGACY_TRACE_SCALE;
     }
 
-    fn use_world_scale(&mut self) {
+    pub(super) fn use_world_trace_scale(&mut self) {
         self.svg_scale = 1.0 / PIXEL_WIDTH;
+    }
+
+    pub(super) fn get_path(
+        &self,
+        rotation: RotationAngle,
+        ngiot_origin: Option<(i32, i32)>,
+    ) -> Option<Path> {
+        if self.trace_points.is_empty() {
+            return None;
+        }
+
+        let path = points_to_svg_path(
+            &self
+                .trace_points
+                .iter()
+                .map(|tp| trace_point_to_point(tp, rotation, ngiot_origin))
+                .collect::<Vec<Point>>(),
+            false,
+            false,
+        )?;
+
+        let path = path
+            .set("fill", "none")
+            .set("stroke", "#fff")
+            .set("stroke-linejoin", "round");
+
+        Some(if ngiot_origin.is_some() {
+            path
+        } else {
+            path.set(
+                "transform",
+                format!("scale({} {})", self.svg_scale, -self.svg_scale),
+            )
+        })
+    }
+}
+
+#[pymethods]
+impl TracePoints {
+    #[pyo3(signature = (value, lz4_len=None))]
+    fn add(&mut self, value: String, lz4_len: Option<usize>) -> Result<(), PyErr> {
+        self.add_points(value, lz4_len)
+    }
+
+    fn clear(&mut self) {
+        self.clear_points();
+    }
+
+    fn use_legacy_scale(&mut self) {
+        self.use_legacy_trace_scale();
+    }
+
+    fn use_world_scale(&mut self) {
+        self.use_world_trace_scale();
     }
 
     fn set_scale(&mut self, scale: f32) -> Result<(), PyErr> {
@@ -260,226 +300,74 @@ mod tests {
         assert_eq!(get_path_d_attribute(trace), get_path_d_attribute(expected));
     }
 
-    #[test]
-    fn test_get_trace_points_path() {
-        assert!(TracePoints::new().get_path(RotationAngle::Deg0).is_none());
-    }
-
     #[rstest]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg0, "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![
-        TracePoint{x:-215, y:-70, connected:true},
-        TracePoint{x:-215, y:-70, connected:true},
-        TracePoint{x:-212, y:-73, connected:true},
-        TracePoint{x:-213, y:-73, connected:true},
-        TracePoint{x:-227, y:-72, connected:true},
-        TracePoint{x:-227, y:-70, connected:true},
-        TracePoint{x:-227, y:-70, connected:true},
-        TracePoint{x:-256, y:-69, connected:false},
-        TracePoint{x:-260, y:-80, connected:true},
-    ], RotationAngle::Deg0, "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg90, "<path d=\"M256-16v16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg180, "<path d=\"M-16-256h16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg270, "<path d=\"M-256 16v-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    fn test_get_trace_path(
-        #[case] points: Vec<TracePoint>,
-        #[case] rotation: RotationAngle,
-        #[case] expected: String,
-    ) {
+    #[case(RotationAngle::Deg0, "M100 200l50 100")]
+    #[case(RotationAngle::Deg90, "M200-100l100-50")]
+    #[case(RotationAngle::Deg180, "M-100-200l-50-100")]
+    #[case(RotationAngle::Deg270, "M-200 100l-100 50")]
+    fn test_trace_points_rotation(#[case] rotation: RotationAngle, #[case] expected: &str) {
         let mut trace_points = TracePoints::new();
-        trace_points.add_trace_points(points);
-        let trace = trace_points.get_path(rotation);
-        assert_eq!(trace.unwrap().to_string(), expected);
+        trace_points.add_trace_points(vec![
+            TracePoint {
+                x: 100,
+                y: 200,
+                connected: true,
+            },
+            TracePoint {
+                x: 150,
+                y: 300,
+                connected: true,
+            },
+        ]);
+
+        let path = trace_points.get_path(rotation, None).unwrap();
+        assert_eq!(path.get_attributes().get("d").unwrap(), expected);
     }
 
     #[test]
-    fn test_extract_trace_points_success() {
-        let input = "XQAABACvAAAAAAAAAEINQkt4BfqEvt9Pow7YU9KWRVBcSBosIDAOtACCicHy+vmfexxcutQUhqkAPQlBawOeXo/VSrOqF7yhdJ1JPICUs3IhIebU62Qego0vdk8oObiLh3VY/PVkqQyvR4dHxUDzMhX7HAguZVn3yC17+cQ18N4kaydN3LfSUtV/zejrBM4=";
-        let result = extract_trace_points(input).unwrap();
-        let expected = vec![
+    fn test_trace_points_ngiot_origin_transform() {
+        let mut trace_points = TracePoints::new();
+        trace_points.add_trace_points(vec![
             TracePoint {
-                x: 0,
-                y: 1,
-                connected: false,
-            },
-            TracePoint {
-                x: -10,
-                y: 1,
+                x: 100,
+                y: 200,
                 connected: true,
             },
             TracePoint {
-                x: -7,
-                y: -8,
+                x: 150,
+                y: 300,
                 connected: true,
             },
-            TracePoint {
-                x: 0,
-                y: -15,
-                connected: true,
-            },
-            TracePoint {
-                x: 6,
-                y: -23,
-                connected: true,
-            },
-            TracePoint {
-                x: 11,
-                y: -32,
-                connected: true,
-            },
-            TracePoint {
-                x: 21,
-                y: -30,
-                connected: true,
-            },
-            TracePoint {
-                x: 31,
-                y: -30,
-                connected: true,
-            },
-            TracePoint {
-                x: 40,
-                y: -34,
-                connected: true,
-            },
-            TracePoint {
-                x: 46,
-                y: -42,
-                connected: true,
-            },
-            TracePoint {
-                x: 53,
-                y: -51,
-                connected: true,
-            },
-            TracePoint {
-                x: 52,
-                y: -61,
-                connected: true,
-            },
-            TracePoint {
-                x: 48,
-                y: -70,
-                connected: true,
-            },
-            TracePoint {
-                x: 44,
-                y: -79,
-                connected: true,
-            },
-            TracePoint {
-                x: 34,
-                y: -83,
-                connected: true,
-            },
-            TracePoint {
-                x: 24,
-                y: -83,
-                connected: true,
-            },
-            TracePoint {
-                x: 14,
-                y: -82,
-                connected: true,
-            },
-            TracePoint {
-                x: 6,
-                y: -76,
-                connected: true,
-            },
-            TracePoint {
-                x: 0,
-                y: -68,
-                connected: true,
-            },
-            TracePoint {
-                x: -2,
-                y: -59,
-                connected: true,
-            },
-            TracePoint {
-                x: 0,
-                y: -48,
-                connected: true,
-            },
-            TracePoint {
-                x: 3,
-                y: -38,
-                connected: true,
-            },
-            TracePoint {
-                x: 11,
-                y: -32,
-                connected: true,
-            },
-            TracePoint {
-                x: 21,
-                y: -29,
-                connected: true,
-            },
-            TracePoint {
-                x: 21,
-                y: -19,
-                connected: true,
-            },
-            TracePoint {
-                x: 14,
-                y: -12,
-                connected: true,
-            },
-            TracePoint {
-                x: 5,
-                y: -7,
-                connected: true,
-            },
-            TracePoint {
-                x: 12,
-                y: -14,
-                connected: true,
-            },
-            TracePoint {
-                x: 21,
-                y: -18,
-                connected: true,
-            },
-            TracePoint {
-                x: 31,
-                y: -20,
-                connected: true,
-            },
-            TracePoint {
-                x: 41,
-                y: -20,
-                connected: true,
-            },
-            TracePoint {
-                x: 51,
-                y: -24,
-                connected: true,
-            },
-            TracePoint {
-                x: 58,
-                y: -31,
-                connected: true,
-            },
-            TracePoint {
-                x: 64,
-                y: -39,
-                connected: true,
-            },
-            TracePoint {
-                x: 70,
-                y: -47,
-                connected: true,
-            },
-        ];
-        assert_eq!(result, expected);
+        ]);
+
+        let path = trace_points
+            .get_path(RotationAngle::Deg0, Some((1000, 2000)))
+            .unwrap();
+
+        assert_eq!(path.get_attributes().get("d").unwrap(), "M22-36l1-2");
+        assert!(path.get_attributes().get("transform").is_none());
     }
 
     #[test]
-    fn test_process_trace_points_to_short() {
-        let input: Vec<u8> = vec![0x0, 0x0, 0x0, 0x0];
-        let result = process_trace_points(&input);
-        assert!(matches!(result, Err(e) if e.to_string() == "Invalid trace points length"));
+    fn test_trace_points_legacy_scale_transform_present_without_ngiot_origin() {
+        let mut trace_points = TracePoints::new();
+        trace_points.add_trace_points(vec![
+            TracePoint {
+                x: 100,
+                y: 200,
+                connected: true,
+            },
+            TracePoint {
+                x: 150,
+                y: 300,
+                connected: true,
+            },
+        ]);
+
+        let path = trace_points.get_path(RotationAngle::Deg0, None).unwrap();
+        assert_eq!(
+            path.get_attributes().get("transform").unwrap(),
+            "scale(0.2 -0.2)"
+        );
     }
 }

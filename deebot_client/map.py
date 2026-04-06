@@ -84,11 +84,9 @@ class Map:
 
         Extra-safe behavior:
         - legacy trace/icon/position behavior remains the default
-        - world-space trace scaling and reduced NGIOT icon scaling are
-          enabled only when a valid NGIOT raster background is actively
-          applied
-        - NGIOT positions emitted by the command layer stay in world-space,
-          so they must continue using the legacy position transform
+        - NGIOT trace and position transforms are enabled only when a valid
+          NGIOT raster background is actively applied
+        - legacy devices keep the existing transform path
         """
         unsubscribers: list[Callable[[], None]] = []
 
@@ -240,7 +238,7 @@ class Map:
         )
         self._map_data.use_world_trace_scale()
         self._map_data.use_ngiot_position_icon_scale()
-        self._map_data.use_legacy_position_transform()
+        self._map_data.use_ngiot_position_transform()
 
 
 class MapData:

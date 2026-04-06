@@ -149,6 +149,21 @@ impl MapInfo {
         Some((svg_elements, viewbox?, used_styles))
     }
 
+    pub(super) fn set_map_info(&mut self, base64_data: String) -> PyResult<()> {
+        let raw = decompress_base64_data(&base64_data).map_err(
+            |err: Box<dyn std::error::Error>| PyValueError::new_err(err.to_string()),
+        )?;
+        let entries: Vec<MapInfoTypeEntry> = serde_json::from_slice(&raw)
+            .map_err(|err| PyValueError::new_err(format!("Invalid map info: {err}")))?;
+
+        entries.into_iter().for_each(|MapInfoTypeEntry(t, v)| {
+            if !v.is_empty() {
+                self.data.insert(t, v);
+            }
+        });
+        Ok(())
+    }
+
     fn get_order(&self) -> Vec<MapInfoLayer> {
         if self.data.contains_key(&MapInfoType::BlockLine) {
             vec![
@@ -213,17 +228,7 @@ impl MapInfo {
 #[pymethods]
 impl MapInfo {
     fn set(&mut self, base64_data: String) -> PyResult<()> {
-        let raw = decompress_base64_data(&base64_data).map_err(
-            |err: Box<dyn std::error::Error>| PyValueError::new_err(err.to_string()),
-        )?;
-        let entries: Vec<MapInfoTypeEntry> = serde_json::from_slice(&raw)
-            .map_err(|err| PyValueError::new_err(format!("Invalid map info: {err}")))?;
-        entries.into_iter().for_each(|MapInfoTypeEntry(t, v)| {
-            if !v.is_empty() {
-                self.data.insert(t, v);
-            }
-        });
-        Ok(())
+        self.set_map_info(base64_data)
     }
 }
 
