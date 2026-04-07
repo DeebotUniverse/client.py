@@ -52,6 +52,7 @@ class NgiotBaseMap:
     resolution: int
     x_min: int
     y_max: int
+    direction: int
     encoded: str
     lz4_len: int | None = None
 
@@ -238,6 +239,7 @@ def parse_base_map(data: dict[str, Any], map_id: str | None = None) -> NgiotBase
         resolution=max(1, _coerce_int(raw.get("resolution"), 1)),
         x_min=_coerce_int(raw.get("xMin")),
         y_max=_coerce_int(raw.get("yMax")),
+        direction=_coerce_int(raw.get("direction")),
         encoded=encoded,
         lz4_len=_coerce_int(raw.get("lz4Len")) or None,
     )
@@ -344,11 +346,17 @@ def parse_overlays(data: dict[str, Any]) -> list[NgiotOverlay]:
 
 
 def normalize_point(point: NgiotPoint, base_map: NgiotBaseMap) -> NgiotPoint:
-    """Normalize a raw NGIOT point into map-render space."""
-    return NgiotPoint(
-        x=int((point.x - base_map.x_min) / base_map.resolution),
-        y=int((base_map.y_max - point.y) / base_map.resolution),
-    )
+    """Normalize a raw NGIOT point into cropped-raster space."""
+    left = base_map.x_min - base_map.y_max
+    top = base_map.y_max - base_map.height
+
+    col = int((point.x - left) / base_map.resolution)
+    row = int((top - point.y) / base_map.resolution)
+
+    if base_map.direction == -1:
+        row = (base_map.height - 1) - row
+
+    return NgiotPoint(x=col, y=row)
 
 
 

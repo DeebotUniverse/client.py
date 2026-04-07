@@ -320,6 +320,7 @@ impl MapData {
         resolution: i32,
         x_min: i32,
         y_max: i32,
+        direction: i32,
     ) -> bool {
         self.ngiot_background.borrow_mut(py).set_background_data(
             encoded,
@@ -330,6 +331,7 @@ impl MapData {
             resolution,
             x_min,
             y_max,
+            direction,
         )
     }
 

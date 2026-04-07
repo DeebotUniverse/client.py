@@ -235,10 +235,13 @@ class Map:
             resolution=int(getattr(base_map, "resolution", 1)),
             x_min=int(getattr(base_map, "x_min", 0)),
             y_max=int(getattr(base_map, "y_max", 0)),
+            direction=int(getattr(base_map, "direction", 0)),
         )
         self._map_data.use_world_trace_scale()
         self._map_data.use_ngiot_position_icon_scale()
-        self._map_data.use_ngiot_position_transform()
+        # eyfj07 position payloads are already in world/map coordinates.
+        # Do not re-offset them by xMin/yMax here.
+        self._map_data.use_legacy_position_transform()
 
 
 class MapData:
@@ -289,16 +292,19 @@ class MapData:
             self._positions = positions
             self._on_change()
 
-    def set_rotation_angle(self, angle: int) -> None:
+    def set_rotation_angle(self, angle: int | RotationAngle) -> None:
         """Set rotation angle."""
-        angle_mapping = {
-            0: RotationAngle.DEG_0,
-            90: RotationAngle.DEG_90,
-            180: RotationAngle.DEG_180,
-            270: RotationAngle.DEG_270,
-        }
+        if isinstance(angle, RotationAngle):
+            new_rotation = angle
+        else:
+            angle_mapping = {
+                0: RotationAngle.DEG_0,
+                90: RotationAngle.DEG_90,
+                180: RotationAngle.DEG_180,
+                270: RotationAngle.DEG_270,
+            }
+            new_rotation = angle_mapping.get(int(angle) % 360, RotationAngle.DEG_0)
 
-        new_rotation = angle_mapping.get(angle % 360, RotationAngle.DEG_0)
         if self._rotation != new_rotation:
             self._rotation = new_rotation
             self._on_change()
@@ -329,6 +335,7 @@ class MapData:
         resolution: int,
         x_min: int,
         y_max: int,
+        direction: int,
     ) -> None:
         """Set NGIOT raster background."""
         self._data.set_ngiot_background(
@@ -340,6 +347,7 @@ class MapData:
             resolution=resolution,
             x_min=x_min,
             y_max=y_max,
+            direction=direction,
         )
         self._on_change()
 

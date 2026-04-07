@@ -18,6 +18,7 @@ struct NgiotBackgroundData {
     resolution: i32,
     x_min: i32,
     y_max: i32,
+    direction: i32,
 }
 
 #[pyclass]
@@ -48,6 +49,7 @@ impl NgiotBackground {
         resolution: i32,
         x_min: i32,
         y_max: i32,
+        direction: i32,
     ) -> bool {
         let new_data = NgiotBackgroundData {
             encoded,
@@ -58,6 +60,7 @@ impl NgiotBackground {
             resolution,
             x_min,
             y_max,
+            direction,
         };
 
         if self.data.as_ref() == Some(&new_data) {
@@ -72,6 +75,7 @@ impl NgiotBackground {
         if self.data.is_none() {
             return false;
         }
+
         self.data = None;
         true
     }
@@ -109,16 +113,25 @@ impl NgiotBackground {
             writer.write_image_data(&rgba)?;
         }
 
-        let left = data.x_min as f32 / WORLD_PIXEL_WIDTH;
-        let top = -(data.y_max as f32) / WORLD_PIXEL_WIDTH;
+        let left_world = (data.x_min - data.y_max) as f32;
+        let top_world = (data.y_max - i32::from(data.height)) as f32;
+
+        let left = left_world / WORLD_PIXEL_WIDTH;
+        let top = -top_world / WORLD_PIXEL_WIDTH;
         let width_svg = (f32::from(data.width) * data.resolution as f32) / WORLD_PIXEL_WIDTH;
         let height_svg = (f32::from(data.height) * data.resolution as f32) / WORLD_PIXEL_WIDTH;
 
         let viewbox = ViewBox::from_extents(left, top, left + width_svg, top + height_svg);
 
         debug!(
-            "Generated NGIOT raster background: map {}x{} at world ({}, {}) size ({}, {})",
-            data.width, data.height, left, top, width_svg, height_svg
+            "Generated NGIOT raster background: map {}x{} at world ({}, {}) size ({}, {}), direction={}",
+            data.width,
+            data.height,
+            left,
+            top,
+            width_svg,
+            height_svg,
+            data.direction
         );
 
         Ok(Some((general_purpose::STANDARD.encode(&png_data), viewbox)))
@@ -159,6 +172,7 @@ impl NgiotBackground {
         resolution: i32,
         x_min: i32,
         y_max: i32,
+        direction: i32,
     ) -> bool {
         self.set_background_data(
             encoded,
@@ -169,6 +183,7 @@ impl NgiotBackground {
             resolution,
             x_min,
             y_max,
+            direction,
         )
     }
 

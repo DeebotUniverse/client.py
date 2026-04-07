@@ -25,6 +25,7 @@ class NgiotBackground:
         resolution: int,
         x_min: int,
         y_max: int,
+        direction: int,
     ) -> bool:
         """Store NGIOT background metadata and encoded payload."""
 
@@ -90,6 +91,7 @@ class MapData:
         resolution: int,
         x_min: int,
         y_max: int,
+        direction: int,
     ) -> bool:
         """Compatibility wrapper for Python map.py."""
 

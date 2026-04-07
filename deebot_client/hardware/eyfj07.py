@@ -131,7 +131,7 @@ def get_device_info() -> StaticDeviceInfo:
                 minor=CapabilityExecute(GetMinorMap),
                 multi_state=None,
                 position=CapabilityEvent(PositionsEvent, [GetPos()]),
-                rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+                rooms=CapabilityEvent(RoomsEvent, [GetMajorMap()]),
                 set=CapabilityExecute(GetMapSet),
                 trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
             ),

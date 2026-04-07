@@ -17,6 +17,7 @@ from deebot_client.events.map import (
     MapTraceEvent,
     MinorMapEvent,
 )
+from deebot_client.exceptions import ApiError
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
 from deebot_client.ngiot_client import APN_MAP_DETAILS
@@ -97,7 +98,9 @@ def _resolve_effective_map_id(
     explicit: str = "",
 ) -> str:
     store = _get_ngiot_map_state_store(event_bus)
-    return resolve_map_id(data, fallback=explicit or store.active_map_id or "")
+    # For eyfj07, downstream mapping payloads do not expose a stable join key.
+    # Prefer an explicit/requested or already-active map context over payload IDs.
+    return explicit or store.active_map_id or resolve_map_id(data, fallback="")
 
 
 def _polygon_to_coordinates(points: list[Any]) -> str:
@@ -116,7 +119,7 @@ class NgiotMapGetCommand(NgiotJsonGetCommand, ABC):
     def _fields(self) -> Sequence[str]:
         """Return fields to request from APN 30001."""
 
-    async def _resolve_map_id(
+    async def _resolve_request_map_id(
         self,
         client: NgiotClient,
         device_info: ApiDeviceInfo,
@@ -124,43 +127,42 @@ class NgiotMapGetCommand(NgiotJsonGetCommand, ABC):
         if self._map_id:
             return self._map_id
 
-        response = await client.request(
-            device_info,
-            apn=APN_MAP_DETAILS,
-            body_data={"fields": ["mapInfos"]},
-        )
-        data = response.get("body", {}).get("data", {})
-        map_infos = data.get("mapInfos", [])
-        if isinstance(map_infos, list):
-            active = next(
-                (
-                    entry
-                    for entry in map_infos
-                    if isinstance(entry, dict) and int(entry.get("status", 0)) == 1
-                ),
-                None,
-            )
-            if isinstance(active, dict):
-                return str(active.get("mapId", ""))
+        # mapInfos itself must not recurse.
+        if tuple(self._fields) == ("mapInfos",):
+            return ""
 
-            fallback = next(
-                (entry for entry in map_infos if isinstance(entry, dict)),
-                None,
+        try:
+            response = await client.request(
+                device_info,
+                apn=APN_MAP_DETAILS,
+                body_data={"fields": ["mapInfos"]},
             )
-            if isinstance(fallback, dict):
-                return str(fallback.get("mapId", ""))
+        except ApiError:
+            return ""
 
-        return ""
+        body = response.get("body", {})
+        data = body.get("data", {})
+        if not isinstance(data, dict):
+            return ""
+
+        infos = parse_map_infos(data)
+        active = next((info for info in infos if info.using and info.map_id), None)
+        if active is not None:
+            return active.map_id
+
+        first = next((info for info in infos if info.map_id), None)
+        return first.map_id if first is not None else ""
 
     async def _request_ngiot(
         self,
         client: NgiotClient,
         device_info: ApiDeviceInfo,
     ) -> dict[str, Any]:
+        request_map_id = await self._resolve_request_map_id(client, device_info)
+
         body_data: dict[str, Any] = {"fields": list(self._fields)}
-        map_id = await self._resolve_map_id(client, device_info)
-        if map_id:
-            body_data["mapId"] = map_id
+        if request_map_id:
+            body_data["mapId"] = request_map_id
 
         return await client.request(
             device_info,
@@ -211,17 +213,6 @@ class NgiotMapGetCommand(NgiotJsonGetCommand, ABC):
         response: dict[str, Any],
     ) -> HandlingResult:
         result = super()._handle_response(event_bus, response)
-        if (
-            result.state == HandlingState.SUCCESS
-            and result.args
-            and (map_obj := event_bus.capabilities.map)
-        ):
-            map_id = result.args["map_id"]
-            result.requested_commands.extend(
-                [map_obj.set.execute(map_id, entry) for entry in MapSetType]
-            )
-            if map_obj.info:
-                result.requested_commands.append(map_obj.info.execute(map_id))
         return result
 
 
@@ -263,6 +254,15 @@ class GetMajorMap(NgiotMapGetCommand):
         areas = parse_areas(data)
         if areas and map_id:
             store.update_areas(map_id, areas)
+            rooms = [
+                Room(
+                    name=(area.name or f"Area { _coerce_int(area.area_id, index) }"),
+                    id=_coerce_int(area.area_id, index),
+                    coordinates=_polygon_to_coordinates(area.polygon),
+                )
+                for index, area in enumerate(areas)
+            ]
+            event_bus.notify(RoomsEvent(map_id=map_id, rooms=rooms))
             handled = True
 
         positions: list[Position] = []
