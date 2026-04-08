@@ -15,6 +15,7 @@ from .network import GetNetInfo
 from .play_sound import PlaySound
 from .stats import GetReportStats, GetStats, GetTotalStats
 from .child_lock import GetChildLock, SetChildLock
+from .volume import GetVolume, SetVolume
 from .map import (
     GetMajorMap,
     GetMapSet,
@@ -50,6 +51,8 @@ __all__ = [
     "GetMapTrace",
     "GetMinorMap",
     "GetPos",
+    "GetVolume",
+    "SetVolume",
 ]
 
 _COMMANDS: list[type[Command]] = [
@@ -76,6 +79,8 @@ _COMMANDS: list[type[Command]] = [
     GetMapTrace,
     GetMinorMap,
     GetPos,
+    GetVolume,
+    SetVolume,
 ]
 
 COMMANDS: dict[str, type[Command]] = {cmd.NAME: cmd for cmd in _COMMANDS}

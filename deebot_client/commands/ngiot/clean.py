@@ -14,6 +14,7 @@ from deebot_client.ngiot_client import (
     APN_CLEAN_START,
     APN_PAUSE,
     APN_RESUME,
+    APN_RETURN_TO_DOCK,
 )
 
 from .common import NgiotExecuteCommand, RobotDetailGetCommand
@@ -23,6 +24,70 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo
     from deebot_client.ngiot_client import NgiotClient
+
+
+_ACTIVE_WORK_MODES = {
+    "smart",
+    "smartclean",
+    "area",
+    "auto",
+    "customarea",
+    "custom_area",
+    "spotarea",
+    "spot_area",
+}
+
+
+def _coerce_bool(value: Any) -> bool:
+    if isinstance(value, bool):
+        return value
+    if isinstance(value, (int, float)):
+        return bool(value)
+    if isinstance(value, str):
+        return value.strip().lower() in {"1", "true", "on", "yes"}
+    return False
+
+
+def map_snapshot_state(data: Mapping[str, Any]) -> State:
+    """Map robot-detail snapshot fields onto the generic state enum."""
+    work_mode = str(data.get("workMode", "")).strip().lower()
+    pause_switch = data.get("pauseSwitch")
+    charge_status = _coerce_bool(data.get("chargeStatus"))
+
+    if work_mode == "auto_pause" or (pause_switch is True and work_mode in _ACTIVE_WORK_MODES):
+        return State.PAUSED
+    if work_mode in {"gocharge", "go_charge"}:
+        return State.RETURNING
+    if charge_status and work_mode in {"stop", "idle", "", "none"}:
+        return State.DOCKED
+    if charge_status:
+        return State.RETURNING
+    if work_mode in _ACTIVE_WORK_MODES:
+        return State.CLEANING
+    return State.IDLE
+
+
+def map_live_state(data: Mapping[str, Any], previous: State | None = None) -> State | None:
+    """Map live 10000 status events onto the generic state enum."""
+    status = str(data.get("status", "")).strip().lower()
+    pause_switch = data.get("pauseSwitch")
+
+    if status == "smartclean":
+        return State.PAUSED if pause_switch is True else State.CLEANING
+    if status in {"gocharge", "go_charge"}:
+        return State.RETURNING
+    if status == "idle":
+        return State.DOCKED if _coerce_bool(data.get("chargeStatus")) else State.IDLE
+
+    if pause_switch is True and previous in {State.CLEANING, State.PAUSED}:
+        return State.PAUSED
+    if pause_switch is False and previous == State.PAUSED:
+        return State.CLEANING
+
+    if any(key in data for key in ("workMode", "chargeStatus")):
+        return map_snapshot_state(data)
+
+    return None
 
 
 class Clean(NgiotExecuteCommand):
@@ -69,7 +134,7 @@ class Clean(NgiotExecuteCommand):
         if self._action is CleanAction.RESUME:
             return APN_RESUME, {"pauseSwitch": False}
         if self._action is CleanAction.STOP:
-            return APN_PAUSE, {"pauseSwitch": True}
+            return APN_RETURN_TO_DOCK, {"chargeSwitch": True}
         raise ApiError(f"Unsupported clean action: {self._action}")
 
 
@@ -119,7 +184,7 @@ class GetCleanInfo(RobotDetailGetCommand):
     """Get high-level robot state."""
 
     NAME = "getCleanInfo"
-    FIELDS = ("cleanValues", "workMode", "chargeStatus")
+    FIELDS = ("cleanValues", "workMode", "chargeStatus", "pauseSwitch")
 
     @classmethod
     def _handle_body_data_dict(
@@ -127,18 +192,5 @@ class GetCleanInfo(RobotDetailGetCommand):
         event_bus,
         data: dict[str, Any],
     ) -> HandlingResult:
-        event_bus.notify(StateEvent(_map_state(data)))
+        event_bus.notify(StateEvent(map_snapshot_state(data)))
         return HandlingResult.success()
-
-
-def _map_state(data: Mapping[str, Any]) -> State:
-    work_mode = str(data.get("workMode", "")).lower()
-    charge_status = bool(data.get("chargeStatus"))
-
-    if charge_status and work_mode in {"stop", "idle", "", "none"}:
-        return State.DOCKED
-    if charge_status:
-        return State.RETURNING
-    if work_mode in {"smart", "area", "auto", "customarea", "spotarea"}:
-        return State.CLEANING
-    return State.IDLE

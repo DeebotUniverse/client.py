@@ -40,6 +40,7 @@ from deebot_client.events import (
     TotalStatsEvent,
     PositionsEvent,
     RoomsEvent,
+    VolumeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
 
@@ -54,6 +55,7 @@ from deebot_client.commands.ngiot.network import GetNetInfo
 from deebot_client.commands.ngiot.play_sound import PlaySound
 from deebot_client.commands.ngiot.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.ngiot.stats import GetReportStats, GetStats, GetTotalStats
+from deebot_client.commands.ngiot.volume import GetVolume, SetVolume
 from deebot_client.commands.ngiot.map import (
     GetCachedMapInfo,
     GetMajorMap,
@@ -141,10 +143,15 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             play_sound=CapabilityExecute(PlaySound),
             settings=CapabilitySettings(
-            child_lock=CapabilitySetEnable(
-                ChildLockEvent,
-                [GetChildLock()],
-                SetChildLock,
+                child_lock=CapabilitySetEnable(
+                    ChildLockEvent,
+                    [GetChildLock()],
+                    SetChildLock,
+                ),
+                volume=CapabilitySet(
+                    VolumeEvent,
+                    [GetVolume()],
+                    SetVolume,
                 ),
             ),
             state=CapabilityEvent(

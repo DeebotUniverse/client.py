@@ -7,12 +7,33 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.events import VolumeEvent
 from deebot_client.message import HandlingResult, HandlingState
 
-from .common import NgiotExecuteCommand
+from .common import NgiotExecuteCommand, RobotDetailGetCommand
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo
     from deebot_client.ngiot_client import NgiotClient
+
+
+class GetVolume(RobotDetailGetCommand):
+    """Get device voice volume from the robot-detail surface."""
+
+    NAME = "getVolume"
+    FIELDS = ("volume",)
+    MAX_VOLUME = 5
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls,
+        event_bus: EventBus,
+        data: dict[str, Any],
+    ) -> HandlingResult:
+        volume = data.get("volume")
+        if volume is None:
+            return HandlingResult.analyse()
+
+        event_bus.notify(VolumeEvent(volume=int(volume), maximum=cls.MAX_VOLUME))
+        return HandlingResult.success()
 
 
 class SetVolume(NgiotExecuteCommand):
@@ -21,7 +42,8 @@ class SetVolume(NgiotExecuteCommand):
     NAME = "setVolume"
     APN = "50023"
     MIN_VOLUME = 0
-    MAX_VOLUME = 10
+    MAX_VOLUME = 5
+    get_command = GetVolume
 
     def __init__(self, volume: int) -> None:
         super().__init__({})

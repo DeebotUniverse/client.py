@@ -5,8 +5,12 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.commands.ngiot.battery import GetBattery
+from deebot_client.commands.ngiot.child_lock import GetChildLock
+from deebot_client.commands.ngiot.clean import GetCleanInfo, map_live_state
 from deebot_client.commands.ngiot.map import GetMajorMap, GetMapTrace, GetPos
 from deebot_client.commands.ngiot.stats import GetStats
+from deebot_client.commands.ngiot.volume import GetVolume
+from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
@@ -70,6 +74,29 @@ class OnNgiotStatusEvent(MessageBodyDataDict):
 
         if any(key in data for key in ("cleanArea", "cleanTime", "workMode")):
             result = GetStats._handle_body_data_dict(event_bus, data)
+            handled = handled or result.state == HandlingState.SUCCESS
+
+        if "childLock" in data:
+            result = GetChildLock._handle_body_data_dict(event_bus, data)
+            handled = handled or result.state == HandlingState.SUCCESS
+
+        if "volume" in data:
+            result = GetVolume._handle_body_data_dict(event_bus, data)
+            handled = handled or result.state == HandlingState.SUCCESS
+
+        live_state = map_live_state(
+            data,
+            previous=(
+                event_bus.get_last_event(StateEvent).state
+                if event_bus.get_last_event(StateEvent) is not None
+                else None
+            ),
+        )
+        if live_state is not None:
+            event_bus.notify(StateEvent(live_state))
+            handled = True
+        elif any(key in data for key in ("status", "pauseSwitch", "chargeStatus")):
+            result = GetCleanInfo._handle_body_data_dict(event_bus, data)
             handled = handled or result.state == HandlingState.SUCCESS
 
         return HandlingResult.success() if handled else HandlingResult.analyse()
