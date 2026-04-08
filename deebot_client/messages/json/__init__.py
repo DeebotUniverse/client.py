@@ -11,6 +11,7 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .ngiot import OnNgiotMapEvent, OnNgiotStatusEvent
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -27,6 +28,8 @@ __all__ = [
     "OnStats",
     "OnWorkState",
     "ReportStats",
+    "OnNgiotMapEvent",
+    "OnNgiotStatusEvent",
 ]
 
 # fmt: off
@@ -37,6 +40,9 @@ _MESSAGES: list[type[Message]] = [
     OnBattery,
 
     OnGpsPos,
+
+    OnNgiotMapEvent,
+    OnNgiotStatusEvent,
 
     OnCachedMapInfo,
     OnMajorMap,

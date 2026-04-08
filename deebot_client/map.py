@@ -239,7 +239,7 @@ class Map:
         )
         self._map_data.use_world_trace_scale()
         self._map_data.use_ngiot_position_icon_scale()
-        # eyfj07 position payloads are already in world/map coordinates.
+        # Observed NGIOT live pose payloads are already in world/map coordinates.
         # Do not re-offset them by xMin/yMax here.
         self._map_data.use_legacy_position_transform()
 

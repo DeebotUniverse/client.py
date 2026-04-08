@@ -34,19 +34,31 @@ _LOGGER = get_logger(__name__)
 _CLIENT_LOGGER = get_logger(f"{__name__}.client")
 
 
-def _get_topics(device_info: DeviceInfo) -> list[str]:
+def _get_topics(device_info: DeviceInfo, user_id: str | None = None) -> list[str]:
     api = device_info.api
     device_path = f"{api['did']}/{api['class']}/{api['resource']}"
     data_type = device_info.static.data_type
-    return [
-        # iot/atr/[command]/[did]]/[class]]/[resource]/[data_type]
+
+    topics = [
+        # Legacy/message-name ATR routing.
+        # iot/atr/[command]/[did]/[class]/[resource]/[data_type]
         f"iot/atr/+/{device_path}/{data_type}",
-        # iot/p2p/[command]/[sender did]/[sender class]]/[sender resource]
+        # iot/p2p/[command]/[sender did]/[sender class]/[sender resource]
         # /[receiver did]/[receiver class]/[receiver resource]/[q|p]/[request id]/[data_type]
         # [q|p] q-> request p-> response
         f"iot/p2p/+/+/+/+/{device_path}/q/+/{data_type}",
         f"iot/p2p/+/{device_path}/+/+/+/p/+/{data_type}",
     ]
+
+    if user_id:
+        # NGIOT live-event routing observed on some newer devices:
+        # iot/atr/[channel]/[user-id]/[device-class]/[device-id]/[data_type]
+        # The final device identifier can vary between observed payloads, so
+        # subscribe to both known device identifiers.
+        for device_id in dict.fromkeys((api['did'], api['resource'])):
+            topics.append(f"iot/atr/+/{user_id}/{api['class']}/{device_id}/{data_type}")
+
+    return topics
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -200,8 +212,11 @@ class MqttClient:
                 try:
                     async with await self._get_client() as client:
                         _LOGGER.debug("Subscribe to all previous subscriptions")
+                        credentials = await self._authenticator.authenticate()
                         for info in self._subscriptions.values():
-                            for topic in _get_topics(info.device_info):
+                            for topic in _get_topics(
+                                info.device_info, credentials.user_id
+                            ):
                                 await client.subscribe(topic)
 
                         async def listen() -> None:
@@ -264,7 +279,8 @@ class MqttClient:
             (info, add) = await self._subscription_changes.get()
 
             device_info = info.device_info
-            for topic in _get_topics(device_info):
+            credentials = await self._authenticator.authenticate()
+            for topic in _get_topics(device_info, credentials.user_id):
                 if add:
                     await client.subscribe(topic)
                 else:
@@ -277,9 +293,40 @@ class MqttClient:
 
             self._subscription_changes.task_done()
 
+    @staticmethod
+    def _topic_matches_device(topic_split: list[str], device_info: DeviceInfo) -> bool:
+        if len(topic_split) < 7:
+            return False
+
+        api = device_info.api
+        data_type = str(device_info.static.data_type)
+        if topic_split[6] != data_type:
+            return False
+
+        legacy_match = (
+            topic_split[3] == api["did"]
+            and topic_split[4] == api["class"]
+            and topic_split[5] == api["resource"]
+        )
+        if legacy_match:
+            return True
+
+        # NGIOT live events can use the observed shape:
+        # iot/atr/[channel]/[user-id]/[device-class]/[device-id]/[data_type]
+        return topic_split[4] == api["class"] and topic_split[5] in {
+            api["did"],
+            api["resource"],
+        }
+
+    def _resolve_atr_subscription(self, topic_split: list[str]) -> SubscriberInfo | None:
+        for info in self._subscriptions.values():
+            if self._topic_matches_device(topic_split, info.device_info):
+                return info
+        return None
+
     def _handle_atr(self, topic_split: list[str], payload: bytes) -> None:
         try:
-            if sub_info := self._subscriptions.get(topic_split[3]):
+            if sub_info := self._resolve_atr_subscription(topic_split):
                 sub_info.callback(topic_split[2], payload)
         except Exception:
             _LOGGER.exception("An exception occurred during handling atr message")
