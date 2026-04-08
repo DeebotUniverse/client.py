@@ -583,6 +583,8 @@ class Authenticator:
             requested_ttl=self._ngiot_config.requested_ttl,
             refresh_skew=self._ngiot_config.refresh_skew,
         )
+        # SST tokens are minted against api-base, but endpoint-control requests
+        # must keep using the device service.mqs host (typically api-ngiot).
         self.ngiot_client = NgiotClient(
             self._config.session,
             self.sst_authenticator,

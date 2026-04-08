@@ -48,6 +48,7 @@ class NgiotDeviceIdentity:
     class_id: str
     resource: str
     control_host: str
+    fallback_control_host: str | None = None
 
     @property
     def key(self) -> str:
@@ -105,6 +106,80 @@ class NgiotClient:
         }
         """
         identity = self._normalize_device(device)
+        return await self._request_with_fallback(
+            identity,
+            device,
+            apn=apn,
+            body_data=body_data,
+            fmt=fmt,
+            ct=ct,
+            force_sst_refresh=force_sst_refresh,
+        )
+
+    async def _request_with_fallback(
+        self,
+        identity: NgiotDeviceIdentity,
+        device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
+        *,
+        apn: str | int,
+        body_data: Mapping[str, Any] | Sequence[Any],
+        fmt: str,
+        ct: str,
+        force_sst_refresh: bool,
+    ) -> dict[str, Any]:
+        """Execute an NGIOT request and fall back to service.mqs on 404."""
+        try:
+            return await self._request_once(
+                identity,
+                device,
+                apn=apn,
+                body_data=body_data,
+                fmt=fmt,
+                ct=ct,
+                force_sst_refresh=force_sst_refresh,
+            )
+        except ClientResponseError as ex:
+            if (
+                ex.status == HTTPStatus.NOT_FOUND
+                and identity.fallback_control_host
+                and identity.fallback_control_host != identity.control_host
+            ):
+                fallback_identity = NgiotDeviceIdentity(
+                    did=identity.did,
+                    class_id=identity.class_id,
+                    resource=identity.resource,
+                    control_host=identity.fallback_control_host,
+                    fallback_control_host=None,
+                )
+                _LOGGER.info(
+                    "NGIOT endpoint-control returned 404 on %s for %s; retrying with device mqs host %s",
+                    identity.base_url,
+                    identity.key,
+                    fallback_identity.base_url,
+                )
+                return await self._request_once(
+                    fallback_identity,
+                    device,
+                    apn=apn,
+                    body_data=body_data,
+                    fmt=fmt,
+                    ct=ct,
+                    force_sst_refresh=force_sst_refresh,
+                )
+            raise
+
+    async def _request_once(
+        self,
+        identity: NgiotDeviceIdentity,
+        device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
+        *,
+        apn: str | int,
+        body_data: Mapping[str, Any] | Sequence[Any],
+        fmt: str,
+        ct: str,
+        force_sst_refresh: bool,
+    ) -> dict[str, Any]:
+        """Execute a single NGIOT endpoint-control request against one control host."""
         url = urljoin(identity.base_url + "/", _PATH_ENDPOINT_CONTROL.lstrip("/"))
 
         request_id = self._new_request_id()
@@ -121,7 +196,7 @@ class NgiotClient:
         }
 
         payload = {
-            "body": {"data": body_data},
+            "body": {"data": self._build_payload(apn, body_data)},
             "header": self._create_body_header(body_reqid),
         }
 
@@ -165,6 +240,12 @@ class NgiotClient:
                 logger_request_params,
                 response_data,
             )
+            _LOGGER.debug(
+                "NGIOT protocol trace -> apn=%s payload=%s response=%s",
+                apn,
+                payload["body"]["data"],
+                response_data,
+            )
 
             self._validate_response(response_data)
             return response_data
@@ -181,7 +262,8 @@ class NgiotClient:
                     identity.key,
                 )
                 await self._sst_authenticator.invalidate(self._device_mapping(identity))
-                return await self.request(
+                return await self._request_with_fallback(
+                    identity,
                     device,
                     apn=apn,
                     body_data=body_data,
@@ -196,7 +278,7 @@ class NgiotClient:
                 ) from ex
 
             _LOGGER.debug("NGIOT request failed: %s", logger_request_params, exc_info=True)
-            raise ApiError from ex
+            raise
 
     async def query_fields(
         self,
@@ -317,9 +399,13 @@ class NgiotClient:
             raise TypeError(msg)
 
         service = raw_device.get("service", {})
-        host = self._override_control_host
-        if host is None and isinstance(service, Mapping):
-            host = service.get("mqs")
+        service_mqs_host = None
+        if isinstance(service, Mapping):
+            candidate = service.get("mqs")
+            if isinstance(candidate, str) and candidate:
+                service_mqs_host = candidate
+
+        host = self._override_control_host or service_mqs_host
 
         if not host:
             msg = f"Missing NGIOT control host in device service binding: {raw_device}"
@@ -331,10 +417,45 @@ class NgiotClient:
                 class_id=str(raw_device["class"]),
                 resource=str(raw_device["resource"]),
                 control_host=str(host),
+                fallback_control_host=(
+                    str(service_mqs_host)
+                    if service_mqs_host and str(service_mqs_host) != str(host)
+                    else None
+                ),
             )
         except KeyError as ex:
             msg = f"Missing required NGIOT device field: {ex.args[0]}"
             raise ApiError(msg) from ex
+
+
+    def _build_payload(
+        self,
+        apn: str | int,
+        body_data: Mapping[str, Any] | Sequence[Any],
+    ) -> Mapping[str, Any] | Sequence[Any]:
+        """Build a device-tolerant NGIOT payload.
+
+        eyfj07 rejects some empty legacy payloads with a null body.
+        This helper preserves caller-provided payloads while adding a
+        minimal request envelope for reads that otherwise send `{}`.
+        """
+        if not isinstance(body_data, Mapping):
+            return body_data
+
+        payload: dict[str, Any] = dict(body_data)
+        now_ms = int(time.time() * 1000)
+        now_s = int(time.time())
+
+        payload.setdefault("reqId", str(now_ms))
+        payload.setdefault("timestamp", now_s)
+
+        apn_str = str(apn)
+        if apn_str == APN_ROBOT_DETAIL:
+            payload.setdefault("type", "get")
+        elif apn_str == APN_MAP_DETAILS:
+            payload.setdefault("mapId", str(payload.get("mapId", "0")))
+
+        return payload
 
     def _create_body_header(self, reqid: str) -> dict[str, Any]:
         """Create request body header matching the observed mobile shape."""
@@ -361,7 +482,8 @@ class NgiotClient:
     def _validate_response(response: Mapping[str, Any] | None) -> None:
         """Validate NGIOT envelope and raise ApiError on device-side failures."""
         if response is None:
-            raise ApiError("Invalid NGIOT response: server returned null/empty body")
+            _LOGGER.debug("Empty NGIOT response body returned by server")
+            return
 
         body = response.get("body")
         if not isinstance(body, Mapping):
