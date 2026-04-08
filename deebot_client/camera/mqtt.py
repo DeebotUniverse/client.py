@@ -44,7 +44,6 @@ import asyncio
 from collections.abc import Callable
 import contextlib
 import datetime as _dt
-import logging
 import ssl
 import time
 from typing import Any
@@ -52,8 +51,9 @@ from typing import Any
 import aiomqtt
 import orjson
 from deebot_client.authentication import Authenticator
+from deebot_client.logging_filter import get_logger
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 _JMQ_BROKER_PORT = 443
 _RECONNECT_DELAY = 5  # seconds between MQTT reconnection attempts
@@ -217,7 +217,7 @@ class KvsMqttListener:
                     except orjson.JSONDecodeError:
                         raw = (
                             message.payload.decode(errors="replace")
-                            if isinstance(message.payload, bytes | bytearray)
+                            if isinstance(message.payload, (bytes, bytearray))
                             else str(message.payload)
                         )
                         payload = {"raw": raw}

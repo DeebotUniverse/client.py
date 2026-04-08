@@ -27,7 +27,6 @@ from __future__ import annotations
 
 import datetime as _dt
 import hashlib
-import logging
 import random
 import string
 import time
@@ -36,8 +35,9 @@ import uuid
 
 import orjson
 from aiohttp import ClientSession, ClientTimeout
+from deebot_client.logging_filter import get_logger
 
-_LOGGER = logging.getLogger(__name__)
+_LOGGER = get_logger(__name__)
 
 # API gateway for KVS session control.
 # Different from the portal URL used by deebot-client for GetDeviceList.
@@ -251,7 +251,7 @@ async def send_video_opened(
     """
     await _send_p2p_mqtt_cmd(
         enqueue_publish=enqueue_publish,
-        token=token,
+        _token=token,
         user_id=user_id,
         user_resource=user_resource,
         did=did,
@@ -282,7 +282,7 @@ async def set_audio_call_state(
     """
     await _send_p2p_mqtt_cmd(
         enqueue_publish=enqueue_publish,
-        token=token,
+        _token=token,
         user_id=user_id,
         user_resource=user_resource,
         did=did,
@@ -296,7 +296,7 @@ async def set_audio_call_state(
 async def _send_p2p_mqtt_cmd(
     *,
     enqueue_publish: Any,
-    token: str,
+    _token: str,
     user_id: str,
     user_resource: str,
     did: str,

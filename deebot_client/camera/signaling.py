@@ -24,12 +24,9 @@ import base64
 from datetime import UTC, datetime
 import hashlib
 import hmac
-import logging
 import urllib.parse
 
 import orjson
-
-_LOGGER = logging.getLogger(__name__)
 
 
 def _b64(data: str | bytes) -> str:
