@@ -42,7 +42,7 @@ class SetVolume(NgiotExecuteCommand):
     NAME = "setVolume"
     APN = "50023"
     MIN_VOLUME = 0
-    MAX_VOLUME = 5
+    MAX_VOLUME = 10
     get_command = GetVolume
 
     def __init__(self, volume: int) -> None:

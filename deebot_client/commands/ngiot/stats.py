@@ -11,10 +11,14 @@ from .common import RobotDetailGetCommand
 
 
 class GetStats(RobotDetailGetCommand):
-    """Get current clean stats."""
+    """Get current clean stats.
 
-    NAME = 'getStats'
-    FIELDS = ('cleanArea', 'cleanTime', 'workMode')
+    eyfj07 reports cleanTime in minutes. Home Assistant's Ecovacs duration
+    sensors expect native seconds, so convert before emitting the event.
+    """
+
+    NAME = "getStats"
+    FIELDS = ("cleanArea", "cleanTime", "cleanCount", "workMode", "cleanLogReport")
 
     @classmethod
     def _handle_body_data_dict(
@@ -24,23 +28,19 @@ class GetStats(RobotDetailGetCommand):
     ) -> HandlingResult:
         event_bus.notify(
             StatsEvent(
-                area=_maybe_int(data.get('cleanArea')),
-                time=_maybe_int(data.get('cleanTime')),
-                type=_maybe_str(data.get('workMode')),
+                area=_maybe_int(data.get("cleanArea")),
+                time=_minutes_to_seconds(data.get("cleanTime")),
+                type=_maybe_str(data.get("workMode")),
             )
         )
         return HandlingResult.success()
 
 
 class GetReportStats(RobotDetailGetCommand):
-    """Get best-effort report stats.
+    """Get current clean report stats from the robot detail snapshot."""
 
-    Detailed clean-log decoding is not captured yet, so this surfaces a minimal
-    snapshot that satisfies the capability contract and keeps the profile loadable.
-    """
-
-    NAME = 'getReportStats'
-    FIELDS = ('cleanArea', 'cleanTime', 'workMode')
+    NAME = "getReportStats"
+    FIELDS = ("cleanArea", "cleanTime", "cleanCount", "workMode", "cleanLogReport")
 
     @classmethod
     def _handle_body_data_dict(
@@ -48,12 +48,17 @@ class GetReportStats(RobotDetailGetCommand):
         event_bus,
         data: dict[str, Any],
     ) -> HandlingResult:
+        clean_log_report = data.get("cleanLogReport")
+        cleaning_id = ""
+        if isinstance(clean_log_report, dict):
+            cleaning_id = str(clean_log_report.get("cid") or "")
+
         event_bus.notify(
             ReportStatsEvent(
-                area=_maybe_int(data.get('cleanArea')),
-                time=_maybe_int(data.get('cleanTime')),
-                type=_maybe_str(data.get('workMode')),
-                cleaning_id='',
+                area=_maybe_int(data.get("cleanArea")),
+                time=_minutes_to_seconds(data.get("cleanTime")),
+                type=_maybe_str(data.get("workMode")),
+                cleaning_id=cleaning_id,
                 status=CleanJobStatus.NO_STATUS,
                 content=[],
             )
@@ -62,10 +67,17 @@ class GetReportStats(RobotDetailGetCommand):
 
 
 class GetTotalStats(RobotDetailGetCommand):
-    """Get best-effort lifetime stats."""
+    """Get lifetime totals.
 
-    NAME = 'getTotalStats'
-    FIELDS = ('cleanArea', 'cleanTime', 'cleanCount')
+    eyfj07 exposes lifetime totals on the total-stats response surface as
+    ``cleanAreaTotal``, ``cleanTimeTotal``, and ``cleanCountTotal``.
+
+    cleanTimeTotal is reported in minutes. Home Assistant expects native
+    duration values in seconds, so convert before emitting TotalStatsEvent.
+    """
+
+    NAME = "getTotalStats"
+    FIELDS = ("cleanAreaTotal", "cleanTimeTotal", "cleanCountTotal")
 
     @classmethod
     def _handle_body_data_dict(
@@ -75,9 +87,12 @@ class GetTotalStats(RobotDetailGetCommand):
     ) -> HandlingResult:
         event_bus.notify(
             TotalStatsEvent(
-                area=int(data.get('cleanArea', 0) or 0),
-                time=int(data.get('cleanTime', 0) or 0),
-                cleanings=int(data.get('cleanCount', 0) or 0),
+                area=_coerce_total(data, "cleanAreaTotal", "cleanArea"),
+                time=_minutes_to_seconds(
+                    data.get("cleanTimeTotal", data.get("cleanTime", 0))
+                )
+                or 0,
+                cleanings=_coerce_total(data, "cleanCountTotal", "cleanCount"),
             )
         )
         return HandlingResult.success()
@@ -90,5 +105,23 @@ def _maybe_int(value: Any) -> int | None:
         return None
 
 
+
 def _maybe_str(value: Any) -> str | None:
     return None if value is None else str(value)
+
+
+
+def _coerce_total(data: dict[str, Any], primary: str, fallback: str) -> int:
+    value = data.get(primary, data.get(fallback, 0))
+    try:
+        return int(value or 0)
+    except (TypeError, ValueError):
+        return 0
+
+
+
+def _minutes_to_seconds(value: Any) -> int | None:
+    minutes = _maybe_int(value)
+    if minutes is None:
+        return None
+    return minutes * 60
