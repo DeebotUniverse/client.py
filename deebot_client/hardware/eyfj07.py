@@ -15,12 +15,13 @@ from deebot_client.capabilities import (
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
-    CapabilitySetTypes,
-    CapabilitySettings,
+    CapabilityMap,
+    CapabilitySet,
     CapabilitySetEnable,
+    CapabilitySettings,
+    CapabilitySetTypes,
     CapabilityStats,
     DeviceType,
-    CapabilityMap,
 )
 from deebot_client.const import DataType
 from deebot_client.events import (
