@@ -199,10 +199,15 @@ fn calc_ngiot_local_point_in_viewbox(
     origin: (i32, i32),
     viewbox: &ViewBox,
     rotation: RotationAngle,
+    overlay_svg_offset: Option<(f32, f32)>,
 ) -> Point {
     let world_x = origin.0 as f32 + x as f32;
     let world_y = origin.1 as f32 + y as f32;
-    let point = calc_point(world_x, world_y, rotation);
+    let mut point = calc_point(world_x, world_y, rotation);
+    if let Some((dx, dy)) = overlay_svg_offset {
+        point.x += dx;
+        point.y += dy;
+    }
     Point {
         x: point.x.max(viewbox.min_x as f32).min(viewbox.max_x as f32),
         y: point.y.max(viewbox.min_y as f32).min(viewbox.max_y as f32),
@@ -373,11 +378,13 @@ impl MapData {
         rotation: RotationAngle,
     ) -> PyResult<Option<String>> {
         let position_icon_scale = self.position_icon_scale;
+        let ngiot_background = self.ngiot_background.borrow(py);
         let ngiot_position_origin = if self.use_ngiot_position_transform {
-            self.ngiot_background.borrow(py).position_origin()
+            ngiot_background.position_origin()
         } else {
             None
         };
+        let ngiot_overlay_offset = ngiot_background.overlay_svg_offset();
 
         let mut defs = Definitions::new()
             .add(
@@ -488,7 +495,7 @@ impl MapData {
         if let Some(trace) = self
             .trace_points
             .borrow(py)
-            .get_path(rotation, ngiot_position_origin)
+            .get_path(rotation, ngiot_position_origin, ngiot_overlay_offset)
         {
             document.append(trace);
         }
@@ -498,6 +505,7 @@ impl MapData {
             &viewbox,
             rotation,
             ngiot_position_origin,
+            ngiot_overlay_offset,
             self.use_ngiot_position_transform,
         ) {
             document.append(position);
@@ -584,6 +592,7 @@ fn get_svg_positions(
     viewbox: &ViewBox,
     rotation: RotationAngle,
     ngiot_position_origin: Option<(i32, i32)>,
+    ngiot_overlay_offset: Option<(f32, f32)>,
     use_ngiot_position_transform: bool,
 ) -> Vec<Use> {
     if positions.is_empty() {
@@ -600,10 +609,22 @@ fn get_svg_positions(
     for &i in &indices {
         let position = &positions[i];
         let pos = match (ngiot_position_origin, use_ngiot_position_transform) {
-            (Some(origin), true) => {
-                calc_ngiot_local_point_in_viewbox(position.x, position.y, origin, viewbox, rotation)
+            (Some(origin), true) => calc_ngiot_local_point_in_viewbox(
+                position.x,
+                position.y,
+                origin,
+                viewbox,
+                rotation,
+                ngiot_overlay_offset,
+            ),
+            _ => {
+                let mut point = calc_point_in_viewbox(position.x, position.y, viewbox, rotation);
+                if let Some((dx, dy)) = ngiot_overlay_offset {
+                    point.x += dx;
+                    point.y += dy;
+                }
+                point
             }
-            _ => calc_point_in_viewbox(position.x, position.y, viewbox, rotation),
         };
 
         svg_positions.push(

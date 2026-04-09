@@ -132,11 +132,16 @@ fn trace_point_to_point(
     trace_point: &TracePoint,
     rotation: RotationAngle,
     ngiot_origin: Option<(i32, i32)>,
+    overlay_svg_offset: Option<(f32, f32)>,
 ) -> Point {
     if let Some((x_min, y_max)) = ngiot_origin {
         let world_x = x_min as f32 + trace_point.x as f32;
         let world_y = y_max as f32 - trace_point.y as f32;
         let mut point = calc_point(world_x, world_y, rotation);
+        if let Some((dx, dy)) = overlay_svg_offset {
+            point.x += dx;
+            point.y += dy;
+        }
         point.connected = trace_point.connected;
         return point;
     }
@@ -147,11 +152,16 @@ fn trace_point_to_point(
         RotationAngle::Deg180 => (-(trace_point.x as f32), -(trace_point.y as f32)),
         RotationAngle::Deg270 => (-(trace_point.y as f32), trace_point.x.into()),
     };
-    Point {
+    let mut point = Point {
         x,
         y,
         connected: trace_point.connected,
+    };
+    if let Some((dx, dy)) = overlay_svg_offset {
+        point.x += dx;
+        point.y += dy;
     }
+    point
 }
 
 #[pyclass]
@@ -205,6 +215,7 @@ impl TracePoints {
         &self,
         rotation: RotationAngle,
         ngiot_origin: Option<(i32, i32)>,
+        overlay_svg_offset: Option<(f32, f32)>,
     ) -> Option<Path> {
         if self.trace_points.is_empty() {
             return None;
@@ -214,7 +225,7 @@ impl TracePoints {
             &self
                 .trace_points
                 .iter()
-                .map(|tp| trace_point_to_point(tp, rotation, ngiot_origin))
+                .map(|tp| trace_point_to_point(tp, rotation, ngiot_origin, overlay_svg_offset))
                 .collect::<Vec<Point>>(),
             false,
             false,
@@ -320,7 +331,7 @@ mod tests {
             },
         ]);
 
-        let path = trace_points.get_path(rotation, None).unwrap();
+        let path = trace_points.get_path(rotation, None, None).unwrap();
         assert_eq!(path.get_attributes().get("d").unwrap(), expected);
     }
 
@@ -341,7 +352,7 @@ mod tests {
         ]);
 
         let path = trace_points
-            .get_path(RotationAngle::Deg0, Some((1000, 2000)))
+            .get_path(RotationAngle::Deg0, Some((1000, 2000)), None)
             .unwrap();
 
         assert_eq!(path.get_attributes().get("d").unwrap(), "M22-36l1-2");
@@ -364,7 +375,7 @@ mod tests {
             },
         ]);
 
-        let path = trace_points.get_path(RotationAngle::Deg0, None).unwrap();
+        let path = trace_points.get_path(RotationAngle::Deg0, None, None).unwrap();
         assert_eq!(
             path.get_attributes().get("transform").unwrap(),
             "scale(0.2 -0.2)"

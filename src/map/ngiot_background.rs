@@ -8,6 +8,19 @@ use pyo3::prelude::*;
 
 const WORLD_PIXEL_WIDTH: f32 = 50.0;
 
+/// Shared NGIOT overlay calibration applied after normalization into cropped-raster space.
+///
+/// Sign convention matches the render notes:
+/// - X negative => move overlays left
+/// - X positive => move overlays right
+/// - Y negative => move overlays up
+/// - Y positive => move overlays down
+///
+/// These are raster-cell offsets, not raw world-coordinate offsets. They therefore scale with
+/// the map resolution instead of drifting when the visible crop size changes.
+const OVERLAY_OFFSET_X: i32 = -7;
+const OVERLAY_OFFSET_Y: i32 = -9;
+
 #[derive(Debug, Clone, PartialEq, Eq)]
 struct NgiotBackgroundData {
     encoded: String,
@@ -33,6 +46,16 @@ impl NgiotBackground {
 
     pub(crate) fn position_origin(&self) -> Option<(i32, i32)> {
         self.data.as_ref().map(|data| (data.x_min, data.y_max))
+    }
+
+    pub(crate) fn overlay_svg_offset(&self) -> Option<(f32, f32)> {
+        self.data.as_ref().map(|data| {
+            let cell_size = data.resolution as f32 / WORLD_PIXEL_WIDTH;
+            (
+                OVERLAY_OFFSET_X as f32 * cell_size,
+                OVERLAY_OFFSET_Y as f32 * cell_size,
+            )
+        })
     }
 
     pub(crate) fn has_data(&self) -> bool {
@@ -124,14 +147,16 @@ impl NgiotBackground {
         let viewbox = ViewBox::from_extents(left, top, left + width_svg, top + height_svg);
 
         debug!(
-            "Generated NGIOT raster background: map {}x{} at world ({}, {}) size ({}, {}), direction={}",
+            "Generated NGIOT raster background: map {}x{} at world ({}, {}) size ({}, {}), direction={}, overlay_offset_cells=({}, {})",
             data.width,
             data.height,
             left,
             top,
             width_svg,
             height_svg,
-            data.direction
+            data.direction,
+            OVERLAY_OFFSET_X,
+            OVERLAY_OFFSET_Y,
         );
 
         Ok(Some((general_purpose::STANDARD.encode(&png_data), viewbox)))
