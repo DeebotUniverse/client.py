@@ -28,7 +28,7 @@ const LEGACY_POSITION_ICON_SCALE: f32 = 1.0;
 const NGIOT_POSITION_ICON_SCALE: f32 = 0.18;
 
 #[inline]
-pub(super) fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
+fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
     let (px, py) = match rotation {
         RotationAngle::Deg0 => (x / PIXEL_WIDTH, -y / PIXEL_WIDTH),
         RotationAngle::Deg90 => (y / PIXEL_WIDTH, x / PIXEL_WIDTH),

@@ -103,7 +103,7 @@ impl NgiotBackground {
         true
     }
 
-    pub(crate) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
+    pub(super) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
         let Some(data) = self.data.as_ref() else {
             return Ok(None);
         };
