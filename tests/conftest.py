@@ -173,14 +173,18 @@ def execute_mock() -> AsyncMock:
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
     bus = EventBus(execute_mock, device_info.static.capabilities)
-    bus._ngiot_map_state_store = NgiotMapStateStore()
-    bus.ngiot_map_state = bus._ngiot_map_state_store
+    store = NgiotMapStateStore()
+    bus._ngiot_map_state_store = store
+    bus.ngiot_map_state = store
     return bus
 
 
 @pytest.fixture
 def event_bus_mock(event_bus: EventBus) -> Mock:
-    return Mock(spec_set=EventBus, wraps=event_bus)
+    mock = Mock(spec_set=event_bus, wraps=event_bus)
+    mock._ngiot_map_state_store = event_bus._ngiot_map_state_store
+    mock.ngiot_map_state = event_bus.ngiot_map_state
+    return mock
 
 
 @pytest.fixture(name="caplog")

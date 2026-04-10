@@ -6,7 +6,7 @@ import pytest
 
 from deebot_client.commands.ngiot.map import GetCachedMapInfo
 from deebot_client.event_bus import EventBus
-from deebot_client.events.map import CachedMapInfoEvent, Map
+from deebot_client.events.map import CachedMapInfoEvent, Map, MapSetType
 from deebot_client.hardware import get_static_device_info
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.rs.map import RotationAngle
@@ -18,7 +18,7 @@ async def test_getCachedMapInfo_bootstraps_map_sets() -> None:
     assert static_device_info is not None
     assert static_device_info.capabilities.map is not None
 
-    event_bus = Mock(spec_set=EventBus)
+    event_bus = Mock(spec=EventBus)
     event_bus.capabilities = static_device_info.capabilities
 
     response = {

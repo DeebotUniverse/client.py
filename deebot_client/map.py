@@ -2,17 +2,20 @@
 
 from __future__ import annotations
 
+import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
-from deebot_client.events.map import CachedMapInfoEvent, MajorMapEvent, MapChangedEvent
+from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .events import (
+    MajorMapEvent,
     MapInfoEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
+    MinorMapEvent,
     Position,
     PositionsEvent,
     RoomsEvent,
@@ -51,6 +54,9 @@ class Map:
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
+            if event.type == MapSetType.ROOMS:
+                return
+
             for subset_key, subset in self._map_data.map_subsets.copy().items():
                 if subset.type == event.type and subset.id not in event.subsets:
                     self._map_data.map_subsets.pop(subset_key, None)
@@ -58,6 +64,9 @@ class Map:
         self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
+            if event.type == MapSetType.ROOMS:
+                return
+
             subset_key = (str(event.type), event.id)
             if self._map_data.map_subsets.get(subset_key, None) != event:
                 self._map_data.map_subsets[subset_key] = event
@@ -75,20 +84,31 @@ class Map:
 
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
 
+    async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
+        async def on_major_map(event: MajorMapEvent) -> None:
+            if event.requested:
+                async with asyncio.TaskGroup() as tg:
+                    for idx, value in enumerate(event.values):
+                        if self._map_data.map_piece_crc32_indicates_update(idx, value):
+                            tg.create_task(
+                                self._execute_command(
+                                    self._capabilities.minor.execute(idx, event.map_id)
+                                )
+                            )
+
+            self._sync_ngiot_background_from_store()
+
+        async def on_minor_map(event: MinorMapEvent) -> None:
+            self._map_data.update_map_piece(event.index, event.value)
+
+        return [
+            self._event_bus.subscribe(MajorMapEvent, on_major_map),
+            self._event_bus.subscribe(MinorMapEvent, on_minor_map),
+        ]
+
     async def _on_first_map_changed_subscription(self) -> Callable[[], None]:
-        """On first MapChanged subscription.
-
-        For NGIOT devices, the visible base map comes from the raster payload stored
-        in the NGIOT map state store. This callback wires the Python map layer to
-        that store and keeps overlays layered on top.
-
-        Extra-safe behavior:
-        - legacy trace/icon/position behavior remains the default
-        - NGIOT trace and position transforms are enabled only when a valid
-          NGIOT raster background is actively applied
-        - legacy devices keep the existing transform path
-        """
-        unsubscribers: list[Callable[[], None]] = []
+        """On first MapChanged subscription."""
+        unsubscribers = await self._subscribe_minor_major_map_events()
 
         async def on_cached_info(event: CachedMapInfoEvent) -> None:
             used_map = next((m for m in event.maps if m.using), None)
@@ -102,11 +122,6 @@ class Map:
         )
         if cached_map_subscribers:
             self._event_bus.request_refresh(CachedMapInfoEvent)
-
-        async def on_major_map(_: MajorMapEvent) -> None:
-            self._sync_ngiot_background_from_store()
-
-        unsubscribers.append(self._event_bus.subscribe(MajorMapEvent, on_major_map))
 
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.update_positions(event.positions)
@@ -122,9 +137,6 @@ class Map:
                 return
 
             try:
-                # Extra-safe rule:
-                # - if NGIOT background is active, keep world-space trace scaling
-                # - otherwise fall back to legacy scaling
                 if self._map_data.has_ngiot_background():
                     self._map_data.use_world_trace_scale()
                 else:
@@ -161,9 +173,9 @@ class Map:
             raise MapError("Please enable the map first")
 
         self._event_bus.request_refresh(CachedMapInfoEvent)
-        self._event_bus.request_refresh(MajorMapEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
+        self._event_bus.request_refresh(MajorMapEvent)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""
@@ -232,15 +244,13 @@ class Map:
             height=int(getattr(base_map, "height", 0)),
             total_width=int(getattr(base_map, "total_width", 0)),
             total_height=int(getattr(base_map, "total_height", 0)),
-            resolution=int(getattr(base_map, "resolution", 1)),
+            resolution=int(getattr(base_map, "resolution", 0)),
             x_min=int(getattr(base_map, "x_min", 0)),
             y_max=int(getattr(base_map, "y_max", 0)),
             direction=int(getattr(base_map, "direction", 0)),
         )
         self._map_data.use_world_trace_scale()
         self._map_data.use_ngiot_position_icon_scale()
-        # Observed NGIOT live pose payloads are already in world/map coordinates.
-        # Do not re-offset them by xMin/yMax here.
         self._map_data.use_legacy_position_transform()
 
 
@@ -263,7 +273,6 @@ class MapData:
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
 
-        # Extra-safe defaults for backward compatibility.
         self.use_legacy_trace_scale()
         self.use_legacy_position_icon_scale()
         self.use_legacy_position_transform()
@@ -293,6 +302,17 @@ class MapData:
             self._positions = new_positions
             self._on_change()
 
+    def update_map_piece(self, index: int, base64_data: str) -> None:
+        """Update legacy map piece."""
+        if self._data.background_image.update_map_piece(index, base64_data):
+            self._on_change()
+
+    def map_piece_crc32_indicates_update(self, index: int, crc32: int) -> bool:
+        """Return True if legacy map piece update is required."""
+        return self._data.background_image.map_piece_crc32_indicates_update(
+            index, crc32
+        )
+
     def set_rotation_angle(self, angle: int | RotationAngle) -> None:
         """Set rotation angle."""
         if isinstance(angle, RotationAngle):
@@ -310,7 +330,7 @@ class MapData:
             self._rotation = new_rotation
             self._on_change()
 
-    def set_map_info(self, map_info: list[str]) -> None:
+    def set_map_info(self, map_info: list[str] | str) -> None:
         """Set map info."""
         self._data.set_map_info(map_info)
         self._on_change()
@@ -412,29 +432,74 @@ class MapRoomHandling:
     def __init__(self, event_bus: EventBus, on_change: Callable[[], None]) -> None:
         self._event_bus = event_bus
         self._on_change = on_change
-        self._room_names: dict[int, Room] = {}
+        self._rooms: dict[int, Room] = {}
+        self._amount_rooms: int = 0
+        self._map_id: str = ""
+        self._unsubscribers: list[Callable[[], None]] = []
+
+        async def on_map_set(event: MapSetEvent) -> None:
+            if event.type != MapSetType.ROOMS:
+                return
+
+            self._map_id = event.map_id
+            self._amount_rooms = len(event.subsets)
+            changed = False
+            for room_id in list(self._rooms):
+                if room_id not in event.subsets:
+                    self._rooms.pop(room_id, None)
+                    changed = True
+            if changed:
+                self._on_change()
+
+        self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
+
+        async def on_map_subset(event: MapSubsetEvent) -> None:
+            if event.type != MapSetType.ROOMS or not event.name:
+                return
+
+            room = Room(event.name, event.id, event.coordinates)
+            if self._rooms.get(event.id) != room:
+                self._rooms[event.id] = room
+                self._on_change()
+
+            if self._amount_rooms and len(self._rooms) == self._amount_rooms:
+                event_bus.notify(RoomsEvent(self._map_id, list(self._rooms.values())))
+
+        self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
 
         async def on_rooms(event: RoomsEvent) -> None:
             rooms = {room.id: room for room in event.rooms}
-            if self._room_names != rooms:
-                self._room_names = rooms
+            if self._rooms != rooms:
+                self._rooms = rooms
+                self._map_id = event.map_id
+                self._amount_rooms = len(rooms)
                 self._on_change()
 
-        self._unsubscribe = event_bus.subscribe(RoomsEvent, on_rooms)
+        self._unsubscribers.append(event_bus.subscribe(RoomsEvent, on_rooms))
 
     def teardown(self) -> None:
         """Teardown room handling."""
-        self._unsubscribe()
+        for unsubscribe in self._unsubscribers:
+            unsubscribe()
+        self._unsubscribers.clear()
 
     def update_rooms(self, map_subsets: list[MapSubsetEvent]) -> None:
-        """Update rooms."""
+        """Update room subset names from cached room metadata."""
         for index, subset in enumerate(map_subsets):
-            if subset.type == MapSetType.ROOMS:
-                room = self._room_names.get(subset.id)
-                if room and subset.name != room.name:
-                    map_subsets[index] = MapSubsetEvent(
-                        id=subset.id,
-                        type=subset.type,
-                        coordinates=subset.coordinates,
-                        name=room.name,
-                    )
+            if subset.type != MapSetType.ROOMS:
+                continue
+
+            room = self._rooms.get(subset.id)
+            if room is None:
+                continue
+
+            new_coordinates = subset.coordinates or room.coordinates
+            new_name = room.name or subset.name
+            replacement = MapSubsetEvent(
+                id=subset.id,
+                type=subset.type,
+                coordinates=new_coordinates,
+                name=new_name,
+            )
+            if replacement != subset:
+                map_subsets[index] = replacement

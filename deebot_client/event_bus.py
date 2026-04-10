@@ -243,7 +243,8 @@ class EventBus:
 
         def unsubscribe() -> None:
             data.unsubscribe()
-            event_processing_data.on_subscription_callbacks.remove(data)
+            if data in event_processing_data.on_subscription_callbacks:
+                event_processing_data.on_subscription_callbacks.remove(data)
 
         event_processing_data.on_subscription_callbacks.append(data)
 

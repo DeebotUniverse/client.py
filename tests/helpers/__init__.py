@@ -57,6 +57,7 @@ def mock_static_device_info(
         events = {}
 
     mock = Mock(spec_set=Capabilities)
+    mock.map = None
 
     def get_refresh_commands(event: type[Event]) -> list[Command]:
         return events.get(event, [])
