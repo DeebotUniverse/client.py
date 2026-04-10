@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import asyncio
 import json
 import secrets
 import string
@@ -29,6 +30,7 @@ _PATH_ENDPOINT_CONTROL = "/api/iot/endpoint/control"
 _DEFAULT_FMT = "j"
 _DEFAULT_CT = "q"
 
+# Public APN constants are imported by multiple NGIOT command modules.
 APN_ROBOT_DETAIL = "10001"
 APN_MAP_DETAILS = "30001"
 APN_CLEAN_START = "40001"
@@ -40,6 +42,10 @@ APN_CANCEL_RETURN = "40015"
 APN_DEVICE_LOCATE = "40019"
 APN_RESET_CONSUMABLE = "50017"
 APN_CHILD_LOCK = "50038"
+
+# Some devices transiently return "cmd busy" while state is changing.
+_TRANSIENT_RESPONSE_CODES = {1}
+_TRANSIENT_RESPONSE_MESSAGES = {"cmd busy"}
 
 
 @dataclass(frozen=True)
@@ -99,14 +105,7 @@ class NgiotClient:
         ct: str = _DEFAULT_CT,
         force_sst_refresh: bool = False,
     ) -> dict[str, Any]:
-        """Execute a single NGIOT endpoint-control request.
-
-        Returns the full decoded NGIOT JSON envelope:
-        {
-            "body": {...},
-            "header": {...}
-        }
-        """
+        """Execute a single NGIOT endpoint-control request."""
         identity = self._normalize_device(device)
         return await self._request_with_fallback(
             identity,
@@ -249,7 +248,24 @@ class NgiotClient:
                 response_data,
             )
 
-            self._validate_response(response_data)
+            validation = self._classify_response(response_data)
+            if validation == "retry_busy":
+                _LOGGER.debug(
+                    "NGIOT request returned transient busy for %s apn=%s; retrying once",
+                    identity.key,
+                    apn,
+                )
+                await asyncio.sleep(1)
+                return await self._request_retry_after_busy(
+                    identity,
+                    device,
+                    apn=apn,
+                    body_data=body_data,
+                    fmt=fmt,
+                    ct=ct,
+                    force_sst_refresh=force_sst_refresh,
+                )
+
             return response_data
 
         except TimeoutError as ex:
@@ -281,6 +297,30 @@ class NgiotClient:
 
             _LOGGER.debug("NGIOT request failed: %s", logger_request_params, exc_info=True)
             raise
+
+    async def _request_retry_after_busy(
+        self,
+        identity: NgiotDeviceIdentity,
+        device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
+        *,
+        apn: str | int,
+        body_data: Mapping[str, Any] | Sequence[Any],
+        fmt: str,
+        ct: str,
+        force_sst_refresh: bool,
+    ) -> dict[str, Any]:
+        """Retry once after a transient busy response."""
+        retry_response = await self._request_with_fallback(
+            identity,
+            device,
+            apn=apn,
+            body_data=body_data,
+            fmt=fmt,
+            ct=ct,
+            force_sst_refresh=force_sst_refresh,
+        )
+        self._validate_response(retry_response)
+        return retry_response
 
     async def query_fields(
         self,
@@ -429,18 +469,12 @@ class NgiotClient:
             msg = f"Missing required NGIOT device field: {ex.args[0]}"
             raise ApiError(msg) from ex
 
-
     def _build_payload(
         self,
         apn: str | int,
         body_data: Mapping[str, Any] | Sequence[Any],
     ) -> Mapping[str, Any] | Sequence[Any]:
-        """Build a device-tolerant NGIOT payload.
-
-        eyfj07 rejects some empty legacy payloads with a null body.
-        This helper preserves caller-provided payloads while adding a
-        minimal request envelope for reads that otherwise send `{}`.
-        """
+        """Build a device-tolerant NGIOT payload."""
         if not isinstance(body_data, Mapping):
             return body_data
 
@@ -480,6 +514,32 @@ class NgiotClient:
             return {}
         return body.get("data", {})
 
+    @classmethod
+    def _classify_response(cls, response: Mapping[str, Any] | None) -> str:
+        """Classify NGIOT envelope and support ACK-only or transient-busy replies."""
+        if response is None:
+            _LOGGER.debug("Empty NGIOT response body returned by server")
+            return "ok"
+
+        body = response.get("body")
+        if not isinstance(body, Mapping):
+            _LOGGER.debug("NGIOT response omitted body; treating as ACK-only success")
+            return "ok"
+
+        code = body.get("code", 0)
+        msg = str(body.get("msg", "")).strip().lower()
+
+        if code in (0, "0000", None):
+            return "ok"
+
+        if code in _TRANSIENT_RESPONSE_CODES and msg in _TRANSIENT_RESPONSE_MESSAGES:
+            return "retry_busy"
+
+        raise ApiError(
+            f"NGIOT request failed with code {code} ({body.get('msg', 'unknown error')}) "
+            f"for {_PATH_ENDPOINT_CONTROL}"
+        )
+
     @staticmethod
     def _validate_response(response: Mapping[str, Any] | None) -> None:
         """Validate NGIOT envelope and raise ApiError on device-side failures."""
@@ -487,7 +547,17 @@ class NgiotClient:
             _LOGGER.debug("Empty NGIOT response body returned by server")
             return
 
+        if not isinstance(response, Mapping):
+            raise ApiError("Invalid NGIOT response: missing body")
+
         body = response.get("body")
+        if body is None:
+            # Accept ACK-only envelopes that still include a header.
+            if isinstance(response.get("header"), Mapping):
+                _LOGGER.debug("NGIOT ACK-only response without body: %s", response)
+                return
+            raise ApiError("Invalid NGIOT response: missing body")
+
         if not isinstance(body, Mapping):
             raise ApiError("Invalid NGIOT response: missing body")
 
