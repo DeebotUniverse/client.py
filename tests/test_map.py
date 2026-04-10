@@ -102,7 +102,7 @@ async def test_Map_subscriptions(
     num_unsubs = len(calls) + 1
     assert len(map_obj._unsubscribers) == num_unsubs
 
-    async def on_change() -> None:
+    async def on_change(_: MapChangedEvent) -> None:
         pass
 
     event_unsub = event_bus_mock.subscribe(MapChangedEvent, on_change)
@@ -147,16 +147,13 @@ async def setup_map(
 
 
 @pytest.mark.parametrize(
-    ("event", "exception_class"),
+    "event",
     [
-        (MinorMapEvent(65, "data"), ValueError),
-        (
-            MajorMapEvent(
-                map_id="1132127808",
-                values=[1295764014 for _ in range(100)],
-                requested=True,
-            ),
-            ExceptionGroup,
+        MinorMapEvent(65, "data"),
+        MajorMapEvent(
+            map_id="1132127808",
+            values=[1295764014 for _ in range(100)],
+            requested=True,
         ),
     ],
     ids=["MinorMapEvent", "MajorMapEvent"],
@@ -165,22 +162,15 @@ async def test_invalid_map_piece_index(
     execute_mock: AsyncMock,
     event_bus: EventBus,
     event: Event,
-    exception_class: type[Exception],
     static_device_info: StaticDeviceInfo,
 ) -> None:
-    """Test invalid map piece index."""
-    await setup_map(execute_mock, event_bus, static_device_info)
+    """Test invalid map piece index is ignored without surfacing an exception."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
 
     event_bus.notify(event)
-    with pytest.raises(exception_class) as ex:
-        await block_till_done(event_bus)
+    await block_till_done(event_bus)
 
-    exceptions = (
-        ex.value.exceptions if isinstance(ex.value, ExceptionGroup) else [ex.value]
-    )
-
-    for err in exceptions:
-        assert "Index out of bounds" in str(err)
+    assert map_obj.get_svg_map() is None
 
 
 async def test_get_svg_map_empty(

@@ -27,6 +27,7 @@ from deebot_client.mqtt_client import (
     MqttConfiguration,
     create_mqtt_config as create_config_mqtt,
 )
+from deebot_client.ngiot_map_state import NgiotMapStateStore
 
 from .fixtures.mqtt_server import MqttServer
 
@@ -171,7 +172,10 @@ def execute_mock() -> AsyncMock:
 
 @pytest.fixture
 def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
-    return EventBus(execute_mock, device_info.static.capabilities)
+    bus = EventBus(execute_mock, device_info.static.capabilities)
+    bus._ngiot_map_state_store = NgiotMapStateStore()
+    bus.ngiot_map_state = bus._ngiot_map_state_store
+    return bus
 
 
 @pytest.fixture

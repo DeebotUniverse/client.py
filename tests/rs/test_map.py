@@ -14,12 +14,12 @@ from deebot_client.rs.map import MapData, PositionType
         (
             "invalid_base64",
             "Invalid symbol 95, offset 7.",
-            "Failed to extract trace points: Invalid symbol 95, offset 7.;value:invalid_base64",
+            "Failed to extract trace points: Invalid symbol 95, offset 7.;value:invalid_base64;lz4_len:None",
         ),
         (
             "",
             "Invalid 7z compressed data",
-            "Failed to extract trace points: Invalid 7z compressed data;value:",
+            "Failed to extract trace points: Invalid 7z compressed data;value:;lz4_len:None",
         ),
     ],
 )

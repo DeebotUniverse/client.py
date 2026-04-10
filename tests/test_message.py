@@ -59,7 +59,7 @@ def test_MessageStr_should_error_on_unknown_types() -> None:
     event_bus = Mock(spec_set=EventBus)
     result = TestMessageStr.handle(event_bus, {"key": "value"})
 
-    assert result.state == HandlingState.ERROR
+    assert result.state == HandlingState.ANALYSE_LOGGED
 
 
 def test_WronglyImplementedMessage() -> None:

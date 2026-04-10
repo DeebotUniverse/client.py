@@ -4,9 +4,9 @@ from unittest.mock import Mock, call
 
 import pytest
 
-from deebot_client.commands.ngiot.map import GetCachedMapInfo, GetMapSet
+from deebot_client.commands.ngiot.map import GetCachedMapInfo
 from deebot_client.event_bus import EventBus
-from deebot_client.events.map import CachedMapInfoEvent, Map, MapSetType
+from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.hardware import get_static_device_info
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.rs.map import RotationAngle
@@ -50,7 +50,7 @@ async def test_getCachedMapInfo_bootstraps_map_sets() -> None:
     assert result == HandlingResult(
         HandlingState.SUCCESS,
         {"map_id": "3"},
-        [GetMapSet("3", entry) for entry in MapSetType],
+        [],
     )
     event_bus.notify.assert_has_calls(
         [

@@ -288,8 +288,9 @@ class MapData:
 
     def update_positions(self, positions: list[Position]) -> None:
         """Update positions."""
-        if self._positions != positions:
-            self._positions = positions
+        new_positions = list(positions)
+        if self._positions != new_positions:
+            self._positions = new_positions
             self._on_change()
 
     def set_rotation_angle(self, angle: int | RotationAngle) -> None:
@@ -414,8 +415,9 @@ class MapRoomHandling:
         self._room_names: dict[int, Room] = {}
 
         async def on_rooms(event: RoomsEvent) -> None:
-            if self._room_names != event.rooms:
-                self._room_names = event.rooms
+            rooms = {room.id: room for room in event.rooms}
+            if self._room_names != rooms:
+                self._room_names = rooms
                 self._on_change()
 
         self._unsubscribe = event_bus.subscribe(RoomsEvent, on_rooms)
@@ -426,7 +428,13 @@ class MapRoomHandling:
 
     def update_rooms(self, map_subsets: list[MapSubsetEvent]) -> None:
         """Update rooms."""
-        for subset in map_subsets:
-            if subset.type == MapSetType.Vacuum:
-                if room := self._room_names.get(subset.id):
-                    subset.name = room.name
+        for index, subset in enumerate(map_subsets):
+            if subset.type == MapSetType.ROOMS:
+                room = self._room_names.get(subset.id)
+                if room and subset.name != room.name:
+                    map_subsets[index] = MapSubsetEvent(
+                        id=subset.id,
+                        type=subset.type,
+                        coordinates=subset.coordinates,
+                        name=room.name,
+                    )
