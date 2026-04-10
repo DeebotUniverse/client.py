@@ -92,7 +92,10 @@ if TYPE_CHECKING:
     from deebot_client.command import Command
     from deebot_client.events.base import Event
 from deebot_client.commands.ngiot.battery import GetBattery as GetNgiotBattery
+from deebot_client.commands.ngiot.child_lock import GetChildLock as GetNgiotChildLock
 from deebot_client.commands.ngiot.clean import GetCleanInfo as GetNgiotCleanInfo
+from deebot_client.commands.ngiot.fan_speed import GetFanSpeed as GetNgiotFanSpeed
+from deebot_client.commands.ngiot.life_span import GetLifeSpan as GetNgiotLifeSpan
 from deebot_client.commands.ngiot.error import GetError as GetNgiotError
 from deebot_client.commands.ngiot.map import (
     GetCachedMapInfo as GetNgiotCachedMapInfo,
@@ -106,6 +109,7 @@ from deebot_client.commands.ngiot.stats import (
     GetStats as GetNgiotStats,
     GetTotalStats as GetNgiotTotalStats,
 )
+from deebot_client.commands.ngiot.volume import GetVolume as GetNgiotVolume
 from deebot_client.hardware.eyfj07 import get_device_info as get_eyfj07_info
 
 @pytest.mark.parametrize(
@@ -113,6 +117,7 @@ from deebot_client.hardware.eyfj07 import get_device_info as get_eyfj07_info
     [
         ("not_specified", None),
         ("yna5xi", get_yna5xi_info()),
+        ("eyfj07", get_eyfj07_info()),
     ],
 )
 async def test_get_static_device_info(
@@ -258,30 +263,30 @@ async def test_get_static_device_info(
                 VolumeEvent: [GetVolume()],
                 WaterAmountEvent: [GetWaterInfo()],
             },
-            (
+        ),
+        (
             "eyfj07",
-            {       
+            {
                 AvailabilityEvent: [GetNgiotBattery(is_available_check=True)],
                 BatteryEvent: [GetNgiotBattery()],
                 CachedMapInfoEvent: [GetNgiotCachedMapInfo()],
                 ChildLockEvent: [GetNgiotChildLock()],
                 CustomCommandEvent: [],
                 ErrorEvent: [GetNgiotError()],
-                FanSpeedEvent: [GetFanSpeed()],
-                LifeSpanEvent: [GetLifeSpan([LifeSpan.BRUSH, LifeSpan.FILTER, LifeSpan.SIDE_BRUSH, LifeSpan.UNIT_CARE])],
+                FanSpeedEvent: [GetNgiotFanSpeed()],
+                LifeSpanEvent: [GetNgiotLifeSpan()],
                 MajorMapEvent: [GetNgiotMajorMap()],
                 MapChangedEvent: [],
                 MapTraceEvent: [GetNgiotMapTrace()],
                 NetworkInfoEvent: [GetNgiotNetInfo()],
                 PositionsEvent: [GetNgiotPos()],
                 ReportStatsEvent: [GetNgiotReportStats()],
-                RoomsEvent: [GetNgiotCachedMapInfo()],
+                RoomsEvent: [GetNgiotMajorMap()],
                 StateEvent: [GetNgiotCleanInfo()],
                 StatsEvent: [GetNgiotStats()],
                 TotalStatsEvent: [GetNgiotTotalStats()],
-            }
-    
-),
+                VolumeEvent: [GetNgiotVolume()],
+            },
         ),
     ],
     ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv", "eyfj07"],
