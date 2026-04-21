@@ -63,12 +63,12 @@ jobs:
           uv export --no-hashes --no-dev --group test --no-emit-project > requirements-test.txt
           uv export --no-hashes --group dev --no-emit-project > requirements-dev.txt
       - name: Upload requirements-test.txt
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: requirements-test.txt
           path: requirements-test.txt
       - name: Upload requirements-dev.txt
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: requirements-dev.txt
           path: requirements-dev.txt
@@ -249,7 +249,7 @@ jobs:
           manylinux: ${{ matrix.manylinux }}
           before-script-linux: python3 -m ensurepip
       - name: Upload wheels
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
@@ -318,7 +318,7 @@ jobs:
           sccache: "false"
           manylinux: musllinux_1_2
       - name: Upload wheels
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-musllinux-${{ matrix.target }}-${{ matrix.python-version }}
           path: dist
@@ -396,7 +396,7 @@ jobs:
       - name: 📦 Build source package
         run: uv build --sdist
       - name: Upload sdist
-        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
           name: wheels-sdist
           path: dist
