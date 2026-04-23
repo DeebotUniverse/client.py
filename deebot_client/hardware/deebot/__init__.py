@@ -1,0 +1,1 @@
+"""Deebot hardware configurations."""
