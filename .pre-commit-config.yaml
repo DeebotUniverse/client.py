@@ -1,6 +1,6 @@
 repos:
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.15.9
+    rev: v0.15.11
     hooks:
       - id: ruff-check
         args:
@@ -43,12 +43,12 @@ repos:
   #       name: Rust clippy
   #       language: rust
   - repo: https://github.com/rbubley/mirrors-prettier
-    rev: v3.8.1
+    rev: v3.8.3
     hooks:
       - id: prettier
         language: node
         additional_dependencies:
-          - prettier@3.8.1
+          - prettier@3.8.3
           - prettier-plugin-sort-json@4.2.0
         exclude_types:
           - python
