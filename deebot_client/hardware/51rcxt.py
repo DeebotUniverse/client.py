@@ -1,4 +1,4 @@
-"""DEEBOT GOAT G1 Capabilities."""
+"""GOAT A3000 LiDAR Pro."""
 
 from __future__ import annotations
 
