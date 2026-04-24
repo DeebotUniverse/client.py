@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
@@ -22,6 +21,8 @@ from .common import (
 )
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo

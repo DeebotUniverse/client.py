@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Mapping, Sequence
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import CustomCommandEvent
@@ -12,6 +11,8 @@ from deebot_client.ngiot_client import NgiotRequest
 from .common import NgiotRequestCommand
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping, Sequence
+
     from deebot_client.event_bus import EventBus
 
 

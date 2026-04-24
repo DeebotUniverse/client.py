@@ -3,24 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-import secrets
-import string
-import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
+import secrets
+import string
+import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import orjson
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
+import orjson
 
 from .exceptions import ApiError, ApiTimeoutError, AuthenticationError
 from .logging_filter import get_logger
-from .sst_authentication import SstAuthenticator
 
 if TYPE_CHECKING:
     from .models import ApiDeviceInfo, DeviceInfo
+    from .sst_authentication import SstAuthenticator
 
 _LOGGER = get_logger(__name__)
 
@@ -250,7 +250,9 @@ class NgiotClient:
             if ex.status == HTTPStatus.NOT_FOUND:
                 raise
 
-            _LOGGER.debug("NGIOT request failed: %s", logger_request_params, exc_info=True)
+            _LOGGER.debug(
+                "NGIOT request failed: %s", logger_request_params, exc_info=True
+            )
             raise ApiError from ex
 
     async def _request_retry_after_busy(
@@ -382,10 +384,11 @@ class NgiotClient:
         if code in _TRANSIENT_RESPONSE_CODES and msg in _TRANSIENT_RESPONSE_MESSAGES:
             return "retry_busy"
 
-        raise ApiError(
+        msg_0 = (
             f"NGIOT request failed with code {code} ({body.get('msg', 'unknown error')}) "
             f"for {_PATH_ENDPOINT_CONTROL}"
         )
+        raise ApiError(msg_0)
 
     @staticmethod
     def _validate_response(response: Mapping[str, Any] | None) -> None:
@@ -410,9 +413,8 @@ class NgiotClient:
         code = body.get("code", 0)
         if code not in (0, "0000", None):
             msg = body.get("msg", "unknown error")
-            raise ApiError(
-                f"NGIOT request failed with code {code} ({msg}) for {_PATH_ENDPOINT_CONTROL}"
-            )
+            msg_0 = f"NGIOT request failed with code {code} ({msg}) for {_PATH_ENDPOINT_CONTROL}"
+            raise ApiError(msg_0)
 
     @staticmethod
     def _parse_response_body(body: bytes) -> dict[str, Any]:
