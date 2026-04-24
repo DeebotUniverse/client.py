@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from abc import ABC, abstractmethod
 from collections.abc import Mapping, Sequence
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 from deebot_client.commands.json.common import ExecuteCommand, JsonGetCommand
 from deebot_client.exceptions import ApiError
@@ -36,7 +36,7 @@ class NgiotCommandMixin(ABC):
         if client is None:
             msg = "NGIOT client is not attached to authenticator"
             raise ApiError(msg)
-        return client
+        return cast("NgiotClient", client)
 
     @staticmethod
     def _wrap_response(response: Mapping[str, Any]) -> dict[str, Any]:

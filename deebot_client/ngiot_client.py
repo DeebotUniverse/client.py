@@ -218,8 +218,6 @@ class NgiotClient:
                 await asyncio.sleep(1)
                 return await self._request_retry_after_busy(identity, device, request)
 
-            return response_data
-
         except TimeoutError as ex:
             raise ApiTimeoutError(path=_PATH_ENDPOINT_CONTROL, timeout=_TIMEOUT) from ex
         except ClientResponseError as ex:
@@ -254,6 +252,8 @@ class NgiotClient:
                 "NGIOT request failed: %s", logger_request_params, exc_info=True
             )
             raise ApiError from ex
+        else:
+            return response_data
 
     async def _request_retry_after_busy(
         self,
@@ -271,11 +271,7 @@ class NgiotClient:
         device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
     ) -> NgiotDeviceIdentity:
         """Normalize raw API device payload into NGIOT routing fields."""
-        raw_device = device.api if hasattr(device, "api") else device
-
-        if not isinstance(raw_device, Mapping):
-            msg = f"Unsupported device type for NGIOT client: {type(device)!r}"
-            raise TypeError(msg)
+        raw_device = device if isinstance(device, Mapping) else device.api
 
         service_mqs_host = self._service_mqs_host(raw_device)
         control_host = self._config.override_control_host or service_mqs_host

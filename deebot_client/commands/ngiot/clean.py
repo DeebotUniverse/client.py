@@ -77,23 +77,28 @@ def map_live_state(
     """Map live status events onto the generic state enum."""
     status = str(data.get("status", "")).strip().lower()
     pause_switch = data.get("pauseSwitch")
+    mapped_state = {
+        "smartclean": State.PAUSED if pause_switch is True else State.CLEANING,
+        "gocharge": State.RETURNING,
+        "go_charge": State.RETURNING,
+        "idle": State.DOCKED if _coerce_bool(data.get("chargeStatus")) else State.IDLE,
+    }.get(status)
 
-    if status == "smartclean":
-        return State.PAUSED if pause_switch is True else State.CLEANING
-    if status in {"gocharge", "go_charge"}:
-        return State.RETURNING
-    if status == "idle":
-        return State.DOCKED if _coerce_bool(data.get("chargeStatus")) else State.IDLE
+    if mapped_state is not None:
+        return mapped_state
 
     if pause_switch is True and previous in {State.CLEANING, State.PAUSED}:
         return State.PAUSED
-    if pause_switch is False and previous == State.PAUSED:
+
+    resume_from_pause = pause_switch is False and previous == State.PAUSED
+    if resume_from_pause:
         return State.CLEANING
 
-    if any(key in data for key in ("workMode", "chargeStatus")):
-        return map_snapshot_state(data)
-
-    return None
+    return (
+        map_snapshot_state(data)
+        if any(key in data for key in ("workMode", "chargeStatus"))
+        else None
+    )
 
 
 class Clean(NgiotExecuteCommand):
@@ -112,10 +117,11 @@ class Clean(NgiotExecuteCommand):
         event_bus: EventBus,
     ) -> tuple[HandlingResult, dict[str, Any]]:
         state = event_bus.get_last_event(StateEvent)
-        if state is not None:
-            if self._action is CleanAction.RESUME and state.state != State.PAUSED:
+        if state is not None and self._action is CleanAction.RESUME:
+            if state.state != State.PAUSED:
                 self._action = CleanAction.START
-            elif self._action is CleanAction.START and state.state == State.PAUSED:
+        elif state is not None and self._action is CleanAction.START:
+            if state.state == State.PAUSED:
                 self._action = CleanAction.RESUME
 
         return await super()._execute(authenticator, device_info, event_bus)
@@ -132,16 +138,20 @@ class Clean(NgiotExecuteCommand):
         )
 
     def _get_request(self) -> tuple[str, dict[str, Any]]:
-        if self._action is CleanAction.START:
-            return APN_CLEAN_START, {"cleanSwitch": True, "cleanMode": "smart"}
-        if self._action is CleanAction.PAUSE:
-            return APN_PAUSE, {"pauseSwitch": True}
-        if self._action is CleanAction.RESUME:
-            return APN_RESUME, {"pauseSwitch": False}
-        if self._action is CleanAction.STOP:
-            return APN_RETURN_TO_DOCK, {"chargeSwitch": True}
-        msg = f"Unsupported clean action: {self._action}"
-        raise ApiError(msg)
+        requests: dict[CleanAction, tuple[str, dict[str, Any]]] = {
+            CleanAction.START: (
+                APN_CLEAN_START,
+                {"cleanSwitch": True, "cleanMode": "smart"},
+            ),
+            CleanAction.PAUSE: (APN_PAUSE, {"pauseSwitch": True}),
+            CleanAction.RESUME: (APN_RESUME, {"pauseSwitch": False}),
+            CleanAction.STOP: (APN_RETURN_TO_DOCK, {"chargeSwitch": True}),
+        }
+        try:
+            return requests[self._action]
+        except KeyError as ex:
+            msg = f"Unsupported clean action: {self._action}"
+            raise ApiError(msg) from ex
 
 
 class CleanArea(NgiotExecuteCommand):

@@ -31,6 +31,6 @@ class GetBattery(RobotDetailGetCommand):
         battery = data.get("battery")
         available = battery is not None
         event_bus.notify(AvailabilityEvent(available=available))
-        if available:
+        if battery is not None:
             event_bus.notify(BatteryEvent(int(battery)))
         return HandlingResult.success()

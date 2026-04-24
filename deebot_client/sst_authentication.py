@@ -304,11 +304,7 @@ class SstAuthenticator:
         device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
     ) -> SstDeviceIdentity:
         """Normalize a device object into the fields required for SST issuance."""
-        raw_device = device.api if hasattr(device, "api") else device
-
-        if not isinstance(raw_device, Mapping):
-            msg = f"Unsupported device type for SST authentication: {type(device)!r}"
-            raise TypeError(msg)
+        raw_device = device if isinstance(device, Mapping) else device.api
 
         try:
             return SstDeviceIdentity(
