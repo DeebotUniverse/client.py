@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Self
 from unittest.mock import AsyncMock, Mock, patch
 
 from aiohttp import ClientResponseError, RequestInfo, hdrs
@@ -35,10 +35,12 @@ class _FakeResponse:
         self.status = status
         self.request_info = _request_info()
         self.history: tuple[()] = ()
-        self.headers = CIMultiDictProxy(CIMultiDict({"content-type": "application/json"}))
+        self.headers = CIMultiDictProxy(
+            CIMultiDict({"content-type": "application/json"})
+        )
         self.reason = "OK" if status == HTTPStatus.OK else "error"
 
-    async def __aenter__(self) -> _FakeResponse:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(

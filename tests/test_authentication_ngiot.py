@@ -47,7 +47,9 @@ def test_attach_ngiot_requires_configured_base_url_or_region(
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    with pytest.raises(ApiError, match="requires a configured NGIOT base_url or region"):
+    with pytest.raises(
+        ApiError, match="requires a configured NGIOT base_url or region"
+    ):
         authenticator.attach_ngiot()
 
 

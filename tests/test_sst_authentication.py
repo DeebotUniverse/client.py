@@ -1,10 +1,9 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Mapping
 from http import HTTPStatus
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, Self
 from unittest.mock import AsyncMock
 
 from aiohttp import ClientResponseError, RequestInfo
@@ -21,6 +20,9 @@ from deebot_client.sst_authentication import (
     SstDeviceIdentity,
     identity_as_mapping,
 )
+
+if TYPE_CHECKING:
+    from collections.abc import Mapping
 
 
 def _request_info() -> RequestInfo:
@@ -44,10 +46,12 @@ class _FakeResponse:
         self.status = status
         self.request_info = _request_info()
         self.history: tuple[()] = ()
-        self.headers = CIMultiDictProxy(CIMultiDict({"content-type": "application/json"}))
+        self.headers = CIMultiDictProxy(
+            CIMultiDict({"content-type": "application/json"})
+        )
         self.reason = "OK" if status == HTTPStatus.OK else "error"
 
-    async def __aenter__(self) -> _FakeResponse:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
