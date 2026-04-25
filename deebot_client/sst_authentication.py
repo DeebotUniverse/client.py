@@ -4,15 +4,15 @@ from __future__ import annotations
 
 import asyncio
 import base64
-import time
 from collections.abc import Mapping
 from dataclasses import dataclass
 from http import HTTPStatus
+import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import orjson
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
+import orjson
 
 from .exceptions import ApiError, ApiTimeoutError, AuthenticationError
 from .logging_filter import get_logger
@@ -212,7 +212,9 @@ class SstAuthenticator:
             raise ApiTimeoutError(path=_SST_ISSUE_PATH, timeout=_TIMEOUT) from ex
         except ClientResponseError as ex:
             if ex.status in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN):
-                raise AuthenticationError("SST issue request was not authorized") from ex
+                raise AuthenticationError(
+                    "SST issue request was not authorized"
+                ) from ex
             raise ApiError from ex
 
     def _create_refresh_task(
@@ -227,7 +229,9 @@ class SstAuthenticator:
 
             async def async_refresh() -> None:
                 try:
-                    await self.get_credentials(identity_as_mapping(identity), force=True)
+                    await self.get_credentials(
+                        identity_as_mapping(identity), force=True
+                    )
                 except Exception:
                     _LOGGER.exception(
                         "An exception occurred during SST refresh for %s",
@@ -300,11 +304,7 @@ class SstAuthenticator:
         device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
     ) -> SstDeviceIdentity:
         """Normalize a device object into the fields required for SST issuance."""
-        raw_device = device.api if hasattr(device, "api") else device
-
-        if not isinstance(raw_device, Mapping):
-            msg = f"Unsupported device type for SST authentication: {type(device)!r}"
-            raise TypeError(msg)
+        raw_device = device if isinstance(device, Mapping) else device.api
 
         try:
             return SstDeviceIdentity(

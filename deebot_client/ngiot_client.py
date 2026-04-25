@@ -3,24 +3,24 @@
 from __future__ import annotations
 
 import asyncio
-import secrets
-import string
-import time
 from collections.abc import Mapping, Sequence
 from dataclasses import dataclass
 from http import HTTPStatus
+import secrets
+import string
+import time
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
-import orjson
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
+import orjson
 
 from .exceptions import ApiError, ApiTimeoutError, AuthenticationError
 from .logging_filter import get_logger
-from .sst_authentication import SstAuthenticator
 
 if TYPE_CHECKING:
     from .models import ApiDeviceInfo, DeviceInfo
+    from .sst_authentication import SstAuthenticator
 
 _LOGGER = get_logger(__name__)
 
@@ -218,8 +218,6 @@ class NgiotClient:
                 await asyncio.sleep(1)
                 return await self._request_retry_after_busy(identity, device, request)
 
-            return response_data
-
         except TimeoutError as ex:
             raise ApiTimeoutError(path=_PATH_ENDPOINT_CONTROL, timeout=_TIMEOUT) from ex
         except ClientResponseError as ex:
@@ -250,8 +248,12 @@ class NgiotClient:
             if ex.status == HTTPStatus.NOT_FOUND:
                 raise
 
-            _LOGGER.debug("NGIOT request failed: %s", logger_request_params, exc_info=True)
+            _LOGGER.debug(
+                "NGIOT request failed: %s", logger_request_params, exc_info=True
+            )
             raise ApiError from ex
+        else:
+            return response_data
 
     async def _request_retry_after_busy(
         self,
@@ -269,11 +271,7 @@ class NgiotClient:
         device: ApiDeviceInfo | DeviceInfo | Mapping[str, Any],
     ) -> NgiotDeviceIdentity:
         """Normalize raw API device payload into NGIOT routing fields."""
-        raw_device = device.api if hasattr(device, "api") else device
-
-        if not isinstance(raw_device, Mapping):
-            msg = f"Unsupported device type for NGIOT client: {type(device)!r}"
-            raise TypeError(msg)
+        raw_device = device if isinstance(device, Mapping) else device.api
 
         service_mqs_host = self._service_mqs_host(raw_device)
         control_host = self._config.override_control_host or service_mqs_host
@@ -382,10 +380,11 @@ class NgiotClient:
         if code in _TRANSIENT_RESPONSE_CODES and msg in _TRANSIENT_RESPONSE_MESSAGES:
             return "retry_busy"
 
-        raise ApiError(
+        msg_0 = (
             f"NGIOT request failed with code {code} ({body.get('msg', 'unknown error')}) "
             f"for {_PATH_ENDPOINT_CONTROL}"
         )
+        raise ApiError(msg_0)
 
     @staticmethod
     def _validate_response(response: Mapping[str, Any] | None) -> None:
@@ -410,9 +409,8 @@ class NgiotClient:
         code = body.get("code", 0)
         if code not in (0, "0000", None):
             msg = body.get("msg", "unknown error")
-            raise ApiError(
-                f"NGIOT request failed with code {code} ({msg}) for {_PATH_ENDPOINT_CONTROL}"
-            )
+            msg_0 = f"NGIOT request failed with code {code} ({msg}) for {_PATH_ENDPOINT_CONTROL}"
+            raise ApiError(msg_0)
 
     @staticmethod
     def _parse_response_body(body: bytes) -> dict[str, Any]:
