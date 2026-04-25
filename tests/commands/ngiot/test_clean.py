@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -23,8 +23,21 @@ from deebot_client.event_bus import EventBus
 from deebot_client.events import StateEvent
 from deebot_client.exceptions import ApiError
 from deebot_client.message import HandlingState
-from deebot_client.models import CleanAction, CleanMode, State
-from deebot_client.ngiot_client import NgiotRequest
+from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
+from deebot_client.ngiot_client import NgiotClient, NgiotRequest
+
+
+def _api_device() -> ApiDeviceInfo:
+    return cast(
+        "ApiDeviceInfo",
+        {
+            "did": "did-1",
+            "class": "eyfj07",
+            "company": "eco",
+            "name": "robot",
+            "resource": "res-1",
+        },
+    )
 
 
 @pytest.mark.parametrize(
@@ -83,13 +96,9 @@ def test_clean_get_request(
 
 
 async def test_clean_request_uses_action_request() -> None:
-    client = AsyncMock()
+    client = AsyncMock(spec_set=NgiotClient)
     client.request.return_value = {"body": {"code": 0, "msg": "ok"}}
-    device_info: dict[str, Any] = {
-        "did": "did-1",
-        "class": "eyfj07",
-        "resource": "res-1",
-    }
+    device_info = _api_device()
 
     response = await Clean(CleanAction.PAUSE)._request_ngiot(client, device_info)
 
@@ -101,13 +110,9 @@ async def test_clean_request_uses_action_request() -> None:
 
 
 async def test_clean_area_uses_room_ids() -> None:
-    client = AsyncMock()
+    client = AsyncMock(spec_set=NgiotClient)
     client.request.return_value = {"body": {"code": 0, "msg": "ok"}}
-    device_info: dict[str, Any] = {
-        "did": "did-1",
-        "class": "eyfj07",
-        "resource": "res-1",
-    }
+    device_info = _api_device()
 
     response = await CleanArea(CleanMode.SPOT_AREA, [2, 5.0])._request_ngiot(
         client,
@@ -137,7 +142,7 @@ async def test_clean_area_uses_room_ids() -> None:
 )
 async def test_clean_area_rejects_uncaptured_shapes(command: CleanArea) -> None:
     with pytest.raises(ApiError):
-        await command._request_ngiot(AsyncMock(), {"class": "eyfj07"})
+        await command._request_ngiot(AsyncMock(spec_set=NgiotClient), _api_device())
 
 
 def test_get_clean_info_handles_snapshot_state() -> None:

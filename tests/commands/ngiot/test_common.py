@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -12,15 +12,24 @@ from deebot_client.events import AvailabilityEvent, BatteryEvent
 from deebot_client.exceptions import ApiError
 from deebot_client.ngiot_client import NgiotRequest
 
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.models import ApiDeviceInfo, DeviceInfo
+
 
 @pytest.fixture
-def api_device() -> dict[str, Any]:
-    return {
-        "did": "did-1",
-        "class": "eyfj07",
-        "resource": "res-1",
-        "service": {"mqs": "service.example.com"},
-    }
+def api_device() -> ApiDeviceInfo:
+    return cast(
+        "ApiDeviceInfo",
+        {
+            "did": "did-1",
+            "class": "eyfj07",
+            "company": "eco",
+            "name": "robot",
+            "resource": "res-1",
+            "service": {"mqs": "service.example.com"},
+        },
+    )
 
 
 @pytest.fixture
@@ -29,12 +38,12 @@ def event_bus() -> Mock:
 
 
 async def test_ngiot_get_command_uses_attached_client(
-    api_device: dict[str, Any],
+    api_device: ApiDeviceInfo,
     event_bus: Mock,
 ) -> None:
     ngiot_client = AsyncMock()
     ngiot_client.request.return_value = {"body": {"code": 0, "data": {"battery": 88}}}
-    authenticator = Mock(ngiot_client=ngiot_client)
+    authenticator = cast("Authenticator", Mock(ngiot_client=ngiot_client))
 
     result = await GetBattery().execute(authenticator, api_device, event_bus)
 
@@ -51,10 +60,10 @@ async def test_ngiot_get_command_uses_attached_client(
 
 
 async def test_ngiot_command_without_attached_client_fails(
-    api_device: dict[str, Any],
+    api_device: ApiDeviceInfo,
     event_bus: Mock,
 ) -> None:
-    authenticator = Mock(ngiot_client=None)
+    authenticator = cast("Authenticator", Mock(ngiot_client=None))
 
     result = await GetBattery().execute(authenticator, api_device, event_bus)
 
@@ -63,10 +72,13 @@ async def test_ngiot_command_without_attached_client_fails(
 
 
 async def test_get_ngiot_client_raises_without_attached_client(
-    api_device: dict[str, Any],
+    api_device: ApiDeviceInfo,
 ) -> None:
     command = GetBattery()
-    authenticator = Mock(ngiot_client=None)
+    authenticator = cast("Authenticator", Mock(ngiot_client=None))
 
     with pytest.raises(ApiError, match="NGIOT client is not attached"):
-        await command._get_ngiot_client(authenticator, api_device)
+        await command._get_ngiot_client(
+            authenticator,
+            cast("DeviceInfo | ApiDeviceInfo", api_device),
+        )

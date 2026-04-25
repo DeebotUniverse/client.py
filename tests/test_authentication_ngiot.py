@@ -1,7 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
-from unittest.mock import AsyncMock
+from typing import TYPE_CHECKING
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -111,14 +111,15 @@ def test_attach_ngiot_rejects_different_base_url_when_already_attached(
 
 async def test_teardown_clears_ngiot_transport(rest_config: RestConfiguration) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
-    sst_authenticator = AsyncMock(spec_set=SstAuthenticator)
-    authenticator.sst_authenticator = cast("SstAuthenticator", sst_authenticator)
-    authenticator.ngiot_client = cast("NgiotClient", object())
-    authenticator._ngiot_base_url = "https://api-base.dc-na.ww.ecouser.net"
+    authenticator.attach_ngiot(NgiotConfiguration(region="na"))
 
-    await authenticator.teardown()
+    sst_authenticator = authenticator.sst_authenticator
+    assert sst_authenticator is not None
 
-    sst_authenticator.teardown.assert_awaited_once()
+    with patch.object(sst_authenticator, "teardown", AsyncMock()) as teardown:
+        await authenticator.teardown()
+
+    teardown.assert_awaited_once()
     assert authenticator.sst_authenticator is None
     assert authenticator.ngiot_client is None
     assert authenticator._ngiot_base_url is None

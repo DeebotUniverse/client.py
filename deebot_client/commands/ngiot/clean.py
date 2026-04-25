@@ -120,9 +120,12 @@ class Clean(NgiotExecuteCommand):
         if state is not None and self._action is CleanAction.RESUME:
             if state.state != State.PAUSED:
                 self._action = CleanAction.START
-        elif state is not None and self._action is CleanAction.START:
-            if state.state == State.PAUSED:
-                self._action = CleanAction.RESUME
+        elif (
+            state is not None
+            and self._action is CleanAction.START
+            and state.state == State.PAUSED
+        ):
+            self._action = CleanAction.RESUME
 
         return await super()._execute(authenticator, device_info, event_bus)
 

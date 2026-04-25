@@ -3,17 +3,17 @@ from __future__ import annotations
 import base64
 from http import HTTPStatus
 import time
-from typing import TYPE_CHECKING, Any, Self
+from typing import TYPE_CHECKING, Any, Self, cast
 from unittest.mock import AsyncMock
 
-from aiohttp import ClientResponseError, RequestInfo
+from aiohttp import ClientResponseError, ClientSession, RequestInfo
 from multidict import CIMultiDict, CIMultiDictProxy
 import orjson
 import pytest
 from yarl import URL
 
 from deebot_client.exceptions import ApiError, AuthenticationError
-from deebot_client.models import Credentials
+from deebot_client.models import ApiDeviceInfo, Credentials
 from deebot_client.sst_authentication import (
     SstAuthenticator,
     SstCredentials,
@@ -101,21 +101,26 @@ class _FakeSession:
 
 
 @pytest.fixture
-def api_device() -> dict[str, str]:
-    return {
-        "did": "did-1",
-        "class": "eyfj07",
-        "resource": "res-1",
-    }
+def api_device() -> ApiDeviceInfo:
+    return cast(
+        "ApiDeviceInfo",
+        {
+            "did": "did-1",
+            "class": "eyfj07",
+            "company": "eco",
+            "name": "robot",
+            "resource": "res-1",
+        },
+    )
 
 
 @pytest.fixture
 def authenticator() -> AsyncMock:
     auth = AsyncMock()
     auth.authenticate.return_value = Credentials(
-        token="account-token",
-        user_id="user-1",
-        expires_at=int(time.time()) + 3600,
+        "account-token",
+        "user-1",
+        int(time.time()) + 3600,
     )
     return auth
 
@@ -143,7 +148,7 @@ def test_decode_exp_supports_jwt_and_sst_prefixed_tokens() -> None:
 
 async def test_get_credentials_issues_sst_and_uses_cache(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     expires_at = int(time.time()) + 600
     token = _token_with_exp(expires_at)
@@ -155,7 +160,7 @@ async def test_get_credentials_issues_sst_and_uses_cache(
         ]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -196,7 +201,7 @@ async def test_get_credentials_issues_sst_and_uses_cache(
 
 async def test_get_credentials_force_refresh_issues_new_token(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     first_token = _token_with_exp(int(time.time()) + 600)
     second_token = _token_with_exp(int(time.time()) + 900)
@@ -207,7 +212,7 @@ async def test_get_credentials_force_refresh_issues_new_token(
         ]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -224,14 +229,14 @@ async def test_get_credentials_force_refresh_issues_new_token(
 
 async def test_invalidate_removes_cached_credentials(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     token = _token_with_exp(int(time.time()) + 600)
     session = _FakeSession(
         [_FakeResponse({"code": 0, "data": {"data": {"token": token}}})]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -249,11 +254,11 @@ async def test_invalidate_removes_cached_credentials(
 
 async def test_issue_sst_rejects_error_response(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     session = _FakeSession([_FakeResponse({"code": 500, "msg": "failed"})])
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -264,11 +269,11 @@ async def test_issue_sst_rejects_error_response(
 
 async def test_issue_sst_rejects_missing_token(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     session = _FakeSession([_FakeResponse({"code": 0, "data": {"data": {}}})])
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -279,11 +284,11 @@ async def test_issue_sst_rejects_missing_token(
 
 async def test_issue_sst_raises_authentication_error_on_unauthorized(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     session = _FakeSession([_FakeResponse({}, status=HTTPStatus.UNAUTHORIZED)])
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -294,11 +299,11 @@ async def test_issue_sst_raises_authentication_error_on_unauthorized(
 
 async def test_issue_sst_raises_api_error_on_other_http_error(
     authenticator: AsyncMock,
-    api_device: dict[str, str],
+    api_device: ApiDeviceInfo,
 ) -> None:
     session = _FakeSession([_FakeResponse({}, status=HTTPStatus.INTERNAL_SERVER_ERROR)])
     sst_authenticator = SstAuthenticator(
-        session,
+        cast("ClientSession", session),
         authenticator,
         base_url="https://api-base.example.com",
     )

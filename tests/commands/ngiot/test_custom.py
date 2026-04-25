@@ -1,23 +1,35 @@
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, Mock
 
 from deebot_client.commands.ngiot.custom import CustomCommand
 from deebot_client.event_bus import EventBus
 from deebot_client.events import CustomCommandEvent
 from deebot_client.message import HandlingState
-from deebot_client.ngiot_client import NgiotRequest
+from deebot_client.ngiot_client import NgiotClient, NgiotRequest
+
+if TYPE_CHECKING:
+    from deebot_client.models import ApiDeviceInfo
+
+
+def _api_device() -> ApiDeviceInfo:
+    return cast(
+        "ApiDeviceInfo",
+        {
+            "did": "did-1",
+            "class": "eyfj07",
+            "company": "eco",
+            "name": "robot",
+            "resource": "res-1",
+        },
+    )
 
 
 async def test_custom_command_dispatches_explicit_ngiot_request() -> None:
-    client = AsyncMock()
+    client = AsyncMock(spec_set=NgiotClient)
     client.request.return_value = {"body": {"code": 0, "data": {"ok": True}}}
-    device_info: dict[str, Any] = {
-        "did": "did-1",
-        "class": "eyfj07",
-        "resource": "res-1",
-    }
+    device_info = _api_device()
 
     response = await CustomCommand(
         "12345",
