@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     Map,

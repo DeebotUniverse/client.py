@@ -1,7 +1,5 @@
 """Auto empty commands."""
 
-from __future__ import annotations
-
 from typing import Any
 
 from deebot_client.events.auto_empty import Frequency

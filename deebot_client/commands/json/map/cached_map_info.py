@@ -1,7 +1,5 @@
 """Cached map info commands."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.commands.json.common import JsonCommandWithMessageHandling

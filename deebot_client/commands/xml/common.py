@@ -1,7 +1,5 @@
 """Common xml based commands."""
 
-from __future__ import annotations
-
 from abc import ABC, abstractmethod
 from typing import TYPE_CHECKING, cast, final, override
 from xml.etree.ElementTree import Element, SubElement

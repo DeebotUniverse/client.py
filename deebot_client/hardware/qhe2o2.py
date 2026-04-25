@@ -1,7 +1,5 @@
 """Deebot N20 Pro Plus Capabilities."""
 
-from __future__ import annotations
-
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,

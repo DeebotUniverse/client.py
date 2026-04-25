@@ -1,7 +1,5 @@
 """Deebot DEEBOT X8 PRO OMNI Capabilities."""
 
-from __future__ import annotations
-
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,

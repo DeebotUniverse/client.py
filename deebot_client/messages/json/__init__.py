@@ -1,7 +1,5 @@
 """Json messages."""
 
-from __future__ import annotations
-
 import re
 
 from deebot_client.logging_filter import get_logger

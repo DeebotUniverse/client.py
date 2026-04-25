@@ -1,7 +1,5 @@
 """Map messages."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING
 
 from deebot_client.events.map import MapTraceEvent, MinorMapEvent

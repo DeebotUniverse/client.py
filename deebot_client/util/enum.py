@@ -1,7 +1,5 @@
 """Enum util."""
 
-from __future__ import annotations
-
 from enum import IntEnum, StrEnum
 from typing import Self
 

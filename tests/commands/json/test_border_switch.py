@@ -1,7 +1,5 @@
 """Tests regarding border switch commands."""
 
-from __future__ import annotations
-
 import pytest
 
 from deebot_client.commands.json import GetBorderSwitch, SetBorderSwitch

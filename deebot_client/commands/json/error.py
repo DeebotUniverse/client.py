@@ -1,7 +1,5 @@
 """Error commands."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.const import ERROR_CODES

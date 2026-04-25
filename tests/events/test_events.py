@@ -1,7 +1,5 @@
 """Test events."""
 
-from __future__ import annotations
-
 import pytest
 
 from deebot_client.events import LifeSpan

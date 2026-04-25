@@ -1,7 +1,5 @@
 """Map event module."""
 
-from __future__ import annotations
-
 from dataclasses import dataclass, field
 from enum import StrEnum, unique
 from typing import TYPE_CHECKING, Any

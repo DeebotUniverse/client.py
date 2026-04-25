@@ -1,7 +1,5 @@
 """Safe protect commands."""
 
-from __future__ import annotations
-
 from deebot_client.events import SafeProtectEvent
 
 from .common import GetEnableCommand, SetEnableCommand

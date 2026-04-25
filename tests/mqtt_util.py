@@ -1,7 +1,5 @@
 """Utilities for testing MQTT."""
 
-from __future__ import annotations
-
 import asyncio
 import datetime
 from typing import TYPE_CHECKING

@@ -1,7 +1,5 @@
 """Tests regarding cross map border warning commands."""
 
-from __future__ import annotations
-
 import pytest
 
 from deebot_client.commands.json import (

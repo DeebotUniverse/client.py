@@ -1,7 +1,5 @@
 """Commands module."""
 
-from __future__ import annotations
-
 from enum import IntEnum, unique
 from typing import TYPE_CHECKING
 

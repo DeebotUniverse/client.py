@@ -1,7 +1,5 @@
 """Border switch commands."""
 
-from __future__ import annotations
-
 from deebot_client.events import BorderSwitchEvent
 
 from .common import GetEnableCommand, SetEnableCommand

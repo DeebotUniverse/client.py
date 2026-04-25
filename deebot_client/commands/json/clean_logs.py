@@ -1,7 +1,5 @@
 """clean log commands."""
 
-from __future__ import annotations
-
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.const import PATH_API_LG_LOG, REQUEST_HEADERS

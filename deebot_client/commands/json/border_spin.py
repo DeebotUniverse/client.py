@@ -1,7 +1,5 @@
 """Border spin commands."""
 
-from __future__ import annotations
-
 from deebot_client.events import BorderSpinEvent
 
 from .common import GetEnableCommand, SetEnableCommand

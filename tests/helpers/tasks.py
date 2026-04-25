@@ -3,7 +3,6 @@
 
 
 # How long to wait to log tasks that are blocking
-from __future__ import annotations
 
 import asyncio
 from logging import getLogger

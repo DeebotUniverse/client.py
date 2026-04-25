@@ -1,7 +1,5 @@
 """Util module."""
 
-from __future__ import annotations
-
 from abc import ABC
 import asyncio
 from contextlib import suppress

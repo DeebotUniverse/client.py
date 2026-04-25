@@ -1,7 +1,5 @@
 """Clean preference command module."""
 
-from __future__ import annotations
-
 from deebot_client.events import CleanPreferenceEvent
 
 from .common import GetEnableCommand, SetEnableCommand

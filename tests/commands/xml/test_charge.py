@@ -1,5 +1,3 @@
-from __future__ import annotations
-
 import pytest
 
 from deebot_client.commands.xml.charge import Charge

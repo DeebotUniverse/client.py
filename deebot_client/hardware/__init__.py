@@ -1,7 +1,5 @@
 """Hardware module."""
 
-from __future__ import annotations
-
 import asyncio
 import importlib
 from typing import TYPE_CHECKING, cast
