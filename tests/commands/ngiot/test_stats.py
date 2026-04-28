@@ -18,7 +18,7 @@ def test_get_stats_notifies_stats_event() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetStats.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {
             "body": {
                 "data": {
@@ -40,7 +40,7 @@ def test_get_report_stats_notifies_report_stats_event() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetReportStats.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {
             "body": {
                 "data": {
@@ -70,7 +70,7 @@ def test_get_total_stats_notifies_total_stats_event() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetTotalStats.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {
             "body": {
                 "data": {

@@ -43,5 +43,5 @@ class GetNetInfo(RobotDetailGetCommand):
 def _coerce_rssi(value: Any) -> int:
     try:
         return int(value)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0

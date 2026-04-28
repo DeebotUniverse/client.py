@@ -1,17 +1,19 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock
 
 from deebot_client.commands.ngiot.common import APN_DEVICE_LOCATE
 from deebot_client.commands.ngiot.play_sound import PlaySound
-from deebot_client.models import ApiDeviceInfo
 from deebot_client.ngiot_client import NgiotClient, NgiotRequest
+
+if TYPE_CHECKING:
+    from deebot_client.models import ApiDeviceInfo
 
 
 def _api_device() -> ApiDeviceInfo:
     return cast(
-        ApiDeviceInfo,
+        "ApiDeviceInfo",
         {
             "did": "did-1",
             "class": "eyfj07",
@@ -28,7 +30,7 @@ async def test_play_sound_uses_locate_apn() -> None:
     device_info = _api_device()
 
     response = await PlaySound()._request_ngiot(
-        cast(NgiotClient, client_mock),
+        cast("NgiotClient", client_mock),
         device_info,
     )
 

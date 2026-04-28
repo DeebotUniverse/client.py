@@ -98,7 +98,7 @@ class GetTotalStats(RobotDetailGetCommand):
 def _maybe_int(value: Any) -> int | None:
     try:
         return int(value) if value is not None else None
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return None
 
 
@@ -110,7 +110,7 @@ def _coerce_total(data: dict[str, Any], primary: str, fallback: str) -> int:
     value = data.get(primary, data.get(fallback, 0))
     try:
         return int(value or 0)
-    except (TypeError, ValueError):
+    except TypeError, ValueError:
         return 0
 
 

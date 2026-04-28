@@ -13,7 +13,7 @@ def test_get_network_info_notifies_event() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetNetInfo.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {
             "body": {
                 "data": {
@@ -43,7 +43,7 @@ def test_get_network_info_defaults_invalid_payload() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetNetInfo.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"body": {"data": {"deviceInfo": "not-a-dict"}}},
     )
 

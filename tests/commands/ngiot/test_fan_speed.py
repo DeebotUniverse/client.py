@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, Mock
 
 import pytest
@@ -10,13 +10,15 @@ from deebot_client.commands.ngiot.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.event_bus import EventBus
 from deebot_client.events import FanSpeedEvent, FanSpeedLevel
 from deebot_client.message import HandlingState
-from deebot_client.models import ApiDeviceInfo
 from deebot_client.ngiot_client import NgiotClient, NgiotRequest
+
+if TYPE_CHECKING:
+    from deebot_client.models import ApiDeviceInfo
 
 
 def _api_device() -> ApiDeviceInfo:
     return cast(
-        ApiDeviceInfo,
+        "ApiDeviceInfo",
         {
             "did": "did-1",
             "class": "eyfj07",
@@ -43,7 +45,7 @@ def test_get_fan_speed_maps_wire_values(
     event_bus = Mock(spec_set=EventBus)
 
     result = GetFanSpeed.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"body": {"data": {"fanMode": wire_value}}},
     )
 
@@ -55,7 +57,7 @@ def test_get_fan_speed_unknown_value_requests_analysis() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetFanSpeed.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"body": {"data": {"fanMode": "unsupported"}}},
     )
 
@@ -81,7 +83,7 @@ async def test_set_fan_speed_uses_write_apn(
     device_info = _api_device()
 
     response = await SetFanSpeed(speed)._request_ngiot(
-        cast(NgiotClient, client_mock),
+        cast("NgiotClient", client_mock),
         device_info,
     )
 
@@ -96,7 +98,7 @@ def test_set_fan_speed_notifies_event_after_success() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = SetFanSpeed(FanSpeedLevel.MAX)._handle_response(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"ret": "ok", "resp": {"body": {"code": 0, "msg": "ok"}}},
     )
 

@@ -13,7 +13,7 @@ def test_get_error_notifies_non_zero_error() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetError.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"body": {"data": {"error": [5]}}},
     )
 
@@ -25,7 +25,7 @@ def test_get_error_zero_error_is_success_without_event() -> None:
     event_bus = Mock(spec_set=EventBus)
 
     result = GetError.handle(
-        cast(EventBus, event_bus),
+        cast("EventBus", event_bus),
         {"body": {"data": {"error": [0]}}},
     )
 

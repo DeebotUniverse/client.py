@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import asyncio
 from collections.abc import Mapping
-from dataclasses import dataclass
+from dataclasses import dataclass, fields, is_dataclass
 from http import HTTPStatus
 import time
 from typing import TYPE_CHECKING, Any
@@ -30,7 +30,7 @@ from .util.countries import get_ecovacs_country
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine
 
-    from .models import ApiDeviceInfo
+    from .models import ApiDeviceInfo, StaticDeviceInfo
 
 
 _LOGGER = get_logger(__name__)
@@ -50,6 +50,7 @@ _META = {
 }
 MAX_RETRIES = 3
 _NGIOT_BASE_URL_TEMPLATE = "https://api-base.dc-{region}.ww.ecouser.net"
+_NGIOT_COMMAND_MODULE_PREFIX = "deebot_client.commands.ngiot"
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -409,6 +410,34 @@ class Authenticator:
 
         self._create_ngiot_stack(resolved_base_url)
 
+    async def ensure_ngiot_for_device(
+        self,
+        device_info: ApiDeviceInfo,
+        static_device_info: StaticDeviceInfo,
+    ) -> bool:
+        """Attach NGIOT transport if the hardware profile uses NGIOT commands."""
+        if not self._uses_ngiot(static_device_info):
+            return False
+
+        desired_base_url = self._resolve_ngiot_base_url(device_info)
+        if self.ngiot_client is not None and self._ngiot_base_url == desired_base_url:
+            return True
+
+        if self.sst_authenticator is not None:
+            if self._ngiot_base_url != desired_base_url:
+                _LOGGER.info(
+                    "Re-attaching NGIOT transport with base URL %s for %s",
+                    desired_base_url,
+                    device_info["class"],
+                )
+            await self.sst_authenticator.teardown()
+
+        self.sst_authenticator = None
+        self.ngiot_client = None
+        self._ngiot_base_url = None
+        self._create_ngiot_stack(desired_base_url)
+        return True
+
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
@@ -554,6 +583,39 @@ class Authenticator:
             "Configure an explicit region or base_url before device bootstrap."
         )
         raise ApiError(msg)
+
+    @classmethod
+    def _uses_ngiot(cls, static_device_info: StaticDeviceInfo) -> bool:
+        return cls._object_uses_ngiot(getattr(static_device_info, "capabilities", None))
+
+    @classmethod
+    def _object_uses_ngiot(cls, value: object) -> bool:
+        uses_ngiot = False
+
+        if value is None:
+            uses_ngiot = False
+        elif isinstance(value, type):
+            uses_ngiot = cls._is_ngiot_module(value.__module__)
+        elif cls._is_ngiot_module(value.__class__.__module__):
+            uses_ngiot = True
+        elif isinstance(value, Mapping):
+            uses_ngiot = any(
+                cls._object_uses_ngiot(key) or cls._object_uses_ngiot(item)
+                for key, item in value.items()
+            )
+        elif isinstance(value, (list, tuple, set, frozenset)):
+            uses_ngiot = any(cls._object_uses_ngiot(item) for item in value)
+        elif is_dataclass(value):
+            uses_ngiot = any(
+                cls._object_uses_ngiot(getattr(value, field.name))
+                for field in fields(value)
+            )
+
+        return uses_ngiot
+
+    @staticmethod
+    def _is_ngiot_module(module_name: str) -> bool:
+        return module_name.startswith(_NGIOT_COMMAND_MODULE_PREFIX)
 
     @staticmethod
     def _normalize_base_url(base_url: str) -> str:
