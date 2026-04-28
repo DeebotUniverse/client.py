@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from deebot_client.authentication import Authenticator, NgiotConfiguration
 from deebot_client.commands.ngiot.battery import GetBattery
+from deebot_client.const import DataType
 from deebot_client.exceptions import ApiError
 from deebot_client.models import ApiDeviceInfo, StaticDeviceInfo
 
@@ -18,7 +19,7 @@ def _api_device(
     *,
     service_mqs: str | None = "api-ngiot.dc-na.ww.ecouser.net",
 ) -> ApiDeviceInfo:
-    device = {
+    device: dict[str, Any] = {
         "did": "did-1",
         "class": "eyfj07",
         "company": "eco-ng",
@@ -32,17 +33,22 @@ def _api_device(
 
 def _ngiot_static_device_info() -> StaticDeviceInfo:
     return StaticDeviceInfo(
-        data_type="j",
-        capabilities={
-            "battery": {"get": [GetBattery()]},
-        },
+        data_type=DataType.JSON,
+        capabilities=cast(
+            "Any",
+            {
+                "battery": {
+                    "get": [GetBattery()],
+                },
+            },
+        ),
     )
 
 
 def _non_ngiot_static_device_info() -> StaticDeviceInfo:
     return StaticDeviceInfo(
-        data_type="j",
-        capabilities={},
+        data_type=DataType.JSON,
+        capabilities=cast("Any", {}),
     )
 
 

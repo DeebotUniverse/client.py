@@ -1,12 +1,13 @@
 from __future__ import annotations
 
-from typing import cast
+from typing import Any, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator
+from deebot_client.const import DataType
 from deebot_client.models import ApiDeviceInfo, StaticDeviceInfo
 
 
@@ -30,8 +31,8 @@ def _api_device(
 
 def _static_device_info() -> StaticDeviceInfo:
     return StaticDeviceInfo(
-        data_type="j",
-        capabilities={},
+        data_type=DataType.JSON,
+        capabilities=cast("Any", {}),
     )
 
 
@@ -49,16 +50,22 @@ async def test_get_devices_bootstraps_ngiot_for_supported_eco_ng_device(
     static_device_info = _static_device_info()
 
     client = ApiClient(cast("Authenticator", authenticator))
-    client._get_devices = AsyncMock(
-        side_effect=[
-            {device["did"]: device},
-            {},
-        ]
-    )
 
-    with patch(
-        "deebot_client.api_client.get_static_device_info",
-        AsyncMock(return_value=static_device_info),
+    with (
+        patch.object(
+            client,
+            "_get_devices",
+            AsyncMock(
+                side_effect=[
+                    {device["did"]: device},
+                    {},
+                ]
+            ),
+        ),
+        patch(
+            "deebot_client.api_client.get_static_device_info",
+            AsyncMock(return_value=static_device_info),
+        ),
     ):
         devices = await client.get_devices()
 
@@ -77,14 +84,18 @@ async def test_get_devices_does_not_bootstrap_ngiot_for_legacy_device(
     device = _api_device(class_id="legacy", company="eco-legacy")
 
     client = ApiClient(cast("Authenticator", authenticator))
-    client._get_devices = AsyncMock(
-        side_effect=[
-            {device["did"]: device},
-            {},
-        ]
-    )
 
-    devices = await client.get_devices()
+    with patch.object(
+        client,
+        "_get_devices",
+        AsyncMock(
+            side_effect=[
+                {device["did"]: device},
+                {},
+            ]
+        ),
+    ):
+        devices = await client.get_devices()
 
     assert devices.mqtt == []
     assert devices.xmpp == [device]
@@ -97,16 +108,22 @@ async def test_get_devices_does_not_bootstrap_unknown_eco_ng_device(
     device = _api_device(class_id="unknown")
 
     client = ApiClient(cast("Authenticator", authenticator))
-    client._get_devices = AsyncMock(
-        side_effect=[
-            {device["did"]: device},
-            {},
-        ]
-    )
 
-    with patch(
-        "deebot_client.api_client.get_static_device_info",
-        AsyncMock(return_value=None),
+    with (
+        patch.object(
+            client,
+            "_get_devices",
+            AsyncMock(
+                side_effect=[
+                    {device["did"]: device},
+                    {},
+                ]
+            ),
+        ),
+        patch(
+            "deebot_client.api_client.get_static_device_info",
+            AsyncMock(return_value=None),
+        ),
     ):
         devices = await client.get_devices()
 
@@ -123,14 +140,18 @@ async def test_get_devices_propagates_ngiot_bootstrap_failure(
     authenticator.ensure_ngiot_for_device.side_effect = RuntimeError("boom")
 
     client = ApiClient(cast("Authenticator", authenticator))
-    client._get_devices = AsyncMock(
-        side_effect=[
-            {device["did"]: device},
-            {},
-        ]
-    )
 
     with (
+        patch.object(
+            client,
+            "_get_devices",
+            AsyncMock(
+                side_effect=[
+                    {device["did"]: device},
+                    {},
+                ]
+            ),
+        ),
         patch(
             "deebot_client.api_client.get_static_device_info",
             AsyncMock(return_value=static_device_info),
