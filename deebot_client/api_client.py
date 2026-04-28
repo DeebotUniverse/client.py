@@ -81,6 +81,10 @@ class ApiClient:
                     if static_device_info := await get_static_device_info(
                         device["class"]
                     ):
+                        await self._authenticator.ensure_ngiot_for_device(
+                            device,
+                            static_device_info,
+                        )
                         mqtt.append(DeviceInfo(device, static_device_info))
                     else:
                         _LOGGER.warning(

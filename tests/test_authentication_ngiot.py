@@ -1,115 +1,176 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 from unittest.mock import AsyncMock, patch
 
 import pytest
 
 from deebot_client.authentication import Authenticator, NgiotConfiguration
+from deebot_client.commands.ngiot.battery import GetBattery
 from deebot_client.exceptions import ApiError
-from deebot_client.ngiot_client import NgiotClient
-from deebot_client.sst_authentication import SstAuthenticator
+from deebot_client.models import ApiDeviceInfo, StaticDeviceInfo
 
 if TYPE_CHECKING:
     from deebot_client.authentication import RestConfiguration
 
 
-def test_configure_ngiot_normalizes_base_url_and_region(
+def _api_device(
+    *,
+    service_mqs: str | None = "api-ngiot.dc-na.ww.ecouser.net",
+) -> ApiDeviceInfo:
+    device = {
+        "did": "did-1",
+        "class": "eyfj07",
+        "company": "eco-ng",
+        "name": "robot",
+        "resource": "res-1",
+    }
+    if service_mqs is not None:
+        device["service"] = {"mqs": service_mqs}
+    return cast("ApiDeviceInfo", device)
+
+
+def _ngiot_static_device_info() -> StaticDeviceInfo:
+    return StaticDeviceInfo(
+        data_type="j",
+        capabilities={
+            "battery": {"get": [GetBattery()]},
+        },
+    )
+
+
+def _non_ngiot_static_device_info() -> StaticDeviceInfo:
+    return StaticDeviceInfo(
+        data_type="j",
+        capabilities={},
+    )
+
+
+def test_uses_ngiot_detects_ngiot_command(
     rest_config: RestConfiguration,
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    authenticator.configure_ngiot(
-        NgiotConfiguration(
-            base_url="api-base.dc-na.ww.ecouser.net/",
-            region="dc-eu",
-            user_agent="test-agent",
-            timezone_name="Australia/Brisbane",
-            timezone_offset_minutes=600,
-            requested_ttl=300,
-            refresh_skew=30,
-        )
-    )
-
-    assert authenticator._ngiot_config.base_url == (
-        "https://api-base.dc-na.ww.ecouser.net"
-    )
-    assert authenticator._ngiot_config.region == "eu"
-    assert authenticator._ngiot_config.user_agent == "test-agent"
-    assert authenticator._ngiot_config.timezone_name == "Australia/Brisbane"
-    assert authenticator._ngiot_config.timezone_offset_minutes == 600
-    assert authenticator._ngiot_config.requested_ttl == 300
-    assert authenticator._ngiot_config.refresh_skew == 30
+    assert authenticator._uses_ngiot(_ngiot_static_device_info()) is True
 
 
-def test_attach_ngiot_requires_configured_base_url_or_region(
+def test_uses_ngiot_returns_false_for_non_ngiot_profile(
     rest_config: RestConfiguration,
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    with pytest.raises(
-        ApiError, match="requires a configured NGIOT base_url or region"
-    ):
-        authenticator.attach_ngiot()
+    assert authenticator._uses_ngiot(_non_ngiot_static_device_info()) is False
 
 
-def test_attach_ngiot_creates_transport_stack(rest_config: RestConfiguration) -> None:
+async def test_ensure_ngiot_for_device_attaches_ngiot_stack(
+    rest_config: RestConfiguration,
+) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    authenticator.attach_ngiot(
-        NgiotConfiguration(
-            region="dc-na",
-            user_agent="test-agent",
-            channel="Android",
-            protocol_version="0.0.22",
-            timezone_name="Australia/Brisbane",
-            timezone_offset_minutes=600,
-            requested_ttl=300,
-            refresh_skew=30,
-        )
+    attached = await authenticator.ensure_ngiot_for_device(
+        _api_device(),
+        _ngiot_static_device_info(),
     )
 
+    assert attached is True
+    assert authenticator.sst_authenticator is not None
+    assert authenticator.ngiot_client is not None
     assert authenticator._ngiot_base_url == "https://api-base.dc-na.ww.ecouser.net"
-    assert isinstance(authenticator.sst_authenticator, SstAuthenticator)
-    assert isinstance(authenticator.ngiot_client, NgiotClient)
-    assert authenticator.sst_authenticator._base_url == (
-        "https://api-base.dc-na.ww.ecouser.net"
+
+
+async def test_ensure_ngiot_for_device_does_not_attach_for_non_ngiot_profile(
+    rest_config: RestConfiguration,
+) -> None:
+    authenticator = Authenticator(rest_config, "account", "password")
+
+    attached = await authenticator.ensure_ngiot_for_device(
+        _api_device(),
+        _non_ngiot_static_device_info(),
     )
-    assert authenticator.sst_authenticator._requested_ttl == 300
-    assert authenticator.sst_authenticator._refresh_skew == 30
-    assert authenticator.ngiot_client._config.user_agent == "test-agent"
-    assert authenticator.ngiot_client._config.channel == "Android"
-    assert authenticator.ngiot_client._config.protocol_version == "0.0.22"
-    assert authenticator.ngiot_client._config.timezone_name == "Australia/Brisbane"
-    assert authenticator.ngiot_client._config.timezone_offset_minutes == 600
+
+    assert attached is False
+    assert authenticator.sst_authenticator is None
+    assert authenticator.ngiot_client is None
+    assert authenticator._ngiot_base_url is None
 
 
-def test_attach_ngiot_is_idempotent_for_same_base_url(
+async def test_ensure_ngiot_for_device_is_idempotent_for_same_base_url(
     rest_config: RestConfiguration,
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    authenticator.attach_ngiot(NgiotConfiguration(region="na"))
-    first_sst_authenticator = authenticator.sst_authenticator
-    first_ngiot_client = authenticator.ngiot_client
-    authenticator.attach_ngiot(NgiotConfiguration(region="dc-na"))
+    assert await authenticator.ensure_ngiot_for_device(
+        _api_device(),
+        _ngiot_static_device_info(),
+    )
 
-    assert authenticator.sst_authenticator is first_sst_authenticator
-    assert authenticator.ngiot_client is first_ngiot_client
+    sst_authenticator = authenticator.sst_authenticator
+    ngiot_client = authenticator.ngiot_client
+
+    assert await authenticator.ensure_ngiot_for_device(
+        _api_device(),
+        _ngiot_static_device_info(),
+    )
+
+    assert authenticator.sst_authenticator is sst_authenticator
+    assert authenticator.ngiot_client is ngiot_client
 
 
-def test_attach_ngiot_rejects_different_base_url_when_already_attached(
+async def test_ensure_ngiot_for_device_reattaches_for_different_base_url(
     rest_config: RestConfiguration,
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    authenticator.attach_ngiot(NgiotConfiguration(region="na"))
+    assert await authenticator.ensure_ngiot_for_device(
+        _api_device(service_mqs="api-ngiot.dc-na.ww.ecouser.net"),
+        _ngiot_static_device_info(),
+    )
 
-    with pytest.raises(ApiError, match="already attached with a different base URL"):
-        authenticator.attach_ngiot(NgiotConfiguration(region="eu"))
+    sst_authenticator = authenticator.sst_authenticator
+    assert sst_authenticator is not None
+
+    with patch.object(sst_authenticator, "teardown", AsyncMock()) as teardown:
+        assert await authenticator.ensure_ngiot_for_device(
+            _api_device(service_mqs="api-ngiot.dc-eu.ww.ecouser.net"),
+            _ngiot_static_device_info(),
+        )
+
+    teardown.assert_awaited_once()
+    assert authenticator.sst_authenticator is not None
+    assert authenticator.sst_authenticator is not sst_authenticator
+    assert authenticator.ngiot_client is not None
+    assert authenticator._ngiot_base_url == "https://api-base.dc-eu.ww.ecouser.net"
 
 
-async def test_teardown_clears_ngiot_transport(rest_config: RestConfiguration) -> None:
+async def test_ensure_ngiot_for_device_requires_mqs_or_configured_region(
+    rest_config: RestConfiguration,
+) -> None:
+    authenticator = Authenticator(rest_config, "account", "password")
+
+    with pytest.raises(ApiError, match="Could not resolve NGIOT base URL"):
+        await authenticator.ensure_ngiot_for_device(
+            _api_device(service_mqs=None),
+            _ngiot_static_device_info(),
+        )
+
+
+async def test_ensure_ngiot_for_device_uses_configured_region(
+    rest_config: RestConfiguration,
+) -> None:
+    authenticator = Authenticator(rest_config, "account", "password")
+    authenticator.configure_ngiot(NgiotConfiguration(region="eu"))
+
+    assert await authenticator.ensure_ngiot_for_device(
+        _api_device(service_mqs=None),
+        _ngiot_static_device_info(),
+    )
+
+    assert authenticator._ngiot_base_url == "https://api-base.dc-eu.ww.ecouser.net"
+
+
+async def test_teardown_clears_ngiot_transport(
+    rest_config: RestConfiguration,
+) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
     authenticator.attach_ngiot(NgiotConfiguration(region="na"))
 
@@ -123,30 +184,3 @@ async def test_teardown_clears_ngiot_transport(rest_config: RestConfiguration) -
     assert authenticator.sst_authenticator is None
     assert authenticator.ngiot_client is None
     assert authenticator._ngiot_base_url is None
-
-
-@pytest.mark.parametrize(
-    ("mqs_host", "expected"),
-    [
-        (
-            "api-ngiot.dc-na.ww.ecouser.net",
-            "https://api-base.dc-na.ww.ecouser.net",
-        ),
-        (
-            "https://api-ngiot.dc-eu.ww.ecouser.net",
-            "https://api-base.dc-eu.ww.ecouser.net",
-        ),
-        (
-            "api-base.dc-ap.ww.ecouser.net",
-            "https://api-base.dc-ap.ww.ecouser.net",
-        ),
-    ],
-)
-def test_derive_ngiot_base_url_from_mqs(mqs_host: str, expected: str) -> None:
-    assert Authenticator._derive_ngiot_base_url_from_mqs(mqs_host) == expected
-
-
-@pytest.mark.parametrize("mqs_host", ["", "localhost"])
-def test_derive_ngiot_base_url_from_invalid_mqs_raises(mqs_host: str) -> None:
-    with pytest.raises(ApiError):
-        Authenticator._derive_ngiot_base_url_from_mqs(mqs_host)
