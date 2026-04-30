@@ -1,13 +1,12 @@
 from __future__ import annotations
 
 import base64
-from collections.abc import Mapping
 from http import HTTPStatus
 import time
-from typing import Any
+from typing import TYPE_CHECKING, Any, Self, cast
 from unittest.mock import AsyncMock
 
-from aiohttp import ClientResponseError, RequestInfo
+from aiohttp import ClientResponseError, ClientSession, RequestInfo
 from multidict import CIMultiDict, CIMultiDictProxy
 import orjson
 import pytest
@@ -22,6 +21,9 @@ from deebot_client.sst_authentication import (
     identity_as_mapping,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Mapping
+
 
 def _request_info() -> RequestInfo:
     return RequestInfo(
@@ -30,6 +32,10 @@ def _request_info() -> RequestInfo:
         headers=CIMultiDictProxy(CIMultiDict()),
         real_url=URL("https://api-base.example.com/api/new-perm/token/sst/issue"),
     )
+
+
+def _account_token() -> str:
+    return "account-token"
 
 
 def _token_with_exp(expires_at: int) -> str:
@@ -44,10 +50,12 @@ class _FakeResponse:
         self.status = status
         self.request_info = _request_info()
         self.history: tuple[()] = ()
-        self.headers = CIMultiDictProxy(CIMultiDict({"content-type": "application/json"}))
+        self.headers = CIMultiDictProxy(
+            CIMultiDict({"content-type": "application/json"})
+        )
         self.reason = "OK" if status == HTTPStatus.OK else "error"
 
-    async def __aenter__(self) -> _FakeResponse:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
@@ -96,6 +104,10 @@ class _FakeSession:
         return self._responses.pop(0)
 
 
+def _as_client_session(session: _FakeSession) -> ClientSession:
+    return cast("ClientSession", session)
+
+
 @pytest.fixture
 def api_device() -> dict[str, str]:
     return {
@@ -109,7 +121,7 @@ def api_device() -> dict[str, str]:
 def authenticator() -> AsyncMock:
     auth = AsyncMock()
     auth.authenticate.return_value = Credentials(
-        token="account-token",
+        token=_account_token(),
         user_id="user-1",
         expires_at=int(time.time()) + 3600,
     )
@@ -151,7 +163,7 @@ async def test_get_credentials_issues_sst_and_uses_cache(
         ]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -169,7 +181,10 @@ async def test_get_credentials_issues_sst_and_uses_cache(
     assert session.post_calls[0]["url"] == (
         "https://api-base.example.com/api/new-perm/token/sst/issue"
     )
-    assert session.post_calls[0]["headers"]["Authorization"] == "Bearer account-token"
+    assert (
+        session.post_calls[0]["headers"]["Authorization"]
+        == f"Bearer {_account_token()}"
+    )
     assert session.post_calls[0]["json"] == {
         "acl": [
             {
@@ -203,7 +218,7 @@ async def test_get_credentials_force_refresh_issues_new_token(
         ]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -227,7 +242,7 @@ async def test_invalidate_removes_cached_credentials(
         [_FakeResponse({"code": 0, "data": {"data": {"token": token}}})]
     )
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -249,7 +264,7 @@ async def test_issue_sst_rejects_error_response(
 ) -> None:
     session = _FakeSession([_FakeResponse({"code": 500, "msg": "failed"})])
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -264,7 +279,7 @@ async def test_issue_sst_rejects_missing_token(
 ) -> None:
     session = _FakeSession([_FakeResponse({"code": 0, "data": {"data": {}}})])
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -279,7 +294,7 @@ async def test_issue_sst_raises_authentication_error_on_unauthorized(
 ) -> None:
     session = _FakeSession([_FakeResponse({}, status=HTTPStatus.UNAUTHORIZED)])
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )
@@ -294,7 +309,7 @@ async def test_issue_sst_raises_api_error_on_other_http_error(
 ) -> None:
     session = _FakeSession([_FakeResponse({}, status=HTTPStatus.INTERNAL_SERVER_ERROR)])
     sst_authenticator = SstAuthenticator(
-        session,
+        _as_client_session(session),
         authenticator,
         base_url="https://api-base.example.com",
     )

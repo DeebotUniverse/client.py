@@ -47,7 +47,9 @@ def test_attach_ngiot_requires_configured_base_url_or_region(
 ) -> None:
     authenticator = Authenticator(rest_config, "account", "password")
 
-    with pytest.raises(ApiError, match="requires a configured NGIOT base_url or region"):
+    with pytest.raises(
+        ApiError, match="requires a configured NGIOT base_url or region"
+    ):
         authenticator.attach_ngiot()
 
 
@@ -117,8 +119,9 @@ async def test_teardown_clears_ngiot_transport(rest_config: RestConfiguration) -
     await authenticator.teardown()
 
     sst_authenticator.teardown.assert_awaited_once()
-    assert authenticator.sst_authenticator is None
-    assert authenticator.ngiot_client is None
+    authenticator_state = vars(authenticator)
+    assert authenticator_state["sst_authenticator"] is None
+    assert authenticator_state["ngiot_client"] is None
     assert authenticator._ngiot_base_url is None
 
 

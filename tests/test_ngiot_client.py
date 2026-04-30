@@ -2,10 +2,10 @@ from __future__ import annotations
 
 from collections.abc import Mapping
 from http import HTTPStatus
-from typing import Any
+from typing import Any, Self, cast
 from unittest.mock import AsyncMock, Mock, patch
 
-from aiohttp import ClientResponseError, RequestInfo, hdrs
+from aiohttp import ClientResponseError, ClientSession, RequestInfo, hdrs
 from multidict import CIMultiDict, CIMultiDictProxy
 import orjson
 import pytest
@@ -35,10 +35,12 @@ class _FakeResponse:
         self.status = status
         self.request_info = _request_info()
         self.history: tuple[()] = ()
-        self.headers = CIMultiDictProxy(CIMultiDict({"content-type": "application/json"}))
+        self.headers = CIMultiDictProxy(
+            CIMultiDict({"content-type": "application/json"})
+        )
         self.reason = "OK" if status == HTTPStatus.OK else "error"
 
-    async def __aenter__(self) -> _FakeResponse:
+    async def __aenter__(self) -> Self:
         return self
 
     async def __aexit__(
@@ -87,6 +89,10 @@ class _FakeSession:
             }
         )
         return self._responses.pop(0)
+
+
+def _as_client_session(session: _FakeSession) -> ClientSession:
+    return cast("ClientSession", session)
 
 
 @pytest.fixture
@@ -161,7 +167,7 @@ async def test_request_posts_endpoint_control_payload_and_returns_response_data(
         [_FakeResponse({"body": {"code": 0, "data": {"battery": 100}}})]
     )
     client = NgiotClient(
-        session,
+        _as_client_session(session),
         sst_authenticator,
         NgiotClientConfiguration(
             user_agent="test-agent",
@@ -221,19 +227,17 @@ async def test_query_fields_adds_fields_and_optional_map_id(
     ngiot_client: NgiotClient,
     api_device: dict[str, Any],
 ) -> None:
-    ngiot_client.request = AsyncMock(
-        return_value={"body": {"code": 0, "data": {"ok": True}}}
-    )
-
-    response = await ngiot_client.query_fields(
-        api_device,
-        apn="30001",
-        fields=["mapData"],
-        map_id="2",
-    )
+    request = AsyncMock(return_value={"body": {"code": 0, "data": {"ok": True}}})
+    with patch.object(ngiot_client, "request", new=request):
+        response = await ngiot_client.query_fields(
+            api_device,
+            apn="30001",
+            fields=["mapData"],
+            map_id="2",
+        )
 
     assert response == {"ok": True}
-    ngiot_client.request.assert_awaited_once_with(
+    request.assert_awaited_once_with(
         api_device,
         NgiotRequest(
             apn="30001",
@@ -246,16 +250,16 @@ async def test_write_data_sends_direct_mapping_payload(
     ngiot_client: NgiotClient,
     api_device: dict[str, Any],
 ) -> None:
-    ngiot_client.request = AsyncMock(return_value={"body": {"code": 0}})
-
-    response = await ngiot_client.write_data(
-        api_device,
-        apn="40009",
-        data={"pauseSwitch": True},
-    )
+    request = AsyncMock(return_value={"body": {"code": 0}})
+    with patch.object(ngiot_client, "request", new=request):
+        response = await ngiot_client.write_data(
+            api_device,
+            apn="40009",
+            data={"pauseSwitch": True},
+        )
 
     assert response == {}
-    ngiot_client.request.assert_awaited_once_with(
+    request.assert_awaited_once_with(
         api_device,
         NgiotRequest(apn="40009", body_data={"pauseSwitch": True}),
     )
@@ -276,20 +280,20 @@ async def test_request_with_fallback_retries_on_404() -> None:
         status=HTTPStatus.NOT_FOUND,
         message="not found",
     )
-    client._request_once = AsyncMock(
+    request_once = AsyncMock(
         side_effect=[response_error, {"body": {"code": 0, "data": {"ok": True}}}]
     )
-
-    response = await client._request_with_fallback(
-        identity,
-        {"did": "did-1", "class": "eyfj07", "resource": "res-1"},
-        NgiotRequest(apn="30001", body_data={"fields": ["mapData"]}),
-    )
+    with patch.object(client, "_request_once", new=request_once):
+        response = await client._request_with_fallback(
+            identity,
+            {"did": "did-1", "class": "eyfj07", "resource": "res-1"},
+            NgiotRequest(apn="30001", body_data={"fields": ["mapData"]}),
+        )
 
     assert response == {"body": {"code": 0, "data": {"ok": True}}}
-    assert client._request_once.await_count == 2
-    first_identity = client._request_once.await_args_list[0].args[0]
-    second_identity = client._request_once.await_args_list[1].args[0]
+    assert request_once.await_count == 2
+    first_identity = request_once.await_args_list[0].args[0]
+    second_identity = request_once.await_args_list[1].args[0]
     assert first_identity.control_host == "api.example.com"
     assert second_identity.control_host == "service.example.com"
     assert second_identity.fallback_control_host is None
@@ -305,7 +309,7 @@ async def test_request_invalidates_sst_and_retries_once_after_unauthorized(
             _FakeResponse({"body": {"code": 0, "data": {"ok": True}}}),
         ]
     )
-    client = NgiotClient(session, sst_authenticator)
+    client = NgiotClient(_as_client_session(session), sst_authenticator)
 
     response = await client.request(
         api_device,
@@ -329,7 +333,7 @@ async def test_request_raises_authentication_error_after_second_unauthorized(
             _FakeResponse({}, status=HTTPStatus.UNAUTHORIZED),
         ]
     )
-    client = NgiotClient(session, sst_authenticator)
+    client = NgiotClient(_as_client_session(session), sst_authenticator)
 
     with pytest.raises(AuthenticationError):
         await client.request(
@@ -351,7 +355,7 @@ async def test_request_retries_transient_busy_once(
             _FakeResponse({"body": {"code": 0, "data": {"ok": True}}}),
         ]
     )
-    client = NgiotClient(session, sst_authenticator)
+    client = NgiotClient(_as_client_session(session), sst_authenticator)
 
     with patch("deebot_client.ngiot_client.asyncio.sleep", new=AsyncMock()):
         response = await client.request(
