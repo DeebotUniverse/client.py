@@ -12,7 +12,6 @@ from .json import MESSAGES as JSON_MESSAGES, get_legacy_message
 from .xml import MESSAGES as XML_MESSAGES
 
 if TYPE_CHECKING:
-    from deebot_client.capabilities import DeviceType
     from deebot_client.message import Message
 
 _LOGGER = get_logger(__name__)
@@ -27,15 +26,12 @@ MESSAGES = {
 def get_message(
     message_name: str,
     data_type: DataType,
-    device_type: DeviceType | None = None,
+    *,
+    has_map: bool = True,
 ) -> type[Message] | None:
     """Try to find the message for the given name.
 
     If there exists no exact match, some conversations are performed on the name to get message object similar to the name.
-
-    The optional ``device_type`` lets the legacy fallback skip messages that
-    do not apply to the device (e.g. map-related messages on mowers, which
-    cannot be parsed reliably and spam the logs).
     """
     messages = MESSAGES.get(data_type)
     if messages is None:
@@ -53,7 +49,9 @@ def get_message(
         return message_type
 
     if data_type == DataType.JSON and (
-        found_message := get_legacy_message(message_name, converted_name, device_type)
+        found_message := get_legacy_message(
+            message_name, converted_name, has_map=has_map
+        )
     ):
         return found_message
 

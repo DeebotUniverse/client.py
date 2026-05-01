@@ -4,7 +4,6 @@ from typing import TYPE_CHECKING
 
 import pytest
 
-from deebot_client.capabilities import DeviceType
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.map import GetMapSet, GetMapTrace, GetMinorMap
 from deebot_client.const import DataType
@@ -36,31 +35,22 @@ def test_get_messages(
 
 
 @pytest.mark.parametrize(
-    ("name", "device_type", "expected"),
+    ("name", "has_map", "expected"),
     [
-        # No device type => legacy fallback returns the command class
-        # (preserves existing behaviour).
-        ("onMapTrace", None, GetMapTrace),
-        # Vacuums consume map trace pushes — fallback still applies.
-        ("onMapTrace", DeviceType.VACUUM, GetMapTrace),
-        ("onMapSet", DeviceType.VACUUM, GetMapSet),
-        ("onMinorMap", DeviceType.VACUUM, GetMinorMap),
-        # Mowers do not expose a `map=` capability, so spontaneous
-        # map pushes from the firmware would only spam "Could not parse"
-        # warnings. Skip the legacy fallback for them.
-        ("onMapTrace", DeviceType.MOWER, None),
-        ("onMapSet", DeviceType.MOWER, None),
-        ("onMinorMap", DeviceType.MOWER, None),
-        # Non-map messages remain unaffected on either device type.
-        ("onBattery", DeviceType.MOWER, OnBattery),
-        ("onBattery", DeviceType.VACUUM, OnBattery),
-        ("onError", DeviceType.MOWER, GetError),
+        ("onMapTrace", True, GetMapTrace),
+        ("onMapSet", True, GetMapSet),
+        ("onMinorMap", True, GetMinorMap),
+        ("onMapTrace", False, None),
+        ("onMapSet", False, None),
+        ("onMinorMap", False, None),
+        ("onBattery", False, OnBattery),
+        ("onBattery", True, OnBattery),
+        ("onError", False, GetError),
     ],
 )
-def test_get_messages_device_type_filter(
+def test_get_messages_skips_map_legacy_without_map_capability(
     name: str,
-    device_type: DeviceType | None,
+    has_map: bool,
     expected: type[Message] | None,
 ) -> None:
-    """Skip map-related legacy fallbacks for mowers; preserve everything else."""
-    assert get_message(name, DataType.JSON, device_type) == expected
+    assert get_message(name, DataType.JSON, has_map=has_map) == expected

@@ -228,17 +228,11 @@ class Device:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            # ``device_type`` lets the dispatcher skip messages that do not
-            # apply to this device (e.g. map pushes on mowers). Use ``getattr``
-            # to remain safe against mocked capabilities in tests where the
-            # field may not be exposed on the spec.
-            device_type = getattr(
-                self._device_info.static.capabilities, "device_type", None
-            )
+            has_map = getattr(self._device_info.static.capabilities, "map", None) is not None
             if message := get_message(
                 message_name,
                 self._device_info.static.data_type,
-                device_type,
+                has_map=has_map,
             ):
                 result = message.handle(self.events, message_data)
                 if result.state == HandlingState.SUCCESS and result.requested_commands:
