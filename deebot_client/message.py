@@ -25,13 +25,6 @@ _LOGGER = get_logger(__name__)
 
 MessagePayloadType = str | bytes | bytearray | dict[str, Any]
 
-
-# When the on-wire format of a message diverges from what the lib expects
-# (e.g. a firmware bumps an envelope schema), every push from the device
-# triggers a "Could not parse" warning. In one observed case this produced
-# 217 520 identical entries in 3 days. Cap the warnings per message NAME
-# and downgrade subsequent occurrences to DEBUG so a future genuine
-# parse error in *another* NAME still surfaces.
 _PARSE_FAILURE_THRESHOLD = 3
 _parse_failure_counts: dict[str, int] = {}
 
@@ -39,18 +32,14 @@ _parse_failure_counts: dict[str, int] = {}
 def _log_parse_failure(
     name: str, data: object, *, exc_info: bool = False
 ) -> None:
-    """Log a "Could not parse" entry, downgrading to DEBUG past a threshold per NAME."""
     count = _parse_failure_counts.get(name, 0) + 1
     _parse_failure_counts[name] = count
     if count <= _PARSE_FAILURE_THRESHOLD:
         _LOGGER.warning("Could not parse %s: %s", name, data, exc_info=exc_info)
         if count == _PARSE_FAILURE_THRESHOLD:
             _LOGGER.warning(
-                "Further 'Could not parse %s' entries will be logged at DEBUG level"
-                " (reached %d occurrences). Restart Home Assistant or the parent"
-                " process to reset the counter.",
+                "Further 'Could not parse %s' entries will be logged at DEBUG level",
                 name,
-                _PARSE_FAILURE_THRESHOLD,
             )
     else:
         _LOGGER.debug("Could not parse %s: %s", name, data, exc_info=exc_info)
