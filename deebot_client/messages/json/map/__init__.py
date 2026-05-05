@@ -140,10 +140,7 @@ class OnMapTrace(MessageBodyDataDict):
             groups = _json.loads(decompressed)
         except Exception:
             _LOGGER.debug(
-                "Could not decompress/parse onMapTrace info field for mid=%s batid=%s "
-                "(probably truncated by upstream logger)",
-                data.get("mid"),
-                data.get("batid"),
+                "Could not decompress/parse onMapTrace info field"
             )
             return HandlingResult.analyse()
 
