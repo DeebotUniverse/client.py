@@ -10,28 +10,41 @@ from deebot_client.const import DataType
 from deebot_client.messages import get_message
 from deebot_client.messages.json.battery import OnBattery
 from deebot_client.messages.json.stats import OnStats
+from deebot_client.models import StaticDeviceInfo
+from tests import get_static_device_info
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
 
 
+@pytest.fixture
+def static_with_map() -> StaticDeviceInfo:
+    """Device with map capability (vacuum yna5xi)."""
+    return get_static_device_info("yna5xi")
+
+
+@pytest.fixture
+def static_without_map() -> StaticDeviceInfo:
+    """Device without map capability (mower xmp9ds)."""
+    return get_static_device_info("xmp9ds")
+
+
 @pytest.mark.parametrize(
-    ("name", "data_type", "expected"),
+    ("name", "expected"),
     [
-        ("onBattery", DataType.JSON, OnBattery),
-        ("onBattery_V2", DataType.JSON, OnBattery),
-        ("onError", DataType.JSON, GetError),
-        ("onStats", DataType.JSON, OnStats),
-        ("GetCleanLogs", DataType.JSON, None),
-        ("unknown", DataType.JSON, None),
-        ("unknown", DataType.XML, None),
+        ("onBattery", OnBattery),
+        ("onBattery_V2", OnBattery),
+        ("onError", GetError),
+        ("onStats", OnStats),
+        ("GetCleanLogs", None),
+        ("unknown", None),
     ],
 )
 def test_get_messages(
-    name: str, data_type: DataType, expected: type[Message] | None
+    name: str, expected: type[Message] | None, static_with_map: StaticDeviceInfo
 ) -> None:
     """Test get messages."""
-    assert get_message(name, data_type) == expected
+    assert get_message(name, static_with_map) == expected
 
 
 @pytest.mark.parametrize(
@@ -52,5 +65,9 @@ def test_get_messages_skips_map_legacy_without_map_capability(
     name: str,
     has_map: bool,
     expected: type[Message] | None,
+    static_with_map: StaticDeviceInfo,
+    static_without_map: StaticDeviceInfo,
 ) -> None:
-    assert get_message(name, DataType.JSON, has_map=has_map) == expected
+    """Test that map-related legacy fallbacks are skipped when device has no map capability."""
+    static = static_with_map if has_map else static_without_map
+    assert get_message(name, static) == expected
