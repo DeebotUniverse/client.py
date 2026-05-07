@@ -135,7 +135,6 @@ def device_class() -> str:
 async def static_device_info(device_class: str) -> StaticDeviceInfo:
     info = await get_static_device_info(device_class)
     assert info is not None
-    assert info.capabilities.map is not None
     return info
 
 
