@@ -349,7 +349,7 @@ dev = [
     { name = "pytest-asyncio", specifier = "==1.3.0" },
     { name = "pytest-codspeed", specifier = ">=3.1.2" },
     { name = "pytest-cov", specifier = "==7.1.0" },
-    { name = "pytest-docker-fixtures", specifier = "==1.4.3" },
+    { name = "pytest-docker-fixtures", specifier = "==1.4.4" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.4.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
@@ -370,7 +370,7 @@ test = [
     { name = "pytest-asyncio", specifier = "==1.3.0" },
     { name = "pytest-codspeed", specifier = ">=3.1.2" },
     { name = "pytest-cov", specifier = "==7.1.0" },
-    { name = "pytest-docker-fixtures", specifier = "==1.4.3" },
+    { name = "pytest-docker-fixtures", specifier = "==1.4.4" },
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.4.0" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
@@ -884,16 +884,16 @@ wheels = [
 
 [[package]]
 name = "pytest-docker-fixtures"
-version = "1.4.3"
+version = "1.4.4"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "docker" },
     { name = "pytest" },
     { name = "requests" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/70/a8/7c4bc1b39b6a9dcce38f3290224c43dbf0a69f371db02f5a0a28f963b322/pytest_docker_fixtures-1.4.3.tar.gz", hash = "sha256:e0f15fffca4dc7dde74e55eec878c5ba776595b073632a406dea2063bfa174b5", size = 12059, upload-time = "2026-04-20T09:28:11.562Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/bf/6c/f2a2eca38376aec96a5d8216719d5d8e89f3caa2dba33ee6f606555232f4/pytest_docker_fixtures-1.4.4.tar.gz", hash = "sha256:93cee751b34161fad53c7389f4cb44c7fb9f5ddb190466fd774fc586e63b0a88", size = 12426, upload-time = "2026-05-07T15:32:38.18Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/cf/de/2d738b39c96a250f17a38f3a87169a49737a3fbda5e02ee794cb24eec3f1/pytest_docker_fixtures-1.4.3-py3-none-any.whl", hash = "sha256:af7e96ece3674f9b936b63bcce4f4b809ec084d8723facf1853283d994f9ac61", size = 15023, upload-time = "2026-04-20T09:28:10.02Z" },
+    { url = "https://files.pythonhosted.org/packages/29/3b/13a259e1f994e9e9c72e369318d29fd6f1fca218b21cc1756f9d0a3905b5/pytest_docker_fixtures-1.4.4-py3-none-any.whl", hash = "sha256:9dd7ccf3964c55ead5593bdbdd1af88c073b15a08740617bd4a268234ba0e8d8", size = 15295, upload-time = "2026-05-07T15:32:37.077Z" },
 ]
 
 [[package]]
