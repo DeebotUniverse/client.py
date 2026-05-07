@@ -6,13 +6,13 @@ from typing import TYPE_CHECKING
 
 from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
-from deebot_client.models import StaticDeviceInfo
 
 from .json import MESSAGES as JSON_MESSAGES, get_legacy_message
 from .xml import MESSAGES as XML_MESSAGES
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
+    from deebot_client.models import StaticDeviceInfo
 
 _LOGGER = get_logger(__name__)
 
