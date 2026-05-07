@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     ("device_class", "name", "expected"),
     [
         ("yna5xi", "onBattery", OnBattery),
-        ("yna5xi", "onBattery_V2", OnBattery),
+        ("qhe2o2", "onBattery_V2", OnBattery),
         ("yna5xi", "onError", GetError),
         ("yna5xi", "onStats", OnStats),
         ("yna5xi", "GetCleanLogs", None),
