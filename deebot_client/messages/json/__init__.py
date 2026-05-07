@@ -17,17 +17,6 @@ from .work_state import OnWorkState
 
 _LOGGER = get_logger(__name__)
 
-_MAP_LEGACY_COMMANDS = frozenset(
-    {
-        "getCachedMapInfo",
-        "getMapSet",
-        "getMapSubSet",
-        "getMapTrace",
-        "getMinorMap",
-        "getMultiMapState",
-    }
-)
-
 __all__ = [
     "OnBattery",
     "OnCachedMapInfo",
@@ -65,34 +54,41 @@ _MESSAGES: list[type[Message]] = [
 
 MESSAGES: dict[str, type[Message]] = {message.NAME: message for message in _MESSAGES}
 
-_LEGACY_USE_GET_COMMAND = [
-    "getAdvancedMode",
-    "getBreakPoint",
-    "getCachedMapInfo",
-    "getCarpertPressure",
-    "getChargeState",
-    "getCleanCount",
-    "getCleanInfo",
-    "getCleanPreference",
-    "getEfficiency",
-    "getError",
-    "getLifeSpan",
-    "getMapSet",
-    "getMapSubSet",
-    "getMapTrace",
-    "getMinorMap",
-    "getMultiMapState",
-    "getNetInfo",
-    "getPos",
-    "getSpeed",
-    "getSweepMode",
-    "getTotalStats",
-    "getTrueDetect",
-    "getVoiceAssistantState",
-    "getVolume",
-    "getWaterInfo",
-    "getWorkMode",
-]
+_MAP_LEGACY_COMMANDS = frozenset(
+    {
+        "getCachedMapInfo",
+        "getMapSet",
+        "getMapSubSet",
+        "getMapTrace",
+        "getMinorMap",
+        "getMultiMapState",
+    }
+)
+
+_LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
+    {
+        "getAdvancedMode",
+        "getBreakPoint",
+        "getCarpertPressure",
+        "getChargeState",
+        "getCleanCount",
+        "getCleanInfo",
+        "getCleanPreference",
+        "getEfficiency",
+        "getError",
+        "getLifeSpan",
+        "getNetInfo",
+        "getPos",
+        "getSpeed",
+        "getSweepMode",
+        "getTotalStats",
+        "getTrueDetect",
+        "getVoiceAssistantState",
+        "getVolume",
+        "getWaterInfo",
+        "getWorkMode",
+    }
+)
 
 
 def get_legacy_message(
