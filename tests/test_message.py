@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-from collections.abc import Generator
 import logging
 from unittest.mock import Mock
 
@@ -74,9 +73,7 @@ def test_WronglyImplementedMessage() -> None:
 
 
 @pytest.fixture
-def _reset_parse_failure_counts() -> Generator[None, None, None]:
-    message_module._parse_failure_counts.clear()
-    yield
+def _reset_parse_failure_counts() -> None:
     message_module._parse_failure_counts.clear()
 
 
@@ -100,66 +97,98 @@ class _OtherFailingMessage(Message):
         raise ValueError("simulated parse failure")
 
 
+@pytest.mark.usefixtures("_reset_parse_failure_counts")
 def test_warn_once_throttles_repeated_parse_failures(
     caplog: pytest.LogCaptureFixture,
-    _reset_parse_failure_counts: None,
 ) -> None:
     name = _AlwaysRaisingMessage.NAME
     event_bus = Mock(spec_set=EventBus)
+    logger_name = "deebot_client.message"
 
-    with caplog.at_level(logging.DEBUG, logger="deebot_client.message"):
+    with caplog.at_level(logging.DEBUG, logger=logger_name):
         for i in range(_PARSE_FAILURE_THRESHOLD + 2):
             assert (
                 _AlwaysRaisingMessage.handle(event_bus, {"i": i}).state
                 == HandlingState.ERROR
             )
 
-    expected = [
-        ("WARNING", f"Could not parse {name}: {{'i': 0}}"),
-        ("WARNING", f"Could not parse {name}: {{'i': 1}}"),
-        ("WARNING", f"Could not parse {name}: {{'i': 2}}"),
+    assert [
         (
-            "WARNING",
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name}: {{'i': 0}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name}: {{'i': 1}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name}: {{'i': 2}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
             f"Further 'Could not parse {name}' entries will be logged at DEBUG level",
         ),
-        ("DEBUG", f"Could not parse {name}: {{'i': 3}}"),
-        ("DEBUG", f"Could not parse {name}: {{'i': 4}}"),
-    ]
-    actual = [
-        (r.levelname, r.getMessage())
-        for r in caplog.records
-        if r.name == "deebot_client.message"
-    ]
-    assert actual == expected
+        (
+            logger_name,
+            logging.DEBUG,
+            f"Could not parse {name}: {{'i': 3}}",
+        ),
+        (
+            logger_name,
+            logging.DEBUG,
+            f"Could not parse {name}: {{'i': 4}}",
+        ),
+    ] == caplog.record_tuples
 
 
+@pytest.mark.usefixtures("_reset_parse_failure_counts")
 def test_warn_once_isolated_per_message_name(
     caplog: pytest.LogCaptureFixture,
-    _reset_parse_failure_counts: None,
 ) -> None:
     name_a = _AlwaysRaisingMessage.NAME
     name_b = _OtherFailingMessage.NAME
     event_bus = Mock(spec_set=EventBus)
+    logger_name = "deebot_client.message"
 
-    with caplog.at_level(logging.DEBUG, logger="deebot_client.message"):
+    with caplog.at_level(logging.DEBUG, logger=logger_name):
         for i in range(_PARSE_FAILURE_THRESHOLD + 1):
             _AlwaysRaisingMessage.handle(event_bus, {"a": i})
         _OtherFailingMessage.handle(event_bus, {"b": "first"})
 
-    expected = [
-        ("WARNING", f"Could not parse {name_a}: {{'a': 0}}"),
-        ("WARNING", f"Could not parse {name_a}: {{'a': 1}}"),
-        ("WARNING", f"Could not parse {name_a}: {{'a': 2}}"),
+    assert [
         (
-            "WARNING",
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name_a}: {{'a': 0}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name_a}: {{'a': 1}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name_a}: {{'a': 2}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
             f"Further 'Could not parse {name_a}' entries will be logged at DEBUG level",
         ),
-        ("DEBUG", f"Could not parse {name_a}: {{'a': 3}}"),
-        ("WARNING", f"Could not parse {name_b}: {{'b': 'first'}}"),
-    ]
-    actual = [
-        (r.levelname, r.getMessage())
-        for r in caplog.records
-        if r.name == "deebot_client.message"
-    ]
-    assert actual == expected
+        (
+            logger_name,
+            logging.DEBUG,
+            f"Could not parse {name_a}: {{'a': 3}}",
+        ),
+        (
+            logger_name,
+            logging.WARNING,
+            f"Could not parse {name_b}: {{'b': 'first'}}",
+        ),
+    ] == caplog.record_tuples

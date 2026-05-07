@@ -29,9 +29,7 @@ _PARSE_FAILURE_THRESHOLD = 3
 _parse_failure_counts: dict[str, int] = {}
 
 
-def _log_parse_failure(
-    name: str, data: object, *, exc_info: bool = False
-) -> None:
+def _log_parse_failure(name: str, data: object, *, exc_info: bool = False) -> None:
     count = _parse_failure_counts.get(name, 0) + 1
     _parse_failure_counts[name] = count
     if count <= _PARSE_FAILURE_THRESHOLD:
