@@ -116,7 +116,7 @@ jobs:
           components: rustfmt,clippy
       - name: Rust format
         uses: actions-rust-lang/rustfmt@4066006ec54a31931b9b1fddfd38f2fdf2d27143 # v1.1.2
-      - uses: clechasseur/rs-clippy-check@3a0225255fc5c07aefde16d229e8479a137ddd8e # v6.0.3
+      - uses: clechasseur/rs-clippy-check@1e16925ceec49b64803a6abc5f6bbe79044c3bd4 # v6.0.4
         with:
           args: --all-features
 
