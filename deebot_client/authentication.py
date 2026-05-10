@@ -148,6 +148,9 @@ class _AuthClient:
             user_id = login_token_resp["userId"]
 
         user_access_token = login_token_resp["token"]
+        # last is validity in milliseconds. Usually 7 days
+        # we set the expiry at 99% of the validity
+        # 604800 = 7 days
         expires_at = int(
             time.time() + int(login_token_resp.get("last", 604800)) / 1000 * 0.99
         )
@@ -166,10 +169,11 @@ class _AuthClient:
             url, params=params, timeout=_TIMEOUT
         ) as res:
             res.raise_for_status()
-
+           # ecovacs returns a json but content_type header is set to text
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
             _LOGGER.debug("got %s", json)
+           # TODO better error handling
             if json["code"] == "0000":
                 data: dict[str, Any] = json["data"]
                 return data
@@ -262,6 +266,7 @@ class _AuthClient:
             if resp["result"] == "ok":
                 return resp
             if resp["result"] == "fail" and resp["error"] == "set token error.":
+                # If it is a set token error try again
                 _LOGGER.warning("loginByItToken set token error, attempt %d/3", i + 2)
                 continue
 
@@ -470,6 +475,7 @@ class Authenticator:
             self._refresh_handle.cancel()
 
     def _create_refresh_task(self, credentials: Credentials) -> None:
+        # refresh at 99% of validity
         def refresh() -> None:
             _LOGGER.debug("Refresh token")
 
