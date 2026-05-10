@@ -6,6 +6,8 @@ from enum import Enum, StrEnum
 from typing import Self
 
 REALM = "ecouser.net"
+AUTH_DOMAIN_ECOVACS = "ecovacs.com"
+AUTH_DOMAIN_YEEDI = "yeedi.com"
 PATH_API_APPSVR_APP = "appsvr/app.do"
 PATH_API_PIM_PRODUCT_IOT_MAP = "pim/product/getProductIotMap"
 PATH_API_IOT_DEVMANAGER = "iot/devmanager.do"

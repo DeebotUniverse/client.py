@@ -15,6 +15,7 @@ import orjson
 from deebot_client import hardware
 from deebot_client.api_client import ApiClient
 from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.const import AUTH_DOMAIN_ECOVACS
 from deebot_client.util import md5
 
 
@@ -63,6 +64,7 @@ async def main() -> None:
             session=session,
             device_id=md5(str(time.time())),
             alpha_2_country=os.environ["ECOVACS_COUNTRY"],
+            auth_domain=os.environ.get("ECOVACS_AUTH_DOMAIN", AUTH_DOMAIN_ECOVACS),
         )
 
         authenticator = Authenticator(

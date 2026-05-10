@@ -10,7 +10,11 @@ from deebot_client.commands.json import (
     GetMapSubSet,
     GetMapTrace,
 )
-from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
+from deebot_client.commands.json.map import (
+    GetMapInfoV2,
+    GetMapSetV2,
+    GetMapSetV2NoRoomSubsets,
+)
 from deebot_client.events import (
     Event,
     FirmwareEvent,
@@ -144,6 +148,19 @@ async def test_getMapSubSet_invalid(
                 f"Could not handle getMapSubSet message: {data}",
             )
         )
+
+
+async def test_getMapSubSet_unsupported_body_code() -> None:
+    mid = "199390082"
+    mssid = "1"
+    json, firmware_event = get_request_json({"code": 20003, "msg": "rcp not support"})
+
+    await assert_command(
+        GetMapSubSet(mid=mid, mssid=mssid, msid="1"),
+        json,
+        firmware_event,
+        handling_result=HandlingResult(HandlingState.FAILED),
+    )
 
 
 def _getMapSubSet_room_valid_response(
@@ -416,6 +433,37 @@ async def test_getMapSetV2_rooms() -> None:
     )
 
 
+async def test_getMapSetV2_no_room_subsets() -> None:
+    mid = "199390082"
+    msid = "8"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "XQAABADnAQAAAC2WwEHwYhHYFuLu9964T0CAIjkOBSGKBW+PcTQDCjKFThR86eaw4bFiV2BKLAP+0lTYd1ADOkmjNPrfSqBeHZLY4JNCaEMc2H245BSG143miuQm6X6"
+        "KeTCnXV7Er028XLcnN9q/immzxeoPpkdhnbhuL9f8jW5kgVLGPJnfv2V2a79W4PjkSR4b4Px632ID+UKVwGL1mYiwNnMO35XA41W+pPsgW12ZRnsMDvGMAlv4VLhDJFAy4AA="
+    )
+    subsets = [0, 1, 6, 2, 7, 3, 5]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gheijg",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 199,
+            }
+        )
+    )
+
+    await assert_command(
+        GetMapSetV2NoRoomSubsets(mid, set_type),
+        json,
+        [firmware_event, MapSetEvent(MapSetType(set_type), subsets, mid)],
+    )
+
+
 async def test_getMapSetV2_rooms_v2() -> None:
     mid = "199390082"
     msid = "8"
@@ -460,6 +508,44 @@ async def test_getMapSetV2_rooms_v2() -> None:
         GetMapSetV2(mid, set_type),
         json,
         events,
+    )
+
+
+async def test_getMapSetV2_rooms_yeedi_s20() -> None:
+    """Test Yeedi S20 room format with inline names and one extra field."""
+    mid = "595525232"
+    set_type = MapSetType.ROOMS
+    subsets_comp = "XQAAgACfAgAAAC3ghGAjMKGUry/wZGto2tHxODC0Ojy/xxsE8YcWHzcCUWUwNk2WkscGy/ljBzu1nVckeSS/qShfk6pfLSCreKkwQg3kEpH/Pybi2lirQ9FDgXAMEvxdo8H0g7fsk6GBhOI+8Dv2UZmHjhFvaV+8+bhu1GUasoQe6cyD7im+G+YZ11JqW88+DTqLxF8Vq9yMLtGd1ypYNTt636v0o3Q5fo4aO087CDKd0EwMNTtJHIyHxVzw160OLzoS+ltXhEoDelWpfpwJurxrdGzgyZtJCrU1Cw7B1e8Ce3mHzYvLf6/UO/4y9Y87MUb//3m58gA="
+    room_names = [
+        "Master closet",
+        "Bath",
+        "Master bath",
+        "Hallway",
+        "Sofia",
+        "Master bed",
+        "Study",
+        "Living",
+        "Kitchen",
+        "Dining room",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 671,
+            }
+        )
+    )
+    rooms = [Room(room_name, subset, "") for subset, room_name in enumerate(room_names)]
+
+    await assert_command(
+        GetMapSetV2NoRoomSubsets(mid, set_type),
+        json,
+        [firmware_event, RoomsEvent(mid, rooms)],
     )
 
 

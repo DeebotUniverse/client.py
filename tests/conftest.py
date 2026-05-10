@@ -61,6 +61,15 @@ def rest_config(
 def authenticator() -> Authenticator:
     authenticator = Mock(spec_set=Authenticator)
     authenticator.authenticate.return_value = Credentials("token", "user_id", 9999)
+    authenticator.get_command_query_params.return_value = {
+        "mid": "get_class",
+        "did": "did",
+        "td": "q",
+        "u": "user_id",
+        "cv": "1.67.3",
+        "t": "a",
+        "av": "1.3.1",
+    }
     authenticator.post_authenticated.return_value = {
         "header": {
             "pri": 1,

@@ -144,26 +144,27 @@ class Command(ABC):
     async def _execute_api_request(
         self, authenticator: Authenticator, device_info: ApiDeviceInfo
     ) -> dict[str, Any]:
+        td = "q"
+        to_id = device_info["did"]
+        to_res = device_info["resource"]
+        to_type = device_info["class"]
         payload = {
             "cmdName": self.NAME,
             "payload": self._get_payload(),
             "payloadType": self.DATA_TYPE.value,
-            "td": "q",
-            "toId": device_info["did"],
-            "toRes": device_info["resource"],
-            "toType": device_info["class"],
+            "td": td,
+            "toId": to_id,
+            "toRes": to_res,
+            "toType": to_type,
         }
 
         credentials = await authenticator.authenticate()
-        query_params = {
-            "mid": payload["toType"],
-            "did": payload["toId"],
-            "td": payload["td"],
-            "u": credentials.user_id,
-            "cv": "1.67.3",
-            "t": "a",
-            "av": "1.3.1",
-        }
+        query_params = authenticator.get_command_query_params(
+            credentials,
+            mid=to_type,
+            did=to_id,
+            td=td,
+        )
 
         return await authenticator.post_authenticated(
             PATH_API_IOT_DEVMANAGER,

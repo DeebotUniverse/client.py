@@ -54,7 +54,12 @@ country = "DE"
 async def main():
   async with aiohttp.ClientSession() as session:
     logging.basicConfig(level=logging.DEBUG)
-    rest_config = create_rest_config(session, device_id=device_id, alpha_2_country=country)
+    rest_config = create_rest_config(
+      session,
+      device_id=device_id,
+      alpha_2_country=country,
+      # auth_domain="yeedi.com",  # For Yeedi accounts.
+    )
 
     authenticator = Authenticator(rest_config, account_id, password_hash)
     api_client = ApiClient(authenticator)

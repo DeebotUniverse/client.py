@@ -33,6 +33,7 @@ __all__ = [
     "GetMajorMap",
     "GetMapSet",
     "GetMapSetV2",
+    "GetMapSetV2NoRoomSubsets",
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
@@ -225,6 +226,7 @@ class GetMapSetV2(GetMapSet):
     """Get map set v2 command."""
 
     NAME = "getMapSet_V2"
+    _REQUEST_ROOM_SUBSETS = True
 
     @classmethod
     def _handle_subsets(
@@ -273,7 +275,7 @@ class GetMapSetV2(GetMapSet):
         map_id: str,
     ) -> HandlingResult:
         # there are two versions of this message, depending on the number of values
-        if subsets and len(subsets[0]) == 10:
+        if subsets and len(subsets[0]) in (10, 11):
             # subset values
             # 1 -> id
             # 2 -> name
@@ -285,6 +287,7 @@ class GetMapSetV2(GetMapSet):
             # 8 -> room clean configs as '<count>-<speed>-<water>'
             # 9 -> unknown
             # 10 -> floor type
+            # 11 -> unknown (only sent by some newer robots)
 
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
@@ -308,7 +311,16 @@ class GetMapSetV2(GetMapSet):
         # return the subset ids to trigger GetMapSubSet for each one
         subset_ids = [int(subset[0]) for subset in subsets]
         event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids, map_id))
+        if not cls._REQUEST_ROOM_SUBSETS:
+            return HandlingResult.success()
+
         return cls._get_handling_success_with_subset_command_args(data, subset_ids)
+
+
+class GetMapSetV2NoRoomSubsets(GetMapSetV2):
+    """Get map set v2 without room subset follow-up commands."""
+
+    _REQUEST_ROOM_SUBSETS = False
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):

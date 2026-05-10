@@ -289,6 +289,9 @@ class MessageBodyData(MessageBody, ABC):
         """
         if "data" in body:
             return cls.__handle_body_data(event_bus, body["data"])
+        if body.get("code", 0) not in (0, "0"):
+            _LOGGER.debug("Message %s returned failed body: %s", cls.NAME, body)
+            return HandlingResult(HandlingState.FAILED)
 
         return super()._handle_body(event_bus, body)
 

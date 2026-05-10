@@ -11,7 +11,13 @@ from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
 
-from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
+from .const import (
+    AUTH_DOMAIN_ECOVACS,
+    AUTH_DOMAIN_YEEDI,
+    COUNTRY_CHINA,
+    PATH_API_USERS_USER,
+    REALM,
+)
 from .exceptions import (
     ApiError,
     ApiTimeoutError,
@@ -30,20 +36,64 @@ if TYPE_CHECKING:
 
 _LOGGER = get_logger(__name__)
 
-_CLIENT_KEY = "1520391301804"
-_CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
-_AUTH_CLIENT_KEY = "1520391491841"
-_AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
 _USER_LOGIN_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/user/login"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _META = {
     "lang": "EN",
-    "appCode": "global_e",
-    "appVersion": "1.6.3",
     "channel": "google_play",
     "deviceType": "1",
 }
 MAX_RETRIES = 3
+
+
+@dataclass(frozen=True, kw_only=True)
+class AuthDomainConfiguration:
+    """Authentication configuration for an Ecovacs-family app domain."""
+
+    domain: str
+    app_code: str
+    app_version: str
+    user_login_auth_appkey: str
+    user_login_secret: str
+    get_auth_code_auth_appkey: str
+    get_auth_code_secret: str
+    get_auth_code_biz_type: str
+    org_global: str
+    org_china: str
+    command_client_version: str
+    command_app_version: str
+
+
+_AUTH_CONFIGS = {
+    AUTH_DOMAIN_ECOVACS: AuthDomainConfiguration(
+        domain=AUTH_DOMAIN_ECOVACS,
+        app_code="global_e",
+        app_version="1.6.3",
+        user_login_auth_appkey="1520391301804",
+        user_login_secret="6c319b2a5cd3e66e39159c2e28f2fce9",  # noqa: S106
+        get_auth_code_auth_appkey="1520391491841",
+        get_auth_code_secret="77ef58ce3afbe337da74aa8c5ab963a9",  # noqa: S106
+        get_auth_code_biz_type="ECOVACS_IOT",
+        org_global="ECOWW",
+        org_china="ECOCN",
+        command_client_version="1.67.3",
+        command_app_version="1.3.1",
+    ),
+    AUTH_DOMAIN_YEEDI: AuthDomainConfiguration(
+        domain=AUTH_DOMAIN_YEEDI,
+        app_code="yd_global_e",
+        app_version="1.3.0",
+        user_login_auth_appkey="1581917520081",
+        user_login_secret="ed5b3dd9a0253de7d90305d077eb5fee",  # noqa: S106
+        get_auth_code_auth_appkey="1581923437995",
+        get_auth_code_secret="304a71592690995b2bb304e66b5ddee6",  # noqa: S106
+        get_auth_code_biz_type="",
+        org_global="ECOYDWW",
+        org_china="ECOYDCN",
+        command_client_version="1.94.76",
+        command_app_version="1.3.0",
+    ),
+}
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -56,6 +106,7 @@ class RestConfiguration:
     portal_url: str
     login_url: str
     auth_code_url: str
+    auth: AuthDomainConfiguration = _AUTH_CONFIGS[AUTH_DOMAIN_ECOVACS]
 
 
 def create_rest_config(
@@ -63,9 +114,15 @@ def create_rest_config(
     *,
     device_id: str,
     alpha_2_country: str,
+    auth_domain: str = AUTH_DOMAIN_ECOVACS,
     override_rest_url: str | None = None,
 ) -> RestConfiguration:
     """Create configuration."""
+    auth = _AUTH_CONFIGS.get(auth_domain.lower())
+    if auth is None:
+        msg = f"Unsupported auth domain: {auth_domain}"
+        raise ValueError(msg)
+
     continent_postfix = get_continent_url_postfix(alpha_2_country)
     country = get_ecovacs_country(alpha_2_country)
     if override_rest_url:
@@ -73,9 +130,11 @@ def create_rest_config(
     else:
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
-        tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
-        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
-        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+        api_domain = auth.domain
+        if country == COUNTRY_CHINA:
+            api_domain = api_domain.removesuffix(".com") + ".cn"
+        login_url = f"https://gl-{country_url}-api.{api_domain}"
+        auth_code_url = f"https://gl-{country_url}-openapi.{api_domain}"
 
     return RestConfiguration(
         session=session,
@@ -84,6 +143,7 @@ def create_rest_config(
         portal_url=portal_url,
         login_url=login_url,
         auth_code_url=auth_code_url,
+        auth=auth,
     )
 
 
@@ -105,6 +165,8 @@ class _AuthClient:
 
         self._meta: dict[str, str] = {
             **_META,
+            "appCode": self._config.auth.app_code,
+            "appVersion": self._config.auth.app_version,
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
@@ -184,7 +246,13 @@ class _AuthClient:
             url += "CheckMobile"
 
         return await self.__do_auth_response(
-            url, self.__sign(params, self._meta, _CLIENT_KEY, _CLIENT_SECRET)
+            url,
+            self.__sign(
+                params,
+                self._meta,
+                self._config.auth.user_login_auth_appkey,
+                self._config.auth.user_login_secret,
+            ),
         )
 
     @staticmethod
@@ -209,7 +277,7 @@ class _AuthClient:
         params: dict[str, str | int] = {
             "uid": user_id,
             "accessToken": access_token,
-            "bizType": "ECOVACS_IOT",
+            "bizType": self._config.auth.get_auth_code_biz_type,
             "deviceId": self._meta["deviceId"],
             "authTimespan": int(time.time() * 1000),
         }
@@ -219,7 +287,10 @@ class _AuthClient:
         res = await self.__do_auth_response(
             url,
             self.__sign(
-                params, {"openId": "global"}, _AUTH_CLIENT_KEY, _AUTH_CLIENT_SECRET
+                params,
+                {"openId": "global"},
+                self._config.auth.get_auth_code_auth_appkey,
+                self._config.auth.get_auth_code_secret,
             ),
         )
         return str(res["authCode"])
@@ -233,7 +304,9 @@ class _AuthClient:
             "token": auth_code,
             "realm": REALM,
             "resource": self._config.device_id,
-            "org": "ECOWW" if self._config.country != COUNTRY_CHINA else "ECOCN",
+            "org": self._config.auth.org_global
+            if self._config.country != COUNTRY_CHINA
+            else self._config.auth.org_china,
             "last": "",
             "country": self._config.country
             if self._config.country != COUNTRY_CHINA
@@ -255,6 +328,20 @@ class _AuthClient:
             raise AuthenticationError(msg)
 
         raise AuthenticationError("failed to login with token")
+
+    def get_command_query_params(
+        self, credentials: Credentials, *, mid: str, did: str, td: str
+    ) -> dict[str, str]:
+        """Return app metadata used for direct device command requests."""
+        return {
+            "mid": mid,
+            "did": did,
+            "td": td,
+            "u": credentials.user_id,
+            "cv": self._config.auth.command_client_version,
+            "t": "a",
+            "av": self._config.auth.command_app_version,
+        }
 
     async def post(
         self,
@@ -390,6 +477,17 @@ class Authenticator:
 
         self._on_credentials_changed.add(callback)
         return unsubscribe
+
+    def get_command_query_params(
+        self, credentials: Credentials, *, mid: str, did: str, td: str
+    ) -> dict[str, str]:
+        """Return app metadata used for direct device command requests."""
+        return self._auth_client.get_command_query_params(
+            credentials,
+            mid=mid,
+            did=did,
+            td=td,
+        )
 
     async def post_authenticated(
         self,

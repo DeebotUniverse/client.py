@@ -29,7 +29,12 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
-from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSetV2NoRoomSubsets,
+    GetMapTrace,
+)
 from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
@@ -80,6 +85,7 @@ from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapSetType,
     MapTraceEvent,
     PositionsEvent,
 )
@@ -112,6 +118,39 @@ async def test_get_static_device_info(
         static_device_info_cached = await hardware.get_static_device_info(class_)
         assert static_device_info_cached == expected
         mock_import.assert_not_called()
+
+
+async def test_yeedi_s20_loads() -> None:
+    """Test that the Yeedi S20 model alias can be loaded."""
+    static_device_info = await hardware.get_static_device_info("irdzs4")
+    assert static_device_info is not None
+    capabilities = static_device_info.capabilities
+    assert capabilities.map is not None
+    assert capabilities.station is not None
+    assert capabilities.water is not None
+    assert capabilities.get_refresh_commands(CleanLogEvent) == []
+    assert capabilities.life_span.types == (
+        LifeSpan.BRUSH,
+        LifeSpan.FILTER,
+        LifeSpan.SIDE_BRUSH,
+        LifeSpan.CLEANING_SOLUTION,
+        LifeSpan.SEWAGE_BOX,
+    )
+    assert capabilities.get_refresh_commands(LifeSpanEvent) == [
+        GetLifeSpan(
+            [
+                LifeSpan.BRUSH,
+                LifeSpan.FILTER,
+                LifeSpan.SIDE_BRUSH,
+                LifeSpan.CLEANING_SOLUTION,
+                LifeSpan.SEWAGE_BOX,
+            ]
+        )
+    ]
+    assert isinstance(
+        capabilities.map.set.execute("map_id", MapSetType.ROOMS),
+        GetMapSetV2NoRoomSubsets,
+    )
 
 
 @pytest.mark.parametrize(

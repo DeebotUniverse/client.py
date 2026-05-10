@@ -3,6 +3,7 @@ from __future__ import annotations
 import logging
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock
 
 from aiohttp import ClientTimeout
 import orjson
@@ -14,8 +15,6 @@ from deebot_client.exceptions import ApiTimeoutError, DeebotError
 from deebot_client.message import HandlingResult
 
 if TYPE_CHECKING:
-    from unittest.mock import Mock
-
     from deebot_client.event_bus import EventBus
     from deebot_client.models import ApiDeviceInfo
 
@@ -114,3 +113,21 @@ async def test_execute_api_timeout_error(
         logging.WARNING,
         "Could not execute command TestCommand for get_class: Timeout reached",
     ) in caplog.record_tuples
+
+
+async def test_execute_api_request_uses_authenticator_command_query_params(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+) -> None:
+    command = _TestCommand(1)
+    command._handle_response = Mock(return_value=HandlingResult.analyse())  # type: ignore[method-assign]
+
+    await command.execute(authenticator, api_device_info, event_bus_mock)
+
+    authenticator.get_command_query_params.assert_called_once_with(
+        authenticator.authenticate.return_value,
+        mid="get_class",
+        did="did",
+        td="q",
+    )
