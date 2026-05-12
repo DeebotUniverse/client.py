@@ -56,19 +56,23 @@ def test_OnMapTrace_decompresses_and_flattens_groups() -> None:
     assert_message(
         OnMapTrace,
         _envelope(_SINGLE_GROUP, 28),
-        (FirmwareEvent("1.15.13"), MapTraceEvent(start=1, total=1, data="100,200;150,250")),
+        (
+            FirmwareEvent("1.15.13"),
+            MapTraceEvent(start=1, total=1, data="100,200;150,250"),
+        ),
         device_class="xmp9ds",
     )
 
 
 def test_OnMapTrace_concatenates_multiple_groups_and_segments() -> None:
-    expected_trace = (
-        "-11850,-28849;-11800,-28899;-12850,-23699;-12800,-23750;-7899,-39700;-7950,-39649"
-    )
+    expected_trace = "-11850,-28849;-11800,-28899;-12850,-23699;-12800,-23750;-7899,-39700;-7950,-39649"
     assert_message(
         OnMapTrace,
         _envelope(_MULTI_GROUP, 110),
-        (FirmwareEvent("1.15.13"), MapTraceEvent(start=1, total=1, data=expected_trace)),
+        (
+            FirmwareEvent("1.15.13"),
+            MapTraceEvent(start=1, total=1, data=expected_trace),
+        ),
         device_class="xmp9ds",
     )
 

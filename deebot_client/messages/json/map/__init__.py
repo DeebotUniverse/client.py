@@ -2,10 +2,16 @@
 
 from __future__ import annotations
 
-import json as _json
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType, MapTraceEvent
+import orjson
+
+from deebot_client.events.map import (
+    MajorMapEvent,
+    MapInfoEvent,
+    MapSetType,
+    MapTraceEvent,
+)
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.rs.util import decompress_base64_data
@@ -136,12 +142,10 @@ class OnMapTrace(MessageBodyDataDict):
             return HandlingResult.analyse()
 
         try:
-            decompressed = decompress_base64_data(info).decode("utf-8")
-            groups = _json.loads(decompressed)
+            decompressed = decompress_base64_data(info)
+            groups = orjson.loads(decompressed)
         except Exception:
-            _LOGGER.debug(
-                "Could not decompress/parse onMapTrace info field"
-            )
+            _LOGGER.debug("Could not decompress/parse onMapTrace info field")
             return HandlingResult.analyse()
 
         flat_points: list[str] = []

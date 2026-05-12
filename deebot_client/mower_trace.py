@@ -38,8 +38,8 @@ class MowerMapTrace:
         points (FIFO drop). Returns the number of points actually added.
         """
         new_points: list[tuple[int, int]] = []
-        for token in raw.split(";"):
-            token = token.strip()
+        for raw_token in raw.split(";"):
+            token = raw_token.strip()
             if not token:
                 continue
             try:
