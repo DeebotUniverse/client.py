@@ -166,10 +166,12 @@ class OnMapTrace(MessageBodyDataDict):
         # Use serial as a stable monotonic ``start`` so ``Map`` does not clear
         # the trace on every push — only the very first ever (serial == 0)
         # would trigger the reset, which is the firmware's intent.
+        # fmt: off
         try:
             start = int(data.get("serial", 1))
         except (TypeError, ValueError):
             start = 1
+        # fmt: on
 
         event_bus.notify(
             MapTraceEvent(start=start, total=start, data=";".join(flat_points))
