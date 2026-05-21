@@ -18,6 +18,7 @@ from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
 from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
+from deebot_client.commands.json.clean import CleanAreaFreeClean
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -277,3 +278,10 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
+
+
+async def test_o073ti_uses_free_clean_area_command() -> None:
+    """Test that o073ti uses freeClean for area cleaning."""
+    device_info = await hardware.get_static_device_info("o073ti")
+    assert isinstance(device_info, StaticDeviceInfo)
+    assert device_info.capabilities.clean.action.area is CleanAreaFreeClean
