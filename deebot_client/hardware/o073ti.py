@@ -122,7 +122,17 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.efficiency_mode import EfficiencyMode
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanMode, StaticDeviceInfo
+
+
+def _get_clean_area_command(
+    mode: CleanMode, area: list[int | float], count: int = 1
+) -> CleanAreaV2:
+    return CleanAreaV2(
+        CleanMode.FREE_CLEAN if mode == CleanMode.SPOT_AREA else mode,
+        area,
+        count,
+    )
 
 
 def get_device_info() -> StaticDeviceInfo:
@@ -137,7 +147,10 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
+                action=CapabilityCleanAction(
+                    command=CleanV2,
+                    area=_get_clean_area_command,
+                ),
                 continuous=CapabilitySetEnable(
                     ContinuousCleaningEvent,
                     [GetContinuousCleaning()],
