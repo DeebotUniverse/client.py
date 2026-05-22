@@ -18,7 +18,6 @@ from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
 from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
-from deebot_client.commands.json.clean import CleanAreaFreeClean
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -39,10 +38,13 @@ from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
 from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
+from deebot_client.commands.json.sweep_mode import GetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
 from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
+from deebot_client.commands.json.work_mode import GetWorkMode
+from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.events import (
     AdvancedModeEvent,
     AutoEmptyEvent,
@@ -70,10 +72,12 @@ from deebot_client.events import (
     StateEvent,
     StationEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
+    WorkModeEvent,
 )
 from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
@@ -85,7 +89,11 @@ from deebot_client.events.map import (
     PositionsEvent,
 )
 from deebot_client.events.network import NetworkInfoEvent
-from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.events.water_info import (
+    MopAttachedEvent,
+    WaterAmountEvent,
+    WaterCustomAmountEvent,
+)
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
 from deebot_client.models import StaticDeviceInfo
 
@@ -245,8 +253,65 @@ async def test_get_static_device_info(
                 WaterAmountEvent: [GetWaterInfo()],
             },
         ),
+        (
+            "o073ti",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AutoEmptyEvent: [GetAutoEmpty()],
+                AvailabilityEvent: [GetBattery(is_available_check=True)],
+                BatteryEvent: [GetBattery()],
+                CachedMapInfoEvent: [GetCachedMapInfo()],
+                CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
+                ChildLockEvent: [GetChildLock()],
+                CleanCountEvent: [GetCleanCount()],
+                CleanLogEvent: [GetCleanLogs()],
+                CleanPreferenceEvent: [GetCleanPreference()],
+                ContinuousCleaningEvent: [GetContinuousCleaning()],
+                CustomCommandEvent: [],
+                EfficiencyModeEvent: [GetEfficiencyMode()],
+                ErrorEvent: [GetError()],
+                FanSpeedEvent: [GetFanSpeed()],
+                LifeSpanEvent: [
+                    GetLifeSpan(
+                        [
+                            LifeSpan.BRUSH,
+                            LifeSpan.FILTER,
+                            LifeSpan.HAND_FILTER,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.CLEANING_SOLUTION,
+                            LifeSpan.SEWAGE_BOX,
+                            LifeSpan.ROUND_MOP,
+                            LifeSpan.DUST_BAG,
+                            LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION,
+                            LifeSpan.MOP_WASHING_TRAY,
+                            LifeSpan.WATER_SINK,
+                        ]
+                    )
+                ],
+                MajorMapEvent: [GetMajorMap()],
+                MapChangedEvent: [],
+                MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
+                MultimapStateEvent: [GetMultimapState()],
+                NetworkInfoEvent: [GetNetInfo()],
+                OtaEvent: [GetOta()],
+                PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
+                RoomsEvent: [GetCachedMapInfo()],
+                StateEvent: [GetChargeState(), GetWorkState()],
+                StationEvent: [GetWorkState()],
+                StatsEvent: [GetStats()],
+                SweepModeEvent: [GetSweepMode()],
+                TotalStatsEvent: [GetTotalStats()],
+                TrueDetectEvent: [GetTrueDetect()],
+                VoiceAssistantStateEvent: [GetVoiceAssistantState()],
+                VolumeEvent: [GetVolume()],
+                WaterCustomAmountEvent: [GetWaterInfo()],
+                WorkModeEvent: [GetWorkMode()],
+            },
+        ),
     ],
-    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv", "o073ti"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
@@ -278,10 +343,3 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
-
-
-async def test_o073ti_uses_free_clean_area_command() -> None:
-    """Test that o073ti uses freeClean for area cleaning."""
-    device_info = await hardware.get_static_device_info("o073ti")
-    assert isinstance(device_info, StaticDeviceInfo)
-    assert device_info.capabilities.clean.action.area is CleanAreaFreeClean
