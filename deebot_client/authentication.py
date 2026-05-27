@@ -64,6 +64,7 @@ def create_rest_config(
     device_id: str,
     alpha_2_country: str,
     override_rest_url: str | None = None,
+    auth_domain: str = "ecovacs.com",
 ) -> RestConfiguration:
     """Create configuration."""
     continent_postfix = get_continent_url_postfix(alpha_2_country)
@@ -74,8 +75,8 @@ def create_rest_config(
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
         tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
-        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
-        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+        login_url = f"https://gl-{country_url}-api.{auth_domain}"
+        auth_code_url = f"https://gl-{country_url}-openapi.{auth_domain}"
 
     return RestConfiguration(
         session=session,
