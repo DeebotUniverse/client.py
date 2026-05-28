@@ -97,12 +97,12 @@ class CleanAreaV2(CleanV2):
     def __init__(
         self, mode: CleanMode, area: list[int | float], cleanings: int = 1
     ) -> None:
+        value = ",".join(str(i) for i in area)
+        if mode == CleanMode.FREE_CLEAN:
+            value =  f"{cleanings},{value}"
         self._additional_content = {
             "type": mode.value,
-            # freeClean requires the cleanings count prefixed to the rooms string
-            "value": f"{cleanings},{','.join(str(i) for i in area)}"
-            if mode == CleanMode.FREE_CLEAN
-            else ",".join(str(i) for i in area),
+            "value": value,
         }
         super().__init__(CleanAction.START)
 
