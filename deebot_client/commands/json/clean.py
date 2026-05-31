@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, ClassVar
+from weakref import WeakKeyDictionary
 
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
@@ -22,6 +23,10 @@ class Clean(ExecuteCommand):
     """Clean command."""
 
     NAME = "clean"
+    _v2_args: ClassVar[bool] = False
+    _active_clean_type: ClassVar[WeakKeyDictionary[EventBus, str]] = (
+        WeakKeyDictionary()
+    )
 
     def __init__(self, action: CleanAction) -> None:
         super().__init__(self._get_args(action))
@@ -46,9 +51,22 @@ class Clean(ExecuteCommand):
             ):
                 self._args = self._get_args(CleanAction.RESUME)
 
+            content = self._args.get("content")
+            if isinstance(content, dict) and self._args["act"] in (
+                CleanAction.PAUSE.value,
+                CleanAction.RESUME.value,
+                CleanAction.STOP.value,
+            ):
+                content["type"] = self._active_clean_type.get(
+                    event_bus, CleanMode.AUTO.value
+                )
+
         return await super()._execute(authenticator, device_info, event_bus)
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        if self._v2_args:
+            content: dict[str, str] = {"type": CleanMode.AUTO.value}
+            return {"act": action.value, "content": content}
         args = {"act": action.value}
         if action == CleanAction.START:
             args["type"] = CleanMode.AUTO.value
@@ -79,16 +97,13 @@ class CleanV2(Clean):
     """Clean V2 command."""
 
     NAME = "clean_V2"
+    _v2_args: ClassVar[bool] = True
 
-    def _get_args(self, action: CleanAction) -> dict[str, Any]:
-        content: dict[str, str] = {}
-        args = {"act": action.value, "content": content}
-        match action:
-            case CleanAction.START:
-                content["type"] = CleanMode.AUTO.value
-            case CleanAction.STOP | CleanAction.PAUSE:
-                content["type"] = ""
-        return args
+
+class CleanMower(Clean):
+    """Clean command for mower devices: 'clean' endpoint with V2 content format."""
+
+    _v2_args: ClassVar[bool] = True
 
 
 class CleanAreaV2(CleanV2):
@@ -139,6 +154,9 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             content = clean_state.get("content", {})
             if "type" in content:
                 clean_type = content.get("type")
+
+            if clean_type:
+                Clean._active_clean_type[event_bus] = clean_type  # noqa: SLF001
 
             if clean_type == "customArea":
                 area_values = content
