@@ -168,10 +168,16 @@ def _apply_patch() -> None:
 
         changed = False
 
-        # Replace CleanV2 → appropriate CleanMower variant so get_device_info()
-        # produces the correct CapabilityCleanAction.
+        # Replace CleanV2 → variant (older hardware files that still use CleanV2).
         if getattr(mod, "CleanV2", None) is not None:
             mod.CleanV2 = clean_cmd  # type: ignore[attr-defined]
+            changed = True
+
+        # Replace CleanMower → variant (newer hardware files like 0jbd6s.py
+        # that already import CleanMower directly).  Without this the patch
+        # is a silent no-op on those modules.
+        if getattr(mod, "CleanMower", None) is not None:
+            mod.CleanMower = clean_cmd  # type: ignore[attr-defined]
             changed = True
 
         # Replace GetCleanInfoV2 → GetCleanInfo so state polling uses the
@@ -185,10 +191,11 @@ def _apply_patch() -> None:
             devices_cache.pop(class_, None)
             devices_cache[class_] = mod.get_device_info()
             patched += 1
-            _LOGGER.debug(
-                "deebot_mower_fix: patched %s with %s payload",
+            _LOGGER.info(
+                "deebot_mower_fix: patched %s with %s payload (clean_cmd=%s)",
                 class_,
                 "flat-V1" if class_ in _GOAT_V1_CLASSES else "nested-V2",
+                clean_cmd.__name__,
             )
         else:
             already_fixed += 1
@@ -208,4 +215,27 @@ async def async_setup(hass: Any, config: Any) -> bool:
     """Set up the deebot_mower_fix component and apply the patch."""
     _LOGGER.info("deebot_mower_fix: starting up, applying CleanMower patch …")
     await hass.async_add_executor_job(_apply_patch)
+
+    # Force-reload any active ecovacs config entries so the patched hardware
+    # cache is picked up.  Without this, devices created before our patch ran
+    # keep their original (unpatched) capability bindings.
+    try:
+        entries = hass.config_entries.async_entries("ecovacs")
+    except Exception:  # noqa: BLE001
+        entries = []
+
+    for entry in entries:
+        try:
+            _LOGGER.info(
+                "deebot_mower_fix: reloading ecovacs config entry %s to apply patch",
+                entry.entry_id,
+            )
+            await hass.config_entries.async_reload(entry.entry_id)
+        except Exception as err:  # noqa: BLE001
+            _LOGGER.warning(
+                "deebot_mower_fix: failed to reload ecovacs entry %s: %s",
+                entry.entry_id,
+                err,
+            )
+
     return True
