@@ -121,14 +121,22 @@ def _apply_patch() -> None:
     _base_clean_for_flat = clean_mod.Clean
 
     class _CleanMowerFlat(_base_clean_for_flat):  # type: ignore[misc,valid-type]
-        """Clean command with V1 flat payload for older GOAT firmware.
+        """Clean command with minimal payload for 5xu9h3-family GOAT firmware.
 
-        Sends {"act": "start", "type": "auto"} instead of the nested
-        {"act": "start", "content": {"type": "auto"}} that causes error 20003
-        on 5xu9h3-family firmware.
+        The O1000 LiDAR Pro and related devices reject ANY type field
+        (flat or nested) with code 20003 "unknow type".  Sending just the
+        action verb with no type resolves this:
+          START  -> {"act": "start"}
+          PAUSE  -> {"act": "pause"}
+          STOP   -> {"act": "stop"}
+          RESUME -> {"act": "resume"}
         """
 
         _v2_args: ClassVar[bool] = False
+
+        def _get_args(self, action: Any) -> dict[str, Any]:
+            # Strip the type field entirely — firmware rejects it with 20003.
+            return {"act": action.value}
 
     get_clean_info = getattr(clean_mod, "GetCleanInfo", None)
 
