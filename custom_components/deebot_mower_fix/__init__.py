@@ -39,20 +39,37 @@ _LOGGER = logging.getLogger(__name__)
 DOMAIN = "deebot_mower_fix"
 
 # ---------------------------------------------------------------------------
-# All GOAT mower device classes affected by the clean_V2 bug.
-# These are the 4 canonical hardware files plus every symlinked alias.
+# GOAT mower device classes grouped by required payload format.
+#
+# V1-flat family (5xu9h3 / O1000 LiDAR Pro and variants):
+#   Firmware accepts the legacy clean topic AND the legacy flat payload:
+#   START  → {"act": "start", "type": "auto"}
+#   PAUSE  → {"act": "pause"}
+#   STOP   → {"act": "stop"}
+#   RESUME → {"act": "resume"}
+#
+# V2-content family (xmp9ds A1600 RTK, 300lc5, 51rcxt):
+#   Firmware accepts the legacy clean topic with a V2 nested payload:
+#   START  → {"act": "start",  "content": {"type": "auto"}}
+#   PAUSE  → {"act": "pause",  "content": {"type": "auto"}}
+#   STOP   → {"act": "stop",   "content": {"type": "auto"}}
+#   RESUME → {"act": "resume", "content": {"type": "auto"}}
 # ---------------------------------------------------------------------------
-_GOAT_CLASSES: tuple[str, ...] = (
-    # 5xu9h3.py family (GOAT G1 / O1000 LiDAR Pro and variants)
+
+# Uses flat V1 payload (no nested content object)
+_GOAT_V1_CLASSES: tuple[str, ...] = (
     "5xu9h3", "0jbd6s", "2ap5uq", "2i0fns", "6n9pcz", "77atlz",
     "9bts2s", "aadham", "ao7fpq", "bfvvk", "qhq6i0", "s69g6z", "wwswjm",
-    # 300lc5.py family
-    "300lc5", "6cibhb",
-    # 51rcxt.py family
-    "51rcxt", "2px96q",
-    # xmp9ds.py
-    "xmp9ds",
 )
+
+# Uses V2 nested content payload (confirmed by MQTT traces in issue #852)
+_GOAT_V2_CLASSES: tuple[str, ...] = (
+    "xmp9ds",
+    "300lc5", "6cibhb",
+    "51rcxt", "2px96q",
+)
+
+_GOAT_CLASSES: tuple[str, ...] = _GOAT_V1_CLASSES + _GOAT_V2_CLASSES
 
 
 # ---------------------------------------------------------------------------
@@ -80,9 +97,9 @@ def _apply_patch() -> None:
             "deebot_mower_fix: CleanMower missing from installed deebot_client; "
             "injecting compatibility class"
         )
-        Clean = clean_mod.Clean
+        _base_clean = clean_mod.Clean
 
-        class CleanMower(Clean):  # type: ignore[misc,valid-type]
+        class CleanMower(_base_clean):  # type: ignore[misc,valid-type]
             """Clean command for mower devices (legacy topic, V2 content payload)."""
 
             _v2_args: ClassVar[bool] = True
@@ -97,8 +114,23 @@ def _apply_patch() -> None:
         except ImportError:
             pass
 
-    CleanMower = clean_mod.CleanMower
-    GetCleanInfo = getattr(clean_mod, "GetCleanInfo", None)
+    # CleanMower uses V2 nested payload: {"act": "start", "content": {"type": "auto"}}
+    # CleanMowerFlat uses V1 flat payload: {"act": "start", "type": "auto"} (no content wrapper)
+    # The O1000 LiDAR Pro (5xu9h3 family) rejects the nested format with code 20003.
+    _clean_mower_v2 = clean_mod.CleanMower
+    _base_clean_for_flat = clean_mod.Clean
+
+    class _CleanMowerFlat(_base_clean_for_flat):  # type: ignore[misc,valid-type]
+        """Clean command with V1 flat payload for older GOAT firmware.
+
+        Sends {"act": "start", "type": "auto"} instead of the nested
+        {"act": "start", "content": {"type": "auto"}} that causes error 20003
+        on 5xu9h3-family firmware.
+        """
+
+        _v2_args: ClassVar[bool] = False
+
+    get_clean_info = getattr(clean_mod, "GetCleanInfo", None)
 
     # ── Step 2: patch each hardware module and warm the device cache ─────────
     try:
@@ -115,6 +147,11 @@ def _apply_patch() -> None:
     for class_ in _GOAT_CLASSES:
         not_found_cache.discard(class_)
 
+        # Choose the right CleanMower variant for this hardware family:
+        # V1-flat families (5xu9h3/O1000 etc.) use the flat payload to avoid
+        # firmware error 20003 "unknow type" caused by the nested content object.
+        clean_cmd = _CleanMowerFlat if class_ in _GOAT_V1_CLASSES else _clean_mower_v2
+
         try:
             mod = importlib.import_module(f"deebot_client.hardware.{class_}")
         except ModuleNotFoundError:
@@ -123,16 +160,16 @@ def _apply_patch() -> None:
 
         changed = False
 
-        # Replace CleanV2 → CleanMower in the module's global namespace so
-        # get_device_info() produces the correct CapabilityCleanAction.
+        # Replace CleanV2 → appropriate CleanMower variant so get_device_info()
+        # produces the correct CapabilityCleanAction.
         if getattr(mod, "CleanV2", None) is not None:
-            mod.CleanV2 = CleanMower  # type: ignore[attr-defined]
+            mod.CleanV2 = clean_cmd  # type: ignore[attr-defined]
             changed = True
 
         # Replace GetCleanInfoV2 → GetCleanInfo so state polling uses the
         # correct topic.
-        if getattr(mod, "GetCleanInfoV2", None) is not None and GetCleanInfo:
-            mod.GetCleanInfoV2 = GetCleanInfo  # type: ignore[attr-defined]
+        if getattr(mod, "GetCleanInfoV2", None) is not None and get_clean_info:
+            mod.GetCleanInfoV2 = get_clean_info  # type: ignore[attr-defined]
             changed = True
 
         if changed:
@@ -140,6 +177,11 @@ def _apply_patch() -> None:
             devices_cache.pop(class_, None)
             devices_cache[class_] = mod.get_device_info()
             patched += 1
+            _LOGGER.debug(
+                "deebot_mower_fix: patched %s with %s payload",
+                class_,
+                "flat-V1" if class_ in _GOAT_V1_CLASSES else "nested-V2",
+            )
         else:
             already_fixed += 1
 
