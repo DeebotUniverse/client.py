@@ -37,6 +37,8 @@ if TYPE_CHECKING:
 __all__ = [
     "AutoEmptyEvent",
     "AreaParameter",
+    "AreaName",
+    "AreaNamesEvent",
     "AreaSettingsEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
@@ -343,3 +345,16 @@ class AreaSettingsEvent(Event):
     """Area settings event representation."""
 
     parameters: list[AreaParameter]
+@dataclass(frozen=True)
+class AreaName:
+    """Area name representation (Mower specific)."""
+
+    area_id: int
+    name: str
+
+
+@dataclass(frozen=True)
+class AreaNamesEvent(Event):
+    """Area names event representation."""
+
+    areas: list[AreaName]
