@@ -15,6 +15,7 @@ from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
 from . import bd_setting
+from . import area_set
 
 _LOGGER = get_logger(__name__)
 
@@ -29,6 +30,7 @@ __all__ = [
     "OnWorkState",
     "ReportStats",
     "bd_setting",
+    "area_set",
 ]
 
 # fmt: off
