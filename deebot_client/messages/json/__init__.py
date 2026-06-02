@@ -14,6 +14,7 @@ from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
+from . import bd_setting
 
 _LOGGER = get_logger(__name__)
 
@@ -27,6 +28,7 @@ __all__ = [
     "OnStats",
     "OnWorkState",
     "ReportStats",
+    "bd_setting",
 ]
 
 # fmt: off
