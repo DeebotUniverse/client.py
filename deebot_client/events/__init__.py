@@ -36,6 +36,8 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
+    "AreaParameter",
+    "AreaSettingsEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
@@ -66,6 +68,7 @@ __all__ = [
     "mop_auto_wash_frequency",
     "station",
     "water_info",
+    
 ]
 
 
@@ -324,3 +327,19 @@ class FirmwareEvent(Event):
     """Firmware event."""
 
     version: str
+@dataclass(frozen=True)
+class AreaParameter:
+    """Area parameter representation (Mower specific)."""
+
+    area_id: int
+    angle: int
+    mow_height_level: int
+    cut_mode: int
+    obstacle_height: int
+
+
+@dataclass(frozen=True)
+class AreaSettingsEvent(Event):
+    """Area settings event representation."""
+
+    parameters: list[AreaParameter]
