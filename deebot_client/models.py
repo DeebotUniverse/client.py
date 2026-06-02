@@ -50,6 +50,10 @@ class Room:
     name: str
     id: int
     coordinates: str
+    mow_height_level: int | None = None
+    cut_angle: int | None = None
+    cut_mode: int | None = None
+    obstacle_height: int | None = None
 
 
 @unique
