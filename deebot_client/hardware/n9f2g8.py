@@ -207,7 +207,7 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
             station=CapabilityStation(
-           	 action=CapabilityExecuteTypes(
+                action=CapabilityExecuteTypes(
                     station_action.StationAction, types=(StationAction.EMPTY_DUSTBIN,)
                 ),
                 auto_empty=CapabilitySetTypes(
