@@ -34,14 +34,13 @@ from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvanc
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import CleanV2, GetCleanInfoV2
+from deebot_client.commands.json.clean import CleanMower, GetCleanInfo
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
-from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -63,7 +62,6 @@ from deebot_client.events import (
     StateEvent,
     StatsEvent,
     TotalStatsEvent,
-    TrueDetectEvent,
     VolumeEvent,
 )
 from deebot_client.models import StaticDeviceInfo
@@ -81,7 +79,7 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=CleanV2),
+                action=CapabilityCleanAction(command=CleanMower),
             ),
             custom=CapabilityCustomCommand(
                 event=CustomCommandEvent, get=[], set=CustomCommand
@@ -126,12 +124,9 @@ def get_device_info() -> StaticDeviceInfo:
                 safe_protect=CapabilitySetEnable(
                     SafeProtectEvent, [GetSafeProtect()], SetSafeProtect
                 ),
-                true_detect=CapabilitySetEnable(
-                    TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
-                ),
                 volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
             ),
-            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
             stats=CapabilityStats(
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
                 report=CapabilityEvent(ReportStatsEvent, []),
