@@ -108,6 +108,29 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class CleanMower(Clean):
+    """Auto-mow command for lawn mower devices (GOAT A3000 LiDAR and similar).
+
+    Uses the ``clean`` endpoint with a V2-style ``content`` dict, matching
+    the protocol confirmed via traffic analysis of the GOAT A3000 (cr0e4u):
+
+    .. code-block:: json
+
+        {"act": "start", "content": {"type": "auto"}}
+        {"act": "stop",  "content": {"type": ""}}
+    """
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        content: dict[str, str] = {}
+        args = {"act": action.value, "content": content}
+        match action:
+            case CleanAction.START | CleanAction.RESUME:
+                content["type"] = CleanMode.AUTO.value
+            case CleanAction.STOP | CleanAction.PAUSE:
+                content["type"] = ""
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
