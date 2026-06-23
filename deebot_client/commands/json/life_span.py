@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 
 from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHandling
@@ -14,6 +15,8 @@ from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHa
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.util import LST
+
+_LOGGER = get_logger(__name__)
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
@@ -34,7 +37,14 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
         :return: A message response
         """
         for component in data:
-            component_type = LifeSpan(component["type"])
+            try:
+                component_type = LifeSpan(component["type"])
+            except ValueError:
+                _LOGGER.debug(
+                    "Unknown LifeSpan type %r, skipping", component["type"]
+                )
+                continue
+
             left = int(component["left"])
             total = int(component["total"])
 

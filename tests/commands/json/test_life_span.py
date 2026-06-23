@@ -195,6 +195,29 @@ from . import assert_command, assert_execute_command
             ),
             (LifeSpanEvent(LifeSpan.SEWAGE_BOX, 100.0, 3600),),
         ),
+        (
+            GetLifeSpan({LifeSpan.DUST_BUCKET}),
+            get_request_json(
+                get_success_body([{"type": "dustBucket", "left": 1500, "total": 1500}])
+            ),
+            (LifeSpanEvent(LifeSpan.DUST_BUCKET, 100.0, 1500),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.DUST_CONTAINER_FILTER}),
+            get_request_json(
+                get_success_body([{"type": "dustContainerFilter", "left": 90, "total": 90}])
+            ),
+            (LifeSpanEvent(LifeSpan.DUST_CONTAINER_FILTER, 100.0, 90),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION}),
+            get_request_json(
+                get_success_body(
+                    [{"type": "heavyDutyCleaningSolution", "left": 100, "total": 100}]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION, 100.0, 100),),
+        ),
     ],
 )
 async def test_GetLifeSpan(
@@ -218,3 +241,22 @@ async def test_GetLifeSpan(
 )
 async def test_ResetLifeSpan(command: ResetLifeSpan, args: dict[str, str]) -> None:
     await assert_execute_command(command, args)
+
+
+async def test_GetLifeSpan_unknown_type_skipped() -> None:
+    """Unknown LifeSpan types should be skipped, not raise an exception."""
+    from unittest.mock import MagicMock
+
+    from deebot_client.commands.json.life_span import GetLifeSpan as _GetLifeSpan
+    from deebot_client.message import HandlingState
+
+    event_bus = MagicMock()
+    data = [
+        {"type": "brush", "left": 17979, "total": 18000},
+        {"type": "unknownFutureType", "left": 100, "total": 100},
+        {"type": "heap", "left": 7179, "total": 7200},
+    ]
+    result = _GetLifeSpan._handle_body_data_list(event_bus, data)
+    assert result.state == HandlingState.SUCCESS
+    # brush and heap notified; unknown type silently skipped
+    assert event_bus.notify.call_count == 2
