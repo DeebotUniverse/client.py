@@ -38,6 +38,7 @@ from .map import (
 )
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
+from .neo2 import GetCombinedStatus, Neo2Charge, Neo2Clean, Neo2SetFanSpeed
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
@@ -91,6 +92,7 @@ __all__ = [
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
+    "GetCombinedStatus",
     "GetMopAutoWashFrequency",
     "GetMoveUpWarning",
     "GetMultimapState",
@@ -107,6 +109,9 @@ __all__ = [
     "GetVolume",
     "GetWaterInfo",
     "GetWorkMode",
+    "Neo2Charge",
+    "Neo2Clean",
+    "Neo2SetFanSpeed",
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
@@ -206,6 +211,11 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMapTrace,
     GetMinorMap,
     SetMajorMap,
+
+    GetCombinedStatus,
+    Neo2Charge,
+    Neo2Clean,
+    Neo2SetFanSpeed,
 
     GetMopAutoWashFrequency,
     SetMopAutoWashFrequency,

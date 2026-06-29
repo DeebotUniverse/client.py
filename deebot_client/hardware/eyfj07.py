@@ -1,4 +1,5 @@
-"""DEEBOT NEO 2.0 (device class eyfj07) hardware capabilities."""
+"""DEEBOT NEO 2.0 (device class eyfj07)."""
+
 from __future__ import annotations
 
 from deebot_client.capabilities import (
@@ -16,6 +17,12 @@ from deebot_client.capabilities import (
 )
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.life_span import ResetLifeSpan
+from deebot_client.commands.json.neo2 import (
+    GetCombinedStatus,
+    Neo2Charge,
+    Neo2Clean,
+    Neo2SetFanSpeed,
+)
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
@@ -26,7 +33,6 @@ from deebot_client.events import (
     CustomCommandEvent,
     ErrorEvent,
     FanSpeedEvent,
-    FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
     NetworkInfoEvent,
@@ -36,14 +42,8 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
 )
+from deebot_client.events.fan_speed import FanSpeedLevel
 from deebot_client.models import StaticDeviceInfo
-
-from deebot_client.neo2_commands import (
-    GetCombinedStatus,
-    Neo2Charge,
-    Neo2Clean,
-    Neo2SetFanSpeed,
-)
 
 
 def get_device_info() -> StaticDeviceInfo:
@@ -90,7 +90,6 @@ def get_device_info() -> StaticDeviceInfo:
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
             settings=CapabilitySettings(
-                child_lock=None,
                 ota=CapabilityEvent(OtaEvent, [GetCombinedStatus()]),
             ),
             state=CapabilityEvent(StateEvent, [GetCombinedStatus()]),
@@ -99,6 +98,6 @@ def get_device_info() -> StaticDeviceInfo:
                 report=CapabilityEvent(ReportStatsEvent, []),
                 total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
             ),
-            water=None,  # No mop attached; water amount is read-only for now
+            water=None,
         ),
     )
