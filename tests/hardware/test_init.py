@@ -31,6 +31,7 @@ from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
 from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
+from deebot_client.commands.json.mow import GetMI
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta
@@ -85,6 +86,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.hardware.cr0e4u import get_device_info as get_cr0e4u_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
 from deebot_client.models import StaticDeviceInfo
 
@@ -98,6 +100,7 @@ if TYPE_CHECKING:
     [
         ("not_specified", None),
         ("yna5xi", get_yna5xi_info()),
+        ("cr0e4u", get_cr0e4u_info()),
     ],
 )
 async def test_get_static_device_info(
@@ -244,8 +247,37 @@ async def test_get_static_device_info(
                 WaterAmountEvent: [GetWaterInfo()],
             },
         ),
+        (
+            "cr0e4u",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AvailabilityEvent: [GetBattery(is_available_check=True)],
+                BatteryEvent: [GetBattery()],
+                BorderSwitchEvent: [GetBorderSwitch()],
+                CachedMapInfoEvent: [GetMI()],
+                ChildLockEvent: [GetChildLock()],
+                CrossMapBorderWarningEvent: [GetCrossMapBorderWarning()],
+                CutDirectionEvent: [GetCutDirection()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetError()],
+                LifeSpanEvent: [GetLifeSpan([LifeSpan.BLADE, LifeSpan.LENS_BRUSH])],
+                MajorMapEvent: [GetMajorMap()],
+                MapChangedEvent: [],
+                MapTraceEvent: [GetMapTrace()],
+                MoveUpWarningEvent: [GetMoveUpWarning()],
+                NetworkInfoEvent: [GetNetInfo()],
+                PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
+                RoomsEvent: [],
+                SafeProtectEvent: [GetSafeProtect()],
+                StateEvent: [GetChargeState(), GetCleanInfo()],
+                StatsEvent: [GetStats()],
+                TotalStatsEvent: [GetTotalStats()],
+                VolumeEvent: [GetVolume()],
+            },
+        ),
     ],
-    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv", "cr0e4u"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]

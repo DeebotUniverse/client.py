@@ -13,7 +13,7 @@ from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .child_lock import GetChildLock, SetChildLock
-from .clean import Clean, CleanArea, CleanV2, GetCleanInfo, GetCleanInfoV2
+from .clean import Clean, CleanArea, CleanMower, CleanV2, GetCleanInfo, GetCleanInfoV2
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
@@ -38,6 +38,7 @@ from .map import (
 )
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
+from .mow import CleanMowerArea, GetMI
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
@@ -62,6 +63,8 @@ __all__ = [
     "Charge",
     "Clean",
     "CleanArea",
+    "CleanMower",
+    "CleanMowerArea",
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
@@ -84,6 +87,7 @@ __all__ = [
     "GetError",
     "GetFanSpeed",
     "GetLifeSpan",
+    "GetMI",
     "GetMajorMap",
     "GetMapInfoV2",
     "GetMapSet",
@@ -254,7 +258,10 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetWaterInfo,
 
     GetWorkMode,
-    SetWorkMode
+    SetWorkMode,
+
+    # GOAT A3000 LiDAR mower commands
+    GetMI,
 ]
 # fmt: on
 

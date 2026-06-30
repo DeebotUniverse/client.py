@@ -11,6 +11,8 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .mow import OnArI, OnMI
+from .mower_telemetry import OnCleanInfo, OnPos
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -18,15 +20,20 @@ from .work_state import OnWorkState
 _LOGGER = get_logger(__name__)
 
 __all__ = [
+    "OnArI",
     "OnBattery",
     "OnCachedMapInfo",
+    "OnCleanInfo",
     "OnGpsPos",
+    "OnMI",
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnPos",
     "OnStats",
     "OnWorkState",
     "ReportStats",
+    "get_legacy_message",
 ]
 
 # fmt: off
@@ -42,6 +49,16 @@ _MESSAGES: list[type[Message]] = [
     OnMajorMap,
     OnMapInfoV2,
     OnMapSetV2,
+
+    # GOAT A3000 LiDAR mower zone map messages
+    OnMI,
+    OnArI,
+
+    # GOAT A3000 LiDAR mower position/state push messages.
+    # Note: onStats (mower) uses the same payload shape as vacuums
+    # (area + time fields), so the existing OnStats handler covers both.
+    OnCleanInfo,
+    OnPos,
 
     OnStationState,
 
