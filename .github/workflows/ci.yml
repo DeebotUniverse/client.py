@@ -139,6 +139,8 @@ jobs:
       - python-code-quality
       - rust-code-quality
       - prek
+    permissions:
+      code-quality: write # required for code coverage upload to github
     strategy:
       fail-fast: false
       matrix:
@@ -186,6 +188,12 @@ jobs:
           disable_telem: true
           use_oidc: true
           files: coverage.lcov,coverage.xml
+      - name: Upload coverage report
+        uses: actions/upload-code-coverage@v1
+        with:
+          file: coverage.xml
+          language: Python
+          label: code-coverage/pytest
       - name: Upload test results to Codecov
         if: ${{ !cancelled() && steps.tests.outcome == 'success' }}
         uses: codecov/codecov-action@fb8b3582c8e4def4969c97caa2f19720cb33a72f # v7.0.0
