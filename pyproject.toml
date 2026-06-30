@@ -69,7 +69,7 @@ test = [
     "pytest-timeout==2.4.0",
     "pytest==9.0.3",
     "testfixtures==12.2.0",
-    "pytest-github-actions-annotate-failures==0.4.0",
+    "pytest-github-actions-annotate-failures==0.4.2",
     "pytest-xdist==3.8.0",
     "syrupy==5.3.1",
 ]
