@@ -29,6 +29,5 @@
   ],
   "pre-commit": {
     "enabled": true
-  },
-  "rebaseWhen": "behind-base-branch"
+  }
 }
