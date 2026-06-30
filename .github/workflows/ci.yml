@@ -87,7 +87,7 @@ jobs:
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
 
-      - uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16
+      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16
         with:
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
@@ -111,7 +111,7 @@ jobs:
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
-      - uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16
+      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16
         with:
           components: rustfmt,clippy
       - name: Rust format
@@ -152,7 +152,7 @@ jobs:
         id: setup-python
       - name: 🏗 Install uv and Python
         uses: astral-sh/setup-uv@fac544c07dec837d0ccb6301d7b5580bf5edae39 # v8.2.0
-      - uses: actions-rust-lang/setup-rust-toolchain@2b1f5e9b395427c92ee4e3331786ca3c37afe2d7 # v1.16
+      - uses: actions-rust-lang/setup-rust-toolchain@46268bd060767258de96ed93c1251119784f2ab6 # v1.16
         with:
           components: llvm-tools
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
