@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import pytest
 
+from deebot_client.events.map import MowerMapTraceGroup, MowerMapTraceSegment
 from deebot_client.mower_trace import MowerMapTrace
 
 
@@ -83,6 +84,41 @@ def test_to_svg_structure(
         assert needle in svg
     for needle in absent_substrings:
         assert needle not in svg
+
+
+def test_add_groups_flattens_structured_payload() -> None:
+    trace = MowerMapTrace()
+    groups = [
+        MowerMapTraceGroup(
+            group_id="5",
+            segments=[
+                MowerMapTraceSegment(points=[(0, 0), (10, 20)]),
+                MowerMapTraceSegment(points=[(100, 100)]),
+            ],
+        ),
+        MowerMapTraceGroup(
+            group_id="6",
+            segments=[MowerMapTraceSegment(points=[(200, 200)])],
+        ),
+    ]
+    added = trace.add_groups(groups)
+    assert added == 4
+    assert trace.has_points
+    svg = trace.to_svg()
+    assert svg is not None
+
+
+def test_add_groups_empty_input_returns_zero() -> None:
+    trace = MowerMapTrace()
+    assert trace.add_groups([]) == 0
+    assert not trace.has_points
+
+
+def test_add_groups_groups_without_segments_yield_no_points() -> None:
+    trace = MowerMapTrace()
+    groups = [MowerMapTraceGroup(group_id="9", segments=[])]
+    assert trace.add_groups(groups) == 0
+    assert not trace.has_points
 
 
 def test_to_svg_y_axis_is_flipped() -> None:

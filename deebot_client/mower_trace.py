@@ -2,13 +2,21 @@
 
 Mowers (e.g. Ecovacs GOAT family) do not expose the regular ``map``
 capability used by vacuums, but their firmware pushes trajectory points
-through :class:`~deebot_client.events.map.MapTraceEvent`. This module
-keeps the parsing, accumulation and rendering of those points in one
-place so consumers (e.g. the Home Assistant integration) only have to
-forward the event payload and read back an SVG.
+through :class:`~deebot_client.events.map.MapTraceEvent` (flat) and the
+richer :class:`~deebot_client.events.map.MowerMapTraceEvent` (groups +
+segments). This module keeps the parsing, accumulation and rendering of
+those points in one place so consumers (e.g. the Home Assistant
+integration) only have to forward the event payload and read back an SVG.
 """
 
 from __future__ import annotations
+
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from collections.abc import Iterable
+
+    from deebot_client.events.map import MowerMapTraceGroup
 
 
 class MowerMapTrace:
@@ -36,6 +44,10 @@ class MowerMapTrace:
         Tokens are ``"x,y"`` separated by ``";"``. Malformed tokens are
         skipped silently. The accumulator keeps at most :attr:`MAX_POINTS`
         points (FIFO drop). Returns the number of points actually added.
+
+        This is the legacy flat path. Prefer :meth:`add_groups` for
+        :class:`MowerMapTraceEvent` payloads — it preserves the segment
+        boundaries that this flat representation loses.
         """
         new_points: list[tuple[int, int]] = []
         for raw_token in raw.split(";"):
@@ -47,10 +59,28 @@ class MowerMapTrace:
                 new_points.append((int(x_str), int(y_str)))
             except ValueError:
                 continue
+        return self._extend(new_points)
 
+    def add_groups(self, groups: Iterable[MowerMapTraceGroup]) -> int:
+        """Accumulate points from a structured :class:`MowerMapTraceEvent`.
+
+        Group and segment boundaries are preserved in the source payload
+        (and matter for future static-map work), but the current SVG
+        renderer projects them onto a single polyline. We flatten at
+        accumulation time and keep the boundaries available to richer
+        renderers if/when they land.
+        """
+        new_points: list[tuple[int, int]] = [
+            point
+            for group in groups
+            for segment in group.segments
+            for point in segment.points
+        ]
+        return self._extend(new_points)
+
+    def _extend(self, new_points: list[tuple[int, int]]) -> int:
         if not new_points:
             return 0
-
         self._points.extend(new_points)
         if len(self._points) > self.MAX_POINTS:
             self._points = self._points[-self.MAX_POINTS :]

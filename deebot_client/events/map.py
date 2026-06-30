@@ -49,6 +49,45 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MowerMapTraceSegment:
+    """One contiguous run of mower trace points."""
+
+    points: list[tuple[int, int]]
+
+
+@dataclass(frozen=True)
+class MowerMapTraceGroup:
+    """One group of related mower trace segments.
+
+    Group identifiers carry semantic meaning in the firmware payload
+    (zone / layer / cycle) and are preserved here rather than flattened.
+    """
+
+    group_id: str
+    segments: list[MowerMapTraceSegment]
+
+
+@dataclass(frozen=True)
+class MowerMapTraceEvent(Event):
+    """Mower trace event preserving group and segment boundaries.
+
+    Distinct from :class:`MapTraceEvent` (vacuum flat polyline). The same
+    ``OnMapTrace`` handler also emits a flattened :class:`MapTraceEvent`
+    so the legacy Rust ``Map`` renderer (vacuum stack) keeps working.
+
+    The compressed firmware stream is reassembled across ``index`` chunks
+    before this event is emitted, so a single event corresponds to one
+    complete payload — never a partial slice.
+    """
+
+    mid: str
+    batid: str
+    serial: str
+    type: str
+    groups: list[MowerMapTraceGroup]
+
+
+@dataclass(frozen=True)
 class MapInfoEvent(Event):
     """Map info event representation."""
 
