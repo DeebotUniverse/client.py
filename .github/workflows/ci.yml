@@ -189,7 +189,7 @@ jobs:
           use_oidc: true
           files: coverage.lcov,coverage.xml
       - name: Upload coverage report
-        uses: actions/upload-code-coverage@v1
+        uses: actions/upload-code-coverage@82c7aee3fb2ad768e00b00a0a8d749c5815085b6 # v1
         with:
           file: coverage.xml
           language: Python
