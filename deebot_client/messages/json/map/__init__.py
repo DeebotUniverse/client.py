@@ -330,10 +330,11 @@ class OnMapTrace(MessageBodyDataDict):
         existing = cls._CHUNK_BUFFER.get(key, {})
         per_key_total = sum(len(b) for b in existing.values()) + len(chunk_bytes)
         if per_key_total > cls._MAX_BYTES_PER_KEY:
+            # Don't log mid/batid — those identify a specific account/device
+            # and CodeQL flags them as PII.
             _LOGGER.debug(
-                "onMapTrace: per-key buffer cap (%d B) exceeded for %s; dropping",
+                "onMapTrace: per-key buffer cap (%d B) exceeded; dropping",
                 cls._MAX_BYTES_PER_KEY,
-                key,
             )
             cls._CHUNK_BUFFER.pop(key, None)
             return HandlingResult.analyse()
