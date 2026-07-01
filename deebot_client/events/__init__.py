@@ -157,6 +157,12 @@ class LifeSpan(StrEnumWithXml):
     MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
     WEED_ROPE = "weedRope", "WeedRope"            
     TRIMMER_BRUSH = "trimmerBrush", "TrimmerBrush" 
+    DUST_BUCKET = "dustBucket", "DustBucket"
+    DUST_CONTAINER_FILTER = "dustContainerFilter", "DustContainerFilter"
+    HEAVY_DUTY_CLEANING_SOLUTION = (
+        "heavyDutyCleaningSolution",
+        "HeavyDutyCleaningSolution",
+    )
 
 
 @dataclass(frozen=True)
