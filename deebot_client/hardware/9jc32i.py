@@ -154,7 +154,7 @@ def get_device_info() -> StaticDeviceInfo:
                     types=(
                         WorkMode.VACUUM_AND_MOP,
                         WorkMode.VACUUM,
-                        WorkMode.MOP,           # App UI 隐藏但固件实测支持
+                        WorkMode.MOP,
                         WorkMode.MOP_AFTER_VACUUM,
                     ),
                 ),
@@ -258,8 +258,6 @@ def get_device_info() -> StaticDeviceInfo:
                     event=AutoEmptyEvent,
                     get=[GetAutoEmpty()],
                     set=SetAutoEmpty,
-                    # App shows "标准" / "高频"; actual JSON values need packet-capture
-                    # verification. AUTO / SMART are the closest existing enum values.
                     types=(
                         auto_empty.Frequency.AUTO,
                         auto_empty.Frequency.SMART,
