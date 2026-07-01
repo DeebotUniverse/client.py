@@ -348,11 +348,17 @@ jobs:
 
   benchmarks:
     runs-on: "ubuntu-latest"
-    name: Run benchmarks
+    name: Run benchmarks (${{ matrix.mode }})
     if: ${{ github.event_name != 'release' }}
     needs:
       - info
       - tests
+    strategy:
+      fail-fast: false
+      matrix:
+        mode:
+          - simulation
+          - memory
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@9c091bb21b7c1c1d1991bb908d89e4e9dddfe3e0 # v7.0.0
@@ -378,7 +384,7 @@ jobs:
         uses: CodSpeedHQ/action@a4a36bb07c0638b0b4ca52bf1f3dad1b4289e52f # v4.18.1
         with:
           run: pytest tests/ --codspeed
-          mode: instrumentation
+          mode: ${{ matrix.mode }}
 
   sdist:
     name: Create source distribution
