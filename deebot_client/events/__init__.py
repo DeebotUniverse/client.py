@@ -155,8 +155,8 @@ class LifeSpan(StrEnumWithXml):
     STATION_FILTER = "spHeap", "SpHeap"
     WATER_SINK = "waterSink", "WaterSink"
     MOP_WASHING_TRAY = "mopWashingTray", "mopWashingTray"
-    WEED_ROPE = "weedRope", "WeedRope"            
-    TRIMMER_BRUSH = "trimmerBrush", "TrimmerBrush" 
+    WEED_ROPE = "weedRope", "WeedRope"
+    TRIMMER_BRUSH = "trimmerBrush", "TrimmerBrush"
     DUST_BUCKET = "dustBucket", "DustBucket"
     DUST_CONTAINER_FILTER = "dustContainerFilter", "DustContainerFilter"
     HEAVY_DUTY_CLEANING_SOLUTION = (
