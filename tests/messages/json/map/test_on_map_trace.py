@@ -5,6 +5,7 @@ from __future__ import annotations
 import base64
 from unittest.mock import Mock
 
+import orjson
 import pytest
 
 from deebot_client.event_bus import EventBus
@@ -348,6 +349,81 @@ def test_OnMapTrace_different_keys_have_independent_buffers() -> None:
     OnMapTrace.handle(event_bus, _envelope(chunks[1], 110, index="1", serial="1"))
     assert ("123456789", "hmfald", "1", "4") not in OnMapTrace._CHUNK_BUFFER
     assert ("123456789", "hmfald", "2", "4") in OnMapTrace._CHUNK_BUFFER
+
+
+def test_OnMapTrace_parse_groups_handles_malformed_input() -> None:
+    """_parse_groups skips non-list groups, non-string segments, malformed points.
+
+    Covers the individual guard branches inside the parser that a corrupt
+    firmware payload can trip (Codecov: 87% patch → aims for the missing
+    per-item branches).
+    """
+    # non-JSON list → returns None
+    assert OnMapTrace._parse_groups(b'{"not":"a list"}') is None
+
+    # invalid JSON → returns None
+    assert OnMapTrace._parse_groups(b"not json at all") is None
+
+    # empty list at top level → returns empty group list (not None)
+    assert OnMapTrace._parse_groups(b"[]") == []
+
+    # Mix of malformed and one good group
+    payload = orjson.dumps(
+        [
+            "not-a-list-group",  # non-list group → skipped
+            [],  # empty group (no id) → skipped
+            ["7", 12345, None],  # non-string segments → skipped
+            [
+                "8",
+                "not-a-point;bad,coord;",
+                "0;1,2;bad,notanint;3,4;",
+            ],
+        ]
+    )
+    groups = OnMapTrace._parse_groups(payload)
+    # Only group "8" survives, and only its valid points make it in.
+    assert groups is not None
+    assert len(groups) == 1
+    assert groups[0].group_id == "8"
+    # The first segment yields no valid coordinate pairs → skipped
+    # (a segment that yields zero points is dropped by the parser).
+    # The second segment gives (1,2) and (3,4); "bad,notanint" is skipped.
+    assert len(groups[0].segments) == 1
+    assert groups[0].segments[0].points == [(1, 2), (3, 4)]
+
+
+def test_OnMapTrace_evict_to_make_room_drops_oldest_by_total_bytes() -> None:
+    """When the accumulated buffer would exceed the global cap, oldest keys drop.
+
+    Covers the ``while _total() + incoming > _MAX_TOTAL_BYTES`` branch of
+    ``_evict_to_make_room`` that per-key eviction alone doesn't exercise.
+    """
+    # Fill the buffer just under the total cap with a few keys, then request
+    # room for a chunk large enough to push over the limit.
+    payload = b"\x00" * 500_000  # 500 kB
+    OnMapTrace._CHUNK_BUFFER[("mid", "batid", "1", "4")] = {0: payload}
+    OnMapTrace._CHUNK_BUFFER[("mid", "batid", "2", "4")] = {0: payload}
+    OnMapTrace._CHUNK_BUFFER[("mid", "batid", "3", "4")] = {0: payload}
+    # Total buffered = 1.5 MB. Adding 700 kB would push above 2 MB cap.
+    OnMapTrace._evict_to_make_room(700_000)
+    # At least one key was evicted to fit the incoming payload under the cap.
+    remaining_total = sum(
+        len(b) for chunks in OnMapTrace._CHUNK_BUFFER.values() for b in chunks.values()
+    )
+    assert remaining_total + 700_000 <= OnMapTrace._MAX_TOTAL_BYTES
+
+
+def test_OnMapTrace_evict_to_make_room_caps_keys_tracked() -> None:
+    """Adding more than _MAX_KEYS_TRACKED cycles drops the oldest one first."""
+    # Fill exactly at the limit with tiny chunks (won't trigger byte-cap eviction)
+    tiny = b"\x00" * 10
+    for i in range(OnMapTrace._MAX_KEYS_TRACKED):
+        OnMapTrace._CHUNK_BUFFER[("mid", "batid", str(i), "4")] = {0: tiny}
+    assert len(OnMapTrace._CHUNK_BUFFER) == OnMapTrace._MAX_KEYS_TRACKED
+
+    # Request room for a tiny incoming — should evict the oldest key.
+    OnMapTrace._evict_to_make_room(10)
+    assert len(OnMapTrace._CHUNK_BUFFER) < OnMapTrace._MAX_KEYS_TRACKED
 
 
 def test_OnMapTrace_per_key_byte_cap_drops_runaway_buffer() -> None:
