@@ -273,8 +273,6 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
         if not isinstance(data, dict):
             return HandlingResult(HandlingState.ANALYSE)
 
-        _LOGGER.debug("GetCombinedStatus data: %s", data)
-
         if "battery" in data and data["battery"] is not None:
             event_bus.notify(BatteryEvent(data["battery"]))
 
@@ -297,10 +295,7 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
             state = State.CLEANING if work_mode and work_mode != "stop" else State.IDLE
 
         if state is not None:
-            _LOGGER.debug(
-                "NEO2 state: %s (chargeStatus=%s pauseSwitch=%s workMode=%s error=%s)",
-                state, charge_status, pause_switch, work_mode, error_list,
-            )
+            _LOGGER.debug("NEO2 derived state: %s", state)
             event_bus.notify(StateEvent(state))
 
         consumables = data.get("consumables")
@@ -309,9 +304,7 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
                 item_type = item.get("type")
                 life_span_type = _CONSUMABLE_MAP.get(item_type)
                 if life_span_type is None:
-                    _LOGGER.debug(
-                        "Unmapped consumable type %r — skipping LifeSpanEvent", item_type
-                    )
+                    _LOGGER.debug("Unmapped consumable type — skipping LifeSpanEvent")
                     continue
                 left = item.get("left")
                 total = item.get("total")
@@ -340,7 +333,7 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
             if fan_level is not None:
                 event_bus.notify(FanSpeedEvent(fan_level))
             else:
-                _LOGGER.debug("Unmapped fanMode %r — skipping FanSpeedEvent", fan_mode)
+                _LOGGER.debug("Unmapped fanMode — skipping FanSpeedEvent")
 
         water_mode = data.get("waterMode")
         if water_mode is not None:
@@ -348,7 +341,7 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
             if water_amount is not None:
                 event_bus.notify(WaterAmountEvent(water_amount))
             else:
-                _LOGGER.debug("Unmapped waterMode %r — skipping WaterAmountEvent", water_mode)
+                _LOGGER.debug("Unmapped waterMode — skipping WaterAmountEvent")
 
         mop_state = data.get("mopState")
         if mop_state is not None:
@@ -358,7 +351,7 @@ class GetCombinedStatus(JsonCommandWithMessageHandling):
                 # Any value other than "none" is treated as mop attached.
                 # Only "none" has been confirmed from captures; the exact
                 # string for "attached" is not yet known.
-                _LOGGER.debug("mopState=%r — treating as mop attached", mop_state)
+                _LOGGER.debug("Non-null mopState — treating as mop attached")
                 event_bus.notify(MopAttachedEvent(attached=True))
 
         child_lock = data.get("childLock")
