@@ -99,7 +99,7 @@ class CleanAreaV2(CleanV2):
     ) -> None:
         value = ",".join(str(i) for i in area)
         if mode == CleanMode.FREE_CLEAN:
-            value =  f"{cleanings},{value}"
+            value = f"{cleanings},{value}"
         self._additional_content = {
             "type": mode.value,
             "value": value,
