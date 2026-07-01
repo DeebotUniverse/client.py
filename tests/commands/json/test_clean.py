@@ -161,7 +161,6 @@ async def test_Clean_act(
     ],
 )
 async def test_CleanArea(
-    command: CleanArea | CleanAreaV2,
-    args: dict[str, str],
+    command: CleanArea | CleanAreaV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
