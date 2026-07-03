@@ -50,9 +50,15 @@ class MapTraceEvent(Event):
 
 @dataclass(frozen=True)
 class MowerMapTraceSegment:
-    """One contiguous run of mower trace points."""
+    """One contiguous run of mower trace points.
+
+    ``raw`` keeps the original firmware segment string so downstream
+    consumers can re-check assumptions about the leading marker and the
+    ``x,y`` field split as the format is reverse-engineered further.
+    """
 
     points: list[tuple[int, int]]
+    raw: str | None = None
 
 
 @dataclass(frozen=True)

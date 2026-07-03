@@ -253,7 +253,9 @@ class OnMapTrace(MessageBodyDataDict):
                     except ValueError:
                         continue
                 if points:
-                    segments.append(MowerMapTraceSegment(points=points))
+                    segments.append(
+                        MowerMapTraceSegment(points=points, raw=raw_segment)
+                    )
             if segments:
                 groups.append(MowerMapTraceGroup(group_id=group_id, segments=segments))
         return groups

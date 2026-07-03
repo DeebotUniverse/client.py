@@ -88,7 +88,12 @@ def test_OnMapTrace_emits_structured_event_and_flat_compat() -> None:
     expected_groups = [
         MowerMapTraceGroup(
             group_id="7",
-            segments=[MowerMapTraceSegment(points=[(100, 200), (150, 250)])],
+            segments=[
+                MowerMapTraceSegment(
+                    points=[(100, 200), (150, 250)],
+                    raw="0;100,200;150,250;",
+                ),
+            ],
         )
     ]
     assert_message(
@@ -114,14 +119,23 @@ def test_OnMapTrace_preserves_groups_and_segments() -> None:
         MowerMapTraceGroup(
             group_id="5",
             segments=[
-                MowerMapTraceSegment(points=[(-11850, -28849), (-11800, -28899)]),
-                MowerMapTraceSegment(points=[(-12850, -23699), (-12800, -23750)]),
+                MowerMapTraceSegment(
+                    points=[(-11850, -28849), (-11800, -28899)],
+                    raw="0;-11850,-28849;-11800,-28899;",
+                ),
+                MowerMapTraceSegment(
+                    points=[(-12850, -23699), (-12800, -23750)],
+                    raw="0;-12850,-23699;-12800,-23750;",
+                ),
             ],
         ),
         MowerMapTraceGroup(
             group_id="6",
             segments=[
-                MowerMapTraceSegment(points=[(-7899, -39700), (-7950, -39649)]),
+                MowerMapTraceSegment(
+                    points=[(-7899, -39700), (-7950, -39649)],
+                    raw="0;-7899,-39700;-7950,-39649;",
+                ),
             ],
         ),
     ]
@@ -203,7 +217,9 @@ def test_OnMapTrace_uses_constant_compat_start_not_serial() -> None:
     expected_groups = [
         MowerMapTraceGroup(
             group_id="1",
-            segments=[MowerMapTraceSegment(points=[(1, 2), (3, 4)])],
+            segments=[
+                MowerMapTraceSegment(points=[(1, 2), (3, 4)], raw="0;1,2;3,4;"),
+            ],
         )
     ]
     assert_message(
