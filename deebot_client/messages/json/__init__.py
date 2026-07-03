@@ -14,7 +14,6 @@ from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
-from .area_parameter import SetAreaParameter
 
 _LOGGER = get_logger(__name__)
 
@@ -28,7 +27,6 @@ __all__ = [
     "OnStats",
     "OnWorkState",
     "ReportStats",
-    "SetAreaParameter",
 ]
 
 # fmt: off
