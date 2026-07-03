@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
+from .area_parameter import SetAreaParameter
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -110,6 +111,7 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
+    "SetAreaParameter",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
