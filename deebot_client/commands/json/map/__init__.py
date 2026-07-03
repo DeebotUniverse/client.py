@@ -334,6 +334,9 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
+        if "totalCount" not in data and data.get("infoSize") == 0 and not data.get("info"):
+            return HandlingResult.success()
+
         total = int(data["totalCount"])
         start = int(data["traceStart"])
 
