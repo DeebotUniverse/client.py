@@ -89,7 +89,7 @@ def get_device_info() -> StaticDeviceInfo:
             error=CapabilityEvent(ErrorEvent, [GetError()]),
             life_span=CapabilityLifeSpan(
                 types=(
-                    LifeSpan.BLADE, 
+                    LifeSpan.BLADE,
                     LifeSpan.LENS_BRUSH,
                     LifeSpan.WEED_ROPE,
                     LifeSpan.TRIMMER_BRUSH,
