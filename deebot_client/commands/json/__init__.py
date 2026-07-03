@@ -143,6 +143,7 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+    SetAreaParameter,
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
