@@ -467,3 +467,36 @@ def test_OnMapTrace_per_key_byte_cap_drops_runaway_buffer() -> None:
     result2 = OnMapTrace.handle(event_bus, _envelope(big_chunk, 999_999, index="1"))
     assert result2.state == HandlingState.ANALYSE_LOGGED
     assert key not in OnMapTrace._CHUNK_BUFFER
+
+
+def test_OnMapTrace_missing_envelope_field_falls_through() -> None:
+    """Envelope with a required field missing → ANALYSE, no buffer touched."""
+    event_bus = Mock(spec_set=EventBus)
+    static_device_info = get_static_device_info("xmp9ds")
+    assert static_device_info is not None
+    event_bus.capabilities = static_device_info.capabilities
+
+    envelope = _envelope(_SINGLE_GROUP, 28)
+    del envelope["body"]["data"]["batid"]
+
+    result = OnMapTrace.handle(event_bus, envelope)
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert OnMapTrace._CHUNK_BUFFER == {}
+
+
+def test_OnMapTrace_non_integer_info_size_falls_through() -> None:
+    """Non-integer infoSize is treated as zero, which fails the required check.
+
+    Guards the ``TypeError, ValueError`` path around ``int(infoSize)``.
+    """
+    event_bus = Mock(spec_set=EventBus)
+    static_device_info = get_static_device_info("xmp9ds")
+    assert static_device_info is not None
+    event_bus.capabilities = static_device_info.capabilities
+
+    envelope = _envelope(_SINGLE_GROUP, 28)
+    envelope["body"]["data"]["infoSize"] = "not-a-number"
+
+    result = OnMapTrace.handle(event_bus, envelope)
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert OnMapTrace._CHUNK_BUFFER == {}
