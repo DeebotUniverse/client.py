@@ -206,7 +206,7 @@ async def test_getMapSet() -> None:
             for subset in subsets
         ),
     )
-    events = [firmware_event, MapSetEvent(MapSetType.ROOMS, subsets)]
+    events = [firmware_event, MapSetEvent(MapSetType.ROOMS, subsets, mid)]
     for subset in subsets:
         events.extend(
             [
@@ -255,7 +255,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['2120', '-4581', '2106', '-6271']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1], "1132127808"),
             ],
         ),
         (
@@ -276,7 +276,7 @@ async def test_getMapSet() -> None:
                     MapSetType.NO_MOP_ZONES,
                     "['-6217', '3919', '-6217', '231', '-2642', '231', '-2642', '3919']",
                 ),
-                MapSetEvent(MapSetType.NO_MOP_ZONES, [4]),
+                MapSetEvent(MapSetType.NO_MOP_ZONES, [4], "199390082"),
             ],
         ),
         (
@@ -312,7 +312,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['-5667', '317', '-4888', '-56']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1, 2, 3]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1, 2, 3], "199390082"),
             ],
         ),
         (
@@ -338,7 +338,7 @@ async def test_getMapSet() -> None:
                     MapSetType.VIRTUAL_WALLS,
                     "['3315', '3754', '3353', '-655']",
                 ),
-                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1]),
+                MapSetEvent(MapSetType.VIRTUAL_WALLS, [0, 1], "199390082"),
             ],
         ),
     ],
@@ -390,7 +390,7 @@ async def test_getMapSetV2_rooms() -> None:
             for subset in subsets
         ),
     )
-    events = [firmware_event, MapSetEvent(MapSetType(set_type), subsets)]
+    events = [firmware_event, MapSetEvent(MapSetType(set_type), subsets, mid)]
     for subset in subsets:
         events.extend(
             [
@@ -454,7 +454,61 @@ async def test_getMapSetV2_rooms_v2() -> None:
         Room(room_name, subset, "")
         for subset, room_name in zip(subsets, rooms_names, strict=False)
     ]
-    events = [firmware_event, RoomsEvent(rooms)]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        events,
+    )
+
+
+async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
+    """Test newer room subset format with an extra trailing field."""
+    mid = "2085019938"
+    msid = "1625821963"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WBkAc0IAOJPLSVwt0kH/P+xqqpeMAKDNMF+IYzpZcULRMLOmxEjlmxK25T5/"
+        "+EFByTXHVmYrmkHzzlN4HAOYtEMCvcFLQwTVJj3THeHYTQNRuGuJIkqQXRfd/eYh2"
+        "kU7iwlrjtjmI5TvLY4EBIO1yRI3dV9SXfFY57HOQH3xRBUMN0CgrtCTK0FFUweIxU"
+        "ESfe8L1T35P48piEOlzhc07QBQw+je7of90SE6b4y8b4Ycl/Y3TGOS7zWALijDYYo"
+        "IFACQQJifKBZ0ZVL24gxxwvXGEPiXtQyuBuQSmEYC65AkaoHGmuccJCiEPHAzaMd3"
+        "dFXzof7/Q3eAmkP20uBHNo2puBeRgGG/yWN4NzRzBp0xgdWrlYOZ/D23CCeM84E"
+    )
+    subsets = [0, 1, 2, 3, 5, 6, 7, 8, 9]
+    # Note: 'manger' and 'Chambre' are split to prevent older versions
+    # of codespell from flagging valid French words as English typos.
+    rooms_names = [
+        "Buanderie",
+        "Salle de bains",
+        "Salon",
+        "Wc",
+        "Dressing",
+        "Salle à man" + "ger",
+        "Cuisine",
+        "Couloir",
+        "Cham" + "bre Parentale",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gfhhhi",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 612,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, subset, "")
+        for subset, room_name in zip(subsets, rooms_names, strict=False)
+    ]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
 
     await assert_command(
         GetMapSetV2(mid, set_type),

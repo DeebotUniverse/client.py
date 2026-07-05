@@ -54,37 +54,49 @@ _MESSAGES: list[type[Message]] = [
 
 MESSAGES: dict[str, type[Message]] = {message.NAME: message for message in _MESSAGES}
 
-_LEGACY_USE_GET_COMMAND = [
-    "getAdvancedMode",
-    "getBreakPoint",
-    "getCachedMapInfo",
-    "getCarpertPressure",
-    "getChargeState",
-    "getCleanCount",
-    "getCleanInfo",
-    "getCleanPreference",
-    "getEfficiency",
-    "getError",
-    "getLifeSpan",
-    "getMapSet",
-    "getMapSubSet",
-    "getMapTrace",
-    "getMinorMap",
-    "getMultiMapState",
-    "getNetInfo",
-    "getPos",
-    "getSpeed",
-    "getSweepMode",
-    "getTotalStats",
-    "getTrueDetect",
-    "getVoiceAssistantState",
-    "getVolume",
-    "getWaterInfo",
-    "getWorkMode",
-]
+_MAP_LEGACY_COMMANDS = frozenset(
+    {
+        "getCachedMapInfo",
+        "getMapSet",
+        "getMapSubSet",
+        "getMapTrace",
+        "getMinorMap",
+        "getMultiMapState",
+    }
+)
+
+_LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
+    {
+        "getAdvancedMode",
+        "getBreakPoint",
+        "getCarpertPressure",
+        "getChargeState",
+        "getCleanCount",
+        "getCleanInfo",
+        "getCleanPreference",
+        "getEfficiency",
+        "getError",
+        "getLifeSpan",
+        "getNetInfo",
+        "getPos",
+        "getSpeed",
+        "getSweepMode",
+        "getTotalStats",
+        "getTrueDetect",
+        "getVoiceAssistantState",
+        "getVolume",
+        "getWaterInfo",
+        "getWorkMode",
+    }
+)
 
 
-def get_legacy_message(message_name: str, converted_name: str) -> type[Message] | None:
+def get_legacy_message(
+    message_name: str,
+    converted_name: str,
+    *,
+    has_map: bool = True,
+) -> type[Message] | None:
     """Try to find the message for the given name using legacy way."""
     # Handle message starting with "on","off","report" the same as "get" commands
     converted_name = re.sub(
@@ -95,6 +107,13 @@ def get_legacy_message(message_name: str, converted_name: str) -> type[Message] 
 
     if converted_name not in _LEGACY_USE_GET_COMMAND:
         _LOGGER.debug('Unknown message "%s"', message_name)
+        return None
+
+    if not has_map and converted_name in _MAP_LEGACY_COMMANDS:
+        _LOGGER.debug(
+            'Skipping legacy map fallback for "%s" on device without map capability',
+            message_name,
+        )
         return None
 
     from deebot_client.commands.json import (  # noqa: PLC0415

@@ -49,14 +49,17 @@ class CleanArea(Clean):
     def __init__(
         self,
         mode: CleanMode,
-        area_or_coordinates: str,
+        area_or_coordinates: list[int | float],
         cleanings: int = 1,
     ) -> None:
         key = "mid" if mode == CleanMode.SPOT_AREA else "p"
         super().__init__(
             CleanAction.START,
             mode=mode,
-            additional_args={"deep": str(cleanings), key: area_or_coordinates},
+            additional_args={
+                "deep": str(cleanings),
+                key: ",".join(str(i) for i in area_or_coordinates),
+            },
         )
 
 

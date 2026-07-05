@@ -20,6 +20,7 @@ categories:
     label: "pr: bugfix"
 
   - title: ":arrow_up: Dependency Updates"
+    collapse-after: 0
     labels:
       - "pr: dependency-update"
       - "dependencies"

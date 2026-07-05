@@ -228,7 +228,10 @@ class Device:
         try:
             _LOGGER.debug("Try to handle message %s: %s", message_name, message_data)
 
-            if message := get_message(message_name, self._device_info.static.data_type):
+            if message := get_message(
+                message_name,
+                self._device_info.static,
+            ):
                 result = message.handle(self.events, message_data)
                 if result.state == HandlingState.SUCCESS and result.requested_commands:
                     _LOGGER.debug(

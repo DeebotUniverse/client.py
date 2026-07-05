@@ -93,6 +93,7 @@ class MapSetEvent(Event):
 
     type: MapSetType
     subsets: list[int]
+    map_id: str
 
 
 @dataclass(frozen=True)

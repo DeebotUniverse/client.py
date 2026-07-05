@@ -58,10 +58,12 @@ class Clean(ExecuteCommand):
 class CleanArea(Clean):
     """Clean area command."""
 
-    def __init__(self, mode: CleanMode, area: str, cleanings: int = 1) -> None:
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
         self._additional_args = {
             "type": mode.value,
-            "content": area,
+            "content": ",".join(str(i) for i in area),
             "count": cleanings,
         }
         super().__init__(CleanAction.START)
@@ -92,8 +94,16 @@ class CleanV2(Clean):
 class CleanAreaV2(CleanV2):
     """Clean area command."""
 
-    def __init__(self, mode: CleanMode, area: str, _: int = 1) -> None:
-        self._additional_content = {"type": mode.value, "value": area}
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        value = ",".join(str(i) for i in area)
+        if mode == CleanMode.FREE_CLEAN:
+            value = f"{cleanings},{value}"
+        self._additional_content = {
+            "type": mode.value,
+            "value": value,
+        }
         super().__init__(CleanAction.START)
 
     def _get_args(self, action: CleanAction) -> dict[str, Any]:

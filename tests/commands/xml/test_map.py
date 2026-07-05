@@ -107,6 +107,7 @@ async def test_GetMapSet(
         MapSetEvent(
             map_type if isinstance(map_type, MapSetType) else MapSetType(map_type),
             subsets=subsets,
+            map_id="1",
         ),
         handling_result=HandlingResult(
             HandlingState.SUCCESS,

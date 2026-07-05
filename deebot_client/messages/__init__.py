@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from functools import lru_cache
 from typing import TYPE_CHECKING
 
 from deebot_client.const import DataType
@@ -13,6 +12,7 @@ from .xml import MESSAGES as XML_MESSAGES
 
 if TYPE_CHECKING:
     from deebot_client.message import Message
+    from deebot_client.models import StaticDeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -22,15 +22,17 @@ MESSAGES = {
 }
 
 
-@lru_cache(maxsize=256)
-def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
+def get_message(
+    message_name: str,
+    static: StaticDeviceInfo,
+) -> type[Message] | None:
     """Try to find the message for the given name.
 
     If there exists no exact match, some conversations are performed on the name to get message object similar to the name.
     """
-    messages = MESSAGES.get(data_type)
+    messages = MESSAGES.get(static.data_type)
     if messages is None:
-        _LOGGER.warning("Datatype %s is not supported.", data_type)
+        _LOGGER.warning("Datatype %s is not supported.", static.data_type)
         return None
 
     if message_type := messages.get(message_name, None):
@@ -43,8 +45,10 @@ def get_message(message_name: str, data_type: DataType) -> type[Message] | None:
     if message_type := messages.get(converted_name, None):
         return message_type
 
-    if data_type == DataType.JSON and (
-        found_message := get_legacy_message(message_name, converted_name)
+    if static.data_type == DataType.JSON and (
+        found_message := get_legacy_message(
+            message_name, converted_name, has_map=static.capabilities.map is not None
+        )
     ):
         return found_message
 

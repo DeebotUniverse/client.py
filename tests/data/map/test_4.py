@@ -20,7 +20,9 @@ EVENTS = [
             Position(type=PositionType.CHARGER, x=-384, y=-360, a=43),
         ]
     ),
-    MapSetEvent(type=MapSetType.ROOMS, subsets=[5, 8, 10, 3, 4, 7, 9]),
+    MapSetEvent(
+        type=MapSetType.ROOMS, subsets=[5, 8, 10, 3, 4, 7, 9], map_id="1132127808"
+    ),
     MapSubsetEvent(
         id=0,
         type=MapSetType.VIRTUAL_WALLS,
@@ -33,7 +35,7 @@ EVENTS = [
         coordinates="['2120', '-4581', '2106', '-6271']",
         name=None,
     ),
-    MapSetEvent(type=MapSetType.VIRTUAL_WALLS, subsets=[0, 1]),
+    MapSetEvent(type=MapSetType.VIRTUAL_WALLS, subsets=[0, 1], map_id="1132127808"),
     MapSubsetEvent(
         id=2,
         type=MapSetType.NO_MOP_ZONES,

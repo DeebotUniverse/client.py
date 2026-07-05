@@ -25,6 +25,23 @@ _LOGGER = get_logger(__name__)
 
 MessagePayloadType = str | bytes | bytearray | dict[str, Any]
 
+_PARSE_FAILURE_THRESHOLD = 3
+_parse_failure_counts: dict[str, int] = {}
+
+
+def _log_parse_failure(name: str, data: object, *, exc_info: bool = False) -> None:
+    count = _parse_failure_counts.get(name, 0) + 1
+    _parse_failure_counts[name] = count
+    if count <= _PARSE_FAILURE_THRESHOLD:
+        _LOGGER.warning("Could not parse %s: %s", name, data, exc_info=exc_info)
+        if count == _PARSE_FAILURE_THRESHOLD:
+            _LOGGER.warning(
+                "Further 'Could not parse %s' entries will be logged at DEBUG level",
+                name,
+            )
+    else:
+        _LOGGER.debug("Could not parse %s: %s", name, data, exc_info=exc_info)
+
 
 class HandlingState(IntEnum):
     """Handling state enum."""
@@ -65,7 +82,7 @@ def _handle_error_or_analyse[M: Message, T](
         try:
             response = func(cls, event_bus, data)
         except Exception:
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            _log_parse_failure(cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
         else:
             # This happens if for some reason someone calls super() of an ABC where handle is not implemented
@@ -81,7 +98,7 @@ def _handle_error_or_analyse[M: Message, T](
                 _LOGGER.debug("Could not handle %s message: %s", cls.NAME, data)
                 return HandlingResult(HandlingState.ANALYSE_LOGGED, response.args)
             if response.state == HandlingState.ERROR:
-                _LOGGER.warning("Could not parse %s: %s", cls.NAME, data)
+                _log_parse_failure(cls.NAME, data)
             return response
 
     return wrapper
@@ -256,7 +273,7 @@ class MessageBodyData(MessageBody, ABC):
         try:
             response = cls._handle_body_data(event_bus, data)
         except Exception:
-            _LOGGER.warning("Could not parse %s: %s", cls.NAME, data, exc_info=True)
+            _log_parse_failure(cls.NAME, data, exc_info=True)
             return HandlingResult(HandlingState.ERROR)
         else:
             if response.state == HandlingState.ANALYSE:

@@ -120,7 +120,9 @@ EVENTS = [
         index=26,
         value="XQAABAAQJwAAAABv/f//o7f/Rz5IFXI5YVG4kijmo4YH+e7kHoLTL8U6OwczrMl+5Cn+j6EvprKUdquBVZgFpQToAHLTz2AlAA==",
     ),
-    MapSetEvent(type=MapSetType.ROOMS, subsets=[5, 8, 10, 3, 4, 7, 9]),
+    MapSetEvent(
+        type=MapSetType.ROOMS, subsets=[5, 8, 10, 3, 4, 7, 9], map_id="1132127808"
+    ),
     MapSubsetEvent(
         id=0,
         type=MapSetType.VIRTUAL_WALLS,
