@@ -34,6 +34,13 @@ _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
 _AUTH_CLIENT_KEY = "1520391491841"
 _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
+
+# Yeedi uses different signing keys and app metadata
+_CLIENT_KEY_YD = "1581917520081"
+_CLIENT_SECRET_YD = "ed5b3dd9a0253de7d90305d077eb5fee"  # noqa: S105
+_AUTH_CLIENT_KEY_YD = "1581923437995"
+_AUTH_CLIENT_SECRET_YD = "304a71592690995b2bb304e66b5ddee6"  # noqa: S105
+
 _USER_LOGIN_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/user/login"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _META = {
@@ -56,6 +63,13 @@ class RestConfiguration:
     portal_url: str
     login_url: str
     auth_code_url: str
+    auth_domain: str = "ecovacs.com"
+    client_key: str = _CLIENT_KEY
+    client_secret: str = _CLIENT_SECRET
+    auth_client_key: str = _AUTH_CLIENT_KEY
+    auth_client_secret: str = _AUTH_CLIENT_SECRET
+    app_code: str = "global_e"
+    app_version: str = "1.6.3"
 
 
 def create_rest_config(
@@ -64,6 +78,7 @@ def create_rest_config(
     device_id: str,
     alpha_2_country: str,
     override_rest_url: str | None = None,
+    auth_domain: str = "ecovacs.com",
 ) -> RestConfiguration:
     """Create configuration."""
     continent_postfix = get_continent_url_postfix(alpha_2_country)
@@ -73,10 +88,16 @@ def create_rest_config(
     else:
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
-        tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
-        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
-        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+        # Chinese Ecovacs accounts use ecovacs.cn; other domains (e.g. yeedi.com) are used as-is
+        effective_domain = (
+            f"ecovacs.{country_url}"
+            if alpha_2_country == COUNTRY_CHINA and auth_domain == "ecovacs.com"
+            else auth_domain
+        )
+        login_url = f"https://gl-{country_url}-api.{effective_domain}"
+        auth_code_url = f"https://gl-{country_url}-openapi.{effective_domain}"
 
+    is_yeedi = auth_domain == "yeedi.com"
     return RestConfiguration(
         session=session,
         device_id=device_id,
@@ -84,6 +105,13 @@ def create_rest_config(
         portal_url=portal_url,
         login_url=login_url,
         auth_code_url=auth_code_url,
+        auth_domain=auth_domain,
+        client_key=_CLIENT_KEY_YD if is_yeedi else _CLIENT_KEY,
+        client_secret=_CLIENT_SECRET_YD if is_yeedi else _CLIENT_SECRET,
+        auth_client_key=_AUTH_CLIENT_KEY_YD if is_yeedi else _AUTH_CLIENT_KEY,
+        auth_client_secret=_AUTH_CLIENT_SECRET_YD if is_yeedi else _AUTH_CLIENT_SECRET,
+        app_code="yd_global_e" if is_yeedi else "global_e",
+        app_version="1.3.0" if is_yeedi else "1.6.3",
     )
 
 
@@ -105,6 +133,8 @@ class _AuthClient:
 
         self._meta: dict[str, str] = {
             **_META,
+            "appCode": self._config.app_code,
+            "appVersion": self._config.app_version,
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
@@ -184,7 +214,7 @@ class _AuthClient:
             url += "CheckMobile"
 
         return await self.__do_auth_response(
-            url, self.__sign(params, self._meta, _CLIENT_KEY, _CLIENT_SECRET)
+            url, self.__sign(params, self._meta, self._config.client_key, self._config.client_secret)
         )
 
     @staticmethod
@@ -219,7 +249,7 @@ class _AuthClient:
         res = await self.__do_auth_response(
             url,
             self.__sign(
-                params, {"openId": "global"}, _AUTH_CLIENT_KEY, _AUTH_CLIENT_SECRET
+                params, {"openId": "global"}, self._config.auth_client_key, self._config.auth_client_secret
             ),
         )
         return str(res["authCode"])
@@ -233,7 +263,15 @@ class _AuthClient:
             "token": auth_code,
             "realm": REALM,
             "resource": self._config.device_id,
-            "org": "ECOWW" if self._config.country != COUNTRY_CHINA else "ECOCN",
+            "org": (
+                "ECOYDWW"
+                if self._config.auth_domain == "yeedi.com" and self._config.country != COUNTRY_CHINA
+                else "ECOYDCN"
+                if self._config.auth_domain == "yeedi.com"
+                else "ECOWW"
+                if self._config.country != COUNTRY_CHINA
+                else "ECOCN"
+            ),
             "last": "",
             "country": self._config.country
             if self._config.country != COUNTRY_CHINA
