@@ -153,6 +153,18 @@ async def test_yeedi_s20_loads() -> None:
     )
 
 
+async def test_yeedi_6r6dbt_loads() -> None:
+    """Test that the Yeedi 6r6dbt model alias can be loaded."""
+    static_device_info = await hardware.get_static_device_info("6r6dbt")
+    assert static_device_info is not None
+    capabilities = static_device_info.capabilities
+    assert capabilities.battery is not None
+    assert capabilities.charge is not None
+    assert capabilities.clean is not None
+    assert capabilities.play_sound is not None
+    assert capabilities.state is not None
+
+
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [

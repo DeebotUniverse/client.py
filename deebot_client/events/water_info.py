@@ -20,6 +20,7 @@ __all__ = [
 class WaterAmount(IntEnum):
     """Enum class for all possible water amounts."""
 
+    OFF = 0
     LOW = 1
     MEDIUM = 2
     HIGH = 3
