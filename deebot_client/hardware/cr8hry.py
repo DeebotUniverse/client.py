@@ -92,6 +92,7 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
+    MopAutoWashFrequencyEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     OtaEvent,
@@ -111,8 +112,6 @@ from deebot_client.events import (
     auto_empty,
     water_info,
 )
-from deebot_client.events.auto_empty import AutoEmptyEvent
-from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from deebot_client.models import StaticDeviceInfo
 
 
