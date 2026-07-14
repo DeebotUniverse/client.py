@@ -39,7 +39,7 @@ _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _META = {
     "lang": "EN",
     "appCode": "global_e",
-    "appVersion": "1.6.3",
+    "appVersion": "3.14.0",
     "channel": "google_play",
     "deviceType": "1",
 }
