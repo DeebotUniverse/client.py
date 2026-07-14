@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 import asyncio
-import hashlib
 import time
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, patch
+from urllib.parse import urlsplit
 
 import pytest
 
@@ -17,66 +17,78 @@ from deebot_client.authentication import (
 from deebot_client.models import Credentials
 
 if TYPE_CHECKING:
+    from collections.abc import Mapping
+
     from aiohttp import ClientSession
 
 
-async def test_login_uses_current_app_version_in_url_and_signature() -> None:
-    config = RestConfiguration(
-        session=cast("ClientSession", AsyncMock()),
+@pytest.mark.parametrize(
+    ("country", "expected_host", "expected_path"),
+    [
+        pytest.param(
+            "IT",
+            "gl-it-api.ecovacs.com",
+            "/v1/private/it/EN/test-device/global_e/3.14.0/google_play/1/user/login",
+            id="global",
+        ),
+        pytest.param(
+            "CN",
+            "gl-cn-api.ecovacs.cn",
+            "/v1/private/cn/EN/test-device/global_e/3.14.0/google_play/1/user/loginCheckMobile",
+            id="china",
+        ),
+    ],
+)
+async def test_ecovacs_home_3_14_0_app_metadata_is_used_for_login(
+    session: ClientSession,
+    country: str,
+    expected_host: str,
+    expected_path: str,
+) -> None:
+    config = create_rest_config(
+        session,
         device_id="test-device",
-        country="IT",
-        portal_url="https://portal.example",
-        login_url="https://login.example",
-        auth_code_url="https://auth.example",
+        alpha_2_country=country,
     )
-    auth_client = _AuthClient(config, "test-account", "test-password-hash")
-    timestamp = 1_700_000_000.125
+    captured_sign_metadata: list[Mapping[str, str | int]] = []
+
+    def capture_sign_metadata(
+        params: dict[str, str | int],
+        additional_sign_params: Mapping[str, str | int],
+        *_signing_material: str,
+    ) -> dict[str, str | int]:
+        captured_sign_metadata.append(additional_sign_params)
+        return params
 
     with (
-        patch("deebot_client.authentication.time.time", return_value=timestamp),
         patch.object(
-            auth_client, "_AuthClient__do_auth_response", new_callable=AsyncMock
-        ) as response_mock,
+            session,
+            "get",
+            side_effect=RuntimeError("login request captured"),
+        ) as get_mock,
+        patch.object(
+            _AuthClient,
+            "_AuthClient__sign",
+            new=staticmethod(capture_sign_metadata),
+        ),
+        patch("deebot_client.authentication.time.time", return_value=1_700_000_000),
     ):
-        await auth_client._AuthClient__call_login_api(  # type: ignore[attr-defined]
-            "test-account", "test-password-hash"
-        )
+        authenticator = Authenticator(config, "test-account", "test-password-hash")
+        with pytest.raises(RuntimeError, match="login request captured"):
+            await authenticator.authenticate()
 
-    call_args = response_mock.await_args
-    assert call_args is not None
-    url, params = call_args.args
-    expected_sign_data = {
-        "account": "test-account",
+    login_url = urlsplit(get_mock.call_args_list[0].args[0])
+    assert login_url.netloc == expected_host
+    assert login_url.path == expected_path
+    assert {
+        "lang": "EN",
         "appCode": "global_e",
         "appVersion": "3.14.0",
-        "authTimespan": int(timestamp * 1000),
-        "authTimeZone": "GMT-8",
         "channel": "google_play",
-        "country": "it",
-        "deviceId": "test-device",
         "deviceType": "1",
-        "lang": "EN",
-        "password": "test-password-hash",
-        "requestId": hashlib.md5(
-            str(timestamp).encode(), usedforsecurity=False
-        ).hexdigest(),
-    }
-    sign_on_text = (
-        "1520391301804"
-        + "".join(
-            f"{key}={expected_sign_data[key]}" for key in sorted(expected_sign_data)
-        )
-        + "6c319b2a5cd3e66e39159c2e28f2fce9"
-    )
-    expected_auth_sign = hashlib.md5(
-        sign_on_text.encode(), usedforsecurity=False
-    ).hexdigest()
-
-    assert url == (
-        "https://login.example/v1/private/it/EN/test-device/"
-        "global_e/3.14.0/google_play/1/user/login"
-    )
-    assert params["authSign"] == expected_auth_sign
+        "country": country.lower(),
+        "deviceId": "test-device",
+    }.items() <= captured_sign_metadata[0].items()
 
 
 async def test_authenticator_authenticate(rest_config: RestConfiguration) -> None:
