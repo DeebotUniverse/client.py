@@ -3,6 +3,8 @@
 from __future__ import annotations
 
 import asyncio
+import base64
+import binascii
 from dataclasses import dataclass
 from http import HTTPStatus
 import time
@@ -10,13 +12,18 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric import padding, rsa
+import orjson
 
 from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
 from .exceptions import (
     ApiError,
     ApiTimeoutError,
     AuthenticationError,
+    DeviceVerificationRequiredError,
     InvalidAuthenticationError,
+    InvalidVerificationCodeError,
 )
 from .logging_filter import get_logger
 from .models import Credentials
@@ -34,8 +41,9 @@ _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
 _AUTH_CLIENT_KEY = "1520391491841"
 _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
-_USER_LOGIN_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/user/login"
+_PRIVATE_API_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/{endpoint}"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
+_PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
 _META = {
     "lang": "EN",
     "appCode": "global_e",
@@ -43,6 +51,9 @@ _META = {
     "channel": "google_play",
     "deviceType": "1",
 }
+_VERIFICATION_META = {**_META, "appVersion": "3.14.0"}
+_ANDROID_MODEL = "Pixel 7"
+_ANDROID_SYSTEM = "Android 14"
 MAX_RETRIES = 3
 
 
@@ -108,6 +119,8 @@ class _AuthClient:
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
+        self._verification_meta = {**self._meta, **_VERIFICATION_META}
+        self._public_key: rsa.RSAPublicKey | None = None
 
     async def login(self) -> Credentials:
         """Login using username and password."""
@@ -115,11 +128,53 @@ class _AuthClient:
         login_password_resp = await self.__call_login_api(
             self._account_id, self._password_hash
         )
-        user_id = login_password_resp["uid"]
-
-        auth_code = await self.__call_auth_api(
-            login_password_resp["accessToken"], user_id
+        return await self.__complete_login(
+            str(login_password_resp["uid"]),
+            str(login_password_resp["accessToken"]),
         )
+
+    async def request_device_verification_code(self) -> None:
+        """Request a one-time email code to verify the configured device ID."""
+        encrypted_email = await self.__encrypt_account(self._account_id)
+        await self.__call_private_api(
+            "user/sendEmailVerifyCode",
+            {
+                "encryptEmail": encrypted_email,
+                "verifyType": "EMAIL_VERIFY_DEVICE",
+                "supportChar": "N",
+                "isForce": "N",
+                **self.__request_metadata(),
+            },
+        )
+
+    async def verify_device(self, verification_code: str) -> Credentials:
+        """Verify the configured device ID using a one-time email code."""
+        encrypted_account = await self.__encrypt_account(self._account_id)
+        response = await self.__call_private_api(
+            "user/verifyDevice",
+            {
+                "encryptAccount": encrypted_account,
+                "backUpEmail": "",
+                "verifyCode": verification_code.strip(),
+                "model": _ANDROID_MODEL,
+                "system": _ANDROID_SYSTEM,
+                **self.__request_metadata(),
+            },
+        )
+        if not isinstance(response, dict):
+            raise AuthenticationError("Invalid verifyDevice response")
+
+        try:
+            user_id = str(response["uid"])
+            access_token = str(response["accessToken"])
+        except KeyError as ex:
+            raise AuthenticationError("Invalid verifyDevice response") from ex
+
+        return await self.__complete_login(user_id, access_token)
+
+    async def __complete_login(self, user_id: str, access_token: str) -> Credentials:
+        """Complete login using Ecovacs user credentials."""
+        auth_code = await self.__call_auth_api(access_token, user_id)
 
         login_token_resp = await self.__call_login_by_it_token(user_id, auth_code)
         if login_token_resp["userId"] != user_id:
@@ -141,9 +196,7 @@ class _AuthClient:
             expires_at=expires_at,
         )
 
-    async def __do_auth_response(
-        self, url: str, params: dict[str, Any]
-    ) -> dict[str, Any]:
+    async def __do_auth_response(self, url: str, params: dict[str, Any]) -> Any:
         async with self._config.session.get(
             url, params=params, timeout=_TIMEOUT
         ) as res:
@@ -152,13 +205,16 @@ class _AuthClient:
             # ecovacs returns a json but content_type header is set to text
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
-            _LOGGER.debug("got %s", json)
+            _LOGGER.debug("got response code %s for %s", json.get("code"), url)
             # TODO better error handling
             if json["code"] == "0000":
-                data: dict[str, Any] = json["data"]
-                return data
+                return json["data"]
             if json["code"] in ["1005", "1010"]:
-                raise InvalidAuthenticationError
+                raise InvalidAuthenticationError(json["msg"])
+            if json["code"] == "1012":
+                raise InvalidVerificationCodeError(json["msg"])
+            if json["code"] == "1013":
+                raise DeviceVerificationRequiredError(json["msg"])
 
             _LOGGER.error("call to %s failed with %s", url, json)
             msg = f"failure code {json['code']} ({json['msg']}) for call {url}"
@@ -171,21 +227,98 @@ class _AuthClient:
         params: dict[str, str | int] = {
             "account": account_id,
             "password": password_hash,
-            "requestId": md5(str(time.time())),
-            "authTimespan": int(time.time() * 1000),
-            "authTimeZone": "GMT-8",
+            **self.__request_metadata(),
         }
 
         url = urljoin(
-            self._config.login_url, _USER_LOGIN_PATH_FORMAT.format(**self._meta)
+            self._config.login_url,
+            _PRIVATE_API_PATH_FORMAT.format(endpoint="user/login", **self._meta),
         )
 
         if self._config.country == COUNTRY_CHINA:
             url += "CheckMobile"
 
-        return await self.__do_auth_response(
+        response = await self.__do_auth_response(
             url, self.__sign(params, self._meta, _CLIENT_KEY, _CLIENT_SECRET)
         )
+        if not isinstance(response, dict):
+            raise AuthenticationError("Invalid login response")
+        return response
+
+    async def __call_private_api(
+        self, endpoint: str, params: dict[str, str | int]
+    ) -> Any:
+        """Call a signed private authentication API endpoint."""
+        url = urljoin(
+            self._config.login_url,
+            _PRIVATE_API_PATH_FORMAT.format(
+                endpoint=endpoint, **self._verification_meta
+            ),
+        )
+        return await self.__do_auth_response(
+            url,
+            self.__sign(
+                params,
+                self._verification_meta,
+                _CLIENT_KEY,
+                _CLIENT_SECRET,
+            ),
+        )
+
+    @staticmethod
+    def __request_metadata() -> dict[str, str | int]:
+        now = time.time()
+        return {
+            "requestId": md5(str(now)),
+            "authTimespan": int(now * 1000),
+            "authTimeZone": "GMT-8",
+        }
+
+    async def __get_public_key(self) -> rsa.RSAPublicKey:
+        if self._public_key is not None:
+            return self._public_key
+
+        response = await self.__call_private_api(
+            "common/getConfig",
+            {"keys": _PUBLIC_KEY_CONFIG, **self.__request_metadata()},
+        )
+        if not isinstance(response, list):
+            raise AuthenticationError("Invalid public key configuration response")
+
+        for entry in response:
+            if not isinstance(entry, dict) or entry.get("key") != _PUBLIC_KEY_CONFIG:
+                continue
+            value = entry.get("value")
+            if not isinstance(value, str):
+                break
+            try:
+                config = orjson.loads(value)
+                encoded_key = config["publicKey"]
+            except (KeyError, orjson.JSONDecodeError, TypeError) as ex:
+                raise AuthenticationError("Invalid Ecovacs public key") from ex
+            if not isinstance(encoded_key, str):
+                raise AuthenticationError("Invalid Ecovacs public key")
+            try:
+                key = serialization.load_der_public_key(
+                    base64.b64decode(encoded_key, validate=True)
+                )
+            except (
+                binascii.Error,
+                TypeError,
+                ValueError,
+            ) as ex:
+                raise AuthenticationError("Invalid Ecovacs public key") from ex
+            if not isinstance(key, rsa.RSAPublicKey):
+                raise AuthenticationError("Ecovacs public key is not an RSA key")
+            self._public_key = key
+            return key
+
+        raise AuthenticationError("Ecovacs public key configuration is missing")
+
+    async def __encrypt_account(self, account: str) -> str:
+        public_key = await self.__get_public_key()
+        encrypted = public_key.encrypt(account.encode(), padding.PKCS1v15())
+        return base64.b64encode(encrypted).decode()
 
     @staticmethod
     def __sign(
@@ -365,20 +498,33 @@ class Authenticator:
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
-            if (
-                self._credentials is None
-                or force
-                or self._credentials.expires_at < time.time()
-            ):
+            credentials = self._credentials
+            if credentials is None or force or credentials.expires_at < time.time():
                 _LOGGER.debug("Performing login")
-                self._credentials = await self._auth_client.login()
-                self._cancel_refresh_task()
-                self._create_refresh_task(self._credentials)
+                credentials = await self._auth_client.login()
+                self._set_credentials(credentials)
 
-                for on_changed in self._on_credentials_changed:
-                    create_task(self._tasks, on_changed(self._credentials))
+            return credentials
 
-            return self._credentials
+    async def request_device_verification_code(self) -> None:
+        """Request a one-time email code to verify the configured device ID."""
+        await self._auth_client.request_device_verification_code()
+
+    async def verify_device(self, verification_code: str) -> Credentials:
+        """Verify the configured device ID using a one-time email code."""
+        async with self._lock:
+            credentials = await self._auth_client.verify_device(verification_code)
+            self._set_credentials(credentials)
+            return credentials
+
+    def _set_credentials(self, credentials: Credentials) -> None:
+        """Store credentials and schedule their refresh."""
+        self._credentials = credentials
+        self._cancel_refresh_task()
+        self._create_refresh_task(credentials)
+
+        for on_changed in self._on_credentials_changed:
+            create_task(self._tasks, on_changed(credentials))
 
     def subscribe(
         self, callback: Callable[[Credentials], Coroutine[Any, Any, None]]

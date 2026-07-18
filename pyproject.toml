@@ -29,6 +29,7 @@ dependencies = [
     "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
     "cachetools>=5.0.0,<8.0",
+    "cryptography>=46.0.3,<50.0",
     "defusedxml>=0.7.1",
     "orjson>=3.11.3",
 ]
