@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -30,8 +32,8 @@ from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
 from deebot_client.commands.json.clean import (
-    Clean,
-    CleanArea,
+    CleanAreaV2,
+    CleanV2,
 )
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
@@ -106,7 +108,17 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanMode, StaticDeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.command import Command
+
+
+def _get_free_clean_area(
+    _mode: CleanMode, area: list[int | float], cleanings: int = 1
+) -> Command:
+    """Clean selected T90 rooms using the V2 freeClean command shape."""
+    return CleanAreaV2(CleanMode.FREE_CLEAN, area, cleanings)
 
 
 def get_device_info() -> StaticDeviceInfo:
@@ -121,7 +133,10 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=Clean, area=CleanArea),
+                action=CapabilityCleanAction(
+                    command=CleanV2,
+                    area=_get_free_clean_area,
+                ),
                 continuous=CapabilitySetEnable(
                     ContinuousCleaningEvent,
                     [GetContinuousCleaning()],
