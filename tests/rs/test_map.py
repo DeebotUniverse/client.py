@@ -2,10 +2,109 @@
 
 from __future__ import annotations
 
+import math
+
 import pytest
 from testfixtures import LogCapture
 
-from deebot_client.rs.map import MapData, PositionType
+from deebot_client.rs.map import (
+    MapData,
+    PositionType,
+    RotationAngle,
+    svg_point_to_device,
+    svg_rectangle_to_custom_area,
+)
+
+
+@pytest.mark.parametrize(
+    ("rotation", "expected"),
+    [
+        (RotationAngle.DEG_0, (63, 125)),
+        (RotationAngle.DEG_90, (-125, 63)),
+        (RotationAngle.DEG_180, (-63, -125)),
+        (RotationAngle.DEG_270, (125, -63)),
+    ],
+)
+def test_svg_point_to_device(
+    rotation: RotationAngle, expected: tuple[int, int]
+) -> None:
+    assert svg_point_to_device((1.25, -2.5), rotation) == expected
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        ((20.0, -40.0), (60.0, 10.0)),
+        ((60.0, 10.0), (20.0, -40.0)),
+        ((20.0, 10.0), (60.0, -40.0)),
+        ((60.0, -40.0), (20.0, 10.0)),
+    ],
+)
+def test_svg_rectangle_to_custom_area_drag_direction(
+    start: tuple[float, float], end: tuple[float, float]
+) -> None:
+    assert svg_rectangle_to_custom_area(start, end, RotationAngle.DEG_0) == [
+        1000,
+        2000,
+        3000,
+        -500,
+    ]
+
+
+@pytest.mark.parametrize(
+    ("start", "end", "rotation"),
+    [
+        ((20.0, -40.0), (60.0, 10.0), RotationAngle.DEG_0),
+        ((40.0, 20.0), (-10.0, 60.0), RotationAngle.DEG_90),
+        ((-20.0, 40.0), (-60.0, -10.0), RotationAngle.DEG_180),
+        ((-40.0, -20.0), (10.0, -60.0), RotationAngle.DEG_270),
+    ],
+)
+def test_svg_rectangle_to_custom_area_equivalent_rotations(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    rotation: RotationAngle,
+) -> None:
+    assert svg_rectangle_to_custom_area(start, end, rotation) == [
+        1000,
+        2000,
+        3000,
+        -500,
+    ]
+
+
+@pytest.mark.parametrize(
+    "point",
+    [
+        (math.nan, 0.0),
+        (0.0, math.inf),
+        (-math.inf, 0.0),
+        (1e100, 0.0),
+    ],
+)
+def test_svg_point_to_device_invalid(point: tuple[float, float]) -> None:
+    with pytest.raises(
+        ValueError,
+        match=r"Point coordinates must be finite|device coordinate is out of range",
+    ):
+        svg_point_to_device(point, RotationAngle.DEG_0)
+
+
+@pytest.mark.parametrize(
+    ("start", "end"),
+    [
+        ((1.0, 2.0), (1.0, 3.0)),
+        ((1.0, 2.0), (3.0, 2.0)),
+        ((1.0, 1.0), (1.001, 2.0)),
+    ],
+)
+def test_svg_rectangle_to_custom_area_zero_area(
+    start: tuple[float, float], end: tuple[float, float]
+) -> None:
+    with pytest.raises(
+        ValueError, match="Rectangle must have non-zero width and height"
+    ):
+        svg_rectangle_to_custom_area(start, end, RotationAngle.DEG_0)
 
 
 @pytest.mark.parametrize(

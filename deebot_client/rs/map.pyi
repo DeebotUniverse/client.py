@@ -3,6 +3,18 @@ from typing import Self
 
 from deebot_client.events.map import MapSubsetEvent, Position
 
+def svg_point_to_device(
+    point: tuple[float, float], rotation: RotationAngle
+) -> tuple[int, int]:
+    """Convert an SVG-space point to device-space coordinates."""
+
+def svg_rectangle_to_custom_area(
+    start: tuple[float, float],
+    end: tuple[float, float],
+    rotation: RotationAngle,
+) -> list[int]:
+    """Convert an SVG drag rectangle to a normalized custom-area rectangle."""
+
 class BackgroundImage:
     """Map background image."""
 

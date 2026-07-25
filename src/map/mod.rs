@@ -39,6 +39,62 @@ fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
     }
 }
 
+fn svg_point_to_device_impl(point: (f64, f64), rotation: RotationAngle) -> PyResult<(i32, i32)> {
+    if !point.0.is_finite() || !point.1.is_finite() {
+        return Err(PyValueError::new_err("Point coordinates must be finite"));
+    }
+
+    let pixel_width = f64::from(PIXEL_WIDTH);
+    let (x, y) = match rotation {
+        RotationAngle::Deg0 => (point.0 * pixel_width, -point.1 * pixel_width),
+        RotationAngle::Deg90 => (point.1 * pixel_width, point.0 * pixel_width),
+        RotationAngle::Deg180 => (-point.0 * pixel_width, point.1 * pixel_width),
+        RotationAngle::Deg270 => (-point.1 * pixel_width, -point.0 * pixel_width),
+    };
+
+    let round_coordinate = |value: f64| {
+        let value = value.round();
+        if value < f64::from(i32::MIN) || value > f64::from(i32::MAX) {
+            Err(PyValueError::new_err(
+                "Transformed device coordinate is out of range",
+            ))
+        } else {
+            Ok(value as i32)
+        }
+    };
+
+    Ok((round_coordinate(x)?, round_coordinate(y)?))
+}
+
+/// Convert an SVG-space point to device-space coordinates.
+#[pyfunction]
+fn svg_point_to_device(point: (f64, f64), rotation: RotationAngle) -> PyResult<(i32, i32)> {
+    svg_point_to_device_impl(point, rotation)
+}
+
+/// Convert an SVG drag rectangle to a normalized custom-area rectangle.
+#[pyfunction]
+fn svg_rectangle_to_custom_area(
+    start: (f64, f64),
+    end: (f64, f64),
+    rotation: RotationAngle,
+) -> PyResult<Vec<i32>> {
+    let start = svg_point_to_device_impl(start, rotation)?;
+    let end = svg_point_to_device_impl(end, rotation)?;
+    let min_x = start.0.min(end.0);
+    let max_x = start.0.max(end.0);
+    let min_y = start.1.min(end.1);
+    let max_y = start.1.max(end.1);
+
+    if min_x == max_x || min_y == max_y {
+        return Err(PyValueError::new_err(
+            "Rectangle must have non-zero width and height",
+        ));
+    }
+
+    Ok(vec![min_x, max_y, max_x, min_y])
+}
+
 fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSClass, Path)> {
     debug!("Adding subset: {subset:?}");
 
@@ -409,6 +465,8 @@ pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MapData>()?;
     m.add_class::<PositionType>()?;
     m.add_class::<RotationAngle>()?;
+    m.add_function(wrap_pyfunction!(svg_point_to_device, m)?)?;
+    m.add_function(wrap_pyfunction!(svg_rectangle_to_custom_area, m)?)?;
     Ok(())
 }
 
@@ -459,6 +517,63 @@ mod tests {
     ) {
         let result = calc_point(x, y, rotation);
         assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case(RotationAngle::Deg0, (63, 125))]
+    #[case(RotationAngle::Deg90, (-125, 63))]
+    #[case(RotationAngle::Deg180, (-63, -125))]
+    #[case(RotationAngle::Deg270, (125, -63))]
+    fn test_svg_point_to_device(#[case] rotation: RotationAngle, #[case] expected: (i32, i32)) {
+        let result = svg_point_to_device((1.25, -2.5), rotation).unwrap();
+        assert_eq!(result, expected);
+    }
+
+    #[rstest]
+    #[case((20.0, -40.0), (60.0, 10.0))]
+    #[case((60.0, 10.0), (20.0, -40.0))]
+    #[case((20.0, 10.0), (60.0, -40.0))]
+    #[case((60.0, -40.0), (20.0, 10.0))]
+    fn test_svg_rectangle_to_custom_area_drag_direction(
+        #[case] start: (f64, f64),
+        #[case] end: (f64, f64),
+    ) {
+        let result = svg_rectangle_to_custom_area(start, end, RotationAngle::Deg0).unwrap();
+        assert_eq!(result, vec![1000, 2000, 3000, -500]);
+    }
+
+    #[rstest]
+    #[case((20.0, -40.0), (60.0, 10.0), RotationAngle::Deg0)]
+    #[case((40.0, 20.0), (-10.0, 60.0), RotationAngle::Deg90)]
+    #[case((-20.0, 40.0), (-60.0, -10.0), RotationAngle::Deg180)]
+    #[case((-40.0, -20.0), (10.0, -60.0), RotationAngle::Deg270)]
+    fn test_svg_rectangle_to_custom_area_equivalent_rotations(
+        #[case] start: (f64, f64),
+        #[case] end: (f64, f64),
+        #[case] rotation: RotationAngle,
+    ) {
+        let result = svg_rectangle_to_custom_area(start, end, rotation).unwrap();
+        assert_eq!(result, vec![1000, 2000, 3000, -500]);
+    }
+
+    #[rstest]
+    #[case((f64::NAN, 0.0))]
+    #[case((0.0, f64::INFINITY))]
+    #[case((f64::NEG_INFINITY, 0.0))]
+    #[case((1e100, 0.0))]
+    fn test_svg_point_to_device_invalid(#[case] point: (f64, f64)) {
+        assert!(svg_point_to_device(point, RotationAngle::Deg0).is_err());
+    }
+
+    #[rstest]
+    #[case((1.0, 2.0), (1.0, 3.0))]
+    #[case((1.0, 2.0), (3.0, 2.0))]
+    #[case((1.0, 1.0), (1.001, 2.0))]
+    fn test_svg_rectangle_to_custom_area_zero_area(
+        #[case] start: (f64, f64),
+        #[case] end: (f64, f64),
+    ) {
+        assert!(svg_rectangle_to_custom_area(start, end, RotationAngle::Deg0).is_err());
     }
 
     #[rstest]
