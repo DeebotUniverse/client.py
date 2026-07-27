@@ -205,7 +205,7 @@ class _AuthClient:
             # ecovacs returns a json but content_type header is set to text
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
-            _LOGGER.debug("got response code %s for %s", json.get("code"), url)
+            _LOGGER.debug("got %s", json)
             # TODO better error handling
             if json["code"] == "0000":
                 return json["data"]

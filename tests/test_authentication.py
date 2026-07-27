@@ -3,13 +3,14 @@ from __future__ import annotations
 import asyncio
 import base64
 from http import HTTPStatus
+import logging
 import time
 from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import AsyncMock, MagicMock, Mock, patch
 
 from aiohttp import ClientSession
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
 import orjson
 import pytest
 
@@ -17,6 +18,7 @@ from deebot_client.authentication import Authenticator, create_rest_config
 from deebot_client.exceptions import (
     AuthenticationError,
     DeviceVerificationRequiredError,
+    InvalidAuthenticationError,
     InvalidVerificationCodeError,
 )
 from deebot_client.models import Credentials
@@ -197,6 +199,72 @@ async def test_login_requires_device_verification() -> None:
     assert "/global_e/1.6.3/google_play/1/user/login" in url
 
 
+async def test_login_completes_login_and_sanitizes_response_log(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    config, session = _rest_config_with_mock_session()
+    session.get.side_effect = [
+        _mock_response(
+            {
+                "code": "0000",
+                "data": {"uid": "user-id", "accessToken": "access-token"},
+            }
+        ),
+        _mock_response({"code": "0000", "data": {"authCode": "auth-code"}}),
+    ]
+    session.post.return_value = _mock_response(
+        {
+            "result": "ok",
+            "userId": "short-user-id",
+            "token": "portal-token",
+            "last": 604800000,
+        }
+    )
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+    caplog.set_level(logging.DEBUG, logger="deebot_client.authentication")
+
+    credentials = await authenticator.authenticate()
+
+    assert credentials.token == "portal-token"  # noqa: S105
+    assert credentials.user_id == "short-user-id"
+    assert "'accessToken': '[REMOVED]'" in caplog.text
+    assert "access-token" not in caplog.text
+    await authenticator.teardown()
+
+
+@pytest.mark.parametrize(
+    ("response", "error_type", "error_match"),
+    [
+        (
+            {"code": "0000", "data": []},
+            AuthenticationError,
+            "Invalid login response",
+        ),
+        (
+            {"code": "1005", "msg": "Invalid credentials", "data": None},
+            InvalidAuthenticationError,
+            "Invalid credentials",
+        ),
+        (
+            {"code": "9999", "msg": "Unknown error", "data": None},
+            AuthenticationError,
+            "failure code 9999",
+        ),
+    ],
+)
+async def test_login_rejects_invalid_response(
+    response: dict[str, Any],
+    error_type: type[AuthenticationError],
+    error_match: str,
+) -> None:
+    config, session = _rest_config_with_mock_session()
+    session.get.return_value = _mock_response(response)
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+
+    with pytest.raises(error_type, match=error_match):
+        await authenticator.authenticate()
+
+
 async def test_request_device_verification_code() -> None:
     private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
     config, session = _rest_config_with_mock_session()
@@ -307,6 +375,28 @@ async def test_verify_device_rejects_invalid_code() -> None:
     session.post.assert_not_called()
 
 
+@pytest.mark.parametrize(
+    "response_data",
+    [
+        [],
+        {"uid": "user-id"},
+    ],
+)
+async def test_verify_device_rejects_invalid_response(
+    response_data: object,
+) -> None:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    config, session = _rest_config_with_mock_session()
+    session.get.side_effect = [
+        _mock_response(_public_key_response(private_key)),
+        _mock_response({"code": "0000", "data": response_data}),
+    ]
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+
+    with pytest.raises(AuthenticationError, match="Invalid verifyDevice response"):
+        await authenticator.verify_device("123456")
+
+
 async def test_request_device_verification_rejects_invalid_public_key() -> None:
     config, session = _rest_config_with_mock_session()
     session.get.return_value = _mock_response(
@@ -326,3 +416,60 @@ async def test_request_device_verification_rejects_invalid_public_key() -> None:
         await authenticator.request_device_verification_code()
 
     session.get.assert_called_once()
+
+
+@pytest.mark.parametrize(
+    ("response_data", "error"),
+    [
+        ({}, "Invalid public key configuration response"),
+        ([], "Ecovacs public key configuration is missing"),
+        ([None], "Ecovacs public key configuration is missing"),
+        (
+            [{"key": _PUBLIC_KEY_CONFIG, "value": None}],
+            "Ecovacs public key configuration is missing",
+        ),
+        (
+            [{"key": _PUBLIC_KEY_CONFIG, "value": "not-json"}],
+            "Invalid Ecovacs public key",
+        ),
+        (
+            [{"key": _PUBLIC_KEY_CONFIG, "value": '{"publicKey":123}'}],
+            "Invalid Ecovacs public key",
+        ),
+    ],
+)
+async def test_request_device_verification_rejects_invalid_public_key_response(
+    response_data: object, error: str
+) -> None:
+    config, session = _rest_config_with_mock_session()
+    session.get.return_value = _mock_response({"code": "0000", "data": response_data})
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+
+    with pytest.raises(AuthenticationError, match=error):
+        await authenticator.request_device_verification_code()
+
+
+async def test_request_device_verification_rejects_non_rsa_public_key() -> None:
+    public_key = ec.generate_private_key(ec.SECP256R1()).public_key()
+    encoded_key = base64.b64encode(
+        public_key.public_bytes(
+            serialization.Encoding.DER,
+            serialization.PublicFormat.SubjectPublicKeyInfo,
+        )
+    ).decode()
+    config, session = _rest_config_with_mock_session()
+    session.get.return_value = _mock_response(
+        {
+            "code": "0000",
+            "data": [
+                {
+                    "key": _PUBLIC_KEY_CONFIG,
+                    "value": orjson.dumps({"publicKey": encoded_key}).decode(),
+                }
+            ],
+        }
+    )
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+
+    with pytest.raises(AuthenticationError, match="public key is not an RSA key"):
+        await authenticator.request_device_verification_code()
