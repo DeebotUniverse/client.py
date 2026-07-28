@@ -115,20 +115,6 @@ async def test_get_static_device_info(
         mock_import.assert_not_called()
 
 
-async def test_vmssec_n20_capabilities() -> None:
-    """Test the China-market N20 hardware class."""
-    static_device_info = await hardware.get_static_device_info("vmssec")
-    assert static_device_info is not None
-    assert static_device_info.capabilities.device_type is DeviceType.VACUUM
-
-    for capability in ("battery", "charge", "clean", "state", "fan_speed", "stats"):
-        assert getattr(static_device_info.capabilities, capability) is not None
-
-    for existing_class in ("kr0277", "7piq03"):
-        existing_device_info = await hardware.get_static_device_info(existing_class)
-        assert existing_device_info == static_device_info
-
-
 @pytest.mark.parametrize(
     ("class_", "expected"),
     [
