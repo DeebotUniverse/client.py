@@ -47,11 +47,10 @@ _PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
 _META = {
     "lang": "EN",
     "appCode": "global_e",
-    "appVersion": "1.6.3",
+    "appVersion": "3.14.0",
     "channel": "google_play",
     "deviceType": "1",
 }
-_VERIFICATION_META = {**_META, "appVersion": "3.14.0"}
 _ANDROID_MODEL = "Pixel 7"
 _ANDROID_SYSTEM = "Android 14"
 MAX_RETRIES = 3
@@ -119,7 +118,6 @@ class _AuthClient:
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
-        self._verification_meta = {**self._meta, **_VERIFICATION_META}
         self._public_key: rsa.RSAPublicKey | None = None
 
     async def login(self) -> Credentials:
@@ -196,7 +194,9 @@ class _AuthClient:
             expires_at=expires_at,
         )
 
-    async def __do_auth_response(self, url: str, params: dict[str, Any]) -> Any:
+    async def __do_auth_response(
+        self, url: str, params: dict[str, Any]
+    ) -> dict[str, Any] | list[Any]:
         async with self._config.session.get(
             url, params=params, timeout=_TIMEOUT
         ) as res:
@@ -205,10 +205,15 @@ class _AuthClient:
             # ecovacs returns a json but content_type header is set to text
             content_type = res.headers.get(hdrs.CONTENT_TYPE, "").lower()
             json = await res.json(content_type=content_type)
+            if not isinstance(json, dict):
+                raise AuthenticationError("Invalid authentication response")
             _LOGGER.debug("got %s", json)
             # TODO better error handling
             if json["code"] == "0000":
-                return json["data"]
+                data = json["data"]
+                if isinstance(data, (dict, list)):
+                    return data
+                raise AuthenticationError("Invalid authentication response")
             if json["code"] in ["1005", "1010"]:
                 raise InvalidAuthenticationError(json["msg"])
             if json["code"] == "1012":
@@ -251,15 +256,13 @@ class _AuthClient:
         """Call a signed private authentication API endpoint."""
         url = urljoin(
             self._config.login_url,
-            _PRIVATE_API_PATH_FORMAT.format(
-                endpoint=endpoint, **self._verification_meta
-            ),
+            _PRIVATE_API_PATH_FORMAT.format(endpoint=endpoint, **self._meta),
         )
         return await self.__do_auth_response(
             url,
             self.__sign(
                 params,
-                self._verification_meta,
+                self._meta,
                 _CLIENT_KEY,
                 _CLIENT_SECRET,
             ),
@@ -285,12 +288,14 @@ class _AuthClient:
         if not isinstance(response, list):
             raise AuthenticationError("Invalid public key configuration response")
 
+        found_config = False
         for entry in response:
             if not isinstance(entry, dict) or entry.get("key") != _PUBLIC_KEY_CONFIG:
                 continue
+            found_config = True
             value = entry.get("value")
             if not isinstance(value, str):
-                break
+                continue
             try:
                 config = orjson.loads(value)
                 encoded_key = config["publicKey"]
@@ -313,6 +318,8 @@ class _AuthClient:
             self._public_key = key
             return key
 
+        if found_config:
+            raise AuthenticationError("Invalid Ecovacs public key")
         raise AuthenticationError("Ecovacs public key configuration is missing")
 
     async def __encrypt_account(self, account: str) -> str:
@@ -355,6 +362,8 @@ class _AuthClient:
                 params, {"openId": "global"}, _AUTH_CLIENT_KEY, _AUTH_CLIENT_SECRET
             ),
         )
+        if not isinstance(res, dict):
+            raise AuthenticationError("Invalid auth code response")
         return str(res["authCode"])
 
     async def __call_login_by_it_token(

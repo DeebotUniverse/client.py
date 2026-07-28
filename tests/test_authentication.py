@@ -196,7 +196,7 @@ async def test_login_requires_device_verification() -> None:
         await authenticator.authenticate()
 
     url = session.get.call_args.args[0]
-    assert "/global_e/1.6.3/google_play/1/user/login" in url
+    assert "/global_e/3.14.0/google_play/1/user/login" in url
 
 
 async def test_login_completes_login_and_sanitizes_response_log(
@@ -418,6 +418,24 @@ async def test_request_device_verification_rejects_invalid_public_key() -> None:
     session.get.assert_called_once()
 
 
+async def test_request_device_verification_skips_invalid_duplicate_config() -> None:
+    private_key = rsa.generate_private_key(public_exponent=65537, key_size=2048)
+    public_key_response = _public_key_response(private_key)
+    response_data = public_key_response["data"]
+    assert isinstance(response_data, list)
+    response_data.insert(0, {"key": _PUBLIC_KEY_CONFIG, "value": None})
+    config, session = _rest_config_with_mock_session()
+    session.get.side_effect = [
+        _mock_response(public_key_response),
+        _mock_response({"code": "0000", "data": {"verifyId": "verify-id"}}),
+    ]
+    authenticator = Authenticator(config, _ACCOUNT_ID, _PASSWORD_HASH)
+
+    await authenticator.request_device_verification_code()
+
+    assert session.get.call_count == 2
+
+
 @pytest.mark.parametrize(
     ("response_data", "error"),
     [
@@ -426,7 +444,7 @@ async def test_request_device_verification_rejects_invalid_public_key() -> None:
         ([None], "Ecovacs public key configuration is missing"),
         (
             [{"key": _PUBLIC_KEY_CONFIG, "value": None}],
-            "Ecovacs public key configuration is missing",
+            "Invalid Ecovacs public key",
         ),
         (
             [{"key": _PUBLIC_KEY_CONFIG, "value": "not-json"}],
