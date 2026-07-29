@@ -421,7 +421,7 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.13.3,<4.0" },
     { name = "aiomqtt", specifier = ">=2.5.0,<3.0" },
     { name = "cachetools", specifier = ">=5.0.0,<8.0" },
-    { name = "cryptography", specifier = ">=46.0.3,<50.0" },
+    { name = "cryptography", specifier = ">=48.0.1,<50.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "orjson", specifier = ">=3.11.3" },
 ]
