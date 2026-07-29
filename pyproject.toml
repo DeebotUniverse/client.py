@@ -56,7 +56,7 @@ dev = [
 ]
 lint = [
     "mypy==2.3.0",
-    "prek==0.4.6",
+    "prek==0.4.11",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
