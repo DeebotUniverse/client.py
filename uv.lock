@@ -330,7 +330,7 @@ dev = [
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.4.2" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
-    { name = "syrupy", specifier = "==5.3.4" },
+    { name = "syrupy", specifier = "==5.5.3" },
     { name = "testfixtures", specifier = "==12.3.0" },
     { name = "types-cachetools", specifier = ">=5.5.0.20240820" },
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
@@ -351,7 +351,7 @@ test = [
     { name = "pytest-github-actions-annotate-failures", specifier = "==0.4.2" },
     { name = "pytest-timeout", specifier = "==2.4.0" },
     { name = "pytest-xdist", specifier = "==3.8.0" },
-    { name = "syrupy", specifier = "==5.3.4" },
+    { name = "syrupy", specifier = "==5.5.3" },
     { name = "testfixtures", specifier = "==12.3.0" },
 ]
 
@@ -955,14 +955,14 @@ wheels = [
 
 [[package]]
 name = "syrupy"
-version = "5.3.4"
+version = "5.5.3"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "pytest" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/81/17/95753634cd02a892cbc74d8df9c15f5ad053885a913eb11aa6061f278344/syrupy-5.3.4.tar.gz", hash = "sha256:10f192655a2d42473ad5772653e64b281f6823fe5e30458d92f8ca8e882884c1", size = 87078, upload-time = "2026-06-26T10:55:42.522Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e7/39/17dde9f0c76cc5abcdeef1b2243791bb850d498f784147b8e460dd23abe8/syrupy-5.5.3.tar.gz", hash = "sha256:fa21e4ae77c89ec5abfca513338d8a7eb916da6618ca0f8db301476e0768e57a", size = 91614, upload-time = "2026-07-11T15:54:31.46Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/00/7a/254f95860cebb6d51ddb3e815ee30085e8c8a3ba6df1f44ef4605b385621/syrupy-5.3.4-py3-none-any.whl", hash = "sha256:409348aa20afc4b7dab7c965331de0cd79ab46977877fb189014ce9294e947e5", size = 53103, upload-time = "2026-06-26T10:55:41.007Z" },
+    { url = "https://files.pythonhosted.org/packages/ae/f9/617a194c1a4203279998e1859426cf2635042533a99a93d63d3ee1fb967e/syrupy-5.5.3-py3-none-any.whl", hash = "sha256:0b260a0c9dad55e1fb83818973dc36fbc1aea3fd5381592f442a986686c4171a", size = 54959, upload-time = "2026-07-11T15:54:29.836Z" },
 ]
 
 [[package]]
