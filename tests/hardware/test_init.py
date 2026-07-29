@@ -9,7 +9,6 @@ from unittest import mock
 import pytest
 
 from deebot_client import hardware
-from deebot_client.capabilities import DeviceType
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty
