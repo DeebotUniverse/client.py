@@ -13,7 +13,7 @@ from .const import (
     PATH_API_PIM_PRODUCT_IOT_MAP,
     PATH_API_USERS_USER,
 )
-from .exceptions import ApiError
+from .exceptions import ApiError, DeebotError
 from .logging_filter import get_logger
 from .models import ApiDeviceInfo, DeviceInfo
 
@@ -21,6 +21,30 @@ if TYPE_CHECKING:
     from .authentication import Authenticator
 
 _LOGGER = get_logger(__name__)
+
+
+def _collapse_exception_group(
+    exception_group: BaseExceptionGroup[BaseException],
+) -> BaseException:
+    """Collapse an exception group into the exception, which should be raised.
+
+    Both tasks use the same authentication and api, so they usually fail with the
+    same error. If they don't, we can only raise one of them and log the others,
+    to not lose that information.
+    """
+    # An exception group cannot be empty
+    exception, *others = exception_group.exceptions
+    if any(
+        type(other) is not type(exception) or other.args != exception.args
+        for other in others
+    ):
+        _LOGGER.error(
+            "Multiple different exceptions occurred, raising only %s: %s",
+            type(exception).__name__,
+            exception,
+            exc_info=exception_group,
+        )
+    return exception
 
 
 @dataclass(frozen=True)
@@ -66,7 +90,14 @@ class ApiClient:
                 task_global_device_list = tg.create_task(
                     self._get_devices(PATH_API_APPSVR_APP, "GetGlobalDeviceList")
                 )
-        except (ExceptionGroup, BaseExceptionGroup) as ex:
+        except BaseExceptionGroup as ex:
+            exception = _collapse_exception_group(ex)
+            if isinstance(exception, DeebotError):
+                # Raise our own errors as they are, as callers rely on their
+                # specific type, like DeviceVerificationRequiredError.
+                # Raising it without "from" keeps the cause of the exception intact
+                # and adds the group as context
+                raise exception  # noqa: B904
             raise ApiError("Error on getting devices") from ex
 
         api_devices = task_device_list.result()
