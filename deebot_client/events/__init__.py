@@ -155,9 +155,12 @@ class LifeSpan(StrEnumWithXml):
     SIDE_BRUSH = "sideBrush", "SideBrush"
     STATION_FILTER = "spHeap", "SpHeap"
     STRAINER = "strainer", "Strainer"
+    TRIMMER_BRUSH = "trimmerBrush", "TrimmerBrush"
     UNIT_CARE = "unitCare", "UnitCare"
     UV_SANITIZER = "uv", "Uv"
     WATER_SINK = "waterSink", "WaterSink"
+    WEED_ROPE = "weedRope", "WeedRope"
+
 
 
 @dataclass(frozen=True)
