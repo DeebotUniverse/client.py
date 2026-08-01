@@ -49,13 +49,13 @@ from deebot_client.commands.json.map import (
     GetMinorMap,
     SetMajorMap,
 )
-from deebot_client.commands.json.multimap_state import (
-    GetMultimapState,
-    SetMultimapState,
-)
 from deebot_client.commands.json.mop_auto_wash_frequency import (
     GetMopAutoWashFrequency,
     SetMopAutoWashFrequency,
+)
+from deebot_client.commands.json.multimap_state import (
+    GetMultimapState,
+    SetMultimapState,
 )
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
