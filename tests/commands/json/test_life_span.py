@@ -205,7 +205,9 @@ from . import assert_command, assert_execute_command
         (
             GetLifeSpan({LifeSpan.DUST_CONTAINER_FILTER}),
             get_request_json(
-                get_success_body([{"type": "dustContainerFilter", "left": 90, "total": 90}])
+                get_success_body(
+                    [{"type": "dustContainerFilter", "left": 90, "total": 90}]
+                )
             ),
             (LifeSpanEvent(LifeSpan.DUST_CONTAINER_FILTER, 100.0, 90),),
         ),

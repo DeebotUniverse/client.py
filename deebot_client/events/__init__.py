@@ -145,7 +145,10 @@ class LifeSpan(StrEnumWithXml):
     DUST_CONTAINER_FILTER = "dustContainerFilter", "DustContainerFilter"
     FILTER = "heap", "Heap"
     HAND_FILTER = "handFilter", "HandFilter"
-    HEAVY_DUTY_CLEANING_SOLUTION = "heavyDutyCleaningSolution", "HeavyDutyCleaningSolution"
+    HEAVY_DUTY_CLEANING_SOLUTION = (
+        "heavyDutyCleaningSolution",
+        "HeavyDutyCleaningSolution",
+    )
     HUMIDIFY = "humidify", "Humidify"
     HUMIDIFY_MAINTENANCE = "wbCare", "WbCare"
     LENS_BRUSH = "lensBrush", "LensBrush"
@@ -160,7 +163,6 @@ class LifeSpan(StrEnumWithXml):
     UV_SANITIZER = "uv", "Uv"
     WATER_SINK = "waterSink", "WaterSink"
     WEED_ROPE = "weedRope", "WeedRope"
-
 
 
 @dataclass(frozen=True)
