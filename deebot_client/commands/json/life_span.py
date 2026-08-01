@@ -36,13 +36,12 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 
         :return: A message response
         """
+        unknown_types: list[str] = []
         for component in data:
             try:
                 component_type = LifeSpan(component["type"])
             except ValueError:
-                _LOGGER.debug(
-                    "Unknown LifeSpan type %r, skipping", component["type"]
-                )
+                unknown_types.append(component["type"])
                 continue
 
             left = int(component["left"])
@@ -53,6 +52,9 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 
             percent = round((left / total) * 100, 2)
             event_bus.notify(LifeSpanEvent(component_type, percent, left))
+
+        if unknown_types:
+            _LOGGER.debug("Unknown LifeSpan types skipped: %s", unknown_types)
 
         return HandlingResult.success()
 
