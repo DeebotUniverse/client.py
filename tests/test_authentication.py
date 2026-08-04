@@ -22,7 +22,7 @@ from deebot_client.exceptions import (
     InvalidAuthenticationError,
     InvalidVerificationCodeError,
 )
-from deebot_client.models import Credentials
+from deebot_client.models import AccountCredentials, Credentials
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -499,3 +499,80 @@ async def test_request_device_verification_skips_invalid_duplicate_config(
     await auth.request_device_verification_code()
 
     assert len(api.requests["sendEmailVerifyCode"]) == 1
+
+
+async def test_authenticate_prefers_token_based_renewal(
+    session: ClientSession, api: _FakeEcovacsApi
+) -> None:
+    """A seeded access token mints portal credentials without a password login."""
+    authenticator = Authenticator(
+        create_rest_config(
+            session=session,
+            device_id=_DEVICE_ID,
+            alpha_2_country="US",
+            override_rest_url=api.url,
+        ),
+        _ACCOUNT_ID,
+        _PASSWORD_HASH,
+        account_credentials=AccountCredentials(
+            access_token="access-token",  # noqa: S106
+            user_id="user-id",
+        ),
+    )
+    try:
+        credentials = await authenticator.authenticate()
+
+        assert credentials.token == "portal-token"  # noqa: S105
+        assert credentials.user_id == "user-id"
+        assert "login" not in api.requests
+        assert api.requests["getAuthCode"][0].query["accessToken"] == "access-token"
+        assert api.requests["user.do"][0].json is not None
+    finally:
+        await authenticator.teardown()
+
+
+async def test_authenticate_falls_back_to_password_login(
+    rest_config: RestConfiguration,
+) -> None:
+    """An expired access token falls back to the password login."""
+    with patch("deebot_client.authentication._AuthClient", spec_set=True) as api_client:
+        login_with_account_mock: AsyncMock = api_client.return_value.login_with_account
+        login_with_account_mock.side_effect = AuthenticationError("token expired")
+        login_mock: AsyncMock = api_client.return_value.login
+        login_mock.return_value = Credentials(
+            "token", "user_id", int(time.time() + 123456789)
+        )
+        account = AccountCredentials(access_token="expired", user_id="user_id")  # noqa: S106
+        authenticator = Authenticator(
+            rest_config, "test", "test", account_credentials=account
+        )
+
+        assert (await authenticator.authenticate()) == login_mock.return_value
+        login_with_account_mock.assert_awaited_once_with(account)
+        login_mock.assert_awaited_once()
+
+
+async def test_login_stores_and_notifies_account_credentials(
+    auth: Authenticator,
+) -> None:
+    """A password login stores the account credentials and notifies subscribers."""
+    changed: asyncio.Queue[AccountCredentials] = asyncio.Queue()
+    auth.subscribe_account_credentials(changed.put)
+    assert auth.account_credentials is None
+
+    await auth.authenticate()
+
+    account = AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
+    assert auth.account_credentials == account
+    async with asyncio.timeout(0.1):
+        assert await changed.get() == account
+
+
+async def test_verify_device_stores_account_credentials(auth: Authenticator) -> None:
+    """A device verification stores the account credentials for later renewals."""
+    await auth.verify_device("123456")
+
+    assert auth.account_credentials == AccountCredentials(
+        access_token="access-token",  # noqa: S106
+        user_id="user-id",
+    )

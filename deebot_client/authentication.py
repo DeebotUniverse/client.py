@@ -25,7 +25,7 @@ from .exceptions import (
     InvalidVerificationCodeError,
 )
 from .logging_filter import get_logger
-from .models import Credentials
+from .models import AccountCredentials, Credentials
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
@@ -107,10 +107,13 @@ class _AuthClient:
         config: RestConfiguration,
         account_id: str,
         password_hash: str,
+        *,
+        on_account_credentials: Callable[[AccountCredentials], None] | None = None,
     ) -> None:
         self._config = config
         self._account_id = account_id
         self._password_hash = password_hash
+        self._on_account_credentials = on_account_credentials
 
         self._meta: dict[str, str] = {
             **_META,
@@ -161,12 +164,20 @@ class _AuthClient:
         """Complete login using the Ecovacs user credentials of the response."""
         data = self.__expect_dict(response, error)
         try:
-            user_id = str(data["uid"])
-            access_token = str(data["accessToken"])
+            account = AccountCredentials(
+                access_token=str(data["accessToken"]), user_id=str(data["uid"])
+            )
         except KeyError as ex:
             raise AuthenticationError(error) from ex
 
-        auth_code = await self.__call_auth_api(access_token, user_id)
+        if self._on_account_credentials is not None:
+            self._on_account_credentials(account)
+        return await self.login_with_account(account)
+
+    async def login_with_account(self, account: AccountCredentials) -> Credentials:
+        """Mint portal credentials from account credentials, without the password."""
+        user_id = account.user_id
+        auth_code = await self.__call_auth_api(account.access_token, user_id)
 
         login_token_resp = await self.__call_login_by_it_token(user_id, auth_code)
         if login_token_resp["userId"] != user_id:
@@ -472,31 +483,61 @@ class Authenticator:
         config: RestConfiguration,
         account_id: str,
         password_hash: str,
+        *,
+        account_credentials: AccountCredentials | None = None,
     ) -> None:
         self._auth_client = _AuthClient(
             config,
             account_id,
             password_hash,
+            on_account_credentials=self._set_account_credentials,
         )
 
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
             Callable[[Credentials], Coroutine[Any, Any, None]]
         ] = set()
+        self._on_account_credentials_changed: set[
+            Callable[[AccountCredentials], Coroutine[Any, Any, None]]
+        ] = set()
         self._credentials: Credentials | None = None
+        self._account_credentials = account_credentials
         self._refresh_handle: asyncio.TimerHandle | None = None
         self._tasks: set[asyncio.Future[Any]] = set()
+
+    @property
+    def account_credentials(self) -> AccountCredentials | None:
+        """Return the account credentials, if some are known."""
+        return self._account_credentials
 
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
             credentials = self._credentials
             if credentials is None or force or credentials.expires_at < time.time():
-                _LOGGER.debug("Performing login")
-                credentials = await self._auth_client.login()
+                credentials = await self._login()
                 self._set_credentials(credentials)
 
             return credentials
+
+    async def _login(self) -> Credentials:
+        """Login, preferring the password-free token based renewal.
+
+        The password login endpoint rejects some accounts with code 1013
+        ("Please update to the latest version to continue"), while portal
+        credentials can still be minted from the stored account credentials.
+        """
+        if (account := self._account_credentials) is not None:
+            _LOGGER.debug("Performing token based login")
+            try:
+                return await self._auth_client.login_with_account(account)
+            except AuthenticationError:
+                _LOGGER.debug(
+                    "Token based login failed, falling back to password login",
+                    exc_info=True,
+                )
+        _LOGGER.debug("Performing login")
+        return await self._auth_client.login()
 
     async def request_device_verification_code(self) -> None:
         """Request a one-time email code to verify the configured device ID."""
@@ -518,6 +559,15 @@ class Authenticator:
         for on_changed in self._on_credentials_changed:
             create_task(self._tasks, on_changed(credentials))
 
+    def _set_account_credentials(self, account: AccountCredentials) -> None:
+        """Store account credentials received during a login."""
+        if account == self._account_credentials:
+            return
+        self._account_credentials = account
+
+        for on_account_changed in self._on_account_credentials_changed:
+            create_task(self._tasks, on_account_changed(account))
+
     def subscribe(
         self, callback: Callable[[Credentials], Coroutine[Any, Any, None]]
     ) -> Callable[[], None]:
@@ -527,6 +577,17 @@ class Authenticator:
             self._on_credentials_changed.remove(callback)
 
         self._on_credentials_changed.add(callback)
+        return unsubscribe
+
+    def subscribe_account_credentials(
+        self, callback: Callable[[AccountCredentials], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
+        """Add callback on new account credentials and return unsubscribe callback."""
+
+        def unsubscribe() -> None:
+            self._on_account_credentials_changed.remove(callback)
+
+        self._on_account_credentials_changed.add(callback)
         return unsubscribe
 
     async def post_authenticated(
