@@ -178,20 +178,3 @@ class CleanMower(CleanV2):
         if action == CleanAction.RESUME and _LAST_TASK_TYPE:
             return {"act": action.value, "content": {"type": _LAST_TASK_TYPE}}
         return {"act": action.value, "content": {"type": "auto"}}
-
-
-class CleanMowerArea(CleanMower):
-    _ZONES_FILE = "/tmp/goat_zones"
-
-    def _get_args(self, action: CleanAction) -> dict[str, Any]:
-        import os  # noqa: PLC0415
-        if action == CleanAction.START:
-            try:
-                with open(self._ZONES_FILE) as f:
-                    zones = f.read().strip()
-                os.unlink(self._ZONES_FILE)
-                if zones:
-                    return {"act": action.value, "content": {"type": "spotArea", "value": zones}}
-            except OSError:
-                pass
-        return super()._get_args(action)
