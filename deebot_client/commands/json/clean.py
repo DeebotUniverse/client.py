@@ -17,6 +17,7 @@ if TYPE_CHECKING:
 
 _LOGGER = get_logger(__name__)
 
+_LAST_TASK_TYPE: str | None = None                                                                    
 
 class Clean(ExecuteCommand):
     """Clean command."""
@@ -94,15 +95,10 @@ class CleanV2(Clean):
 class CleanAreaV2(CleanV2):
     """Clean area command."""
 
-    def __init__(
-        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
-    ) -> None:
-        value = ",".join(str(i) for i in area)
-        if mode == CleanMode.FREE_CLEAN:
-            value = f"{cleanings},{value}"
+    def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
         self._additional_content = {
             "type": mode.value,
-            "value": value,
+            "value": ",".join(str(i) for i in area),
         }
         super().__init__(CleanAction.START)
 
@@ -126,6 +122,7 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
+        global _LAST_TASK_TYPE  # noqa: PLW0603
         status: State | None = None
         state = data.get("state")
         if data.get("trigger") == "alert":
@@ -145,6 +142,9 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             if "type" in content:
                 clean_type = content.get("type")
 
+            if clean_type:
+                _LAST_TASK_TYPE = clean_type
+
             if clean_type == "customArea":
                 area_values = content
                 if "value" in content:
@@ -156,6 +156,7 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             status = State.RETURNING
         elif state == "idle":
             status = State.IDLE
+            _LAST_TASK_TYPE = None
 
         if status:
             event_bus.notify(StateEvent(status))
@@ -168,3 +169,29 @@ class GetCleanInfoV2(GetCleanInfo):
     """Get clean info v2 command."""
 
     NAME = "getCleanInfo_V2"
+
+
+class CleanMower(CleanV2):
+    NAME = "clean"
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        if action == CleanAction.RESUME and _LAST_TASK_TYPE:
+            return {"act": action.value, "content": {"type": _LAST_TASK_TYPE}}
+        return {"act": action.value, "content": {"type": "auto"}}
+
+
+class CleanMowerArea(CleanMower):
+    _ZONES_FILE = "/tmp/goat_zones"
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        import os  # noqa: PLC0415
+        if action == CleanAction.START:
+            try:
+                with open(self._ZONES_FILE) as f:
+                    zones = f.read().strip()
+                os.unlink(self._ZONES_FILE)
+                if zones:
+                    return {"act": action.value, "content": {"type": "spotArea", "value": zones}}
+            except OSError:
+                pass
+        return super()._get_args(action)
