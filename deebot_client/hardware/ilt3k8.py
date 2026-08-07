@@ -127,8 +127,17 @@ from deebot_client.models import StaticDeviceInfo, CleanMode
 def _get_free_clean_area(
     _mode: CleanMode, area: list[int | float], cleanings: int = 1
 ) -> Command:
-    """Clean selected X9 PRO OMNI rooms using the V2 freeClean command shape."""
-    return CleanAreaV2(CleanMode.FREE_CLEAN, area, cleanings)
+    """Clean selected X9 PRO OMNI rooms using the V2 freeClean command shape.
+
+    NOTE on pass counts: the number of cleaning passes must be set with the
+    separate setCleanCount command (clean.count capability), exactly like the
+    Ecovacs app does. Putting the count inside the freeClean value ("2,3")
+    makes the X9 read "2" as a NON-EXISTENT area id and it fails with
+    "selected area not found". The first value field is a fixed flag, so we
+    always build value = "1,<id1>,<id2>". Tested on a real X9 PRO OMNI:
+    setCleanCount(2) + value="1,3" starts a 2-pass room clean correctly.
+    """
+    return CleanAreaV2(CleanMode.FREE_CLEAN, area, 1)
 
 
 def get_device_info() -> StaticDeviceInfo:
