@@ -81,7 +81,7 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=CleanMowerArea),
+                action=CapabilityCleanAction(command=CleanMower),
             ),
             custom=CapabilityCustomCommand(
                 event=CustomCommandEvent, get=[], set=CustomCommand
