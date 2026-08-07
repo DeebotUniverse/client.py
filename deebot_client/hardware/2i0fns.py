@@ -34,7 +34,7 @@ from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvanc
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import CleanMower, CleanMowerArea, CleanV2, GetCleanInfo
+from deebot_client.commands.json.clean import CleanMower, CleanV2, GetCleanInfo
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
