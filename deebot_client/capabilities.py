@@ -180,8 +180,12 @@ class CapabilityMap:
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
     info: CapabilityExecute[[str]] | None = None
-    major: CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]]
-    minor: CapabilityExecute[[int, str]]
+    # Newer devices (e.g. T90 PRO OMNI) don't support the major/minor map
+    # commands and send the whole map outline in the MapInfo_V2 message instead.
+    major: (
+        CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]] | None
+    ) = None
+    minor: CapabilityExecute[[int, str]] | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
