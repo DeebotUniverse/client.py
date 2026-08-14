@@ -109,10 +109,15 @@ class CleanMower(Clean):
 class CleanAreaV2(CleanV2):
     """Clean area command."""
 
-    def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        value = ",".join(str(i) for i in area)
+        if mode == CleanMode.FREE_CLEAN:
+            value = f"{cleanings},{value}"
         self._additional_content = {
             "type": mode.value,
-            "value": ",".join(str(i) for i in area),
+            "value": value,
         }
         super().__init__(CleanAction.START)
 

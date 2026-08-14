@@ -20,6 +20,14 @@ class InvalidAuthenticationError(AuthenticationError):
     """Invalid authentication error."""
 
 
+class DeviceVerificationRequiredError(AuthenticationError):
+    """Device verification is required before authentication."""
+
+
+class InvalidVerificationCodeError(InvalidAuthenticationError):
+    """Invalid or expired device verification code."""
+
+
 class ApiError(DeebotError):
     """Api error."""
 
