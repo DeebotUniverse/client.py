@@ -29,7 +29,7 @@ dependencies = [
     "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
     "cachetools>=5.0.0,<8.0",
-    "cryptography>=48.0.1,<50.0",
+    "cryptography>=48.0.1,<51.0",
     "defusedxml>=0.7.1",
     "orjson>=3.11.3",
 ]
@@ -56,8 +56,8 @@ dev = [
     "maturin-import-hook==0.3.0",
 ]
 lint = [
-    "mypy==2.3.0",
-    "prek==0.4.11",
+    "mypy==2.3.1",
+    "prek==0.4.14",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
