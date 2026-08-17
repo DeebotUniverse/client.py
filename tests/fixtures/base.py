@@ -30,7 +30,7 @@ class ContainerConfiguration:
 
     image: str
     version: str = "latest"
-    port: None | int = None
+    port: int | None = None
     env: dict[str, Any] = field(default_factory=dict)
     options: dict[str, Any] = field(default_factory=dict)
     max_wait_started: int = 30
@@ -98,7 +98,7 @@ class BaseContainer(ABC):
 
         return result
 
-    def get_port(self, port: None | str | int = None) -> int:
+    def get_port(self, port: str | int | None = None) -> int:
         """Get used port for the given port or main service port."""
         if port is None:
             port = self.config.port
