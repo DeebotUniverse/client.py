@@ -93,20 +93,24 @@ select = ["ALL"]
 
 ignore = [
     "ANN401", # Opinioated warning on disallowing dynamically typed expressions
-    "D203",   # Conflicts with other rules
-    "D213",   # Conflicts with other rules
-    "EM101",  # raw-string-in-exception
+
+    "COM812", # Conflicts with the Ruff formatter
+
+    "CPY001", # Missing copyright notice at top of file
 
     "D105", # Missing docstring in magic method
     "D107", # Missing docstring in `__init__`
+    "D203", # Conflicts with other rules
+    "D213", # Conflicts with other rules
+
     "E501", # line too long
 
-    "FBT", # flake8-boolean-trap
+    "EM101", # raw-string-in-exception
 
+    "FBT", # Boolean-typed positional argument in function definition
+
+    "PLR0917", # Too many positional arguments (6 > 5)
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-
-    # Conflicts with the Ruff formatter
-    "COM812",
 
     "TRY003", # raise-vanilla-args: Avoid specifying long messages outside the exception class
 
@@ -114,7 +118,6 @@ ignore = [
     "TD",     # Todos
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`
-
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
