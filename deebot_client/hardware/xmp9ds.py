@@ -40,6 +40,7 @@ from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
+from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
@@ -58,6 +59,7 @@ from deebot_client.events import (
     LifeSpanEvent,
     MoveUpWarningEvent,
     NetworkInfoEvent,
+    PositionsEvent,
     ReportStatsEvent,
     SafeProtectEvent,
     StateEvent,
@@ -102,6 +104,7 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
+            position=CapabilityEvent(PositionsEvent, [GetPos()]),
             settings=CapabilitySettings(
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
