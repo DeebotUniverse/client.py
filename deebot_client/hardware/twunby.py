@@ -192,10 +192,6 @@ def get_device_info() -> StaticDeviceInfo:
                 ],
                 reset=ResetLifeSpan,
             ),
-            # getMajorMap, getMinorMap and getMapSubSet all return code 20003
-            # ("rcp not support") on this device. The map outline is sent
-            # compressed in the MapInfo_V2 message instead, so major/minor are
-            # omitted.
             map=CapabilityMap(
                 cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
                 changed=CapabilityEvent(MapChangedEvent, []),
