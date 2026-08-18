@@ -119,7 +119,7 @@ def test_onStationState_preserves_washing_mop() -> None:
                     "charging": 0,
                     "connect": 0,
                     "emptying": 1,
-                    "powerFull": 0,
+                    "powerFull": 0,  # codespell:ignore
                 }
             },
             "type": 0,
