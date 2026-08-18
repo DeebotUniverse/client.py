@@ -37,8 +37,8 @@ from deebot_client.commands.json.ota import GetOta
 from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
 from deebot_client.commands.json.station_state import GetStationState
-from deebot_client.commands.json.sweep_mode import GetSweepMode
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
+from deebot_client.commands.json.sweep_mode import GetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
 from deebot_client.commands.json.volume import GetVolume
