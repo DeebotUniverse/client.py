@@ -130,6 +130,4 @@ def test_onStationState_preserves_washing_mop() -> None:
     result = OnStationState._handle_body_data_dict(event_bus, data)
 
     assert result.state == HandlingState.SUCCESS
-    event_bus.notify.assert_called_once_with(
-        StationEvent(State.WASHING_MOP)
-    )
+    event_bus.notify.assert_called_once_with(StationEvent(State.WASHING_MOP))
