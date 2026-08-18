@@ -1,14 +1,20 @@
 from __future__ import annotations
 
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
-from deebot_client.events import FirmwareEvent
+from deebot_client.commands.json.station_state import GetStationState
+from deebot_client.event_bus import EventBus
+from deebot_client.events import StateEvent
 from deebot_client.events.station import State, StationEvent
-from deebot_client.message import HandlingState
+from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.json.station_state import OnStationState
-from tests.messages.json import assert_message
+from deebot_client.models import State as RobotState
+from tests.helpers import get_request_json, get_success_body
+
+from . import assert_command
 
 
 @pytest.mark.parametrize(
@@ -19,31 +25,21 @@ from tests.messages.json import assert_message
         (1, {"type": 2, "motionState": 1}, State.DRYING_MOP),
     ],
 )
-@pytest.mark.benchmark
-def test_onStationState(
+async def test_GetStationState(
     state: int,
     additional_content: dict[str, Any],
     expected: State,
 ) -> None:
-    data: dict[str, Any] = {
-        "header": {
-            "pri": 1,
-            "tzm": 60,
-            "ts": "1734719921057",
-            "ver": "0.0.1",
-            "fwVer": "1.30.0",
-            "hwVer": "0.1.1",
-            "wkVer": "0.1.54",
-        },
-        "body": {
-            "data": {"content": {"error": [], **additional_content}, "state": state},
-            "code": 0,
-            "msg": "ok",
-        },
-    }
-
-    assert_message(
-        OnStationState, data, (FirmwareEvent("1.30.0"), StationEvent(expected))
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "content": {"error": [], **additional_content},
+                "state": state,
+            }
+        )
+    )
+    await assert_command(
+        GetStationState(), json, (firmware_event, StationEvent(expected))
     )
 
 
@@ -60,29 +56,44 @@ def test_onStationState(
         (2, {"type": 2, "motionState": 1}),
     ],
 )
-@pytest.mark.benchmark
-def test_onStationState_analyse(state: int, additional_content: dict[str, Any]) -> None:
-    """Cases that should fall through to analyse() (not handled)."""
-    data: dict[str, Any] = {
-        "header": {
-            "pri": 1,
-            "tzm": 60,
-            "ts": "1734719921057",
-            "ver": "0.0.1",
-            "fwVer": "1.30.0",
-            "hwVer": "0.1.1",
-            "wkVer": "0.1.54",
+async def test_GetStationState_analyse(
+    state: int,
+    additional_content: dict[str, Any],
+) -> None:
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "content": {"error": [], **additional_content},
+                "state": state,
+            }
+        )
+    )
+
+    await assert_command(
+        GetStationState(),
+        json,
+        firmware_event,
+        handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
+    )
+
+
+async def test_station_idle_preserves_washing_mop() -> None:
+    """Test X2 OMNI station idle does not overwrite active mop washing."""
+    event_bus = Mock(spec_set=EventBus)
+    event_bus.get_last_event.side_effect = (
+        StationEvent(State.WASHING_MOP),
+        StateEvent(RobotState.CLEANING),
+    )
+
+    data = {
+        "content": {
+            "error": [],
+            "type": 0,
         },
-        "body": {
-            "data": {"content": {"error": [], **additional_content}, "state": state},
-            "code": 0,
-            "msg": "ok",
-        },
+        "state": 0,
     }
 
-    assert_message(
-        OnStationState,
-        data,
-        (FirmwareEvent("1.30.0"),),
-        expected_state=HandlingState.ANALYSE_LOGGED,
-    )
+    result = OnStationState._handle_body_data_dict(event_bus, data)
+
+    assert result == HandlingResult.success()
+    event_bus.notify.assert_called_once_with(StationEvent(State.WASHING_MOP))
