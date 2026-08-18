@@ -269,5 +269,3 @@ def get_device_info() -> StaticDeviceInfo:
             ),
         ),
     )
-
-    
