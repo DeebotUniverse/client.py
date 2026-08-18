@@ -66,4 +66,3 @@ class OnStationState(MessageBodyDataDict):
 
         event_bus.notify(StationEvent(reported_state))
         return HandlingResult.success()
-    
