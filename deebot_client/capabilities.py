@@ -206,7 +206,9 @@ class CapabilitySettings:
     """Capabilities for settings."""
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
-    area_parameter: CapabilityExecute[[str, int, int, int, int]] | None = None
+    area_parameter: (
+        CapabilitySet[AreaParameterEvent, [str, int, int, int, int]] | None
+    ) = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
