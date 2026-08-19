@@ -234,6 +234,7 @@ def get_device_info() -> StaticDeviceInfo:
                         commands.StationAction.EMPTY_DUSTBIN,
                         commands.StationAction.DRY_MOP,
                         commands.StationAction.WASH_MOP,
+                        commands.StationAction.CLEAN_BASE,
                     ),
                 ),
                 auto_empty=CapabilitySetTypes(
