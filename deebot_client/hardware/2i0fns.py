@@ -23,6 +23,7 @@ from deebot_client.commands.json import (
     GetCutDirection,
     GetMoveUpWarning,
     GetSafeProtect,
+    SetAreaParameter,
     SetBorderSwitch,
     SetChildLock,
     SetCrossMapBorderWarning,
@@ -113,6 +114,7 @@ def get_device_info() -> StaticDeviceInfo:
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
                 ),
+                area_parameter=CapabilityExecute(SetAreaParameter),
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
                 ),
