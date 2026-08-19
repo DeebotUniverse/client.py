@@ -35,7 +35,7 @@ __all__ = [
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
     OnAreaParameter,
-    
+
     OnAutoEmpty,
 
     OnBattery,
