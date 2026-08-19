@@ -17,6 +17,7 @@ from deebot_client.capabilities import (
     DeviceType,
 )
 from deebot_client.commands.json import (
+    GetAreaParameter,
     GetBorderSwitch,
     GetChildLock,
     GetCrossMapBorderWarning,
@@ -47,6 +48,7 @@ from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
+    AreaParameterEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -114,7 +116,11 @@ def get_device_info() -> StaticDeviceInfo:
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
                 ),
-                area_parameter=CapabilityExecute(SetAreaParameter),
+                area_parameter=CapabilitySet(
+                    AreaParameterEvent,
+                    [GetAreaParameter()],
+                    SetAreaParameter,
+                ),
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
                 ),
