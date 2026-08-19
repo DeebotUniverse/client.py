@@ -24,6 +24,7 @@ from deebot_client.commands.json import (
     GetCutDirection,
     GetMoveUpWarning,
     GetSafeProtect,
+    SetAreaParameter,
     SetBorderSwitch,
     SetChildLock,
     SetCrossMapBorderWarning,
