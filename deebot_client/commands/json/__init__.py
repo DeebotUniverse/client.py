@@ -66,6 +66,7 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
+    "GetAreaParameter",
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
@@ -111,7 +112,6 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
-    "GetAreaParameter",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
@@ -142,8 +142,9 @@ __all__ = [
 # ordered by file asc
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
-    GetAreaParameter,
     SetAdvancedMode,
+
+    GetAreaParameter,
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
