@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from deebot_client.commands.json import GetAreaParameter
 from deebot_client.events import AreaParameter, AreaParameterEvent
-
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
