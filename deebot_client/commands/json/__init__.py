@@ -112,7 +112,6 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
-    "SetAreaParameter",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
@@ -144,7 +143,6 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
-    SetAreaParameter,
 
     GetAreaParameter,
 
