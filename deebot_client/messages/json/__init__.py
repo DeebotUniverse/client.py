@@ -6,9 +6,8 @@ import re
 
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
-
-from .auto_empty import OnAutoEmpty
 from .area_parameter import OnAreaParameter
+from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
