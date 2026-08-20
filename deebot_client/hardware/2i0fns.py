@@ -115,6 +115,10 @@ def get_device_info() -> StaticDeviceInfo:
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
                 ),
+                area_parameter=CapabilityEvent(
+                    AreaParameterEvent,
+                    [GetAreaParameter()],
+                ),
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
                 ),
