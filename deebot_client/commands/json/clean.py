@@ -132,6 +132,13 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         if state == "washing":
             event_bus.notify(StationEvent(StationState.WASHING_MOP))
+        elif state == "clean":
+            last_station_event = event_bus.get_last_event(StationEvent)
+            if (
+                last_station_event
+                and last_station_event.state == StationState.WASHING_MOP
+            ):
+                event_bus.notify(StationEvent(StationState.IDLE))
 
         if data.get("trigger") == "alert":
             status = State.ERROR
