@@ -6,6 +6,7 @@ import re
 
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
+
 from .area_parameter import OnAreaParameter
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
