@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
+    AreaParameterEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSpinEvent,
