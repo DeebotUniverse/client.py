@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
-from .area_parameter import SetAreaParameter
 from .area_parameter_get import GetAreaParameter
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
