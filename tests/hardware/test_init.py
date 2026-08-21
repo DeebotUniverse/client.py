@@ -114,6 +114,7 @@ async def test_get_static_device_info(
         assert static_device_info_cached == expected
         mock_import.assert_not_called()
 
+
 def test_capabilities_command_lookup_is_device_specific() -> None:
     """Test commands with the same name can be resolved per device."""
 
@@ -136,6 +137,7 @@ def test_capabilities_command_lookup_is_device_specific() -> None:
     assert info.capabilities.get_command("clean") is Clean
     assert alternative_capabilities.get_command("clean") is AlternativeClean
     assert info.capabilities.get_command("doesNotExist") is None
+
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
