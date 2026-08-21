@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -17,7 +18,7 @@ from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
-from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
+from deebot_client.commands.json.clean import Clean, GetCleanInfo, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -113,6 +114,28 @@ async def test_get_static_device_info(
         assert static_device_info_cached == expected
         mock_import.assert_not_called()
 
+def test_capabilities_command_lookup_is_device_specific() -> None:
+    """Test commands with the same name can be resolved per device."""
+
+    class AlternativeClean(Clean):
+        """Alternative clean command using the same command name."""
+
+    info = get_yna5xi_info()
+
+    alternative_capabilities = replace(
+        info.capabilities,
+        clean=replace(
+            info.capabilities.clean,
+            action=replace(
+                info.capabilities.clean.action,
+                command=AlternativeClean,
+            ),
+        ),
+    )
+
+    assert info.capabilities.get_command("clean") is Clean
+    assert alternative_capabilities.get_command("clean") is AlternativeClean
+    assert info.capabilities.get_command("doesNotExist") is None
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
