@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
 
-
 _LOGGER = get_logger(__name__)
 
 
