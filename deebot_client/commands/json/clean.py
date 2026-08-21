@@ -115,7 +115,7 @@ class CleanAreaV2(CleanV2):
 
 
 class FreeCleanV2(CleanV2):
-    """Clean area command for bots that require cleanmode freeclean"""
+    """Clean area command for bots that require type freeClean."""
 
     def __init__(
         self, mode: CleanMode, area: list[int | float | str], _: int = 1
