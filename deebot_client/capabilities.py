@@ -108,7 +108,8 @@ def _get_commands(
             elif isinstance(value, type) and issubclass(value, Command):
                 commands.setdefault(value.NAME, value)
             elif is_dataclass(value) and not isinstance(value, type):
-                commands.update(_get_commands(value))
+                for name, command in _get_commands(value).items():
+                    commands.setdefault(name, command)
 
     return MappingProxyType(commands)
 
