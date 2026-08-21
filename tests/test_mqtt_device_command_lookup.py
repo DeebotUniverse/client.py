@@ -28,9 +28,6 @@ def test_p2p_command_lookup_is_device_specific(
 
         NAME = SetVolume.NAME
 
-        def __init__(self, volume: int) -> None:
-            super().__init__()
-
     client = MqttClient(
         MqttConfiguration(
             hostname="localhost",
