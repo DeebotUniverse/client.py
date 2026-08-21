@@ -112,7 +112,7 @@ class CleanAreaV2(CleanV2):
             args["content"].update(self._additional_content)
         return args
 
-class CleanAreaV2FreeClean(CleanV2):
+class FreeCleanV2(CleanV2):
     """Clean area command for bots that require cleanmode freeclean"""
 
     def __init__(
