@@ -112,6 +112,33 @@ class CleanAreaV2(CleanV2):
             args["content"].update(self._additional_content)
         return args
 
+class CleanAreaV2FreeClean(CleanV2):
+    """Clean area command for bots that require cleanmode freeclean"""
+
+    def __init__(
+        self, mode: CleanMode, area: list[int | float | string], _: int = 1
+    ) -> None:
+        match mode:
+            case CleanMode.SPOT_AREA:
+                type = CleanMode.FREE_CLEAN
+                value = ";".join(("1," + str(i)) for i in area)
+            case CleanMode.CUSTOM_AREA:
+                type = CleanMode.FREE_CLEAN
+                value = "3,null," + ",".join(str(i) for i in area)
+            case CeanMode.FREE_CLEAN:
+                type = mode
+                value = ";".join(i) for i in area)
+        self._additional_content = {
+            "type": type.value,
+            "value": value,
+        }
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
 
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
