@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 __all__ = [
+    "GetAreaSet",
     "GetCachedMapInfo",
     "GetMajorMap",
     "GetMapSet",
@@ -40,6 +41,32 @@ __all__ = [
 ]
 
 _LOGGER = get_logger(__name__)
+
+
+class GetAreaSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get mower area set command."""
+
+    NAME = "getAreaSet"
+
+    def __init__(self) -> None:
+        super().__init__({"mid": "1", "aid": "0", "type": "ar"})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle mower areas and notify room event subscribers."""
+        if data.get("type") != "ar" or not data.get("subsets"):
+            return HandlingResult.analyse()
+
+        subsets = orjson.loads(decompress_base64_data(data["subsets"]).decode())
+        event_bus.notify(
+            RoomsEvent(
+                subsets[0][0],
+                [Room(subset[2], int(subset[1]), "") for subset in subsets],
+            )
+        )
+        return HandlingResult.success()
 
 
 class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):

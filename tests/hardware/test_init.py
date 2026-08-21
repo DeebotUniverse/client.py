@@ -30,9 +30,9 @@ from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
 from deebot_client.commands.json.map import (
+    GetAreaSet,
     GetCachedMapInfo,
     GetMajorMap,
-    GetMapSetV2,
     GetMapTrace,
 )
 from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
@@ -65,7 +65,6 @@ from deebot_client.events import (
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
-    MapSetType,
     MoveUpWarningEvent,
     MultimapStateEvent,
     OtaEvent,
@@ -274,7 +273,7 @@ async def test_goat_o1200_area_names_capability() -> None:
     areas = capabilities.clean.areas
     assert areas is not None
     assert areas.event is RoomsEvent
-    expected_command = GetMapSetV2("", MapSetType.ROOMS)
+    expected_command = GetAreaSet()
     assert areas.get == [expected_command]
     assert capabilities.get_refresh_commands(RoomsEvent) == [expected_command]
     assert capabilities.map is None
