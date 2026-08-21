@@ -118,7 +118,7 @@ class FreeCleanV2(CleanV2):
     """Clean area command for bots that require cleanmode freeclean"""
 
     def __init__(
-        self, mode: CleanMode, area: list[int | float | str], cleanings: int = 1
+        self, mode: CleanMode, area: list[int | float | str], _: int = 1
     ) -> None:
         match mode:
             case CleanMode.SPOT_AREA:
