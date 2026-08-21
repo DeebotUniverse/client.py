@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import pytest
@@ -35,3 +36,26 @@ def test_get_messages(
 ) -> None:
     """Test get messages."""
     assert get_message(name, static_device_info) == expected
+
+
+def test_get_message_uses_device_command(
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test legacy message lookup uses the device-specific command."""
+
+    class AlternativeGetError(GetError):
+        """Alternative get error command using the same command name."""
+
+    alternative_static = replace(
+        static_device_info,
+        capabilities=replace(
+            static_device_info.capabilities,
+            error=replace(
+                static_device_info.capabilities.error,
+                get=[AlternativeGetError()],
+            ),
+        ),
+    )
+
+    assert get_message("onError", static_device_info) is GetError
+    assert get_message("onError", alternative_static) is AlternativeGetError
