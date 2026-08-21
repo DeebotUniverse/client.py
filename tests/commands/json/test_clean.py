@@ -159,6 +159,13 @@ async def test_Clean_act(
             },
         ),
         (
+            FreeCleanV2(CleanMode.SPOT_AREA, [5]),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,5"},
+            },
+        ),
+        (
             FreeCleanV2(
                 CleanMode.CUSTOM_AREA,
                 [1580.0, -4087.0, 3833.0, -7525.0],
@@ -171,6 +178,19 @@ async def test_Clean_act(
                 },
             },
         ),
+        (
+            FreeCleanV2(
+                CleanMode.FREE_CLEAN,
+                [ "1,5", "3,null,1580.0,-4087.0,3833.0,-7525.0", "1,8"],
+            ),
+            {
+                "act": "start",
+                "content": {
+                    "type": "freeClean",
+                    "value": "1,5;3,null,1580.0,-4087.0,3833.0,-7525.0;1,8",
+                },
+            },
+        ),
     ],
     ids=[
         "Rooms",
@@ -179,8 +199,10 @@ async def test_Clean_act(
         "Coordinates V2",
         "FreeClean",
         "FreeClean single room 2x",
-        "FreeClean SPOT",
-        "FreeClean CUSTOM",
+        "FreeCleanV2 SPOT_AREA single room",
+        "FreeCleanV2 SPOT_AREA multiple rooms",
+        "FreeCleanV2 CUSTOM_AREA",
+        "FreeCleanV2 FREE_CLEAN",
     ],
 )
 async def test_CleanArea(
