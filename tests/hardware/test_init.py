@@ -116,6 +116,18 @@ async def test_get_static_device_info(
 
 @pytest.mark.parametrize(
     ("class_", "expected"),
+    [("2i0fns", True), ("5xu9h3", False)],
+)
+async def test_mowing_job_progress_capability(class_: str, *, expected: bool) -> None:
+    """Test mowing job progress capability."""
+    info = await hardware.get_static_device_info(class_)
+    assert info is not None
+    assert info.capabilities.stats.mowing_job_progress is expected
+    assert info.capabilities.get_refresh_commands(StatsEvent) == [GetStats()]
+
+
+@pytest.mark.parametrize(
+    ("class_", "expected"),
     [
         (
             "5xu9h3",
