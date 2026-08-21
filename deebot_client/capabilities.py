@@ -96,7 +96,9 @@ def _get_commands(
             continue
 
         field_value = getattr(capabilities, field_.name)
-        values = field_value if isinstance(field_value, (list, tuple)) else (field_value,)
+        values = (
+            field_value if isinstance(field_value, (list, tuple)) else (field_value,)
+        )
 
         for value in values:
             if isinstance(value, Command):
