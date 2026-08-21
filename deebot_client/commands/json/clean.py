@@ -60,7 +60,7 @@ class CleanArea(Clean):
     """Clean area command."""
 
     def __init__(
-        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+        self, mode: CleanMode, area: list[int | float | str], cleanings: int = 1
     ) -> None:
         self._additional_args = {
             "type": mode.value,
@@ -96,7 +96,7 @@ class CleanAreaV2(CleanV2):
     """Clean area command."""
 
     def __init__(
-        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+        self, mode: CleanMode, area: list[int | float | str], cleanings: int = 1
     ) -> None:
         value = ",".join(str(i) for i in area)
         if mode == CleanMode.FREE_CLEAN:
