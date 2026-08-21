@@ -39,6 +39,8 @@ from deebot_client.events import (
     NetworkInfoEvent,
     OtaEvent,
     PositionsEvent,
+    ProtectStateEvent,
+    RainDelayEvent,
     ReportStatsEvent,
     RoomsEvent,
     SafeProtectEvent,
@@ -220,6 +222,7 @@ class CapabilitySettings:
         | None
     ) = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
+    rain_delay: CapabilitySet[RainDelayEvent, [bool, int]] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None
     )
@@ -278,6 +281,7 @@ class Capabilities(ABC):
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute[[]]
+    protect_state: CapabilityEvent[ProtectStateEvent] | None = None
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None
