@@ -122,16 +122,16 @@ class FreeCleanV2(CleanV2):
     ) -> None:
         match mode:
             case CleanMode.SPOT_AREA:
-                cleanType = CleanMode.FREE_CLEAN
+                clean_type = CleanMode.FREE_CLEAN
                 value = ";".join(("1," + str(i)) for i in area)
             case CleanMode.CUSTOM_AREA:
-                cleanType = CleanMode.FREE_CLEAN
+                clean_type = CleanMode.FREE_CLEAN
                 value = "3,null," + ",".join(str(i) for i in area)
             case CleanMode.FREE_CLEAN:
-                cleanType = mode
-                value = ";".join(i)
+                clean_type = mode
+                value = ";".join(area)
         self._additional_content = {
-            "type": cleanType.value,
+            "type": clean_type.value,
             "value": value,
         }
         super().__init__(CleanAction.START)
