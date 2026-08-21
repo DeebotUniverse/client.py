@@ -8,6 +8,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import Command
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
@@ -56,14 +57,13 @@ from deebot_client.events import (
     mop_auto_wash_frequency,
     water_info,
 )
-from deebot_client.command import Command
 
 if TYPE_CHECKING:
     from collections.abc import Callable
 
     from _typeshed import DataclassInstance
 
-    from deebot_client.command import Command, CommandWithMessageHandling
+    from deebot_client.command import CommandWithMessageHandling
     from deebot_client.commands import StationAction
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
@@ -83,6 +83,7 @@ def _get_events(
             events.update(_get_events(field_value))
 
     return MappingProxyType(events)
+
 
 def _get_commands(
     capabilities: DataclassInstance | type[DataclassInstance],
@@ -106,10 +107,11 @@ def _get_commands(
                 commands[value.NAME] = type(value)
             elif isinstance(value, type) and issubclass(value, Command):
                 commands[value.NAME] = value
-            elif is_dataclass(value):
+            elif is_dataclass(value) and not isinstance(value, type):
                 commands.update(_get_commands(value))
 
     return MappingProxyType(commands)
+
 
 @dataclass(frozen=True)
 class CapabilityEvent[E: Event]:
@@ -260,7 +262,7 @@ class CapabilitySettings:
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityStation:
-    """Capabilities for the station."""
+    """Capabilities for station."""
 
     action: CapabilityExecuteTypes[StationAction]
     auto_empty: CapabilitySetTypes[
