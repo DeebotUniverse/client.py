@@ -181,7 +181,7 @@ async def test_Clean_act(
         (
             FreeCleanV2(
                 CleanMode.FREE_CLEAN,
-                [ "1,5", "3,null,1580.0,-4087.0,3833.0,-7525.0", "1,8"],
+                ["1,5", "3,null,1580.0,-4087.0,3833.0,-7525.0", "1,8"],
             ),
             {
                 "act": "start",
