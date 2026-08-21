@@ -104,9 +104,9 @@ def _get_commands(
 
         for value in values:
             if isinstance(value, Command):
-                commands[value.NAME] = type(value)
+                commands.setdefault(value.NAME, type(value))
             elif isinstance(value, type) and issubclass(value, Command):
-                commands[value.NAME] = value
+                commands.setdefault(value.NAME, value)
             elif is_dataclass(value) and not isinstance(value, type):
                 commands.update(_get_commands(value))
 
