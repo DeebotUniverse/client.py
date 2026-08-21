@@ -292,8 +292,8 @@ class MqttClient:
     ) -> type[CommandMqttP2P] | None:
         """Return the P2P command configured for the device."""
         if sub_info := self._subscriptions.get(device_id):
-            command_type = (
-                sub_info.device_info.static.capabilities.get_command(command_name)
+            command_type = sub_info.device_info.static.capabilities.get_command(
+                command_name
             )
             if command_type is not None:
                 if issubclass(command_type, CommandMqttP2P):
