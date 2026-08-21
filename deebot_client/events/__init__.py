@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.util.enum import StrEnumWithXml
 
 from . import auto_empty, mop_auto_wash_frequency, station, water_info
+from .animal_protection import AnimalProtectionEvent
 from .auto_empty import AutoEmptyEvent
 from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -37,6 +38,7 @@ if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
+    "AnimalProtectionEvent",
     "AutoEmptyEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
@@ -247,6 +249,14 @@ class VolumeEvent(Event):
 
 
 @dataclass(frozen=True)
+class FallVolumeEvent(Event):
+    """Lifted-alarm volume event."""
+
+    volume: int
+    maximum: int | None
+
+
+@dataclass(frozen=True)
 class EnableEvent(Event):
     """Enabled event."""
 
@@ -316,6 +326,21 @@ class CrossMapBorderWarningEvent(EnableEvent):
 @dataclass(frozen=True)
 class MoveUpWarningEvent(EnableEvent):
     """Move up warning event."""
+
+
+@dataclass(frozen=True)
+class AiRecognitionEvent(EnableEvent):
+    """AI recognition event."""
+
+
+@dataclass(frozen=True)
+class HumanoidAiEvent(EnableEvent):
+    """Smart mowing with avoidance event."""
+
+
+@dataclass(frozen=True)
+class NarrowAdaptEvent(EnableEvent):
+    """Narrow passage adaptation event."""
 
 
 @dataclass(frozen=True)

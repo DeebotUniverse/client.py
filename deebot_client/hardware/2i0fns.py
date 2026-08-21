@@ -17,18 +17,26 @@ from deebot_client.capabilities import (
     DeviceType,
 )
 from deebot_client.commands.json import (
+    GetAnimalProtection,
     GetBorderSwitch,
     GetChildLock,
     GetCrossMapBorderWarning,
     GetCutDirection,
+    GetHumanoidAi,
     GetMoveUpWarning,
+    GetNarrowAdapt,
+    GetRecognization,
     GetSafeProtect,
+    SetAnimalProtection,
     SetBorderSwitch,
     SetChildLock,
     SetCrossMapBorderWarning,
     SetCutDirection,
+    SetHumanoidAi,
     SetMoveUpWarning,
+    SetNarrowAdapt,
     SetRainDelay,
+    SetRecognization,
     SetSafeProtect,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -43,10 +51,12 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
-from deebot_client.commands.json.volume import GetVolume, SetVolume
+from deebot_client.commands.json.volume import GetVolume, SetFallVolume, SetVolume
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
+    AiRecognitionEvent,
+    AnimalProtectionEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -55,9 +65,12 @@ from deebot_client.events import (
     CustomCommandEvent,
     CutDirectionEvent,
     ErrorEvent,
+    FallVolumeEvent,
+    HumanoidAiEvent,
     LifeSpan,
     LifeSpanEvent,
     MoveUpWarningEvent,
+    NarrowAdaptEvent,
     NetworkInfoEvent,
     ProtectStateEvent,
     RainDelayEvent,
@@ -114,6 +127,14 @@ def get_device_info() -> StaticDeviceInfo:
             play_sound=CapabilityExecute(PlaySound),
             protect_state=CapabilityEvent(ProtectStateEvent, []),
             settings=CapabilitySettings(
+                ai_recognition=CapabilitySetEnable(
+                    AiRecognitionEvent, [GetRecognization()], SetRecognization
+                ),
+                animal_protection=CapabilitySet(
+                    AnimalProtectionEvent,
+                    [GetAnimalProtection()],
+                    SetAnimalProtection,
+                ),
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
                 ),
@@ -129,6 +150,12 @@ def get_device_info() -> StaticDeviceInfo:
                 moveup_warning=CapabilitySetEnable(
                     MoveUpWarningEvent, [GetMoveUpWarning()], SetMoveUpWarning
                 ),
+                humanoid_ai=CapabilitySetEnable(
+                    HumanoidAiEvent, [GetHumanoidAi()], SetHumanoidAi
+                ),
+                narrow_adapt=CapabilitySetEnable(
+                    NarrowAdaptEvent, [GetNarrowAdapt()], SetNarrowAdapt
+                ),
                 rain_delay=CapabilitySet(RainDelayEvent, [], SetRainDelay),
                 cross_map_border_warning=CapabilitySetEnable(
                     CrossMapBorderWarningEvent,
@@ -141,7 +168,14 @@ def get_device_info() -> StaticDeviceInfo:
                 true_detect=CapabilitySetEnable(
                     TrueDetectEvent, [GetTrueDetect()], SetTrueDetect
                 ),
-                volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
+                volume=CapabilitySet(
+                    VolumeEvent,
+                    [GetVolume()],
+                    lambda volume: SetVolume(volume, channel="sys", total=10),
+                ),
+                fall_volume=CapabilitySet(
+                    FallVolumeEvent, [GetVolume()], SetFallVolume
+                ),
             ),
             state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
             stats=CapabilityStats(

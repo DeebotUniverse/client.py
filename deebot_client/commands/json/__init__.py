@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
+from .animal_protection import GetAnimalProtection, SetAnimalProtection
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -24,6 +25,7 @@ from .cut_direction import GetCutDirection, SetCutDirection
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
+from .humanoid_ai import GetHumanoidAi, SetHumanoidAi
 from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
@@ -39,18 +41,20 @@ from .map import (
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
+from .narrow_adapt import GetNarrowAdapt, SetNarrowAdapt
 from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
 from .rain_delay import SetRainDelay
+from .recognization import GetRecognization, SetRecognization
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
 from .voice_assistant_state import GetVoiceAssistantState, SetVoiceAssistantState
-from .volume import GetVolume, SetVolume
+from .volume import GetVolume, SetFallVolume, SetVolume
 from .water_info import GetWaterInfo, SetWaterInfo
 from .work_mode import GetWorkMode, SetWorkMode
 
@@ -66,6 +70,7 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
+    "GetAnimalProtection",
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
@@ -84,6 +89,7 @@ __all__ = [
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
+    "GetHumanoidAi",
     "GetLifeSpan",
     "GetMajorMap",
     "GetMapInfoV2",
@@ -95,10 +101,12 @@ __all__ = [
     "GetMopAutoWashFrequency",
     "GetMoveUpWarning",
     "GetMultimapState",
+    "GetNarrowAdapt",
     "GetNetInfo",
     "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
+    "GetRecognization",
     "GetSafeProtect",
     "GetStats",
     "GetSweepMode",
@@ -111,6 +119,7 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
+    "SetAnimalProtection",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
@@ -121,13 +130,17 @@ __all__ = [
     "SetCrossMapBorderWarning",
     "SetCutDirection",
     "SetEfficiencyMode",
+    "SetFallVolume",
     "SetFanSpeed",
+    "SetHumanoidAi",
     "SetMajorMap",
     "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
     "SetMultimapState",
+    "SetNarrowAdapt",
     "SetOta",
     "SetRainDelay",
+    "SetRecognization",
     "SetRelocationState",
     "SetSafeProtect",
     "SetSweepMode",
@@ -143,6 +156,9 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    GetAnimalProtection,
+    SetAnimalProtection,
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
@@ -199,6 +215,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetLifeSpan,
     ResetLifeSpan,
 
+    GetHumanoidAi,
+    SetHumanoidAi,
+
     GetCachedMapInfo,
     GetMajorMap,
     GetMapInfoV2,
@@ -214,6 +233,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetMoveUpWarning,
     SetMoveUpWarning,
+
+    GetNarrowAdapt,
+    SetNarrowAdapt,
 
     GetMultimapState,
     SetMultimapState,
@@ -231,6 +253,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetRelocationState,
 
     SetRainDelay,
+
+    GetRecognization,
+    SetRecognization,
 
     GetSafeProtect,
     SetSafeProtect,
