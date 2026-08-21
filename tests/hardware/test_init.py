@@ -29,7 +29,12 @@ from deebot_client.commands.json.efficiency import GetEfficiencyMode
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan
-from deebot_client.commands.json.map import GetCachedMapInfo, GetMajorMap, GetMapTrace
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMajorMap,
+    GetMapSetV2,
+    GetMapTrace,
+)
 from deebot_client.commands.json.moveup_warning import GetMoveUpWarning
 from deebot_client.commands.json.multimap_state import GetMultimapState
 from deebot_client.commands.json.network import GetNetInfo
@@ -60,6 +65,7 @@ from deebot_client.events import (
     ErrorEvent,
     LifeSpan,
     LifeSpanEvent,
+    MapSetType,
     MoveUpWarningEvent,
     MultimapStateEvent,
     OtaEvent,
@@ -258,6 +264,20 @@ async def test_capabilities_event_extraction(
         assert capabilities.get_refresh_commands(event) == expected_commands, (
             f"Refresh commands doesn't match for {event}"
         )
+
+
+async def test_goat_o1200_area_names_capability() -> None:
+    """Test GOAT O1200 area names capability."""
+    info = await hardware.get_static_device_info("2i0fns")
+    assert info is not None
+    capabilities = info.capabilities
+    areas = capabilities.clean.areas
+    assert areas is not None
+    assert areas.event is RoomsEvent
+    expected_command = GetMapSetV2("", MapSetType.ROOMS)
+    assert areas.get == [expected_command]
+    assert capabilities.get_refresh_commands(RoomsEvent) == [expected_command]
+    assert capabilities.map is None
 
 
 async def test_all_models_loaded() -> None:
