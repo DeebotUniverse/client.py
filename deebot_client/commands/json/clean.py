@@ -129,7 +129,7 @@ class FreeCleanV2(CleanV2):
                 value = "3,null," + ",".join(str(i) for i in area)
             case CleanMode.FREE_CLEAN:
                 clean_type = mode
-                value = ";".join(area)
+                value = ";".join(str(i) for i in area)
         self._additional_content = {
             "type": clean_type.value,
             "value": value,
