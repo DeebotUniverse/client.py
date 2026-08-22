@@ -88,6 +88,11 @@ class Map:
     # ---------------------------- METHODS ----------------------------
 
     async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
+        if (minor := self._capabilities.minor) is None:
+            # Device sends the whole map outline in the MapInfo_V2 message and
+            # doesn't support requesting it piece by piece.
+            return []
+
         async def on_major_map(event: MajorMapEvent) -> None:
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
@@ -96,9 +101,7 @@ class Map:
                         and event.requested
                     ):
                         tg.create_task(
-                            self._execute_command(
-                                self._capabilities.minor.execute(idx, event.map_id)
-                            )
+                            self._execute_command(minor.execute(idx, event.map_id))
                         )
 
         async def on_minor_map(event: MinorMapEvent) -> None:
@@ -152,10 +155,13 @@ class Map:
             raise MapError("Please enable the map first")
 
         # TODO make it nice
+        # CachedMapInfoEvent also triggers MapInfo_V2, which carries the map
+        # outline for devices without major/minor map support.
         self._event_bus.request_refresh(CachedMapInfoEvent)
         self._event_bus.request_refresh(PositionsEvent)
         self._event_bus.request_refresh(MapTraceEvent)
-        self._event_bus.request_refresh(MajorMapEvent)
+        if self._capabilities.major is not None:
+            self._event_bus.request_refresh(MajorMapEvent)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""

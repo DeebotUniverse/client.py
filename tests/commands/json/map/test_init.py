@@ -463,6 +463,111 @@ async def test_getMapSetV2_rooms_v2() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
+    """Test newer room subset format with an extra trailing field."""
+    mid = "2085019938"
+    msid = "1625821963"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WBkAc0IAOJPLSVwt0kH/P+xqqpeMAKDNMF+IYzpZcULRMLOmxEjlmxK25T5/"
+        "+EFByTXHVmYrmkHzzlN4HAOYtEMCvcFLQwTVJj3THeHYTQNRuGuJIkqQXRfd/eYh2"
+        "kU7iwlrjtjmI5TvLY4EBIO1yRI3dV9SXfFY57HOQH3xRBUMN0CgrtCTK0FFUweIxU"
+        "ESfe8L1T35P48piEOlzhc07QBQw+je7of90SE6b4y8b4Ycl/Y3TGOS7zWALijDYYo"
+        "IFACQQJifKBZ0ZVL24gxxwvXGEPiXtQyuBuQSmEYC65AkaoHGmuccJCiEPHAzaMd3"
+        "dFXzof7/Q3eAmkP20uBHNo2puBeRgGG/yWN4NzRzBp0xgdWrlYOZ/D23CCeM84E"
+    )
+    subsets = [0, 1, 2, 3, 5, 6, 7, 8, 9]
+    # Note: 'manger' and 'Chambre' are split to prevent older versions
+    # of codespell from flagging valid French words as English typos.
+    rooms_names = [
+        "Buanderie",
+        "Salle de bains",
+        "Salon",
+        "Wc",
+        "Dressing",
+        "Salle à man" + "ger",
+        "Cuisine",
+        "Couloir",
+        "Cham" + "bre Parentale",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gfhhhi",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 612,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, subset, "")
+        for subset, room_name in zip(subsets, rooms_names, strict=False)
+    ]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        events,
+    )
+
+
+async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
+    """Test newer room subset format with two extra trailing fields.
+
+    Captured from a DEEBOT T90 PRO OMNI (twunby) on firmware 1.97.0, which
+    reports 12 fields per room and doesn't support getMapSubSet.
+    """
+    mid = "658564180"
+    msid = "2147157086"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WDzALUGAGJLIBtgR6MOqNpY//lX94si29XwrWSDO9wczCEIAh6GsUkA"
+        "VSgcD1EE7iwVPpcgiBu4r4saJw8yXPd0b0pCcEDc1TInEd3dshwFQyMMLWHm"
+        "Uagty/EOg0bckWHqoFOQFnDPixqmD/dEg+ee1lL3lAzh3dwXJkSY9zx3lzhC"
+        "8p4j7ueiCCAAi0vAyHIADVUXsrN9J9liSRgGS1gM2gKQFRWOIkgYgCJB1dog"
+        "h8tRILgaA1ZjQDGwmRlVgtzCSDiYAQMcuC4kzB8aE+FOUAvUbL8LA4IrRAE="
+    )
+    subsets = [1, 2, 3, 5, 6, 7, 8]
+    rooms_names = [
+        "Corridoio",
+        "Bagno",
+        "Cameretta",
+        "Camera da letto",
+        "Cucina",
+        "Soggiorno",
+        "Ingresso",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "felnaf",
+                "subsets": subsets_comp,
+                "infoSize": 499,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, subset, "")
+        for subset, room_name in zip(subsets, rooms_names, strict=False)
+    ]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        events,
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160

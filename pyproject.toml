@@ -29,6 +29,7 @@ dependencies = [
     "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
     "cachetools>=5.0.0,<8.0",
+    "cryptography>=48.0.1,<51.0",
     "defusedxml>=0.7.1",
     "orjson>=3.11.3",
 ]
@@ -51,12 +52,12 @@ cache-keys = [
 dev = [
     { include-group = "test" },
     { include-group = "lint" },
-    "maturin[patchelf]==1.13.3",
+    "maturin[patchelf]==1.14.1",
     "maturin-import-hook==0.3.0",
 ]
 lint = [
-    "mypy==2.1.0",
-    "prek==0.4.3",
+    "mypy==2.3.1",
+    "prek==0.4.14",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
@@ -67,11 +68,11 @@ test = [
     "pytest-cov==7.1.0",
     "pytest-docker-fixtures==1.4.4",
     "pytest-timeout==2.4.0",
-    "pytest==9.0.3",
-    "testfixtures==11.0.0",
-    "pytest-github-actions-annotate-failures==0.4.0",
+    "pytest==9.1.1",
+    "testfixtures==12.3.0",
+    "pytest-github-actions-annotate-failures==0.4.2",
     "pytest-xdist==3.8.0",
-    "syrupy==5.3.1",
+    "syrupy==5.5.3",
 ]
 
 [tool.maturin]
@@ -92,20 +93,24 @@ select = ["ALL"]
 
 ignore = [
     "ANN401", # Opinioated warning on disallowing dynamically typed expressions
-    "D203",   # Conflicts with other rules
-    "D213",   # Conflicts with other rules
-    "EM101",  # raw-string-in-exception
+
+    "COM812", # Conflicts with the Ruff formatter
+
+    "CPY001", # Missing copyright notice at top of file
 
     "D105", # Missing docstring in magic method
     "D107", # Missing docstring in `__init__`
+    "D203", # Conflicts with other rules
+    "D213", # Conflicts with other rules
+
     "E501", # line too long
 
-    "FBT", # flake8-boolean-trap
+    "EM101", # raw-string-in-exception
 
+    "FBT", # Boolean-typed positional argument in function definition
+
+    "PLR0917", # Too many positional arguments (6 > 5)
     "PLR2004", # Magic value used in comparison, consider replacing {value} with a constant variable
-
-    # Conflicts with the Ruff formatter
-    "COM812",
 
     "TRY003", # raise-vanilla-args: Avoid specifying long messages outside the exception class
 
@@ -113,7 +118,6 @@ ignore = [
     "TD",     # Todos
     "FIX002", # Line contains TODO, consider resolving the issue
     "BLE001", # Do not catch blind exception: `Exception`
-
 ]
 
 [tool.ruff.lint.flake8-pytest-style]
