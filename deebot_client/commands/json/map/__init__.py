@@ -272,8 +272,11 @@ class GetMapSetV2(GetMapSet):
         subsets: list[list[str]],
         map_id: str,
     ) -> HandlingResult:
-        # there are two versions of this message, depending on the number of values
-        if subsets and len(subsets[0]) == 10:
+        # There are currently three known room subset formats:
+        # - 10 fields: standard V2 format
+        # - 11 fields: newer models (e.g. X11) with an extra trailing field
+        # - 12 fields: newer models (e.g. T90 PRO OMNI) with a second extra trailing field
+        if subsets and len(subsets[0]) in (10, 11, 12):
             # subset values
             # 1 -> id
             # 2 -> name
@@ -285,6 +288,8 @@ class GetMapSetV2(GetMapSet):
             # 8 -> room clean configs as '<count>-<speed>-<water>'
             # 9 -> unknown
             # 10 -> floor type
+            # 11 -> heavy soiled area's flag (1 = Dirty/Heavy Soil, 0 = Standard) (seen on newer models, e.g. X11)
+            # 12 -> unknown (seen on newer models, e.g. T90 PRO OMNI)
 
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(

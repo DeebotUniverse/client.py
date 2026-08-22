@@ -45,12 +45,9 @@ from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
-    GetMajorMap,
     GetMapInfoV2,
     GetMapSetV2,
     GetMapTrace,
-    GetMinorMap,
-    SetMajorMap,
 )
 from deebot_client.commands.json.mop_auto_wash_frequency import (
     GetMopAutoWashFrequency,
@@ -87,7 +84,6 @@ from deebot_client.events import (
     FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
-    MajorMapEvent,
     MapChangedEvent,
     MapTraceEvent,
     NetworkInfoEvent,
@@ -162,25 +158,35 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             life_span=CapabilityLifeSpan(
                 types=(
-                    LifeSpan.SIDE_BRUSH,
                     LifeSpan.BRUSH,
-                    LifeSpan.FILTER,
-                    LifeSpan.UNIT_CARE,
-                    LifeSpan.ROUND_MOP,
-                    LifeSpan.DUST_BAG,
                     LifeSpan.CLEANING_SOLUTION,
+                    LifeSpan.DUST_BAG,
+                    LifeSpan.DUST_BUCKET,
+                    LifeSpan.DUST_CONTAINER_FILTER,
+                    LifeSpan.FILTER,
+                    LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION,
+                    LifeSpan.MOP_WASHING_TRAY,
+                    LifeSpan.ROUND_MOP,
+                    LifeSpan.SIDE_BRUSH,
+                    LifeSpan.STRAINER,
+                    LifeSpan.UNIT_CARE,
                 ),
                 event=LifeSpanEvent,
                 get=[
                     GetLifeSpan(
                         [
-                            LifeSpan.SIDE_BRUSH,
                             LifeSpan.BRUSH,
-                            LifeSpan.FILTER,
-                            LifeSpan.UNIT_CARE,
-                            LifeSpan.ROUND_MOP,
-                            LifeSpan.DUST_BAG,
                             LifeSpan.CLEANING_SOLUTION,
+                            LifeSpan.DUST_BAG,
+                            LifeSpan.DUST_BUCKET,
+                            LifeSpan.DUST_CONTAINER_FILTER,
+                            LifeSpan.FILTER,
+                            LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION,
+                            LifeSpan.MOP_WASHING_TRAY,
+                            LifeSpan.ROUND_MOP,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.STRAINER,
+                            LifeSpan.UNIT_CARE,
                         ]
                     )
                 ],
@@ -190,8 +196,6 @@ def get_device_info() -> StaticDeviceInfo:
                 cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
                 changed=CapabilityEvent(MapChangedEvent, []),
                 info=CapabilityExecute(GetMapInfoV2),
-                major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
-                minor=CapabilityExecute(GetMinorMap),
                 position=CapabilityEvent(PositionsEvent, [GetPos()]),
                 relocation=CapabilityExecute(SetRelocationState),
                 rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
