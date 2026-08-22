@@ -85,6 +85,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.commands.json.combined_status import GetCombinedStatus
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
 from deebot_client.models import StaticDeviceInfo
 
@@ -244,8 +245,25 @@ async def test_get_static_device_info(
                 WaterAmountEvent: [GetWaterInfo()],
             },
         ),
+        (
+            "eyfj07",
+            {
+                AvailabilityEvent: [GetCombinedStatus(is_available_check=True)],
+                BatteryEvent: [GetCombinedStatus()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetCombinedStatus()],
+                FanSpeedEvent: [GetCombinedStatus()],
+                LifeSpanEvent: [GetCombinedStatus()],
+                NetworkInfoEvent: [GetNetInfo()],
+                OtaEvent: [GetCombinedStatus()],
+                ReportStatsEvent: [],
+                StateEvent: [GetCombinedStatus()],
+                StatsEvent: [GetStats()],
+                TotalStatsEvent: [GetTotalStats()],
+            },
+        ),
     ],
-    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv", "eyfj07"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
