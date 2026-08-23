@@ -1,7 +1,12 @@
 from enum import Enum, auto
 from typing import Self
 
-from deebot_client.events.map import MapSubsetEvent, Position
+from deebot_client.events.map import (
+    MapSubsetEvent,
+    MowerStaticMapEvent,
+    MowerWorkAreasEvent,
+    Position,
+)
 
 class BackgroundImage:
     """Map background image."""
@@ -52,6 +57,13 @@ class MapData:
         rotation: RotationAngle,
     ) -> str | None:
         """Generate SVG image."""
+
+    def set_mower_map(
+        self,
+        static_map: MowerStaticMapEvent,
+        work_areas: MowerWorkAreasEvent | None,
+    ) -> bool:
+        """Atomically replace typed mower static-map inputs."""
 
 class PositionType(Enum):
     """Position type enum."""

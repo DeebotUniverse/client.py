@@ -6,7 +6,12 @@ import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
-from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MapChangedEvent,
+    MowerStaticMapEvent,
+    MowerWorkAreasEvent,
+)
 
 from .events import (
     MajorMapEvent,
@@ -84,6 +89,20 @@ class Map:
             self._map_data.set_map_info(event.info)
 
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
+
+        async def on_mower_static_map(event: MowerStaticMapEvent) -> None:
+            self._map_data.set_mower_static_map(event)
+
+        self._unsubscribers.append(
+            event_bus.subscribe(MowerStaticMapEvent, on_mower_static_map)
+        )
+
+        async def on_mower_work_areas(event: MowerWorkAreasEvent) -> None:
+            self._map_data.set_mower_work_areas(event)
+
+        self._unsubscribers.append(
+            event_bus.subscribe(MowerWorkAreasEvent, on_mower_work_areas)
+        )
 
     # ---------------------------- METHODS ----------------------------
 
@@ -198,6 +217,8 @@ class MapData:
         self._positions: list[Position] = []
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
+        self._mower_static_map: MowerStaticMapEvent | None = None
+        self._mower_work_areas: dict[tuple[str, int], MowerWorkAreasEvent] = {}
         self._room_handling = MapRoomHandling(event_bus, on_change)
 
     @property
@@ -252,6 +273,28 @@ class MapData:
         """Set compressed map info (parsing happens in Rust)."""
         self._data.map_info.set(base64_info)
         self._on_change()
+
+    def set_mower_static_map(self, event: MowerStaticMapEvent) -> None:
+        """Replace the current typed mower boundary snapshot."""
+        work_areas = self._mower_work_areas.get((event.mid, event.step_size))
+        changed = self._data.set_mower_map(event, work_areas)
+        self._mower_static_map = event
+        if changed:
+            self._on_change()
+
+    def set_mower_work_areas(self, event: MowerWorkAreasEvent) -> None:
+        """Store a complete work-area snapshot and apply it only when compatible."""
+        static_map = self._mower_static_map
+        changed = False
+        if (
+            static_map is not None
+            and static_map.mid == event.mid
+            and static_map.step_size == event.step_size
+        ):
+            changed = self._data.set_mower_map(static_map, event)
+        self._mower_work_areas[(event.mid, event.step_size)] = event
+        if changed:
+            self._on_change()
 
     def set_rotation_angle(self, rotation: RotationAngle) -> None:
         """Set clockwise rotation angle for SVG image."""

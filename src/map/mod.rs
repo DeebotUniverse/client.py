@@ -1,12 +1,14 @@
 mod background_image;
 mod common;
 mod map_info;
+mod mower;
 mod points;
 mod style;
 
 use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
+use mower::{MowerMapSnapshot, MowerStaticMap, MowerWorkAreas};
 use ordermap::OrderSet;
 use points::{Point, TracePoints, points_to_svg_path};
 use style::{CSSClass, get_class_names, get_style, get_used_definitions};
@@ -188,6 +190,7 @@ struct MapData {
     background_image: Py<BackgroundImage>,
     #[pyo3(get)]
     map_info: Py<MapInfo>,
+    mower_map: Option<MowerMapSnapshot>,
 }
 
 #[pymethods]
@@ -198,7 +201,21 @@ impl MapData {
             trace_points: Py::new(py, TracePoints::new())?,
             background_image: Py::new(py, BackgroundImage::new())?,
             map_info: Py::new(py, MapInfo::new())?,
+            mower_map: None,
         })
+    }
+
+    fn set_mower_map(
+        &mut self,
+        static_map: MowerStaticMap,
+        work_areas: Option<MowerWorkAreas>,
+    ) -> PyResult<bool> {
+        let snapshot = MowerMapSnapshot::new(static_map, work_areas)?;
+        if self.mower_map.as_ref() == Some(&snapshot) {
+            return Ok(false);
+        }
+        self.mower_map = Some(snapshot);
+        Ok(true)
     }
 
     fn generate_svg(
@@ -265,32 +282,43 @@ impl MapData {
 
         let mut document = Document::new();
 
-        // Create map from MapInfo, if exists, or generate background image
-        let viewbox = match self.map_info.borrow(py).generate(rotation) {
-            Some((map_elements, viewbox, info_styles)) => {
-                // Append all map background elements to document
-                map_elements.into_iter().for_each(|e| document.append(e));
-                styles.extend(info_styles);
-                viewbox
-            }
-            _ => {
-                if let Some((base64_image, viewbox)) =
-                    self.background_image
+        // Mower geometry is an additional typed source for the same SVG pipeline.
+        // It deliberately does not consume vacuum subsets, traces, or positions.
+        let viewbox = if let Some(mower_map) = &self.mower_map {
+            let Some((map_elements, viewbox, mower_styles)) = mower_map.generate() else {
+                return Ok(None);
+            };
+            map_elements.into_iter().for_each(|e| document.append(e));
+            styles.extend(mower_styles);
+            viewbox
+        } else {
+            // Create vacuum map from MapInfo, if exists, or generate background image
+            match self.map_info.borrow(py).generate(rotation) {
+                Some((map_elements, viewbox, info_styles)) => {
+                    // Append all map background elements to document
+                    map_elements.into_iter().for_each(|e| document.append(e));
+                    styles.extend(info_styles);
+                    viewbox
+                }
+                _ => {
+                    if let Some((base64_image, viewbox)) = self
+                        .background_image
                         .borrow(py)
                         .generate()
                         .map_err(|err| PyValueError::new_err(err.to_string()))?
-                {
-                    let image = Image::new()
-                        .set("x", viewbox.min_x)
-                        .set("y", viewbox.min_y)
-                        .set("width", viewbox.width)
-                        .set("height", viewbox.height)
-                        .set("style", "image-rendering: pixelated")
-                        .set("href", format!("data:image/png;base64,{base64_image}"));
-                    document.append(image);
-                    viewbox
-                } else {
-                    return Ok(None);
+                    {
+                        let image = Image::new()
+                            .set("x", viewbox.min_x)
+                            .set("y", viewbox.min_y)
+                            .set("width", viewbox.width)
+                            .set("height", viewbox.height)
+                            .set("style", "image-rendering: pixelated")
+                            .set("href", format!("data:image/png;base64,{base64_image}"));
+                        document.append(image);
+                        viewbox
+                    } else {
+                        return Ok(None);
+                    }
                 }
             }
         };
@@ -302,7 +330,7 @@ impl MapData {
 
         document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
 
-        if !subsets.is_empty() {
+        if self.mower_map.is_none() && !subsets.is_empty() {
             let group_css = [CSSClass::WallBase, CSSClass::StrokeWidth2];
             let mut group = Group::new().set("class", get_class_names(&group_css));
             styles.extend(group_css);
@@ -314,11 +342,13 @@ impl MapData {
             }
             document.append(group);
         }
-        if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
-            document.append(trace);
-        }
-        for position in get_svg_positions(&positions, &viewbox, rotation) {
-            document.append(position);
+        if self.mower_map.is_none() {
+            if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
+                document.append(trace);
+            }
+            for position in get_svg_positions(&positions, &viewbox, rotation) {
+                document.append(position);
+            }
         }
 
         let mut style_string = String::new();

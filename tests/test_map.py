@@ -15,6 +15,8 @@ from deebot_client.events.map import (
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
+    MowerStaticMapEvent,
+    MowerWorkAreasEvent,
     Position,
     PositionsEvent,
 )
@@ -93,7 +95,13 @@ async def test_Map_subscriptions(
     assert capabilities_map is not None
     map_obj = Map(execute_mock, event_bus_mock, capabilities_map)
 
-    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY), call(MapInfoEvent, ANY)]
+    calls = [
+        call(MapSetEvent, ANY),
+        call(MapSubsetEvent, ANY),
+        call(MapInfoEvent, ANY),
+        call(MowerStaticMapEvent, ANY),
+        call(MowerWorkAreasEvent, ANY),
+    ]
     event_bus_mock.subscribe.assert_has_calls(calls)
     event_bus_mock.add_on_subscription_callback.assert_called_once_with(
         MapChangedEvent, ANY
