@@ -21,6 +21,7 @@ from deebot_client.message import HandlingResult, HandlingState, MessageBodyData
 from deebot_client.rs.util import decompress_base64_data
 
 from .cached_map_info import OnCachedMapInfo
+from .on_mi import OnMI
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -29,6 +30,7 @@ _LOGGER = get_logger(__name__)
 
 __all__ = [
     "OnCachedMapInfo",
+    "OnMI",
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",

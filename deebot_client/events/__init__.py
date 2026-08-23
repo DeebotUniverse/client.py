@@ -27,6 +27,7 @@ from .map import (
     MowerMapTraceEvent,
     MowerMapTraceGroup,
     MowerMapTraceSegment,
+    MowerStaticMapEvent,
     Position,
     PositionsEvent,
 )
@@ -61,6 +62,7 @@ __all__ = [
     "MowerMapTraceEvent",
     "MowerMapTraceGroup",
     "MowerMapTraceSegment",
+    "MowerStaticMapEvent",
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",

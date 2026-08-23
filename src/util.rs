@@ -27,15 +27,7 @@ pub fn decompress_base64_data(value: &str) -> Result<Vec<u8>, Box<dyn Error>> {
 
 /// Decompress LZMA data, avoiding Vec insert overhead.
 fn decompress_lzma(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
-    if bytes.len() < 8 {
-        return Err("Invalid 7z compressed data".into());
-    }
-
-    // Form tailored header without repeated inserts (much faster)
-    let mut full = Vec::with_capacity(bytes.len() + 4);
-    full.extend_from_slice(&bytes[..8]);
-    full.extend_from_slice(&[0, 0, 0, 0]);
-    full.extend_from_slice(&bytes[8..]);
+    let full = restore_lzma_alone_header(bytes)?;
 
     let source = Cursor::new(full);
     let stream = Stream::new_lzma_decoder(u64::MAX)?;
@@ -43,6 +35,21 @@ fn decompress_lzma(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     let mut result = Vec::new();
     r.read_to_end(&mut result)?;
     Ok(result)
+}
+
+/// Restore the four missing high bytes of the LZMA-Alone size field.
+fn restore_lzma_alone_header(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
+    if bytes.len() < 9 {
+        return Err("Invalid 7z compressed data".into());
+    }
+
+    // The trimmed representation retains properties (5 bytes) and all four
+    // low size bytes. Restore the missing high size bytes after byte 8.
+    let mut full = Vec::with_capacity(bytes.len() + 4);
+    full.extend_from_slice(&bytes[..9]);
+    full.extend_from_slice(&[0, 0, 0, 0]);
+    full.extend_from_slice(&bytes[9..]);
+    Ok(full)
 }
 
 fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
@@ -56,7 +63,7 @@ fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
     decompress_base64_data(value).map_err(|err| {
-        error!("Error decompressing base64 data: {err}; value:{value}");
+        error!("Error decompressing base64 data: {err}");
         PyValueError::new_err(err.to_string())
     })
 }
@@ -64,4 +71,22 @@ fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_function(wrap_pyfunction!(python_decompress_base64_data, m)?)?;
     Ok(())
+}
+
+#[cfg(test)]
+mod tests {
+    use super::restore_lzma_alone_header;
+
+    #[test]
+    fn restores_high_size_bytes_after_all_four_low_size_bytes() {
+        let trimmed = [
+            0x5d, 0x00, 0x00, 0x04, 0x00, 0x11, 0x22, 0x33, 0x44, 0xaa, 0xbb,
+        ];
+
+        let restored = restore_lzma_alone_header(&trimmed).unwrap();
+
+        assert_eq!(&restored[..9], &trimmed[..9]);
+        assert_eq!(&restored[9..13], &[0, 0, 0, 0]);
+        assert_eq!(&restored[13..], &trimmed[9..]);
+    }
 }

@@ -74,6 +74,15 @@ class MowerMapTraceGroup:
 
 
 @dataclass(frozen=True)
+class MowerStaticMapEvent(Event):
+    """Static mower geometry using the common group/segment representation."""
+
+    mid: str
+    groups: list[MowerMapTraceGroup]
+    step_size: int
+
+
+@dataclass(frozen=True)
 class MowerMapTraceEvent(Event):
     """Mower trace event preserving group and segment boundaries.
 
