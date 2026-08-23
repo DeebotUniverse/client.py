@@ -22,6 +22,7 @@ class _CleanDataStatusEvent(Event):
     """Internal clean data status event."""
 
     finished: bool
+    rooms: tuple[int, ...]
 
 
 class ReportStats(MessageBodyDataDict):
@@ -66,15 +67,26 @@ class OnCleanDataUpdateV2(MessageBodyDataDict):
     ) -> HandlingResult:
         """Track whether the current cleaning job completed normally."""
         content = data.get("content", [])
-    
+
         if content:
             finished = all(
                 isinstance(item, dict) and item.get("status") == 3
                 for item in content
             )
-            event_bus.notify(_CleanDataStatusEvent(finished))
-    
-        return HandlingResult.success()        
+            rooms = tuple(
+                item["id"]
+                for item in content
+                if isinstance(item, dict) and isinstance(item.get("id"), int)
+            )
+
+            event_bus.notify(
+                _CleanDataStatusEvent(
+                    finished=finished,
+                    rooms=rooms,
+                )
+            )
+
+        return HandlingResult.success()
 
 
 class OnLastTimeStats(MessageBodyDataDict):
@@ -88,6 +100,7 @@ class OnLastTimeStats(MessageBodyDataDict):
     ) -> HandlingResult:
         """Report the final stats for a cleaning job."""
         clean_data_status = event_bus.get_last_event(_CleanDataStatusEvent)
+
         status = (
             CleanJobStatus.FINISHED
             if clean_data_status and clean_data_status.finished
@@ -101,7 +114,7 @@ class OnLastTimeStats(MessageBodyDataDict):
                 type=data.get("type"),
                 cleaning_id=data.get("start", ""),
                 status=status,
-                content=[],
+                content=list(clean_data_status.rooms) if clean_data_status else [],
             )
         )
         return HandlingResult.success()
