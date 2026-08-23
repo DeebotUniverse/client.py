@@ -72,7 +72,7 @@ class OnMI(MessageBodyDataDict):
 
 
 def _analyse_without_payload_log() -> HandlingResult:
-    """Fall through without logging the complete device envelope."""
+    """Fall through without recording the complete device envelope."""
     return HandlingResult(HandlingState.ANALYSE_LOGGED)
 
 
