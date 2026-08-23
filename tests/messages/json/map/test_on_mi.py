@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import base64
 import hashlib
+import lzma
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
@@ -12,6 +14,7 @@ import pytest
 from deebot_client.events import FirmwareEvent, MowerStaticMapEvent
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.map import OnMI
+import deebot_client.messages.json.map.on_mi as on_mi_module
 from deebot_client.messages.json.map.on_mi import _strict_base64_decode
 
 if TYPE_CHECKING:
@@ -43,9 +46,9 @@ _DECOMPRESSION_FAILURE_INFO = "XQAABAAHAAAAAA=="
 def _message(
     *,
     info: str | None = None,
-    info_size: int | str | None = None,
+    info_size: object = None,
     index: object = "0",
-    mid: str = "1",
+    mid: object = "1",
 ) -> dict[str, Any]:
     if info is None:
         info = _REQUEST["original"]
@@ -68,6 +71,29 @@ def _message(
     }
 
 
+def _synthetic_info(document: object) -> tuple[str, int]:
+    """Encode a small valid trimmed LZMA representation for branch tests."""
+    payload = orjson.dumps(document)
+    compressed = bytearray(
+        lzma.compress(
+            payload,
+            format=lzma.FORMAT_ALONE,
+            filters=[
+                {
+                    "id": lzma.FILTER_LZMA1,
+                    "dict_size": 262_144,
+                    "lc": 3,
+                    "lp": 0,
+                    "pb": 2,
+                }
+            ],
+        )
+    )
+    compressed[5:13] = len(payload).to_bytes(8, "little")
+    trimmed = compressed[:9] + compressed[13:]
+    return base64.b64encode(trimmed).decode("ascii"), len(payload)
+
+
 @pytest.mark.parametrize("fixture", [_REQUEST, _CADENCE], ids=["request", "cadence"])
 def test_onMI_golden_representation_integrity(fixture: dict[str, Any]) -> None:
     original = fixture["original"].encode("ascii")
@@ -78,10 +104,11 @@ def test_onMI_golden_representation_integrity(fixture: dict[str, Any]) -> None:
 
 
 @pytest.mark.parametrize("index", [0, "0"])
+@pytest.mark.parametrize("info_size", [1756, "1756"])
 def test_onMI_decodes_o1200_static_geometry_exactly(
-    event_bus_mock: Mock, index: int | str
+    event_bus_mock: Mock, index: int | str, info_size: int | str
 ) -> None:
-    result = OnMI.handle(event_bus_mock, _message(index=index))
+    result = OnMI.handle(event_bus_mock, _message(index=index, info_size=info_size))
 
     assert result.state == HandlingState.SUCCESS
     events = [call.args[0] for call in event_bus_mock.notify.call_args_list]
@@ -191,6 +218,79 @@ def test_onMI_requires_canonical_first_index(
 
 def test_onMI_requires_inner_map_id_to_match_envelope(event_bus_mock: Mock) -> None:
     result = OnMI.handle(event_bus_mock, _message(mid="2"))
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert event_bus_mock.notify.call_count == 1
+
+
+@pytest.mark.parametrize("mid", [None, "", 1])
+def test_onMI_requires_nonempty_string_mid(event_bus_mock: Mock, mid: object) -> None:
+    result = OnMI.handle(event_bus_mock, _message(mid=mid))
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert event_bus_mock.notify.call_count == 1
+
+
+@pytest.mark.parametrize("info_size", [None, 0, -1, "00", True])
+def test_onMI_requires_positive_canonical_info_size(
+    event_bus_mock: Mock, info_size: object
+) -> None:
+    message = _message()
+    message["body"]["data"]["infoSize"] = info_size
+    result = OnMI.handle(event_bus_mock, message)
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert event_bus_mock.notify.call_count == 1
+
+
+@pytest.mark.parametrize("info", [None, 123, ["not-a-string"]])
+def test_onMI_requires_string_info(event_bus_mock: Mock, info: object) -> None:
+    message = _message()
+    message["body"]["data"]["info"] = info
+    result = OnMI.handle(event_bus_mock, message)
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert event_bus_mock.notify.call_count == 1
+
+
+@pytest.mark.parametrize(
+    "document",
+    [
+        {"not": "a list"},
+        [["1"], ["2", "0"]],
+        [["1", "not-a-record"], ["2", "0"]],
+        [["1", "s1;1;bad;1"], ["2", "0"]],
+        [["1", "s1;1;0,0;1 3"], ["2", "0"]],
+        [["1", "s1;1;0,0;1(100000)"], ["2", "0"]],
+        [["1", "s1;1;0,0;?"], ["2", "0"]],
+    ],
+    ids=[
+        "decoded-payload-not-list",
+        "record-shape",
+        "malformed-segment",
+        "invalid-coordinate",
+        "rle-gap",
+        "point-safety-cap",
+        "empty-point-expansion",
+    ],
+)
+def test_onMI_synthetic_fail_closed_branches(
+    event_bus_mock: Mock, document: object
+) -> None:
+    info, info_size = _synthetic_info(document)
+    result = OnMI.handle(event_bus_mock, _message(info=info, info_size=info_size))
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    assert event_bus_mock.notify.call_count == 1
+
+
+def test_onMI_rejects_decoder_length_mismatch(
+    event_bus_mock: Mock, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    info, info_size = _synthetic_info([["1", "s1;1;0,0;1"], ["2", "0"]])
+    monkeypatch.setattr(on_mi_module, "decompress_base64_data", lambda _: b"{}")
+
+    result = OnMI.handle(event_bus_mock, _message(info=info, info_size=info_size))
 
     assert result.state == HandlingState.ANALYSE_LOGGED
     assert event_bus_mock.notify.call_count == 1
