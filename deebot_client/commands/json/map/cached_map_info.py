@@ -34,9 +34,10 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, OnCachedMapInfo):
             and (map_obj := event_bus.capabilities.map)
         ):
             map_id = result.args["map_id"]
-            result.requested_commands.extend(
-                [map_obj.set.execute(map_id, entry) for entry in MapSetType]
-            )
+            if map_obj.set is not None:
+                result.requested_commands.extend(
+                    [map_obj.set.execute(map_id, entry) for entry in MapSetType]
+                )
 
             if map_obj.info:
                 result.requested_commands.append(map_obj.info.execute(map_id))

@@ -59,7 +59,7 @@ class OnMapSetV2(MessageBodyDataDict):
             return HandlingResult.analyse()
 
         commands = []
-        if map_cap := event_bus.capabilities.map:
+        if (map_cap := event_bus.capabilities.map) and map_cap.set is not None:
             commands.append(map_cap.set.execute(data["mid"], MapSetType(data["type"])))
 
         return HandlingResult(HandlingState.SUCCESS, requested_commands=commands)

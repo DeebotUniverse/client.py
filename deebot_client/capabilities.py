@@ -35,6 +35,8 @@ from deebot_client.events import (
     MapSetType,
     MapTraceEvent,
     MoveUpWarningEvent,
+    MowerStaticMapEvent,
+    MowerWorkAreasEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     OtaEvent,
@@ -173,21 +175,32 @@ class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent], CapabilityTypes[LifeSpa
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityMowerMap:
+    """Mower-specific capabilities using the shared map pipeline."""
+
+    static: CapabilityEvent[MowerStaticMapEvent]
+    work_areas: CapabilityEvent[MowerWorkAreasEvent]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityMap:
     """Capabilities for map."""
 
-    cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
+    cached_info: CapabilityEvent[CachedMapInfoEvent] | None = None
     clear: CapabilityExecute[[]] | None = None
     info: CapabilityExecute[[str]] | None = None
-    major: CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]]
-    minor: CapabilityExecute[[int, str]]
+    major: (
+        CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]] | None
+    ) = None
+    minor: CapabilityExecute[[int, str]] | None = None
+    mower: CapabilityMowerMap | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
-    position: CapabilityEvent[PositionsEvent]
+    position: CapabilityEvent[PositionsEvent] | None = None
     relocation: CapabilityExecute[[]] | None = None
-    rooms: CapabilityEvent[RoomsEvent]
-    set: CapabilityExecute[[str, MapSetType]]
-    trace: CapabilityEvent[MapTraceEvent]
+    rooms: CapabilityEvent[RoomsEvent] | None = None
+    set: CapabilityExecute[[str, MapSetType]] | None = None
+    trace: CapabilityEvent[MapTraceEvent] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)

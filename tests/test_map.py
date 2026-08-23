@@ -15,8 +15,6 @@ from deebot_client.events.map import (
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
-    MowerStaticMapEvent,
-    MowerWorkAreasEvent,
     Position,
     PositionsEvent,
 )
@@ -99,8 +97,6 @@ async def test_Map_subscriptions(
         call(MapSetEvent, ANY),
         call(MapSubsetEvent, ANY),
         call(MapInfoEvent, ANY),
-        call(MowerStaticMapEvent, ANY),
-        call(MowerWorkAreasEvent, ANY),
     ]
     event_bus_mock.subscribe.assert_has_calls(calls)
     event_bus_mock.add_on_subscription_callback.assert_called_once_with(
@@ -130,6 +126,15 @@ async def test_Map_subscriptions(
     assert len(map_obj._unsubscribers) == num_unsubs
     for event in events:
         assert event_bus.has_subscribers(event)
+
+    event_bus_mock.request_refresh.reset_mock()
+    map_obj.refresh()
+    assert event_bus_mock.request_refresh.call_args_list == [
+        call(CachedMapInfoEvent),
+        call(PositionsEvent),
+        call(MapTraceEvent),
+        call(MajorMapEvent),
+    ]
 
     event_unsub()
     for event in events:

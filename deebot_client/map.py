@@ -56,9 +56,39 @@ class Map:
         self._event_bus = event_bus
 
         self._capabilities = capabilities
-        self._map_data: Final[MapData] = MapData(event_bus)
+        has_vacuum_map = any(
+            capability is not None
+            for capability in (
+                capabilities.cached_info,
+                capabilities.info,
+                capabilities.major,
+                capabilities.minor,
+                capabilities.position,
+                capabilities.rooms,
+                capabilities.set,
+                capabilities.trace,
+            )
+        )
+        self._map_data: Final[MapData] = MapData(
+            event_bus, enable_rooms=capabilities.rooms is not None
+        )
         self._last_image: str | None = None
         self._unsubscribers: list[Callable[[], None]] = []
+
+        if has_vacuum_map:
+            self._subscribe_vacuum_map_events()
+
+        self._unsubscribers.append(
+            event_bus.add_on_subscription_callback(
+                MapChangedEvent, self._on_first_map_changed_subscription
+            )
+        )
+
+        if capabilities.mower is not None:
+            self._subscribe_mower_map_events()
+
+    def _subscribe_vacuum_map_events(self) -> None:
+        """Subscribe to the legacy vacuum map snapshot events."""
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
@@ -68,7 +98,7 @@ class Map:
                 if subset.type == event.type and subset_id not in event.subsets:
                     self._map_data.map_subsets.pop(subset_id, None)
 
-        self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
+        self._unsubscribers.append(self._event_bus.subscribe(MapSetEvent, on_map_set))
 
         async def on_map_subset(event: MapSubsetEvent) -> None:
             if (
@@ -77,36 +107,39 @@ class Map:
             ):
                 self._map_data.map_subsets[event.id] = event
 
-        self._unsubscribers.append(event_bus.subscribe(MapSubsetEvent, on_map_subset))
-
         self._unsubscribers.append(
-            event_bus.add_on_subscription_callback(
-                MapChangedEvent, self._on_first_map_changed_subscription
-            )
+            self._event_bus.subscribe(MapSubsetEvent, on_map_subset)
         )
 
         async def on_map_info(event: MapInfoEvent) -> None:
             self._map_data.set_map_info(event.info)
 
-        self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
+        self._unsubscribers.append(self._event_bus.subscribe(MapInfoEvent, on_map_info))
+
+    def _subscribe_mower_map_events(self) -> None:
+        """Subscribe to typed mower map snapshots."""
 
         async def on_mower_static_map(event: MowerStaticMapEvent) -> None:
             self._map_data.set_mower_static_map(event)
 
         self._unsubscribers.append(
-            event_bus.subscribe(MowerStaticMapEvent, on_mower_static_map)
+            self._event_bus.subscribe(MowerStaticMapEvent, on_mower_static_map)
         )
 
         async def on_mower_work_areas(event: MowerWorkAreasEvent) -> None:
             self._map_data.set_mower_work_areas(event)
 
         self._unsubscribers.append(
-            event_bus.subscribe(MowerWorkAreasEvent, on_mower_work_areas)
+            self._event_bus.subscribe(MowerWorkAreasEvent, on_mower_work_areas)
         )
 
     # ---------------------------- METHODS ----------------------------
 
     async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
+        minor = self._capabilities.minor
+        if self._capabilities.major is None or minor is None:
+            return []
+
         async def on_major_map(event: MajorMapEvent) -> None:
             async with asyncio.TaskGroup() as tg:
                 for idx, value in enumerate(event.values):
@@ -115,9 +148,7 @@ class Map:
                         and event.requested
                     ):
                         tg.create_task(
-                            self._execute_command(
-                                self._capabilities.minor.execute(idx, event.map_id)
-                            )
+                            self._execute_command(minor.execute(idx, event.map_id))
                         )
 
         async def on_minor_map(event: MinorMapEvent) -> None:
@@ -137,18 +168,20 @@ class Map:
             if used_map:
                 self._map_data.set_rotation_angle(used_map.angle)
 
-        cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
-        unsubscribers.append(
-            self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
-        )
-        if cached_map_subscribers:
-            # Request update only if there was already a subscriber before
-            self._event_bus.request_refresh(CachedMapInfoEvent)
+        if self._capabilities.cached_info is not None:
+            cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
+            unsubscribers.append(
+                self._event_bus.subscribe(CachedMapInfoEvent, on_cached_info)
+            )
+            if cached_map_subscribers:
+                # Request update only if there was already a subscriber before
+                self._event_bus.request_refresh(CachedMapInfoEvent)
 
         async def on_position(event: PositionsEvent) -> None:
             self._map_data.update_positions(event.positions)
 
-        unsubscribers.append(self._event_bus.subscribe(PositionsEvent, on_position))
+        if self._capabilities.position is not None:
+            unsubscribers.append(self._event_bus.subscribe(PositionsEvent, on_position))
 
         async def on_map_trace(event: MapTraceEvent) -> None:
             if event.start == 0:
@@ -157,7 +190,8 @@ class Map:
             if data := event.data.strip():
                 self._map_data.add_trace_points(data)
 
-        unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+        if self._capabilities.trace is not None:
+            unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
         def unsub() -> None:
             for unsub in unsubscribers:
@@ -170,11 +204,19 @@ class Map:
         if not self._unsubscribers:
             raise MapError("Please enable the map first")
 
-        # TODO make it nice
-        self._event_bus.request_refresh(CachedMapInfoEvent)
-        self._event_bus.request_refresh(PositionsEvent)
-        self._event_bus.request_refresh(MapTraceEvent)
-        self._event_bus.request_refresh(MajorMapEvent)
+        refresh_events = (
+            self._capabilities.cached_info,
+            self._capabilities.position,
+            self._capabilities.trace,
+            self._capabilities.major,
+        )
+        for capability in refresh_events:
+            if capability is not None:
+                self._event_bus.request_refresh(capability.event)
+
+        if mower := self._capabilities.mower:
+            self._event_bus.request_refresh(mower.static.event)
+            self._event_bus.request_refresh(mower.work_areas.event)
 
     def get_svg_map(self) -> str | None:
         """Return map as SVG string."""
@@ -205,7 +247,7 @@ class Map:
 class MapData:
     """Map data."""
 
-    def __init__(self, event_bus: EventBus) -> None:
+    def __init__(self, event_bus: EventBus, *, enable_rooms: bool = True) -> None:
         self._changed: bool = False
 
         def on_change() -> None:
@@ -219,7 +261,9 @@ class MapData:
         self._data = MapDataRs()
         self._mower_static_map: MowerStaticMapEvent | None = None
         self._mower_work_areas: dict[tuple[str, int], MowerWorkAreasEvent] = {}
-        self._room_handling = MapRoomHandling(event_bus, on_change)
+        self._room_handling = (
+            MapRoomHandling(event_bus, on_change) if enable_rooms else None
+        )
 
     @property
     def changed(self) -> bool:
@@ -303,7 +347,8 @@ class MapData:
 
     def teardown(self) -> None:
         """Teardown map data."""
-        self._room_handling.teardown()
+        if self._room_handling is not None:
+            self._room_handling.teardown()
 
 
 class MapRoomHandling:

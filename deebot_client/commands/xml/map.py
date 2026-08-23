@@ -66,8 +66,10 @@ class GetMapSt(XmlCommandWithMessageHandling):
         :return: A message response
         """
         result = super()._handle_response(event_bus, response)
-        if result.state == HandlingState.SUCCESS and (
-            map_obj := event_bus.capabilities.map
+        if (
+            result.state == HandlingState.SUCCESS
+            and (map_obj := event_bus.capabilities.map)
+            and map_obj.set is not None
         ):
             result.requested_commands.extend(
                 [map_obj.set.execute("", entry) for entry in MapSetType]

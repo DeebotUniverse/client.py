@@ -2,22 +2,42 @@ from __future__ import annotations
 
 import asyncio
 from copy import deepcopy
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
-from unittest.mock import AsyncMock
+from unittest.mock import AsyncMock, Mock, call
 
 import orjson
 import pytest
 
+from deebot_client.capabilities import (
+    CapabilityEvent,
+    CapabilityMap,
+    CapabilityMowerMap,
+)
+from deebot_client.commands.json import GetCachedMapInfo
+from deebot_client.commands.xml import GetMapSt
+from deebot_client.event_bus import EventBus
 from deebot_client.events import (
+    CachedMapInfoEvent,
+    MajorMapEvent,
     MapChangedEvent,
+    MapInfoEvent,
+    MapSetEvent,
+    MapSubsetEvent,
+    MapTraceEvent,
+    MinorMapEvent,
     MowerMapTraceGroup,
     MowerMapTraceSegment,
     MowerStaticMapEvent,
     MowerWorkArea,
     MowerWorkAreasEvent,
+    PositionsEvent,
+    RoomsEvent,
 )
 from deebot_client.map import Map, MapData
+from deebot_client.message import HandlingState
+from deebot_client.messages.json.map import OnMapSetV2
 from deebot_client.messages.json.map.o1200 import (
     decode_trimmed_lzma_bytes,
     strict_base64_decode,
@@ -29,13 +49,14 @@ from deebot_client.messages.json.map.work_areas import (
     _parse_on_ari_snapshot,
 )
 from deebot_client.rs.map import MapData as MapDataRs
+from tests.commands.xml import get_request_xml
+from tests.helpers import get_request_json, get_success_body
 
 from .common import block_till_done
 
 if TYPE_CHECKING:
     from syrupy.assertion import SnapshotAssertion
 
-    from deebot_client.event_bus import EventBus
     from deebot_client.models import StaticDeviceInfo
 
 _FIXTURE_ROOT = Path(__file__).parent / "fixtures" / "goat_map"
@@ -133,6 +154,24 @@ def _small_work_areas(
     )
 
 
+def _mower_map_capability() -> CapabilityMap:
+    return CapabilityMap(
+        changed=CapabilityEvent(MapChangedEvent, []),
+        mower=CapabilityMowerMap(
+            static=CapabilityEvent(MowerStaticMapEvent, []),
+            work_areas=CapabilityEvent(MowerWorkAreasEvent, []),
+        ),
+    )
+
+
+def _mower_event_bus(
+    execute_mock: AsyncMock, static_device_info: StaticDeviceInfo
+) -> tuple[EventBus, CapabilityMap]:
+    capability_map = _mower_map_capability()
+    capabilities = replace(static_device_info.capabilities, map=capability_map)
+    return EventBus(execute_mock, capabilities), capability_map
+
+
 async def test_o1200_boundary_only_golden(
     event_bus: EventBus, snapshot: SnapshotAssertion
 ) -> None:
@@ -226,25 +265,22 @@ async def test_snapshot_replacement_and_new_mid_drop_stale_areas(
     assert new_mid.count("<path ") == 3
 
 
-async def _setup_map(
+async def _setup_mower_map(
     execute_mock: AsyncMock,
-    event_bus: EventBus,
     static_device_info: StaticDeviceInfo,
-) -> Map:
-    capabilities_map = static_device_info.capabilities.map
-    assert capabilities_map is not None
+) -> tuple[Map, EventBus]:
+    event_bus, capabilities_map = _mower_event_bus(execute_mock, static_device_info)
     map_obj = Map(execute_mock, event_bus, capabilities_map)
     event_bus.subscribe(MapChangedEvent, AsyncMock())
     await block_till_done(event_bus)
-    return map_obj
+    return map_obj, event_bus
 
 
 async def test_map_event_adapter_changed_event_and_svg_cache(
     execute_mock: AsyncMock,
-    event_bus: EventBus,
     static_device_info: StaticDeviceInfo,
 ) -> None:
-    map_obj = await _setup_map(execute_mock, event_bus, static_device_info)
+    map_obj, event_bus = await _setup_mower_map(execute_mock, static_device_info)
     changed = AsyncMock()
     event_bus.subscribe(MapChangedEvent, changed)
     static_map = _small_static_map()
@@ -272,6 +308,123 @@ async def test_map_event_adapter_changed_event_and_svg_cache(
     await block_till_done(event_bus)
     changed.assert_not_called()
     assert map_obj.get_svg_map() is with_areas
+
+
+async def test_minimal_mower_capabilities_subscribe_refresh_and_render(
+    execute_mock: AsyncMock,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    event_bus, capability_map = _mower_event_bus(execute_mock, static_device_info)
+    event_bus_mock = Mock(spec_set=EventBus, wraps=event_bus)
+
+    assert capability_map.changed.event is MapChangedEvent
+    assert capability_map.cached_info is None
+    assert capability_map.major is None
+    assert capability_map.minor is None
+    assert capability_map.position is None
+    assert capability_map.rooms is None
+    assert capability_map.set is None
+    assert capability_map.trace is None
+    assert capability_map.mower is not None
+    assert event_bus.capabilities.get_refresh_commands(MowerStaticMapEvent) == []
+    assert event_bus.capabilities.get_refresh_commands(MowerWorkAreasEvent) == []
+    for unsupported_event in (
+        CachedMapInfoEvent,
+        MajorMapEvent,
+        MinorMapEvent,
+        PositionsEvent,
+        MapTraceEvent,
+        RoomsEvent,
+    ):
+        assert unsupported_event not in event_bus.capabilities._events
+
+    map_obj = Map(execute_mock, event_bus_mock, capability_map)
+    initial_subscription_events = [
+        args.args[0] for args in event_bus_mock.subscribe.call_args_list
+    ]
+    assert initial_subscription_events == [
+        MowerStaticMapEvent,
+        MowerWorkAreasEvent,
+    ]
+    assert not event_bus.has_subscribers(MapSetEvent)
+    assert not event_bus.has_subscribers(MapSubsetEvent)
+    assert not event_bus.has_subscribers(MapInfoEvent)
+    assert not event_bus.has_subscribers(RoomsEvent)
+
+    changed = AsyncMock()
+    event_bus_mock.subscribe(MapChangedEvent, changed)
+    await block_till_done(event_bus)
+
+    for unsupported_event in (
+        CachedMapInfoEvent,
+        MajorMapEvent,
+        MinorMapEvent,
+        PositionsEvent,
+        MapTraceEvent,
+        RoomsEvent,
+    ):
+        assert not event_bus.has_subscribers(unsupported_event)
+
+    event_bus_mock.request_refresh.reset_mock()
+    map_obj.refresh()
+    assert event_bus_mock.request_refresh.call_args_list == [
+        call(MowerStaticMapEvent),
+        call(MowerWorkAreasEvent),
+    ]
+    await block_till_done(event_bus)
+    execute_mock.assert_not_awaited()
+
+    event_bus.notify(_small_static_map())
+    event_bus.notify(_small_work_areas())
+    await block_till_done(event_bus)
+    svg = map_obj.get_svg_map()
+    assert svg is not None
+    assert "r0" in svg
+
+    await map_obj.teardown()
+    await event_bus.teardown()
+
+
+async def test_optional_map_set_call_sites_skip_unsupported_commands(
+    execute_mock: AsyncMock,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    event_bus, _ = _mower_event_bus(execute_mock, static_device_info)
+
+    map_set_result = OnMapSetV2._handle_body_data_dict(
+        event_bus, {"mid": "1", "type": "ar"}
+    )
+    assert map_set_result.state is HandlingState.SUCCESS
+    assert map_set_result.requested_commands == []
+
+    cached_response, _ = get_request_json(
+        get_success_body(
+            {
+                "enable": 1,
+                "info": [
+                    {
+                        "mid": "1",
+                        "index": 0,
+                        "status": 1,
+                        "using": 1,
+                        "built": 1,
+                        "name": "",
+                    }
+                ],
+            }
+        )
+    )
+    cached_result = GetCachedMapInfo()._handle_response(event_bus, cached_response)
+    assert cached_result.state is HandlingState.SUCCESS
+    assert cached_result.requested_commands == []
+
+    xml_result = GetMapSt()._handle_response(
+        event_bus, get_request_xml("<ctl ret='ok' st='built' method='auto'/>")
+    )
+    assert xml_result.state is HandlingState.SUCCESS
+    assert xml_result.requested_commands == []
+
+    await event_bus.teardown()
 
 
 def test_rust_adapter_rejects_mixed_snapshot() -> None:
