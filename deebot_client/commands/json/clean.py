@@ -4,7 +4,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import StateEvent
+from deebot_client.events import StateEvent, StationEvent
+from deebot_client.events.station import State as StationState
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
@@ -128,6 +129,17 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         """
         status: State | None = None
         state = data.get("state")
+
+        if state == "washing":
+            event_bus.notify(StationEvent(StationState.WASHING_MOP))
+        elif state == "clean":
+            last_station_event = event_bus.get_last_event(StationEvent)
+            if (
+                last_station_event
+                and last_station_event.state == StationState.WASHING_MOP
+            ):
+                event_bus.notify(StationEvent(StationState.IDLE))
+
         if data.get("trigger") == "alert":
             status = State.ERROR
         elif state in ("clean", "washing"):

@@ -38,10 +38,12 @@ from deebot_client.commands.json.pos import GetPos
 from deebot_client.commands.json.safe_protect import GetSafeProtect
 from deebot_client.commands.json.station_state import GetStationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
+from deebot_client.commands.json.sweep_mode import GetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect
 from deebot_client.commands.json.voice_assistant_state import GetVoiceAssistantState
 from deebot_client.commands.json.volume import GetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo
+from deebot_client.commands.json.work_mode import GetWorkMode
 from deebot_client.events import (
     AdvancedModeEvent,
     AutoEmptyEvent,
@@ -69,10 +71,12 @@ from deebot_client.events import (
     StateEvent,
     StationEvent,
     StatsEvent,
+    SweepModeEvent,
     TotalStatsEvent,
     TrueDetectEvent,
     VoiceAssistantStateEvent,
     VolumeEvent,
+    WorkModeEvent,
 )
 from deebot_client.events.efficiency_mode import EfficiencyModeEvent
 from deebot_client.events.fan_speed import FanSpeedEvent
@@ -199,6 +203,54 @@ async def test_get_static_device_info(
             },
         ),
         (
+            "e6ofmn",
+            {
+                AdvancedModeEvent: [GetAdvancedMode()],
+                AutoEmptyEvent: [GetAutoEmpty()],
+                AvailabilityEvent: [GetBattery(is_available_check=True)],
+                BatteryEvent: [GetBattery()],
+                CachedMapInfoEvent: [GetCachedMapInfo()],
+                CarpetAutoFanBoostEvent: [GetCarpetAutoFanBoost()],
+                CleanCountEvent: [GetCleanCount()],
+                CleanLogEvent: [GetCleanLogs()],
+                CleanPreferenceEvent: [GetCleanPreference()],
+                ContinuousCleaningEvent: [GetContinuousCleaning()],
+                CustomCommandEvent: [],
+                ErrorEvent: [GetError()],
+                FanSpeedEvent: [GetFanSpeed()],
+                LifeSpanEvent: [
+                    GetLifeSpan(
+                        [
+                            LifeSpan.BRUSH,
+                            LifeSpan.FILTER,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.UNIT_CARE,
+                            LifeSpan.ROUND_MOP,
+                        ]
+                    )
+                ],
+                MajorMapEvent: [GetMajorMap()],
+                MapChangedEvent: [],
+                MapTraceEvent: [GetMapTrace()],
+                MopAttachedEvent: [GetWaterInfo()],
+                MultimapStateEvent: [GetMultimapState()],
+                NetworkInfoEvent: [GetNetInfo()],
+                PositionsEvent: [GetPos()],
+                ReportStatsEvent: [],
+                RoomsEvent: [GetCachedMapInfo()],
+                StateEvent: [GetChargeState(), GetCleanInfoV2()],
+                StationEvent: [GetStationState()],
+                StatsEvent: [GetStats()],
+                SweepModeEvent: [GetSweepMode()],
+                TotalStatsEvent: [GetTotalStats()],
+                TrueDetectEvent: [GetTrueDetect()],
+                VoiceAssistantStateEvent: [GetVoiceAssistantState()],
+                VolumeEvent: [GetVolume()],
+                WaterAmountEvent: [GetWaterInfo()],
+                WorkModeEvent: [GetWorkMode()],
+            },
+        ),
+        (
             "p95mgv",
             {
                 AutoEmptyEvent: [GetAutoEmpty()],
@@ -245,7 +297,7 @@ async def test_get_static_device_info(
             },
         ),
     ],
-    ids=["5xu9h3", "itk04l", "yna5xi", "p95mgv"],
+    ids=["5xu9h3", "itk04l", "yna5xi", "e6ofmn", "p95mgv"],
 )
 async def test_capabilities_event_extraction(
     class_: str, expected: dict[type[Event], list[Command]]
