@@ -65,12 +65,16 @@ class OnCleanDataUpdateV2(MessageBodyDataDict):
         cls, event_bus: EventBus, data: dict[str, Any]
     ) -> HandlingResult:
         """Track whether the current cleaning job completed normally."""
-        for item in data.get("content", []):
-            if isinstance(item, dict) and item.get("id") == 0:
-                event_bus.notify(_CleanDataStatusEvent(item.get("status") == 3))
-                break
-
-        return HandlingResult.success()
+        content = data.get("content", [])
+    
+        if content:
+            finished = all(
+                isinstance(item, dict) and item.get("status") == 3
+                for item in content
+            )
+            event_bus.notify(_CleanDataStatusEvent(finished))
+    
+        return HandlingResult.success()        
 
 
 class OnLastTimeStats(MessageBodyDataDict):
