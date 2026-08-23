@@ -52,9 +52,7 @@ _ON_MI_FIXTURES = {
 _ON_MI = _ON_MI_FIXTURES["request-876"]
 _ON_ARI = _WORK_AREA_FIXTURE["on_ari"]
 _AREA_SET = _WORK_AREA_FIXTURE["area_set_ar"]
-_AREA_SET_WIRE_SIZE_MISMATCH = _WORK_AREA_FIXTURE[
-    "area_set_ar_wire_size_mismatch"
-]
+_AREA_SET_WIRE_SIZE_MISMATCH = _WORK_AREA_FIXTURE["area_set_ar_wire_size_mismatch"]
 _VW = _WORK_AREA_FIXTURE["area_set_vw"]
 
 
