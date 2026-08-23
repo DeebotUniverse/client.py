@@ -1,0 +1,52 @@
+{
+  "on_ari": {
+    "mid": "1",
+    "serial": 3,
+    "type": 0,
+    "using": 1,
+    "info_size": 6371,
+    "chunks": [
+      "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"
+    ]
+  },
+  "area_set_ar": {
+    "mid": "1",
+    "type": "ar",
+    "info_size": 136,
+    "subsets": "XQAABACIAAAAAC3ghGIjMKGOm+1J5e2ja1zbTUKfE3xhpAoTdM6Cf6Qw2Vz4fVgQPOTDtMQM4akC6OnVfnr4fn1UQDrOmW8NKtFGerXxn/+3b4AA"
+  },
+  "area_set_vw": {
+    "mid": "1",
+    "type": "vw",
+    "info_size": 2,
+    "subsets": "XQAABAACAAAAAC2XPAAAAA=="
+  },
+  "registrations": [
+    {
+      "area_id": "4",
+      "main_index": 448,
+      "area_index": 0,
+      "matched_direction_count": 583,
+      "area_direction_count": 804,
+      "offset": [-18750, 32850]
+    },
+    {
+      "area_id": "1",
+      "main_index": 1032,
+      "area_index": 302,
+      "matched_direction_count": 399,
+      "area_direction_count": 768,
+      "offset": [200, -300]
+    },
+    {
+      "area_id": "2",
+      "main_index": 1432,
+      "area_index": 24,
+      "matched_direction_count": 859,
+      "area_direction_count": 883,
+      "offset": [1250, -5250]
+    }
+  ]
+}

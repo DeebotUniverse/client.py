@@ -288,7 +288,11 @@ def test_onMI_rejects_decoder_length_mismatch(
     event_bus_mock: Mock, monkeypatch: pytest.MonkeyPatch
 ) -> None:
     info, info_size = _synthetic_info([["1", "s1;1;0,0;1"], ["2", "0"]])
-    monkeypatch.setattr(on_mi_module, "decompress_base64_data", lambda _: b"{}")
+    monkeypatch.setattr(
+        on_mi_module,
+        "decode_trimmed_lzma",
+        lambda _value, *, _info_size: b"{}",
+    )
 
     result = OnMI.handle(event_bus_mock, _message(info=info, info_size=info_size))
 

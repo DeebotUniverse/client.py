@@ -83,6 +83,23 @@ class MowerStaticMapEvent(Event):
 
 
 @dataclass(frozen=True)
+class MowerWorkArea:
+    """One named mower work area in the registered static-map coordinates."""
+
+    name: str
+    geometry: MowerMapTraceGroup
+
+
+@dataclass(frozen=True)
+class MowerWorkAreasEvent(Event):
+    """Complete work-area snapshot registered into the static-map coordinates."""
+
+    mid: str
+    areas: list[MowerWorkArea]
+    step_size: int
+
+
+@dataclass(frozen=True)
 class MowerMapTraceEvent(Event):
     """Mower trace event preserving group and segment boundaries.
 

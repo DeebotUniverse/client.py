@@ -22,6 +22,7 @@ from deebot_client.rs.util import decompress_base64_data
 
 from .cached_map_info import OnCachedMapInfo
 from .on_mi import OnMI
+from .work_areas import GetAreaSet, OnArI
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -29,6 +30,8 @@ if TYPE_CHECKING:
 _LOGGER = get_logger(__name__)
 
 __all__ = [
+    "GetAreaSet",
+    "OnArI",
     "OnCachedMapInfo",
     "OnMI",
     "OnMajorMap",
