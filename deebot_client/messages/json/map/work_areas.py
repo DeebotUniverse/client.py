@@ -538,7 +538,7 @@ def _longest_shared_direction_count(
 
 
 def _analyse_without_payload_log() -> HandlingResult:
-    """Fall through without logging device/session-bearing envelopes."""
+    """Fall through without recording device/session-bearing envelopes."""
     return HandlingResult(HandlingState.ANALYSE_LOGGED)
 
 
