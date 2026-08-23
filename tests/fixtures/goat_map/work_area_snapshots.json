@@ -23,6 +23,13 @@
     "info_size": 2,
     "subsets": "XQAABAACAAAAAC2XPAAAAA=="
   },
+  "area_set_ar_wire_size_mismatch": {
+    "mid": "1",
+    "type": "ar",
+    "info_size": 286,
+    "header_decompressed_size": 140,
+    "subsets": "XQAABACMAAAAAC3ghGIjMOnTDQx2XOFZiNYUxAXPfWu3HOXLG+D9PeozovPn2ducNepbc0G90Iw8p0A+mL4S3wOxGszXf4z/UxFAAA=="
+  },
   "registrations": [
     {
       "area_id": "4",

@@ -52,6 +52,9 @@ _ON_MI_FIXTURES = {
 _ON_MI = _ON_MI_FIXTURES["request-876"]
 _ON_ARI = _WORK_AREA_FIXTURE["on_ari"]
 _AREA_SET = _WORK_AREA_FIXTURE["area_set_ar"]
+_AREA_SET_WIRE_SIZE_MISMATCH = _WORK_AREA_FIXTURE[
+    "area_set_ar_wire_size_mismatch"
+]
 _VW = _WORK_AREA_FIXTURE["area_set_vw"]
 
 
@@ -383,6 +386,64 @@ def test_getAreaSet_empty_name_is_valid() -> None:
     )
 
     assert snapshot.areas == (_AreaMetadata(area_id="4", name=""),)
+
+
+def test_getAreaSet_uses_internal_lzma_size_not_opaque_envelope_infoSize() -> None:
+    fixture = _AREA_SET_WIRE_SIZE_MISMATCH
+
+    snapshot = _parse_area_set_snapshot(
+        {
+            "mid": fixture["mid"],
+            "type": fixture["type"],
+            "infoSize": fixture["info_size"],
+            "subsets": fixture["subsets"],
+        }
+    )
+
+    assert fixture["info_size"] != fixture["header_decompressed_size"]
+    assert snapshot.areas == (
+        _AreaMetadata(area_id="1", name="ZoneOne"),
+        _AreaMetadata(area_id="2", name="ZoneTwoABC"),
+        _AreaMetadata(area_id="3", name="Zone3"),
+    )
+
+
+def test_getAreaSet_rejects_internal_size_that_does_not_match_decoded_bytes(
+    event_bus_mock: Mock,
+) -> None:
+    fixture = _AREA_SET_WIRE_SIZE_MISMATCH
+    compressed = bytearray(base64.b64decode(fixture["subsets"], validate=True))
+    compressed[5:9] = (fixture["header_decompressed_size"] + 1).to_bytes(4, "little")
+
+    result = GetAreaSet.handle(
+        event_bus_mock,
+        _area_set_message(
+            subsets=base64.b64encode(compressed).decode(),
+            info_size=fixture["info_size"],
+        ),
+    )
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    event_bus_mock.notify.assert_not_called()
+
+
+def test_getAreaSet_rejects_internal_size_above_safety_limit(
+    event_bus_mock: Mock,
+) -> None:
+    fixture = _AREA_SET_WIRE_SIZE_MISMATCH
+    compressed = bytearray(base64.b64decode(fixture["subsets"], validate=True))
+    compressed[5:9] = (1_048_577).to_bytes(4, "little")
+
+    result = GetAreaSet.handle(
+        event_bus_mock,
+        _area_set_message(
+            subsets=base64.b64encode(compressed).decode(),
+            info_size=fixture["info_size"],
+        ),
+    )
+
+    assert result.state == HandlingState.ANALYSE_LOGGED
+    event_bus_mock.notify.assert_not_called()
 
 
 @pytest.mark.parametrize(

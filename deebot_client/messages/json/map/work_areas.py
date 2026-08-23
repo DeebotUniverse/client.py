@@ -27,7 +27,6 @@ from .o1200 import (
     OBSERVED_DIRECTION_STEP,
     O1200RlePath,
     canonical_decimal,
-    decode_trimmed_lzma,
     decode_trimmed_lzma_bytes,
     parse_rle_path,
     strict_base64_decode,
@@ -38,6 +37,7 @@ if TYPE_CHECKING:
 
 _MAX_ON_ARI_SEGMENTS: Final = 16
 _MAX_COMPRESSED_BYTES: Final = 524_288
+_MAX_AREA_SET_DECOMPRESSED_BYTES: Final = 1_048_576
 _MAX_IN_FLIGHT_SNAPSHOTS: Final = 16
 _MAX_REGISTRATION_COMPARISONS: Final = 10_000_000
 
@@ -387,7 +387,10 @@ def _parse_area_set_snapshot(data: dict[str, Any]) -> _AreaSetSnapshot:
     ):
         raise ValueError("Unsupported getAreaSet envelope")
 
-    decoded = decode_trimmed_lzma(subsets, info_size=info_size)
+    # Unlike the observed onMI/onArI framing, AreaSet envelope ``infoSize`` is
+    # not the decompressed byte length. Keep it validated as opaque envelope
+    # metadata and use the trimmed LZMA-Alone header's own size instead.
+    decoded = _decode_area_set_subsets(subsets)
     rows = orjson.loads(decoded)
     if not isinstance(rows, list) or not rows:
         raise ValueError("Unsupported getAreaSet rows")
@@ -409,6 +412,19 @@ def _parse_area_set_snapshot(data: dict[str, Any]) -> _AreaSetSnapshot:
         seen_ids.add(row[1])
         areas.append(_AreaMetadata(area_id=row[1], name=row[2]))
     return _AreaSetSnapshot(mid=mid, areas=tuple(areas))
+
+
+def _decode_area_set_subsets(value: str) -> bytes:
+    compressed = strict_base64_decode(value)
+    if len(compressed) > _MAX_COMPRESSED_BYTES:
+        raise ValueError("getAreaSet compressed-size limit exceeded")
+    if len(compressed) < 9:
+        raise ValueError("Unsupported getAreaSet trimmed LZMA-Alone framing")
+
+    decompressed_size = int.from_bytes(compressed[5:9], "little")
+    if not 0 < decompressed_size <= _MAX_AREA_SET_DECOMPRESSED_BYTES:
+        raise ValueError("Unsupported getAreaSet decompressed-size header")
+    return decode_trimmed_lzma_bytes(compressed, info_size=decompressed_size)
 
 
 def _extract_main_path(static_map: MowerStaticMapEvent) -> O1200RlePath | None:
