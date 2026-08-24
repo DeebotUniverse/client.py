@@ -60,6 +60,7 @@ __all__ = [
     "PositionsEvent",
     "StationEvent",
     "SweepModeEvent",
+    "GoatCleanModeEvent",
     "WorkMode",
     "WorkModeEvent",
     "auto_empty",
@@ -232,6 +233,13 @@ class StateEvent(Event):
     """State event representation."""
 
     state: State
+
+
+@dataclass(frozen=True)
+class GoatCleanModeEvent(Event):
+    """Observed GOAT clean mode used by subsequent control commands."""
+
+    mode: str
 
 
 @dataclass(frozen=True)
