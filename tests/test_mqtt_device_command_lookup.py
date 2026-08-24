@@ -130,3 +130,32 @@ def test_p2p_command_lookup_is_device_specific(
         )
         is SetVolume
     )
+
+    no_volume_capabilities = replace(
+        device_info.static.capabilities,
+        settings=replace(
+            device_info.static.capabilities.settings,
+            volume=None,
+        ),
+    )
+    no_volume_device_info = replace(
+        device_info,
+        static=replace(
+            device_info.static,
+            capabilities=no_volume_capabilities,
+        ),
+    )
+    client._subscriptions[device_info.api["did"]] = SubscriberInfo(
+        device_info=no_volume_device_info,
+        events=event_bus,
+        callback=lambda _name, _payload: None,
+    )
+
+    assert (
+        client._get_p2p_command_type(
+            SetVolume.NAME,
+            DataType.JSON,
+            device_info.api["did"],
+        )
+        is SetVolume
+    )
