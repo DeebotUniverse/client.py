@@ -148,9 +148,15 @@ class LifeSpan(StrEnumWithXml):
     DUST_BAG = "dustBag", "DustBag"
     CLEANING_FLUID = "autoWater_cleaningFluid", "AutoWater_cleaningFluid"
     CLEANING_SOLUTION = "cleaningSolution", "CleaningSolution"
+    HEAVY_DUTY_CLEANING_SOLUTION = (
+        "heavyDutyCleaningSolution",
+        "HeavyDutyCleaningSolution",
+    )
     SEWAGE_BOX = "sewageBox", "SewageBox"
     STRAINER = "strainer", "Strainer"
     HAND_FILTER = "handFilter", "HandFilter"
+    DUST_BUCKET = "dustBucket", "DustBucket"
+    DUST_CONTAINER_FILTER = "dustContainerFilter", "DustContainerFilter"
     DUST_CASE_HEAP = "dustCaseHeap", "DustCaseHeap"
     STATION_FILTER = "spHeap", "SpHeap"
     WATER_SINK = "waterSink", "WaterSink"
