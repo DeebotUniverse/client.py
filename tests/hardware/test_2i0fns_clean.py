@@ -109,6 +109,44 @@ async def test_o1200_start_state_switch_keeps_goat_payload() -> None:
     }
 
 
+async def test_o1200_malformed_args_fall_back_to_start() -> None:
+    event_bus = Mock(spec_set=EventBus)
+    event_bus.get_last_event.return_value = None
+    command = GoatClean(CleanAction.START)
+    command._args = {}
+
+    with patch.object(Command, "_execute", new=AsyncMock()):
+        await command._execute(Mock(), Mock(), event_bus)
+
+    assert command._args == {
+        "act": "start",
+        "content": {"type": "auto"},
+    }
+
+
+async def test_o1200_explicit_mode_skips_mode_resolution() -> None:
+    event_bus = Mock(spec_set=EventBus)
+    command = GoatClean(CleanAction.PAUSE, mode=CleanMode.SPOT_AREA)
+
+    with patch.object(Command, "_execute", new=AsyncMock()):
+        await command._execute(Mock(), Mock(), event_bus)
+
+    event_bus.get_last_event.assert_called_once_with(StateEvent)
+    assert command._args == {
+        "act": "pause",
+        "content": {"type": "spotArea"},
+    }
+
+
+def test_o1200_area_non_start_has_no_value() -> None:
+    command = GoatCleanArea(CleanMode.SPOT_AREA, [1, 2])
+
+    assert command._get_args(CleanAction.PAUSE) == {
+        "act": "pause",
+        "content": {"type": "spotArea"},
+    }
+
+
 async def test_o1200_new_start_ignores_stale_area_mode() -> None:
     event_bus = Mock(spec_set=EventBus)
 
