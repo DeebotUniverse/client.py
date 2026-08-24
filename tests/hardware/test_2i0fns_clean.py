@@ -6,7 +6,7 @@ import pytest
 
 from deebot_client.capabilities import CapabilityCleanAction
 from deebot_client.command import Command
-from deebot_client.commands.json.clean import GoatClean, GoatCleanArea, GetCleanInfo
+from deebot_client.commands.json.clean import GetCleanInfo, GoatClean, GoatCleanArea
 from deebot_client.event_bus import EventBus
 from deebot_client.events import GoatCleanModeEvent, StateEvent
 from deebot_client.hardware import get_static_device_info
@@ -138,9 +138,7 @@ async def test_o1200_controls_follow_observed_active_mode(
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
     event_bus.get_last_event.side_effect = lambda event_type: (
-        GoatCleanModeEvent(mode.value)
-        if event_type is GoatCleanModeEvent
-        else None
+        GoatCleanModeEvent(mode.value) if event_type is GoatCleanModeEvent else None
     )
     command = GoatClean(action)
 
@@ -169,6 +167,4 @@ def test_clean_info_records_observed_goat_mode(mode: str) -> None:
         },
     )
 
-    assert event_bus.notify.call_args_list[0].args == (
-        GoatCleanModeEvent(mode),
-    )
+    assert event_bus.notify.call_args_list[0].args == (GoatCleanModeEvent(mode),)

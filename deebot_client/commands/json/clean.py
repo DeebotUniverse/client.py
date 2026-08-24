@@ -144,8 +144,7 @@ class GoatClean(Clean):
             observed_mode = (
                 CleanMode(observed.mode)
                 if isinstance(observed, GoatCleanModeEvent)
-                and observed.mode
-                in {CleanMode.AUTO.value, CleanMode.SPOT_AREA.value}
+                and observed.mode in {CleanMode.AUTO.value, CleanMode.SPOT_AREA.value}
                 else None
             )
             state = event_bus.get_last_event(StateEvent)
@@ -223,10 +222,12 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             if "type" in content:
                 clean_type = content.get("type")
 
-            if (
-                getattr(event_bus.capabilities, "device_type", None) == "mower"
-                and clean_type in {CleanMode.AUTO.value, CleanMode.SPOT_AREA.value}
-            ):
+            if getattr(
+                event_bus.capabilities, "device_type", None
+            ) == "mower" and clean_type in {
+                CleanMode.AUTO.value,
+                CleanMode.SPOT_AREA.value,
+            }:
                 event_bus.notify(GoatCleanModeEvent(clean_type))
 
             if clean_type == "customArea":
