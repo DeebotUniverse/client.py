@@ -596,7 +596,8 @@ async def test_getMapTrace() -> None:
     )
 
 
-async def test_getMapInfoV2() -> None:
+@pytest.mark.parametrize("outline_version", ["1", "2"])
+async def test_getMapInfoV2(outline_version: str) -> None:
     mid = "98100521"
     info = "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4="
     json, firmware_event = get_request_json(
@@ -609,7 +610,7 @@ async def test_getMapInfoV2() -> None:
                 "mid": mid,
                 "msgid": "",
                 "outlineComplete": 0,
-                "outlineVer": "1",
+                "outlineVer": outline_version,
                 "serial": "1",
                 "type": "0",
                 "using": 0,
@@ -635,7 +636,7 @@ async def test_getMapInfoV2_unsupported_version() -> None:
                 "mid": mid,
                 "msgid": "",
                 "outlineComplete": 0,
-                "outlineVer": "2",
+                "outlineVer": "3",
                 "serial": "1",
                 "type": "0",
                 "using": 0,
