@@ -13,8 +13,18 @@ from deebot_client.commands.json.clean import (
     CleanV2,
     GetCleanInfoV2,
 )
+from deebot_client.commands.json.xwk78e import CleanAreaV2FreeClean
 from deebot_client.event_bus import EventBus
-from deebot_client.events import FirmwareEvent, StateEvent
+from deebot_client.events import (
+    CleanCountEvent,
+    FanSpeedEvent,
+    FanSpeedLevel,
+    FirmwareEvent,
+    StateEvent,
+    WorkMode,
+    WorkModeEvent,
+)
+from deebot_client.events.water_info import WaterCustomAmountEvent
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from tests.helpers import get_request_json, get_success_body
 
@@ -150,6 +160,16 @@ async def test_Clean_act(
                 "content": {"type": "freeClean", "value": "2,0"},
             },
         ),
+        (
+            CleanAreaV2FreeClean(CleanMode.SPOT_AREA, [5, 8]),
+            {
+                "act": "start",
+                "content": {
+                    "type": "freeClean",
+                    "value": "1,5,,1,0,30,0,1,0;1,8,,1,0,30,0,1,0",
+                },
+            },
+        ),
     ],
     ids=[
         "Rooms",
@@ -158,9 +178,35 @@ async def test_Clean_act(
         "Coordinates V2",
         "FreeClean",
         "FreeClean single room 2x",
+        "T80 freeClean room list",
     ],
 )
 async def test_CleanArea(
     command: CleanArea | CleanAreaV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
+
+
+async def test_CleanArea_uses_current_t80_settings(
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
+) -> None:
+    event_bus = Mock(spec_set=EventBus)
+    events = {
+        FanSpeedEvent: FanSpeedEvent(FanSpeedLevel.MAX),
+        WaterCustomAmountEvent: WaterCustomAmountEvent(15),
+        WorkModeEvent: WorkModeEvent(WorkMode.MOP_AFTER_VACUUM),
+        CleanCountEvent: CleanCountEvent(2),
+    }
+    event_bus.get_last_event.side_effect = events.get
+    command = CleanAreaV2FreeClean(CleanMode.SPOT_AREA, [5, 8])
+
+    await command.execute(authenticator, api_device_info, event_bus)
+
+    assert command._args == {
+        "act": "start",
+        "content": {
+            "type": "freeClean",
+            "value": "1,5,,2,1,30,3,1,0;1,8,,2,1,30,3,1,0",
+        },
+    }

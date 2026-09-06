@@ -17,6 +17,7 @@ from deebot_client.const import UNDEFINED, DataType, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
+from .commands.json.xwk78e import SetTrueDetectV2, SetWashInfoT80
 from .logging_filter import get_logger
 from .util.continents import get_continent_url_postfix
 
@@ -294,6 +295,14 @@ class MqttClient:
             command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(data_type, {}).get(
                 command_name, None
             )
+            device_did = topic_split[3] if topic_split[9] == "p" else topic_split[6]
+            if sub_info := self._subscriptions.get(device_did):
+                station = sub_info.device_info.static.capabilities.station
+                if station is not None and getattr(station, "wash_mode", None) is not None:
+                    if command_name == "setTrueDetect":
+                        command_type = SetTrueDetectV2
+                    elif command_name == "setWashInfo":
+                        command_type = SetWashInfoT80
             if command_type is None:
                 _LOGGER.debug(
                     "Command %s does not support p2p handling (yet)", command_name

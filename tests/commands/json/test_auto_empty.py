@@ -7,6 +7,7 @@ from typing import Any
 import pytest
 
 from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
+from deebot_client.commands.json.xwk78e import SetAutoEmptyV2
 from deebot_client.events.auto_empty import AutoEmptyEvent, Frequency
 from tests.helpers import (
     get_request_json,
@@ -118,4 +119,32 @@ async def test_SetAutoEmpty(
 ) -> None:
     """Test SetAutoEmpty."""
     command = SetAutoEmpty(enabled, frequency)
+    await assert_execute_command(command, args)
+
+
+@pytest.mark.parametrize(
+    ("enabled", "frequency", "args"),
+    [
+        (
+            True,
+            Frequency.SMART,
+            {"enable": 1, "frequency": "smart", "intensity": 1},
+        ),
+        (
+            True,
+            Frequency.AUTO,
+            {"enable": 1, "frequency": "auto", "intensity": 1},
+        ),
+        (
+            None,
+            Frequency.AUTO,
+            {"enable": 1, "frequency": "auto", "intensity": 1},
+        ),
+    ],
+)
+async def test_SetAutoEmptyV2(
+    enabled: bool, frequency: Frequency, args: dict[str, Any]
+) -> None:
+    """Test the China T80 auto-empty command payload."""
+    command = SetAutoEmptyV2(enabled, frequency)
     await assert_execute_command(command, args)

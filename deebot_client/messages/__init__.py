@@ -8,6 +8,7 @@ from deebot_client.const import DataType
 from deebot_client.logging_filter import get_logger
 
 from .json import MESSAGES as JSON_MESSAGES, get_legacy_message
+from .json.xwk78e import OnAutoEmptyT80, OnWashInfoT80
 from .xml import MESSAGES as XML_MESSAGES
 
 if TYPE_CHECKING:
@@ -34,6 +35,14 @@ def get_message(
     if messages is None:
         _LOGGER.warning("Datatype %s is not supported.", static.data_type)
         return None
+
+    if static.data_type == DataType.JSON and (
+        station := static.capabilities.station
+    ) is not None and getattr(station, "wash_mode", None) is not None:
+        messages = messages | {
+            "onAutoEmpty": OnAutoEmptyT80,
+            "onWashInfo": OnWashInfoT80,
+        }
 
     if message_type := messages.get(message_name, None):
         return message_type

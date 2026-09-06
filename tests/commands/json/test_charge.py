@@ -2,10 +2,12 @@ from __future__ import annotations
 
 import logging
 from typing import Any
+from unittest.mock import Mock
 
 import pytest
 
 from deebot_client.commands.json import Charge
+from deebot_client.commands.json.xwk78e import ChargeT80
 from deebot_client.events import FirmwareEvent, StateEvent
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import State
@@ -37,6 +39,17 @@ async def test_Charge(
 ) -> None:
     json, firmware_event = data
     await assert_command(Charge(), json, (firmware_event, expected))
+
+
+async def test_Charge_when_already_docked() -> None:
+    event_bus = Mock()
+    event_bus.get_last_event.return_value = StateEvent(State.DOCKED)
+
+    json, _ = _prepare_json(0)
+    result = ChargeT80._handle_body(event_bus, json["resp"]["body"])
+
+    assert result == HandlingResult.success()
+    event_bus.notify.assert_called_once_with(StateEvent(State.DOCKED))
 
 
 async def test_Charge_failed(caplog: pytest.LogCaptureFixture) -> None:

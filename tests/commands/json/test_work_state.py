@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock
 
 import pytest
 
 from deebot_client.commands.json.work_state import GetWorkState
+from deebot_client.commands.json.xwk78e import GetWorkStateT80
 from deebot_client.events import StateEvent
 from deebot_client.events.station import State as StationState, StationEvent
 from deebot_client.message import HandlingResult, HandlingState
@@ -26,6 +28,13 @@ if TYPE_CHECKING:
             {},
             "idle",
             [StationEvent(StationState.IDLE)],
+        ),
+        (
+            1,
+            "idle",
+            {},
+            "idle",
+            [StateEvent(RobotState.PAUSED), StationEvent(StationState.IDLE)],
         ),
         (
             0,
@@ -133,6 +142,23 @@ async def test_GetWorkState(
         )
     )
     await assert_command(GetWorkState(), json, (firmware_event, *expected))
+
+
+async def test_GetWorkState_does_not_override_docked_with_stale_pause() -> None:
+    event_bus = Mock()
+    event_bus.get_last_event.return_value = StateEvent(RobotState.IDLE)
+
+    result = GetWorkStateT80._handle_body_data_dict(
+        event_bus,
+        {
+            "paused": 1,
+            "robotState": {"state": "cleaning", "trigger": "voice"},
+            "stationState": {"state": "idle"},
+        },
+    )
+
+    assert result == HandlingResult.success()
+    event_bus.notify.assert_called_once_with(StationEvent(StationState.IDLE))
 
 
 @pytest.mark.parametrize(
