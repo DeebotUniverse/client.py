@@ -231,6 +231,11 @@ class CapabilitySettings:
     volume: CapabilitySet[VolumeEvent, [int]] | None = None
 
 
+@dataclass(frozen=True)
+class CapabilityStationWaterTank:
+    """Capabilities for station water tanks."""
+
+
 @dataclass(frozen=True, kw_only=True)
 class CapabilityStation:
     """Capabilities for the station."""
@@ -242,6 +247,7 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+    water_tank: CapabilityStationWaterTank | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
