@@ -262,6 +262,26 @@ async def test_capabilities_event_extraction(
         )
 
 
+@pytest.mark.parametrize(
+    ("class_", "supported"),
+    [
+        ("cuoipb", True),
+        ("qhe2o2", False),
+        ("yna5xi", False),
+        ("5xu9h3", False),
+    ],
+)
+async def test_station_water_tank_capability(class_: str, supported: bool) -> None:
+    """Test station water tank support without changing error refresh commands."""
+    info = await hardware.get_static_device_info(class_)
+    assert info is not None
+    capabilities = info.capabilities
+
+    station = capabilities.station
+    assert (station is not None and station.water_tank is not None) is supported
+    assert capabilities.get_refresh_commands(ErrorEvent) == [GetError()]
+
+
 async def test_all_models_loaded() -> None:
     """Test that all models can be loaded."""
     folder = Path(hardware.__file__).parent

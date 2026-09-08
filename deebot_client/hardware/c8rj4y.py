@@ -18,6 +18,7 @@ from deebot_client.capabilities import (
     CapabilitySettings,
     CapabilitySetTypes,
     CapabilityStation,
+    CapabilityStationWaterTank,
     CapabilityStats,
     CapabilityWater,
     DeviceType,
@@ -267,6 +268,7 @@ def get_device_info() -> StaticDeviceInfo:
                     ),
                 ),
                 state=CapabilityEvent(StationEvent, [GetWorkState()]),
+                water_tank=CapabilityStationWaterTank(),
             ),
             stats=CapabilityStats(
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
