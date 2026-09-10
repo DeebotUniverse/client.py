@@ -7,6 +7,7 @@ import pytest
 from deebot_client.commands.json.error import GetError
 from deebot_client.messages import get_message
 from deebot_client.messages.json.battery import OnBattery
+from deebot_client.messages.json.map import OnMapTrace
 from deebot_client.messages.json.stats import OnStats
 
 if TYPE_CHECKING:
@@ -24,7 +25,7 @@ if TYPE_CHECKING:
         ("yna5xi", "GetCleanLogs", None),
         ("yna5xi", "unknown", None),
         ("2pv572", "unknown", None),
-        ("xmp9ds", "onMapTrace", None),
+        ("xmp9ds", "onMapTrace", OnMapTrace),
         ("xmp9ds", "onMapSet", None),
         ("xmp9ds", "onMinorMap", None),
         ("xmp9ds", "onBattery", OnBattery),
