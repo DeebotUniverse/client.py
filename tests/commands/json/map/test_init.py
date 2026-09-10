@@ -517,6 +517,51 @@ async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_without_names() -> None:
+    """Test rooms without a name fall back to their room type."""
+    mid = "590528580"
+    msid = "2095607158"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WD5AD0FAOJFDxCwNR0tWZqICNn7MaCTDcUFAZU5MsorNNQqWEsZpSsx"
+        "OzOGSpSq3ZxcEBV6GEwcmFupRUznosxtPubz+pwuIFCiMa94xpmQOcBj45k2"
+        "bl24yLpizBXciCZiIceGV/KyFm57t+EhspqwWJcHtimdFgybxOF2h9Eu5i9Y"
+        "D2C422xoxmoxTtdiYg9jQlSsfAfGDW3Hbjcj0KLDgBpomnYsXhPmAh4G"
+    )
+    expected = [
+        (1, "Bathroom"),
+        (2, "Corridor"),
+        (4, "Bedroom"),
+        (5, "Kids room"),
+        (7, "Kitchen"),
+        (8, "Default"),
+        (11, "Dining Room"),
+        (12, "Living Room"),
+        (13, ""),  # unknown room type
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "gdapll",
+                "serial": 1,
+                "index": 1,
+                "subsets": subsets_comp,
+                "infoSize": 505,
+            }
+        )
+    )
+    rooms = [Room(name, room_id, "") for room_id, name in expected]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        [firmware_event, RoomsEvent(mid, rooms)],
+    )
+
+
 async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
     """Test newer room subset format with two extra trailing fields.
 

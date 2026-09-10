@@ -126,29 +126,32 @@ class GetMapSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
         return result
 
 
+ROOM_NUM_TO_NAME = MappingProxyType(
+    {
+        0: "Default",
+        1: "Living Room",
+        2: "Dining Room",
+        3: "Bedroom",
+        4: "Study",
+        5: "Kitchen",
+        6: "Bathroom",
+        7: "Laundry",
+        8: "Lounge",
+        9: "Storeroom",
+        10: "Kids room",
+        11: "Sunroom",
+        12: "Corridor",
+        13: "Balcony",
+        14: "Gym",
+        # 15 custom; get name from name attribute
+    }
+)
+
+
 class GetMapSubSet(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get map subset command."""
 
-    _ROOM_NUM_TO_NAME = MappingProxyType(
-        {
-            0: "Default",
-            1: "Living Room",
-            2: "Dining Room",
-            3: "Bedroom",
-            4: "Study",
-            5: "Kitchen",
-            6: "Bathroom",
-            7: "Laundry",
-            8: "Lounge",
-            9: "Storeroom",
-            10: "Kids room",
-            11: "Sunroom",
-            12: "Corridor",
-            13: "Balcony",
-            14: "Gym",
-            # 15 custom; get name from name attribute
-        }
-    )
+    _ROOM_NUM_TO_NAME = ROOM_NUM_TO_NAME
 
     NAME = "getMapSubSet"
 
@@ -265,6 +268,20 @@ class GetMapSetV2(GetMapSet):
         return HandlingResult.analyse()
 
     @classmethod
+    def _get_room_name(cls, subset: list[str]) -> str:
+        """Return the room's name, falling back to its room type."""
+        if name := subset[1].strip():
+            return name
+
+        try:
+            room_type = int(subset[2])
+        except ValueError:
+            _LOGGER.warning("Room type is not a number: %s", subset[2])
+            return ""
+
+        return ROOM_NUM_TO_NAME.get(room_type, "")
+
+    @classmethod
     def _handle_rooms_subsets(
         cls,
         event_bus: EventBus,
@@ -294,7 +311,11 @@ class GetMapSetV2(GetMapSet):
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
                 RoomsEvent(
-                    map_id, [Room(subset[1], int(subset[0]), "") for subset in subsets]
+                    map_id,
+                    [
+                        Room(cls._get_room_name(subset), int(subset[0]), "")
+                        for subset in subsets
+                    ],
                 )
             )
 
