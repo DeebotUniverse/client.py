@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 def assert_message(
     message: type[Message],
     data: MessagePayloadType,
-    expected_events: Event | None | Sequence[Event],
+    expected_events: Event | Sequence[Event] | None,
     *,
     device_class: str,
     expected_state: HandlingState = HandlingState.SUCCESS,
@@ -49,7 +49,7 @@ def assert_message_failure(
     message: type[Message],
     data: MessagePayloadType,
     expected_result_state: HandlingState,
-    expected_events: Event | None | Sequence[Event] = None,
+    expected_events: Event | Sequence[Event] | None = None,
 ) -> None:
     event_bus = Mock(spec_set=EventBus)
 
