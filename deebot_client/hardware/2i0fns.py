@@ -38,6 +38,7 @@ from deebot_client.commands.json.clean import CleanV2, GetCleanInfoV2
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
+from deebot_client.commands.json.map import GetAreaSet
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
@@ -59,6 +60,7 @@ from deebot_client.events import (
     MoveUpWarningEvent,
     NetworkInfoEvent,
     ReportStatsEvent,
+    RoomsEvent,
     SafeProtectEvent,
     StateEvent,
     StatsEvent,
@@ -82,6 +84,7 @@ def get_device_info() -> StaticDeviceInfo:
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
                 action=CapabilityCleanAction(command=CleanV2),
+                areas=CapabilityEvent(RoomsEvent, [GetAreaSet()]),
             ),
             custom=CapabilityCustomCommand(
                 event=CustomCommandEvent, get=[], set=CustomCommand
