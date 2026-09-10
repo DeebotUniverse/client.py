@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from collections import Counter
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
@@ -282,6 +283,28 @@ class GetMapSetV2(GetMapSet):
         return ROOM_NUM_TO_NAME.get(room_type, "")
 
     @classmethod
+    def _get_room_names(cls, subsets: list[list[str]]) -> list[str]:
+        """Return the room names, numbering rooms which share a room type."""
+        names = [cls._get_room_name(subset) for subset in subsets]
+        # Custom names are left as typed
+        derived = [
+            index
+            for index, subset in enumerate(subsets)
+            if names[index] and not subset[1].strip()
+        ]
+
+        totals = Counter(names[index] for index in derived)
+        seen: Counter[str] = Counter()
+        for index in derived:
+            name = names[index]
+            if totals[name] < 2:
+                continue
+            seen[name] += 1
+            names[index] = f"{name}{seen[name]}"
+
+        return names
+
+    @classmethod
     def _handle_rooms_subsets(
         cls,
         event_bus: EventBus,
@@ -313,8 +336,10 @@ class GetMapSetV2(GetMapSet):
                 RoomsEvent(
                     map_id,
                     [
-                        Room(cls._get_room_name(subset), int(subset[0]), "")
-                        for subset in subsets
+                        Room(name, int(subset[0]), "")
+                        for name, subset in zip(
+                            cls._get_room_names(subsets), subsets, strict=True
+                        )
                     ],
                 )
             )
