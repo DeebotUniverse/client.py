@@ -28,6 +28,8 @@ from .map import (
     PositionsEvent,
 )
 from .network import NetworkInfoEvent
+from .protect_state import ProtectStateEvent
+from .rain_delay import RainDelayEvent
 from .station import StationEvent
 from .work_mode import WorkMode, WorkModeEvent
 
@@ -58,6 +60,8 @@ __all__ = [
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "ProtectStateEvent",
+    "RainDelayEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",

@@ -28,6 +28,7 @@ from deebot_client.commands.json import (
     SetCrossMapBorderWarning,
     SetCutDirection,
     SetMoveUpWarning,
+    SetRainDelay,
     SetSafeProtect,
 )
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvancedMode
@@ -58,6 +59,8 @@ from deebot_client.events import (
     LifeSpanEvent,
     MoveUpWarningEvent,
     NetworkInfoEvent,
+    ProtectStateEvent,
+    RainDelayEvent,
     ReportStatsEvent,
     SafeProtectEvent,
     StateEvent,
@@ -109,6 +112,7 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
+            protect_state=CapabilityEvent(ProtectStateEvent, []),
             settings=CapabilitySettings(
                 advanced_mode=CapabilitySetEnable(
                     AdvancedModeEvent, [GetAdvancedMode()], SetAdvancedMode
@@ -125,6 +129,7 @@ def get_device_info() -> StaticDeviceInfo:
                 moveup_warning=CapabilitySetEnable(
                     MoveUpWarningEvent, [GetMoveUpWarning()], SetMoveUpWarning
                 ),
+                rain_delay=CapabilitySet(RainDelayEvent, [], SetRainDelay),
                 cross_map_border_warning=CapabilitySetEnable(
                     CrossMapBorderWarningEvent,
                     [GetCrossMapBorderWarning()],
