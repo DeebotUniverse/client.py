@@ -6,7 +6,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
-from deebot_client.events import VolumeEvent
+from deebot_client.events import FallVolumeEvent, VolumeEvent
 from deebot_client.message import HandlingResult
 
 from .common import JsonGetCommand, JsonSetCommand
@@ -28,7 +28,17 @@ class GetVolume(JsonGetCommand):
 
         :return: A message response
         """
+        if data.get("type") == "fall":
+            event_bus.notify(
+                FallVolumeEvent(volume=data["volume"], maximum=data.get("total"))
+            )
+            return HandlingResult.success()
+
         event_bus.notify(VolumeEvent(volume=data["volume"], maximum=data.get("total")))
+        if "fallVolume" in data:
+            event_bus.notify(
+                FallVolumeEvent(volume=data["fallVolume"], maximum=data.get("total"))
+            )
         return HandlingResult.success()
 
 
@@ -40,9 +50,34 @@ class SetVolume(JsonSetCommand):
     _mqtt_params = MappingProxyType(
         {
             "volume": InitParam(int),
-            "total": None,  # Remove it as we don't can set it (App includes it)
+            "type": InitParam(str, "channel", optional=True),
+            "total": InitParam(int, optional=True),
         }
     )
 
-    def __init__(self, volume: int) -> None:
-        super().__init__({"volume": volume})
+    def __init__(
+        self, volume: int, channel: str | None = None, total: int | None = None
+    ) -> None:
+        args: dict[str, Any] = {"volume": volume}
+        if channel is not None:
+            args["type"] = channel
+        if total is not None:
+            args["total"] = total
+        super().__init__(args)
+
+
+class SetFallVolume(JsonSetCommand):
+    """Set lifted-alarm volume."""
+
+    NAME = "setVolume"
+    get_command = GetVolume
+    _mqtt_params = MappingProxyType(
+        {
+            "volume": InitParam(int),
+            "type": None,
+            "total": InitParam(int, optional=True),
+        }
+    )
+
+    def __init__(self, volume: int, total: int = 10) -> None:
+        super().__init__({"type": "fall", "total": total, "volume": volume})

@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
+    AiRecognitionEvent,
+    AnimalProtectionEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSpinEvent,
@@ -26,8 +28,10 @@ from deebot_client.events import (
     CutDirectionEvent,
     ErrorEvent,
     Event,
+    FallVolumeEvent,
     FanSpeedEvent,
     FanSpeedLevel,
+    HumanoidAiEvent,
     LifeSpan,
     LifeSpanEvent,
     MajorMapEvent,
@@ -36,9 +40,12 @@ from deebot_client.events import (
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
+    NarrowAdaptEvent,
     NetworkInfoEvent,
     OtaEvent,
     PositionsEvent,
+    ProtectStateEvent,
+    RainDelayEvent,
     ReportStatsEvent,
     RoomsEvent,
     SafeProtectEvent,
@@ -206,6 +213,10 @@ class CapabilitySettings:
     """Capabilities for settings."""
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
+    ai_recognition: CapabilitySetEnable[AiRecognitionEvent] | None = None
+    animal_protection: CapabilitySet[AnimalProtectionEvent, [bool, str, str]] | None = (
+        None
+    )
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
@@ -220,6 +231,9 @@ class CapabilitySettings:
         | None
     ) = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
+    humanoid_ai: CapabilitySetEnable[HumanoidAiEvent] | None = None
+    narrow_adapt: CapabilitySetEnable[NarrowAdaptEvent] | None = None
+    rain_delay: CapabilitySet[RainDelayEvent, [bool, int]] | None = None
     cross_map_border_warning: CapabilitySetEnable[CrossMapBorderWarningEvent] | None = (
         None
     )
@@ -229,6 +243,7 @@ class CapabilitySettings:
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
     volume: CapabilitySet[VolumeEvent, [int]] | None = None
+    fall_volume: CapabilitySet[FallVolumeEvent, [int]] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -278,6 +293,7 @@ class Capabilities(ABC):
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute[[]]
+    protect_state: CapabilityEvent[ProtectStateEvent] | None = None
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None
