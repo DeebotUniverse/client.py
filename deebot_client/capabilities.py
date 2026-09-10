@@ -8,6 +8,7 @@ from enum import StrEnum
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.command import Command
 from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
@@ -62,7 +63,7 @@ if TYPE_CHECKING:
 
     from _typeshed import DataclassInstance
 
-    from deebot_client.command import Command, CommandWithMessageHandling
+    from deebot_client.command import CommandWithMessageHandling
     from deebot_client.commands import StationAction
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
     from deebot_client.models import CleanAction, CleanMode
@@ -82,6 +83,33 @@ def _get_events(
             events.update(_get_events(field_value))
 
     return MappingProxyType(events)
+
+
+def _get_commands(
+    capabilities: DataclassInstance | type[DataclassInstance],
+) -> MappingProxyType[str, type[Command]]:
+    """Get commands configured for the capabilities."""
+    commands: dict[str, type[Command]] = {}
+
+    for field_ in fields(capabilities):
+        if not field_.init:
+            continue
+
+        field_value = getattr(capabilities, field_.name)
+        values = (
+            field_value if isinstance(field_value, (list, tuple)) else (field_value,)
+        )
+
+        for value in values:
+            if isinstance(value, Command):
+                commands.setdefault(value.NAME, type(value))
+            elif isinstance(value, type) and issubclass(value, Command):
+                commands.setdefault(value.NAME, value)
+            elif is_dataclass(value) and not isinstance(value, type):
+                for name, command in _get_commands(value).items():
+                    commands.setdefault(name, command)
+
+    return MappingProxyType(commands)
 
 
 @dataclass(frozen=True)
@@ -233,7 +261,7 @@ class CapabilitySettings:
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityStation:
-    """Capabilities for the station."""
+    """Capabilities for station."""
 
     action: CapabilityExecuteTypes[StationAction]
     auto_empty: CapabilitySetTypes[
@@ -285,14 +313,20 @@ class Capabilities(ABC):
     water: CapabilityWater | None = None
 
     _events: MappingProxyType[type[Event], list[Command]] = field(init=False)
+    _commands: MappingProxyType[str, type[Command]] = field(init=False)
 
     def __post_init__(self) -> None:
         """Post init."""
         object.__setattr__(self, "_events", _get_events(self))
+        object.__setattr__(self, "_commands", _get_commands(self))
 
     def get_refresh_commands(self, event: type[Event]) -> list[Command]:
         """Return refresh command for given event."""
         return self._events.get(event, [])
+
+    def get_command(self, name: str) -> type[Command] | None:
+        """Return command configured for this device."""
+        return self._commands.get(name)
 
 
 class DeviceType(StrEnum):
