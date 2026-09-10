@@ -17,7 +17,7 @@ from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
-from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
+from deebot_client.commands.json.clean import GetCleanInfo
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -134,7 +134,7 @@ async def test_get_static_device_info(
                 NetworkInfoEvent: [GetNetInfo()],
                 ReportStatsEvent: [],
                 SafeProtectEvent: [GetSafeProtect()],
-                StateEvent: [GetChargeState(), GetCleanInfoV2()],
+                StateEvent: [GetChargeState(), GetCleanInfo()],
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
                 TrueDetectEvent: [GetTrueDetect()],
@@ -158,7 +158,7 @@ async def test_get_static_device_info(
                 NetworkInfoEvent: [GetNetInfo()],
                 ReportStatsEvent: [],
                 SafeProtectEvent: [GetSafeProtect()],
-                StateEvent: [GetChargeState(), GetCleanInfoV2()],
+                StateEvent: [GetChargeState(), GetCleanInfo()],
                 StatsEvent: [GetStats()],
                 TotalStatsEvent: [GetTotalStats()],
                 TrueDetectEvent: [GetTrueDetect()],
