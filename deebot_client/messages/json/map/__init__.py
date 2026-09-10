@@ -81,13 +81,14 @@ class OnMapInfoV2(MessageBodyDataDict):
 
         :return: A message response
         """
-        if (outline_version := data.get("outlineVer")) == "0":
+        if data.get("outlineVer") == "0":
             # Skip it as it will be sent for non-active maps
             return HandlingResult.success()
-        if outline_version != "1":
-            # Unsupported version
+
+        # outlineVer only tracks the firmware's map revision, so accept any other value
+        if not (info := data.get("info")):
             return HandlingResult.analyse()
 
-        event_bus.notify(MapInfoEvent(map_id=data["mid"], info=data["info"]))
+        event_bus.notify(MapInfoEvent(map_id=data["mid"], info=info))
 
         return HandlingResult.success()

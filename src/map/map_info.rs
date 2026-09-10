@@ -45,6 +45,10 @@ impl TryFrom<&str> for MapInfoType {
 #[derive(Debug)]
 struct MapInfoTypeEntry(MapInfoType, Vec<MapInfoTypeDataEntry>);
 
+/// Map info entry, `None` if the layer type is unknown
+#[derive(Debug)]
+struct MaybeMapInfoTypeEntry(Option<MapInfoTypeEntry>);
+
 #[derive(Debug)]
 struct MapInfoLayer {
     map_info_type: MapInfoType,
@@ -53,28 +57,30 @@ struct MapInfoLayer {
     colorize: bool,
 }
 
-impl<'de> Deserialize<'de> for MapInfoTypeEntry {
+impl<'de> Deserialize<'de> for MaybeMapInfoTypeEntry {
     fn deserialize<D>(deserializer: D) -> Result<Self, D::Error>
     where
         D: Deserializer<'de>,
     {
         let raw: Vec<String> = Vec::deserialize(deserializer)?;
 
-        if let Some((first, rest)) = raw.split_first() {
-            let map_info_type =
-                MapInfoType::try_from(first.as_str()).map_err(serde::de::Error::custom)?;
-            Ok(MapInfoTypeEntry(
-                map_info_type,
-                match map_info_type {
-                    MapInfoType::Outline => process_map_info_outline_entries(rest),
-                    MapInfoType::Room => process_map_info_room_entries(rest),
-                    MapInfoType::BlockLine => process_map_info_room_entries(rest),
-                    MapInfoType::Unknown5 => Vec::new(),
-                },
-            ))
-        } else {
-            Err(serde::de::Error::custom("Empty map info entry"))
-        }
+        let Some((first, rest)) = raw.split_first() else {
+            return Err(serde::de::Error::custom("Empty map info entry"));
+        };
+
+        let Ok(map_info_type) = MapInfoType::try_from(first.as_str()) else {
+            return Ok(MaybeMapInfoTypeEntry(None));
+        };
+
+        Ok(MaybeMapInfoTypeEntry(Some(MapInfoTypeEntry(
+            map_info_type,
+            match map_info_type {
+                MapInfoType::Outline => process_map_info_outline_entries(rest),
+                MapInfoType::Room => process_map_info_room_entries(rest),
+                MapInfoType::BlockLine => process_map_info_room_entries(rest),
+                MapInfoType::Unknown5 => Vec::new(),
+            },
+        ))))
     }
 }
 
@@ -214,13 +220,16 @@ impl MapInfo {
     fn set(&mut self, base64_data: String) -> PyResult<()> {
         let raw = decompress_base64_data(&base64_data)
             .map_err(|err| PyValueError::new_err(err.to_string()))?;
-        let entries: Vec<MapInfoTypeEntry> = serde_json::from_slice(&raw)
+        let entries: Vec<MaybeMapInfoTypeEntry> = serde_json::from_slice(&raw)
             .map_err(|err| PyValueError::new_err(format!("Invalid map info: {err}")))?;
-        entries.into_iter().for_each(|MapInfoTypeEntry(t, v)| {
-            if !v.is_empty() {
-                self.data.insert(t, v);
-            }
-        });
+        entries
+            .into_iter()
+            .filter_map(|MaybeMapInfoTypeEntry(entry)| entry)
+            .for_each(|MapInfoTypeEntry(t, v)| {
+                if !v.is_empty() {
+                    self.data.insert(t, v);
+                }
+            });
         Ok(())
     }
 }
@@ -364,11 +373,49 @@ mod tests {
     #[test]
     fn test_deserialize_empty_entry() {
         let data = "[[],[\"1\"]]".as_bytes();
-        let entries: serde_json::Result<Vec<MapInfoTypeEntry>> = serde_json::from_slice(data);
+        let entries: serde_json::Result<Vec<MaybeMapInfoTypeEntry>> = serde_json::from_slice(data);
         assert!(entries.is_err());
         assert_eq!(
             entries.unwrap_err().to_string(),
             "Empty map info entry at line 1 column 4"
         );
+    }
+
+    #[rstest]
+    #[case("3")]
+    #[case("4")]
+    #[case("7")]
+    #[case("99")]
+    #[case("unexpected")]
+    fn test_deserialize_skips_unknown_type(#[case] unknown_type: &str) {
+        let data =
+            format!("[[\"1\",\"0;0,0,2;100,0,2;100,100,2\"],[\"{unknown_type}\",\"1;5,5;6,6\"]]");
+        let entries: Vec<MaybeMapInfoTypeEntry> =
+            serde_json::from_slice(data.as_bytes()).expect("unknown type must not fail parsing");
+
+        let known: Vec<MapInfoTypeEntry> = entries.into_iter().filter_map(|e| e.0).collect();
+        assert_eq!(known.len(), 1);
+        assert_eq!(known[0].0, MapInfoType::Outline);
+    }
+
+    #[test]
+    fn test_set_keeps_known_layers_alongside_unknown() {
+        let mut map_info = MapInfo::new();
+        let entries: Vec<MaybeMapInfoTypeEntry> = serde_json::from_slice(
+            b"[[\"1\",\"0;0,0,2;100,0,2;100,100,2\"],[\"7\",\"1;5,5;6,6\"],[\"2\",\"1;0,0;50,0;50,50\"]]",
+        )
+        .expect("unknown type must not fail parsing");
+        entries
+            .into_iter()
+            .filter_map(|MaybeMapInfoTypeEntry(entry)| entry)
+            .for_each(|MapInfoTypeEntry(t, v)| {
+                if !v.is_empty() {
+                    map_info.data.insert(t, v);
+                }
+            });
+
+        assert!(map_info.data.contains_key(&MapInfoType::Outline));
+        assert!(map_info.data.contains_key(&MapInfoType::Room));
+        assert_eq!(map_info.data.len(), 2);
     }
 }
