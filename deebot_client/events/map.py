@@ -49,6 +49,77 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MowerMapTraceSegment:
+    """One contiguous run of mower trace points.
+
+    ``raw`` keeps the original firmware segment string so downstream
+    consumers can re-check assumptions about the leading marker and the
+    ``x,y`` field split as the format is reverse-engineered further.
+    """
+
+    points: list[tuple[int, int]]
+    raw: str | None = None
+
+
+@dataclass(frozen=True)
+class MowerMapTraceGroup:
+    """One group of related mower trace segments.
+
+    Group identifiers carry semantic meaning in the firmware payload
+    (zone / layer / cycle) and are preserved here rather than flattened.
+    """
+
+    group_id: str
+    segments: list[MowerMapTraceSegment]
+
+
+@dataclass(frozen=True)
+class MowerStaticMapEvent(Event):
+    """Static mower geometry using the common group/segment representation."""
+
+    mid: str
+    groups: list[MowerMapTraceGroup]
+    step_size: int
+
+
+@dataclass(frozen=True)
+class MowerWorkArea:
+    """One named mower work area in the registered static-map coordinates."""
+
+    name: str
+    geometry: MowerMapTraceGroup
+
+
+@dataclass(frozen=True)
+class MowerWorkAreasEvent(Event):
+    """Complete work-area snapshot registered into the static-map coordinates."""
+
+    mid: str
+    areas: list[MowerWorkArea]
+    step_size: int
+
+
+@dataclass(frozen=True)
+class MowerMapTraceEvent(Event):
+    """Mower trace event preserving group and segment boundaries.
+
+    Distinct from :class:`MapTraceEvent` (vacuum flat polyline). The same
+    ``OnMapTrace`` handler also emits a flattened :class:`MapTraceEvent`
+    so the legacy Rust ``Map`` renderer (vacuum stack) keeps working.
+
+    The compressed firmware stream is reassembled across ``index`` chunks
+    before this event is emitted, so a single event corresponds to one
+    complete payload — never a partial slice.
+    """
+
+    mid: str
+    batid: str
+    serial: str
+    type: str
+    groups: list[MowerMapTraceGroup]
+
+
+@dataclass(frozen=True)
 class MapInfoEvent(Event):
     """Map info event representation."""
 
