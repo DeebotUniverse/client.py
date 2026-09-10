@@ -116,6 +116,7 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
                 area=2889500,
                 time=11269,
                 type=None,
+                mowed_area=1005475,
             ),
         ),
     ],

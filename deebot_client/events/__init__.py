@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from enum import IntEnum, unique
 from typing import TYPE_CHECKING, Any
 
@@ -189,6 +189,7 @@ class StatsEvent(Event):
     area: int | None
     time: int | None
     type: str | None
+    mowed_area: int | None = field(default=None, kw_only=True)
 
 
 @dataclass(frozen=True)
