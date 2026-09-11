@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 import logging
 from typing import TYPE_CHECKING
 from unittest.mock import AsyncMock, Mock
@@ -32,6 +33,8 @@ from .fixtures.mqtt_server import MqttServer
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator, Generator
+
+    from deebot_client.capabilities import Capabilities
 
 
 @pytest.fixture
@@ -176,6 +179,18 @@ def event_bus(execute_mock: AsyncMock, device_info: DeviceInfo) -> EventBus:
 @pytest.fixture
 def event_bus_mock(event_bus: EventBus) -> Mock:
     return Mock(spec_set=EventBus, wraps=event_bus)
+
+
+def get_capabilities() -> Capabilities:
+    """Get capabilities for testing."""
+
+    async def _get() -> Capabilities:
+        info = await get_static_device_info("yna5xi")
+        assert info is not None
+        return info.capabilities
+
+    # Run in a new event loop
+    return asyncio.run(_get())
 
 
 @pytest.fixture(name="caplog")
