@@ -596,6 +596,28 @@ async def test_getMapTrace() -> None:
     )
 
 
+async def test_getMapTrace_empty_frame() -> None:
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "batid": "31554",
+                "serial": 0,
+                "index": 0,
+                "mid": "453392179",
+                "type": "",
+                "infoSize": 0,
+                "info": "",
+            }
+        )
+    )
+    await assert_command(
+        GetMapTrace(),
+        json,
+        (firmware_event,),
+        handling_result=HandlingResult.success(),
+    )
+
+
 async def test_getMapInfoV2() -> None:
     mid = "98100521"
     info = "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4="
