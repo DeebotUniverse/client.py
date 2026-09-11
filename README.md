@@ -44,6 +44,7 @@ from deebot_client.events import BatteryEvent
 from deebot_client.mqtt_client import MqttClient, create_mqtt_config
 from deebot_client.util import md5
 from deebot_client.device import Device
+from deebot_client.commands.json.charge import Charge
 
 device_id = md5(str(time.time()))
 account_id = "your email or phonenumber (cn)"
