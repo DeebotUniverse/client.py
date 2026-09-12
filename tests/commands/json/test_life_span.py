@@ -7,6 +7,7 @@ import pytest
 from deebot_client.commands.json import GetLifeSpan
 from deebot_client.commands.json.life_span import ResetLifeSpan
 from deebot_client.events import FirmwareEvent, LifeSpan, LifeSpanEvent
+from deebot_client.message import HandlingResult, HandlingState
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command, assert_execute_command
@@ -195,6 +196,54 @@ from . import assert_command, assert_execute_command
             ),
             (LifeSpanEvent(LifeSpan.SEWAGE_BOX, 100.0, 3600),),
         ),
+        (
+            GetLifeSpan({LifeSpan.BRUSH}),
+            get_request_json(
+                get_success_body(
+                    [
+                        {"type": "brandNewComponent", "left": 1, "total": 2},
+                        {"type": "brush", "left": 17979, "total": 18000},
+                    ]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.BRUSH}),
+            get_request_json(
+                get_success_body(
+                    [
+                        {"left": 1, "total": 2},
+                        {"type": "brush", "left": 17979, "total": 18000},
+                    ]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.BRUSH}),
+            get_request_json(
+                get_success_body(
+                    [
+                        "not-a-dict",
+                        {"type": "brush", "left": 17979, "total": 18000},
+                    ]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.BRUSH}),
+            get_request_json(
+                get_success_body(
+                    [
+                        {"type": "brush", "left": 1},
+                        {"type": "brush", "left": 17979, "total": 18000},
+                    ]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.BRUSH, 99.88, 17979),),
+        ),
     ],
 )
 async def test_GetLifeSpan(
@@ -204,6 +253,20 @@ async def test_GetLifeSpan(
 ) -> None:
     json, firmware_event = data
     await assert_command(command, json, (firmware_event, *expected))
+
+
+async def test_GetLifeSpan_total_not_positive() -> None:
+    """A non-positive total is still reported as an error, not silently skipped."""
+    command = GetLifeSpan({LifeSpan.BRUSH})
+    json, firmware_event = get_request_json(
+        get_success_body([{"type": "brush", "left": 10, "total": 0}])
+    )
+    await assert_command(
+        command,
+        json,
+        (firmware_event,),
+        handling_result=HandlingResult(HandlingState.ERROR),
+    )
 
 
 @pytest.mark.parametrize(
