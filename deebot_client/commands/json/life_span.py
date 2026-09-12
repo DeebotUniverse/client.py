@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 
 from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHandling
@@ -14,6 +15,8 @@ from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHa
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.util import LST
+
+_LOGGER = get_logger(__name__)
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
@@ -27,16 +30,22 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 
     @classmethod
     def _handle_body_data_list(
-        cls, event_bus: EventBus, data: list[dict[str, Any]]
+        cls, event_bus: EventBus, data: list[Any]
     ) -> HandlingResult:
         """Handle message->body->data and notify the correct event subscribers.
 
         :return: A message response
         """
         for component in data:
-            component_type = LifeSpan(component["type"])
-            left = int(component["left"])
-            total = int(component["total"])
+            try:
+                component_type = LifeSpan(component["type"])
+                left = int(component["left"])
+                total = int(component["total"])
+            except (KeyError, TypeError, ValueError):
+                # A missing, unknown or malformed component must not discard
+                # the whole batch.
+                _LOGGER.warning("Skipping life span component: %s", component)
+                continue
 
             if total <= 0:
                 raise ValueError("total not positive!")
