@@ -81,11 +81,17 @@ class SetWaterInfo(JsonSetCommand):
             params["amount"] = amount.value
         elif custom_amount is not None:
             params["customAmount"] = custom_amount
-        else:
-            raise ValueError("Either amount or custom_amount must be provided.")
+        elif sweep_type is None:
+            # sweep_type alone is a valid command (mop mode without a flow change)
+            raise ValueError(
+                "Either amount, custom_amount or sweep_type must be provided."
+            )
 
-        if sweep_type:
+        if sweep_type is not None:
             if isinstance(sweep_type, str):
                 sweep_type = get_enum(SweepType, sweep_type)
+            elif not isinstance(sweep_type, SweepType):
+                msg = f"'{sweep_type}' is not a valid SweepType member"
+                raise ValueError(msg)
             params["sweepType"] = sweep_type.value
         super().__init__(params)
