@@ -257,6 +257,14 @@ class CapabilityWater:
         | CapabilityNumber[water_info.WaterCustomAmountEvent, [int]]
     )
     mop_attached: CapabilityEvent[water_info.MopAttachedEvent]
+    sweep_type: (
+        CapabilitySetTypes[
+            water_info.WaterSweepTypeEvent,
+            [water_info.SweepType | str],
+            water_info.SweepType,
+        ]
+        | None
+    ) = None
 
 
 @dataclass(frozen=True, kw_only=True)
