@@ -114,7 +114,13 @@ class EventBus:
 
         return unsubscribe
 
-    def notify(self, event: T, *, debounce_time: float = 0) -> None:
+    def notify(
+        self,
+        event: T,
+        *,
+        debounce_time: float = 0,
+        allow_docked_to_idle: bool = False,
+    ) -> None:
         """Notify subscriber with given event representation."""
         event_processing_data = self._get_or_create_event_processing_data(type(event))
 
@@ -132,6 +138,7 @@ class EventBus:
                 and event.state == State.IDLE
                 and event_processing_data.last_event
                 and event_processing_data.last_event.state == State.DOCKED  # type: ignore[attr-defined]
+                and not allow_docked_to_idle
             ):
                 # TODO distinguish better between docked and idle and outside event bus.
                 # Problem getCleanInfo will return state=idle, when bot is charging

@@ -1,0 +1,163 @@
+{
+  "messages": [
+    {
+      "message_name": "onWorkState",
+      "payload": {
+        "body": {
+          "data": {
+            "paused": 0,
+            "robotState": {"state": "moving", "trigger": "app"},
+            "stationState": {"state": "idle", "trigger": "app"}
+          }
+        },
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387000257",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onChargeState",
+      "payload": {
+        "body": {"data": {"chargeRate": 3, "isCharging": 0, "mode": "autoEmpty"}},
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387003406",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onChargeState",
+      "payload": {
+        "body": {"data": {"chargeRate": 0, "isCharging": 0, "mode": "autoEmpty"}},
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387003412",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onWorkState",
+      "payload": {
+        "body": {
+          "data": {
+            "paused": 0,
+            "robotState": {"state": "idle", "trigger": "app"},
+            "stationState": {"state": "idle", "trigger": "app"}
+          }
+        },
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387019090",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onWorkState",
+      "payload": {
+        "body": {
+          "data": {
+            "paused": 0,
+            "robotState": {"state": "idle", "trigger": "app"},
+            "stationState": {"state": "goCharging", "trigger": "app"}
+          }
+        },
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387067378",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onChargeState",
+      "payload": {
+        "body": {"data": {"chargeRate": 0, "isCharging": 2, "mode": "autoEmpty"}},
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387090227",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onChargeState",
+      "payload": {
+        "body": {"data": {"chargeRate": 0, "isCharging": 1, "mode": "autoEmpty"}},
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387090283",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onWorkState",
+      "payload": {
+        "body": {
+          "data": {
+            "paused": 0,
+            "robotState": {"state": "idle", "trigger": "app"},
+            "stationState": {"state": "idle", "trigger": "app"}
+          }
+        },
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387091645",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    },
+    {
+      "message_name": "onChargeState",
+      "payload": {
+        "body": {"data": {"chargeRate": 3, "isCharging": 1, "mode": "autoEmpty"}},
+        "header": {
+          "fwVer": "1.84.0",
+          "hwVer": "0.1.1",
+          "pri": 1,
+          "ts": "1789387096392",
+          "tzm": 600,
+          "ver": "0.0.1",
+          "wkVer": "0.1.54"
+        }
+      }
+    }
+  ]
+}
