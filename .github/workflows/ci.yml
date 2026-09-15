@@ -240,6 +240,10 @@ jobs:
         if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
         run: |
           (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
+      - run: rustup toolchain install stable --profile minimal
+      - uses: Swatinem/rust-cache@f13886b937689c021905a6b90929199931d60db1 # v2.8.1
+        with:
+          key: ${{ runner.os }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -248,6 +252,7 @@ jobs:
           sccache: "false"
           manylinux: ${{ matrix.manylinux }}
           before-script-linux: python3 -m ensurepip
+          docker-options: -v ${{ runner.home }}/.cargo:/root/.cargo
       - name: Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
@@ -310,6 +315,16 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      - name: Setup Rust cache directory
+        run: mkdir -p ${{ runner.temp }}/cargo-cache
+      - name: Cache Rust dependencies
+        uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4.3.0
+        with:
+          path: ${{ runner.temp }}/cargo-cache
+          key: musllinux-${{ matrix.target }}-${{ matrix.python-version }}-${{ hashFiles('Cargo.lock') }}
+          restore-keys: |
+            musllinux-${{ matrix.target }}-${{ matrix.python-version }}-
+            musllinux-${{ matrix.target }}-
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
@@ -317,6 +332,7 @@ jobs:
           args: --release --strip --out dist -i python${{ matrix.python-version }}
           sccache: "false"
           manylinux: musllinux_1_2
+          docker-options: -v ${{ runner.temp }}/cargo-cache:/root/.cargo
       - name: Upload wheels
         uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a # v7.0.1
         with:
