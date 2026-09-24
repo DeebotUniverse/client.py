@@ -11,7 +11,11 @@ from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
+from .charge_appsvr import ChargeAppSvr
 from .charge_state import GetChargeState
+from .clean_appsvr import CleanAppSvr
+from .combined_status import GetCombinedStatus
+from .fan_speed_ngiot import SetFanSpeedNgiot
 from .child_lock import GetChildLock, SetChildLock
 from .clean import Clean, CleanArea, CleanV2, GetCleanInfo, GetCleanInfoV2
 from .clean_count import GetCleanCount, SetCleanCount
@@ -60,7 +64,9 @@ if TYPE_CHECKING:
 
 __all__ = [
     "Charge",
+    "ChargeAppSvr",
     "Clean",
+    "CleanAppSvr",
     "CleanArea",
     "CleanV2",
     "ClearMap",
@@ -79,6 +85,7 @@ __all__ = [
     "GetCleanPreference",
     "GetContinuousCleaning",
     "GetCrossMapBorderWarning",
+    "GetCombinedStatus",
     "GetCutDirection",
     "GetEfficiencyMode",
     "GetError",
@@ -121,6 +128,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetFanSpeedNgiot",
     "SetMajorMap",
     "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
@@ -165,8 +173,13 @@ _COMMANDS: list[type[JsonCommand]] = [
     ClearMap,
 
     Charge,
+    ChargeAppSvr,
 
     GetChargeState,
+
+    CleanAppSvr,
+
+    GetCombinedStatus,
 
     GetChildLock,
     SetChildLock,
@@ -193,6 +206,7 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetFanSpeed,
     SetFanSpeed,
+    SetFanSpeedNgiot,
 
     GetLifeSpan,
     ResetLifeSpan,
