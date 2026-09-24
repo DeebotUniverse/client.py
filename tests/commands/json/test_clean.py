@@ -14,7 +14,8 @@ from deebot_client.commands.json.clean import (
     GetCleanInfoV2,
 )
 from deebot_client.event_bus import EventBus
-from deebot_client.events import FirmwareEvent, StateEvent
+from deebot_client.events import FirmwareEvent, StateEvent, StationEvent
+from deebot_client.events.station import State as StationState
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 from tests.helpers import get_request_json, get_success_body
 
@@ -30,12 +31,12 @@ if TYPE_CHECKING:
         (
             GetCleanInfo,
             get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
-            StateEvent(State.IDLE),
+            (StateEvent(State.IDLE),),
         ),
         (
             GetCleanInfoV2,
             get_request_json(get_success_body({"trigger": "none", "state": "idle"})),
-            StateEvent(State.IDLE),
+            (StateEvent(State.IDLE),),
         ),
         (
             GetCleanInfoV2,
@@ -54,17 +55,20 @@ if TYPE_CHECKING:
                     }
                 )
             ),
-            StateEvent(State.PAUSED),
+            (
+                StationEvent(StationState.WASHING_MOP),
+                StateEvent(State.PAUSED),
+            ),
         ),
     ],
 )
 async def test_GetCleanInfo(
     command: type[GetCleanInfo],
     data: tuple[dict[str, Any], FirmwareEvent],
-    expected: StateEvent,
+    expected: tuple[StateEvent | StationEvent, ...],
 ) -> None:
     json, firmware_event = data
-    await assert_command(command(), json, (firmware_event, expected))
+    await assert_command(command(), json, (firmware_event, *expected))
 
 
 @pytest.mark.parametrize("command_type", [Clean, CleanV2])
