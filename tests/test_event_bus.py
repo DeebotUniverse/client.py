@@ -135,6 +135,42 @@ async def test_request_refresh(execute_mock: AsyncMock, event_bus: EventBus) -> 
     _verify_event_command_called(execute_mock, event, event_bus, expected_call=True)
 
 
+@pytest.mark.parametrize("queue_if_busy", [False, True])
+async def test_refresh_during_in_flight_query(
+    execute_mock: AsyncMock, event_bus: EventBus, queue_if_busy: bool
+) -> None:
+    """Coalesce requested follow-ups without changing default refresh behavior."""
+    started = asyncio.Event()
+    release = asyncio.Event()
+    completed = asyncio.Event()
+    calls = 0
+
+    async def execute(_command: object) -> None:
+        nonlocal calls
+        calls += 1
+        if calls == 1:
+            started.set()
+            await release.wait()
+        else:
+            completed.set()
+
+    execute_mock.side_effect = execute
+    unsubscribe = event_bus.subscribe(BatteryEvent, AsyncMock())
+    try:
+        await asyncio.wait_for(started.wait(), 1)
+        for _ in range(3):
+            event_bus.request_refresh(BatteryEvent, queue_if_busy=queue_if_busy)
+        await asyncio.sleep(0)
+        release.set()
+        if queue_if_busy:
+            await asyncio.wait_for(completed.wait(), 1)
+        await asyncio.sleep(0)
+        assert calls == (2 if queue_if_busy else 1)
+    finally:
+        unsubscribe()
+        await event_bus.teardown()
+
+
 @pytest.mark.parametrize(
     ("last", "actual", "expected"),
     [

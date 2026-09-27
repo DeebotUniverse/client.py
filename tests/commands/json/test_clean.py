@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, cast
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 import pytest
 
@@ -243,3 +243,28 @@ def test_CleanAreaMower_keeps_type_without_value(
 
     assert command.NAME == "clean"
     assert command._get_args(action) == args
+
+
+@pytest.mark.parametrize("command_type", [CleanMower, Clean, CleanV2])
+@pytest.mark.parametrize("action", list(CleanAction))
+@pytest.mark.parametrize("code", [0, 20003])
+async def test_clean_ack_refreshes_only_mower_activity(
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
+    event_bus: EventBus,
+    command_type: type[Clean],
+    action: CleanAction,
+    code: int,
+) -> None:
+    cast("Mock", authenticator.post_authenticated).return_value = {
+        "ret": "ok",
+        "resp": {"body": {"code": code}},
+    }
+    event_bus.notify(StateEvent(State.ERROR))
+    with patch.object(event_bus, "request_refresh") as refresh:
+        await command_type(action).execute(authenticator, api_device_info, event_bus)
+        if command_type is CleanMower and code == 0:
+            refresh.assert_called_once_with(StateEvent, queue_if_busy=True)
+        else:
+            refresh.assert_not_called()
+        assert event_bus.get_last_event(StateEvent) == StateEvent(State.ERROR)
