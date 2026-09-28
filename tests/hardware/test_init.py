@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import importlib
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -87,7 +88,7 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware.r8ead0 import get_device_info as get_r8ead0_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanAction, StaticDeviceInfo
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
@@ -279,3 +280,38 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
+
+
+def test_7fpaed_clean_actions() -> None:
+    """Test DEEBOT T90 OMNI clean action serialization."""
+    module = importlib.import_module("deebot_client.hardware.7fpaed")
+    info = module.get_device_info()
+
+    command = info.capabilities.clean.action.command
+    start = command(CleanAction.START)
+    assert start._args == {
+        "act": "start",
+        "content": {"type": "auto"},
+        "noVoiceResp": 0,
+    }
+    start_payload = start._get_payload()
+    assert isinstance(start_payload, dict)
+    assert start_payload["header"]["channel"] == "ROP"
+    assert start_payload["header"]["ver"] == 0.1
+    assert start_payload["header"]["priority"] == 1
+    assert start_payload["body"] == {"data": start._args}
+    assert command(CleanAction.PAUSE)._args == {
+        "act": "pause",
+        "content": {"type": "auto"},
+        "noVoiceResp": 0,
+    }
+    assert command(CleanAction.RESUME)._args == {
+        "act": "resume",
+        "content": {"type": "auto"},
+        "noVoiceResp": 0,
+    }
+    stop = command(CleanAction.STOP)
+    assert stop._args == {"act": "stop"}
+    stop_payload = stop._get_payload()
+    assert isinstance(stop_payload, dict)
+    assert stop_payload["header"]["ver"] == "0.0.50"
