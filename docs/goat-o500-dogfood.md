@@ -1,10 +1,50 @@
 # GOAT O500: Home Assistant deployment and live checks
 
-Home Assistant could show that a mowing command had succeeded even when the GOAT O500 did nothing, and it could keep showing an old error after the mower recovered. The integration was using an unsupported command for reading the mower's activity and was missing some of the mower's status messages. This update uses the O500's supported commands, reads its actual activity after accepted controls and cleared faults, and handles the missing status messages. Automated tests pass; the final check is to install this revision on the Home Assistant server and confirm that Lawna2 responds and reports its state correctly.
+Home Assistant could show that a mowing command had succeeded even when the GOAT O500 did nothing, and it could keep showing an old error after the mower recovered. The integration was using an unsupported command for reading the mower's activity and was missing some of the mower's status messages. This update uses the O500's supported commands, reads its actual activity after accepted controls and cleared faults, and handles the missing status messages. Mike confirmed start, pause, resume and docking on Lawna2 in daylight on 28 September 2026 using the nine-file overlay from `f2d53716f20d9bdcf1c0fa6fc1bc7ab15bc51d14`. The live evidence and its limits are recorded below.
 
 This is a patch for supervised dogfood, not an upstream or PyPI release. The
 upstream contribution is draft
 [PR 1847](https://github.com/DeebotUniverse/client.py/pull/1847).
+
+## Confirmed daylight dogfood: 28 September 2026
+
+Mike reported the following supervised run on the Isle of Man at approximately
+16:17-16:25 BST, after Home Assistant recovered from a house power cut.
+
+- Device: Ecovacs GOAT O500 Panorama, hardware class `300lc5`, Lawna2
+  (`lawn_mower.lawna2`).
+- Runtime: HA Core with the installed package still reporting
+  `deebot-client==18.5.1`; the complete nine-file Python overlay listed below
+  came from [`f2d53716f20d9bdcf1c0fa6fc1bc7ab15bc51d14`](https://github.com/MikeWGitHub/client.py/commit/f2d53716f20d9bdcf1c0fa6fc1bc7ab15bc51d14).
+  The existing native `deebot_client.rs` extension was retained.
+- JSON header version remained `0.0.50` throughout this run.
+
+| HA action | Reported live result |
+| --- | --- |
+| `lawn_mower.start_mowing` | HTTP 200, then HA showed `mowing`; the Ecovacs app confirmed the mower was off dock and cutting, not merely beeping. |
+| Pause | HA and the app agreed that the mower was paused. |
+| Resume via `lawn_mower.start_mowing` | Mowing resumed, with app confirmation. |
+| Dock | Activity changed to `returning`, then `docked`, at about 67% battery. |
+
+An HA HTTP 200 alone is insufficient evidence of success. This run adds
+reported activity transitions and app confirmation of actual mowing. It
+confirms the start/pause/resume/dock path in this local overlay setup; it does
+not claim a captured raw protocol response for each action, a separate stop or
+spot-area test, or fault-clear/scheduled-message validation.
+
+Night tests are excluded from the success evidence: Ecovacs refused operation
+with insufficient light / weak GPS reports. This daylight result validates
+`0.0.50` in the tested setup; no `0.0.22` override was needed.
+
+The house source of truth remains
+[`MikeWGitHub/client.py` on `cursor/goat-o500-clean-commands-e8d8`](https://github.com/MikeWGitHub/client.py/tree/cursor/goat-o500-clean-commands-e8d8),
+with the live overlay pinned to the tested commit above. Recording these
+results does not change the live HA overlay, switch its installation source,
+or merge either PR. Upstream
+[PR 1847](https://github.com/DeebotUniverse/client.py/pull/1847) and
+[fork PR 1](https://github.com/MikeWGitHub/client.py/pull/1) must contain the
+tested commit or a strict successor containing only review polish before
+being marked ready for review.
 
 ## What is included
 
@@ -125,7 +165,7 @@ asyncio.run(check())
 The expected header version in this revision is still `0.0.50`. Changing it
 silently would invalidate the comparison below.
 
-## Live acceptance checks for Lawna2
+## Repeatable live acceptance checks for Lawna2
 
 Deploying and checking imports is separate from operating the mower. Coordinate
 the physical command sequence with Mike. Record timestamps and compare the HA
@@ -154,13 +194,19 @@ the test window. Redact account tokens, identifiers and network details before
 sharing. Report the ordered command/event sequence, not just the final entity
 snapshot, then restore the previous log levels.
 
-## What remains conditional
+## Optional follow-ups and evidence limits
 
-Header version is not resolved by the existing evidence. The original O500 iOS
-capture uses `0.0.50`, while later O500 reports associate `0.0.22` with successful
-controls. If the unchanged request returns 20003, report that response first;
-an otherwise identical mower-only version comparison is the next experiment.
-Do not change the shared vacuum header or rewrite all header fields at once.
+The daylight run above succeeded with header `0.0.50`. It does not establish
+compatibility for every firmware or transport. A mower-only `0.0.22`
+comparison is an optional later experiment if a reproducible rejection such
+as 20003 occurs; document the `0.0.50` result first. Do not change the shared
+vacuum header or rewrite all header fields at once.
+
+Ghost area/duration values and sticky error latching remain optional follow-ups,
+not blockers for the confirmed start/pause/resume/dock result. No fault-clear
+test is claimed for this run. After a Core update or rebuild, the established
+overlay may need to be re-applied and its imports/hashes rechecked; this note
+does not authorize changing the live installation.
 
 An ACK followed by stale activity needs event/readback investigation instead.
 An old battery timestamp alone does not establish whether updates stopped,
@@ -176,6 +222,7 @@ If imports or basic entity updates regress, restore the saved overlay files,
 remove the new modules if they were previously absent, restart HA Core and
 verify the previous revision. Report the SHA and failing check before retrying.
 
-Keep PR 1847 draft until the live results are recorded. The handoff is ready for
-deployment testing; automated tests alone do not establish physical mower
-control.
+The confirmed daylight results are now recorded. Keep PR 1847 draft pending
+review preparation, including verification that its tip is the tested commit
+or a strict successor containing only review polish. This guide adds evidence;
+it does not change runtime code or the installation source.
