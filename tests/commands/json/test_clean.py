@@ -268,3 +268,40 @@ async def test_clean_ack_refreshes_only_mower_activity(
         else:
             refresh.assert_not_called()
         assert event_bus.get_last_event(StateEvent) == StateEvent(State.ERROR)
+
+
+@pytest.mark.parametrize(
+    ("state", "sent"),
+    [(State.PAUSED, "resume"), (State.IDLE, "start"), (State.ERROR, "start")],
+)
+@pytest.mark.parametrize("code", [0, 20003])
+async def test_mower_start_diagnostics_show_requested_and_sent_action(
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
+    event_bus: EventBus,
+    caplog: pytest.LogCaptureFixture,
+    state: State,
+    sent: str,
+    code: int,
+) -> None:
+    """Distinguish HA's ambiguous paused label from the action actually sent."""
+    cast("Mock", authenticator.post_authenticated).return_value = {
+        "ret": "ok",
+        "resp": {"body": {"code": code}},
+    }
+    event_bus.notify(StateEvent(state))
+    await CleanMower(CleanAction.START).execute(
+        authenticator, api_device_info, event_bus
+    )
+    posted = cast("Mock", authenticator.post_authenticated).call_args
+    assert posted.args[1]["payload"]["body"]["data"] == {
+        "act": sent,
+        "content": {"type": "auto"},
+    }
+    assert (
+        f"Mower clean request: action=start, cached_state={state.name}" in caplog.text
+    )
+    expected = "SUCCESS" if code == 0 else "FAILED"
+    assert f"Mower clean result: sent_action={sent}, handling={expected}" in caplog.text
+    # Diagnostics and an ACK must not pretend the mower changed its activity.
+    assert event_bus.get_last_event(StateEvent) == StateEvent(state)

@@ -6,6 +6,14 @@ This is a patch for supervised dogfood, not an upstream or PyPI release. The
 upstream contribution is draft
 [PR 1847](https://github.com/DeebotUniverse/client.py/pull/1847).
 
+**29 September follow-up:** Mike subsequently reported a morning error and an
+offline mower, then confirmed Lawna2 was physically stuck and had been manually
+docked and was charging. See the [follow-up investigation](goat-o500-follow-up-2026-09-29.md)
+for the evidence, a small charging-state reporting fix, and the next retest.
+The historical nine-file overlay and successful run below remain the baseline;
+the new candidate needs ten runtime files and has not been dogfooded. Keep the
+upstream PR draft. The earlier success does not establish unattended reliability.
+
 ## Confirmed daylight dogfood: 28 September 2026
 
 Mike reported the following supervised run on the Isle of Man at approximately

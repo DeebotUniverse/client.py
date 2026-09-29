@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.json.clean_info import OnCleanInfo
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
@@ -14,6 +15,8 @@ from .common import ExecuteCommand, JsonCommandWithMessageHandling
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
+
+_LOGGER = get_logger(__name__)
 
 
 class Clean(ExecuteCommand):
@@ -106,7 +109,18 @@ class CleanMower(Clean):
         device_info: ApiDeviceInfo,
         event_bus: EventBus,
     ) -> tuple[HandlingResult, dict[str, Any]]:
+        state = event_bus.get_last_event(StateEvent)
+        _LOGGER.debug(
+            "Mower clean request: action=%s, cached_state=%s",
+            self._args.get("act") if isinstance(self._args, dict) else None,
+            state.state.name if state else None,
+        )
         result, response = await super()._execute(authenticator, device_info, event_bus)
+        _LOGGER.debug(
+            "Mower clean result: sent_action=%s, handling=%s",
+            self._args.get("act") if isinstance(self._args, dict) else None,
+            result.state.name,
+        )
         if result.state is HandlingState.SUCCESS:
             # An ACK is not an activity update; ask the device what it is doing.
             event_bus.request_refresh(StateEvent, queue_if_busy=True)
