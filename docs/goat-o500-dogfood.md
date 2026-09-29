@@ -10,9 +10,12 @@ upstream contribution is draft
 offline mower, then confirmed Lawna2 was physically stuck and had been manually
 docked and was charging. See the [follow-up investigation](goat-o500-follow-up-2026-09-29.md)
 for the evidence, a small charging-state reporting fix, and the next retest.
-The historical nine-file overlay and successful run below remain the baseline;
-the new candidate needs ten runtime files and has not been dogfooded. Keep the
-upstream PR draft. The earlier success does not establish unattended reliability.
+The historical nine-file overlay and successful run below remain the baseline.
+Grok Bot subsequently reported deploying the ten-file `3132dfb` candidate with
+verified hashes: HA showed stable docked activity and rising battery after the
+restart. No mower commands were tested on that revision. Keep the upstream PR
+draft; neither this recovery nor the earlier control cycle establishes
+unattended reliability.
 
 ## Confirmed daylight dogfood: 28 September 2026
 

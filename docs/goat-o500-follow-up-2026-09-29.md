@@ -2,6 +2,12 @@
 
 Lawna2's controls worked in the supervised daylight test, but the next morning Home Assistant showed an error and the mower later went offline. Mike subsequently found her physically stuck, then manually docked her and confirmed charging. That makes a real device problem a credible explanation; it does not prove when she became stuck or which command moved her. This candidate corrects a separate, reproducible bug that could label certain charging-query failures as “docked”, and adds logs showing whether a start request becomes resume. It preserves the working command format. The morning command failure and later loss of contact have not been reconstructed from raw logs, and this is not a confirmed fix for either.
 
+Mike subsequently relayed Grok Bot's deployment report: `3132dfb` is live, file
+hashes passed after restarting HA Core, and HA then showed stable docking with
+a rising battery level. No mower controls were issued in that test. This is
+deployment and recovery evidence, not a validated control cycle or proof that
+the code change caused recovery; the restart happened at the same time.
+
 ## Revision and evidence
 
 - Proven daylight control revision: `f2d53716f20d9bdcf1c0fa6fc1bc7ab15bc51d14`,
@@ -14,11 +20,37 @@ Lawna2's controls worked in the supervised daylight test, but the next morning H
   “error”; mower and battery later became unavailable at 12:27:12 UTC
   (13:27 BST). These are reported HA observations, not a raw device trace.
 - Mike then confirmed the app also showed offline, that the mower was stuck,
-  and that she was subsequently manually docked and charging. HA's recovery
-  after docking still needs checking.
+  and that she was subsequently manually docked and charging. The later
+  deployment report below records HA's observed recovery.
 - HA itself was reachable during investigation and returned HTTP 401 from its
   API. No authenticated HA session was available here. Live package hashes,
   automation traces, device error codes and MQTT/API logs were not inspected.
+
+## Reported deployment and recovery: 29 September
+
+The following observations were supplied by Grok Bot through Mike. They were
+not independently read from HA or a raw protocol capture in this investigation.
+
+| Period (BST) | Reported observation |
+| --- | --- |
+| Approximately 14:38 | HA briefly alternated between docked and error, then settled on error. |
+| Approximately 14:50–15:01, before deployment | Lawna2 was online and charging; battery rose from 4% to 20%, while HA continued to show error. No start command was sent. |
+| Deployment | Complete ten-file overlay from `3132dfbdecae632deb7d997bbad10b094f91d494`; original native extension retained, package still `deebot-client==18.5.1`, header still `0.0.50`. A rollback backup was taken and post-restart hashes passed. |
+| Approximately 15:03–15:05, after deployment and restart | HA showed stable docked activity and battery rose from 20% to 22%. No mower commands were issued. |
+
+Availability recovered **before** deployment. Activity recovered **after** both
+deployment and restart, so these observations cannot separate a code effect
+from new initial readings, cleared process state, or a changed device report.
+The charging-query correction changes certain false DOCKED reports to ERROR;
+it does not itself clear an old ERROR. Charging alongside HA error also does
+not distinguish an active device fault from a cached or repeated alert without
+the actual error code and incoming messages.
+
+Keep the live runtime pinned to `3132dfb` while gathering the next evidence.
+This record adds documentation only and requires no new overlay installation.
+Supervised start/pause/resume/dock on this revision, continued docked activity,
+and the next morning's ordered command/events remain to be checked. PR 1847
+stays draft; there are no new Start/Resume response traces in this report.
 
 ## What the code establishes
 
@@ -100,7 +132,8 @@ state-recovery behaviour. No live mower commands were sent in this investigation
   formatting checks. Independent review found no further actionable issues.
 - A cold-import check passed using the published 18.5.1 wheel plus exactly the
   ten Python files below and its existing native extension. No Rust build or
-  Docker/MQTT integration test was run. Live candidate validation is pending.
+  Docker/MQTT integration test was run. Live deployment and recovery are now
+  reported above; a control cycle on the candidate remains pending.
 
 ## Fork-only candidate deployment
 
