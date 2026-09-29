@@ -1,6 +1,6 @@
 # GOAT O500 follow-up: 29 September 2026
 
-Lawna2's controls worked in the supervised daylight test, but the next morning Home Assistant showed an error and the mower later went offline. Mike subsequently found her physically stuck, then manually docked her and confirmed charging. That makes a real device problem a credible explanation; it does not prove when she became stuck or which command moved her. This candidate corrects a separate, reproducible bug that could label certain charging-query failures as “docked”, and adds logs showing whether a start request becomes resume. It preserves the working command format. The morning command failure and later loss of contact have not been reconstructed from raw logs, and this is not a confirmed fix for either.
+Lawna2 can mow when Mike presses Continue in the Ecovacs app, but the latest Home Assistant Start attempt still left her showing an error. The deployed update corrects a separate charging-status bug and adds diagnostic logs; it has not fixed this control failure. A local reproduction now shows that a charging report can hide a paused job from the client's Start/Resume decision. That is a concrete weakness in the code, but the failed request and surrounding device messages are still needed to establish whether it caused this incident and how the mower reports an unfinished job. The next change should preserve that job information without hiding genuine faults or mistaking old statistics for work still to do. PR 1847 remains draft.
 
 Mike subsequently relayed Grok Bot's deployment report: `3132dfb` is live, file
 hashes passed after restarting HA Core, and HA then showed stable docking with
@@ -48,9 +48,136 @@ the actual error code and incoming messages.
 
 Keep the live runtime pinned to `3132dfb` while gathering the next evidence.
 This record adds documentation only and requires no new overlay installation.
-Supervised start/pause/resume/dock on this revision, continued docked activity,
-and the next morning's ordered command/events remain to be checked. PR 1847
-stays draft; there are no new Start/Resume response traces in this report.
+The subsequent HA Start attempt failed as reported below. A complete successful
+control cycle on this revision and the next morning's ordered command/events
+remain unverified. PR 1847 stays draft; raw Start/Resume response traces have
+not been supplied for this report.
+
+## Reported HA Start versus app Continue: approximately 15:51–15:54 BST
+
+Grok Bot's next report, relayed by Mike, describes this sequence on `3132dfb`:
+
+| Time (BST) | Reported observation |
+| --- | --- |
+| Approximately 15:51 | HA Start from docked at roughly 35% battery returned HTTP 200, followed by persistent HA error and no successful mowing. |
+| Approximately 15:52 | Mike pressed Continue in the app. HA briefly showed docked at 14:52:00 UTC, then mowing at 14:52:16 UTC. Physical mowing was reported; battery still showed 35%. |
+| 15:54 report | HA remained mowing. Area 400.96 m² and duration 312.75 minutes retained the earlier stale pattern. |
+
+This strengthens the hypothesis that the app and HA choose different actions
+or task parameters. It is not a captured comparison in which only `act` changed:
+the app's complete request, any extra commands, the HA command response and the
+device's task reports are missing. The app button's label does not establish
+the exact wire payload. The earlier physical obstruction remains a separate,
+real observation; neither this comparison nor charging proves fault clearance.
+
+### Reproduced action-selection weakness
+
+At the runtime in `3132dfb`, the following synthetic inputs were replayed through
+the actual clean/charging handlers and command code, using a mock transport.
+They are test inputs, not claimed Lawna2 telemetry:
+
+- Paused task: `{"state":"clean","cleanState":{"motionState":"pause","content":{"type":"auto"}}}`.
+- Charging: `{"isCharging":1}`.
+- No active task for the parser: `{"state":"idle"}`.
+
+| Handler input order | Cached activity | Requested action | Actual clean body |
+| --- | --- | --- | --- |
+| Paused task, then charging | DOCKED | START | `{"act":"start","content":{"type":"auto"}}` |
+| Charging, then paused task | PAUSED | START | `{"act":"resume","content":{"type":"auto"}}` |
+| Paused task, then charging | DOCKED | RESUME | `{"act":"start","content":{"type":"auto"}}` |
+| Idle, then charging | DOCKED | START | `{"act":"start","content":{"type":"auto"}}` |
+
+An independent code review reproduced the ordering effect and the explicit
+RESUME rewrite. It confirms that aggregate activity cannot distinguish a
+charging mower with a paused job from a charging mower without one. It does
+not establish which task report Lawna2 actually sent before the failed Start.
+
+### Smallest defensible patch plan, pending the raw task reports
+
+1. **Retain mower task evidence separately from activity.** In
+   `deebot_client/messages/json/clean_info.py`, the parser currently reduces
+   clean/task reports to `StateEvent` at lines 32–64. Add mower-specific task
+   evidence, with a small event/value definition under `deebot_client/events/`
+   if appropriate, using only fields verified in the O500 capture. Retain task
+   state and any required mode/identity independently of charging. Do not use
+   area, duration or an old aggregate PAUSED event as a pending-job flag.
+2. **Select the mower action from current task evidence.** In
+   `deebot_client/commands/json/clean.py`, `CleanMower._execute` at lines 106–127
+   delegates to the generic conversions at lines 37–48. Give the mower its own
+   selection step: verified resumable task selects RESUME; verified no-task
+   state selects START. Bypass the generic rewrite after selection, and
+   preserve an explicitly requested mower RESUME. Keep vacuum selection intact.
+   Whether an O500 idle report establishes no pending job must be checked from
+   the capture rather than assumed from the current parser.
+3. **Refresh and expire evidence deliberately.** For unknown/stale task context,
+   await a specific `getCleanInfo` response before relying on it. The existing
+   `event_bus.request_refresh` schedules work and is not a completion barrier.
+   A failed or unrecognised reply must remain unknown, not become proof that
+   there is no job. Define invalidation for restart/reconnect, completion,
+   cancellation and task-changing commands; prevent an older query reply from
+   replacing newer task evidence. Verify how reports identify a resumable
+   return-to-charge job rather than assuming every paused history qualifies.
+4. **Preserve genuine faults and command format.** Do not clear errors merely
+   to make a start appear successful, force HA to mowing, or retry every rejected
+   start as resume. Keep `clean`, `content.type` and header `0.0.50`; only change
+   task/mode parameters where captured evidence requires it. An active area
+   job must not silently be resumed as an auto job.
+5. **Add regression coverage before implementation.** Extend
+   `tests/commands/json/test_clean.py`, `tests/messages/json/test_mower_state.py`
+   and, if a new event is used, event tests. Cover both report orders, fresh idle,
+   explicit RESUME, paused-to-idle/completed/cancelled transitions, unknown task
+   context after restart/reconnect, delayed or failed queries, genuine alerts,
+   and unchanged vacuum behaviour. Then run the non-Docker suite and overlay
+   import/hash checks before supplying a new SHA for dogfood.
+
+These are proposed changes, not an implemented fix. A HA Core change is not
+required to correct this client's action selection: its existing Start service
+already delegates that choice to the client. Separately, surfacing client
+command failures through the HA service would make HTTP 200 less misleading.
+
+### Immediate evidence handoff and next dogfood
+
+Ask Grok Bot to preserve the ordered trace from roughly **15:50–15:53 BST
+(14:50–14:53 UTC)** before a reload or another test. Needed evidence:
+
+- The exact `Mower clean request: action=..., cached_state=...` and
+  `Mower clean result: sent_action=..., handling=...` lines.
+- The failed HA `clean` request body and outer/inner API response, followed by
+  `getCleanInfo`, `onCleanInfo`, `onScheduleTaskInfo`, `getChargeState`,
+  `onChargeInfo`, `getError` and `onError` messages, including the most recent
+  clean/task report **before** Start.
+- The successful app Continue's complete command body and any adjacent commands
+  **if captured**. HA logs should not be assumed to contain outbound app requests.
+  If unavailable, say so; the HA response and task reports are still useful.
+
+On the synthetic docked case the current code logs a request with
+`action=start, cached_state=DOCKED` and a result with `sent_action=start`.
+The live handling result is unknown; do not substitute an expected SUCCESS or
+ERROR for the actual line. `handling=SUCCESS` is still not evidence of mowing:
+compare the inner response with following activity/error reports and physical
+movement. If the actual failed request already sent `resume`, revisit the
+action-selection hypothesis before changing code.
+
+No new runtime files have changed in this documentation update, so **do not
+re-overlay merely for this report**. Preserve the live run and collect existing
+logs first. Once a reviewed, tested task-selection candidate exists, provide
+its exact SHA and complete file manifest, including any new event module;
+back up, apply the complete manifest, retain native `rs`/`.so`, restart, and
+verify hashes against that SHA. Do not assume the current ten-file list will
+cover a future new module. Keep package `18.5.1` and header `0.0.50` unchanged.
+
+Then, in supervised daylight with adequate charge and genuine faults addressed:
+
+1. From docked with a **verified pending job**, issue one HA Start; verify the
+   selected resume body, accepted response and actual mowing.
+2. After a verified completed/ended job, test HA Start from docked; verify a
+   fresh start and actual mowing. Do not end the current run just to obtain logs.
+3. Check pause, Start-to-resume and Dock, then check charging and activity again
+   after several minutes. Include a restart with a pending job to test recovery
+   of task evidence without relying on in-memory history.
+4. Preserve the next morning's first command and ordered state/error reports.
+   Keep PR 1847 draft until the exact proposed runtime tip passes the relevant
+   live tests; record any documentation-only difference from that tested SHA.
 
 ## What the code establishes
 
