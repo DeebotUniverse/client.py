@@ -1,8 +1,8 @@
 # GOAT O500 follow-up: 29 September 2026
 
-Lawna2 can mow when Mike presses Continue in the Ecovacs app, but the latest Home Assistant Start attempt still left her showing an error. The deployed update corrects a separate charging-status bug and adds diagnostic logs; it has not fixed this control failure. A local reproduction now shows that a charging report can hide a paused job from the client's Start/Resume decision. That is a concrete weakness in the code, but the failed request and surrounding device messages are still needed to establish whether it caused this incident and how the mower reports an unfinished job. The next change should preserve that job information without hiding genuine faults or mistaking old statistics for work still to do. PR 1847 remains draft.
+Lawna2 can mow when Mike presses Continue in the Ecovacs app, but the latest Home Assistant Start attempt still left her showing an error. The deployed update corrects a separate charging-status bug and adds diagnostic logs; it has not fixed this control failure. A local reproduction now shows that a charging report can hide a paused job from the client's Start/Resume decision. That is a concrete weakness in the code, but the retained live logs contain neither the failed command nor its response, so its role in this incident remains unproven. The next step is one supervised test with logging verified beforehand, after the current mow has finished and Mike agrees to the test. Any subsequent fix must preserve genuine faults and distinguish a current unfinished job from stale history. PR 1847 remains draft.
 
-Mike subsequently relayed Grok Bot's deployment report: `3132dfb` is live, file
+Mike previously relayed Grok Bot's deployment report: `3132dfb` is live, file
 hashes passed after restarting HA Core, and HA then showed stable docking with
 a rising battery level. No mower controls were issued in that test. This is
 deployment and recovery evidence, not a validated control cycle or proof that
@@ -63,8 +63,45 @@ Grok Bot's next report, relayed by Mike, describes this sequence on `3132dfb`:
 | Approximately 15:52 | Mike pressed Continue in the app. HA briefly showed docked at 14:52:00 UTC, then mowing at 14:52:16 UTC. Physical mowing was reported; battery still showed 35%. |
 | 15:54 report | HA remained mowing. Area 400.96 m² and duration 312.75 minutes retained the earlier stale pattern. |
 
-This strengthens the hypothesis that the app and HA choose different actions
-or task parameters. It is not a captured comparison in which only `act` changed:
+Grok Bot subsequently supplied a more precise history/logbook extraction:
+
+| Time (BST) | Reported HA history/logbook entry |
+| --- | --- |
+| 15:45:00 | Docked at the beginning of the examined period. |
+| 15:51:23 | Error, associated with the `lawn_mower.start_mowing` service call. |
+| 15:52:00.884 | Brief mowing state. |
+| 15:52:00.942 | Docked, approximately 58 ms after the preceding state. |
+| 15:52:16 | Sustained mowing, attributed by Mike to app Continue. |
+| 15:52:22 | Area changed from 400.0 to 400.96 m². |
+
+Battery was reported around 32–35% during the transition and later falling
+while physically mowing. The area was therefore not completely frozen, but
+its retained magnitude still does not establish coverage for this run or an
+unfinished job. The brief activity alternation shows state updates; without
+their raw sources it does not establish physical docking, a specific event
+ordering race, or which command succeeded. The current mow was left running.
+
+The retained Core Docker logs contained **no lines for the examined
+15:50–15:53 BST window**, and no `Mower clean request` or `Mower clean result`
+lines anywhere in the retained output. They also lacked the request/response
+and clean/charging/error payloads for the window. Grok Bot reported mostly
+WARNING-level client output after the approximately 15:03 BST Core restart.
+This is consistent with DEBUG output not being captured, but the log-level
+configuration for that minute was not established. Log silence does not prove
+START, RESUME, an absent overlay, an absent device response or fault clearance.
+HA documents that levels set through
+[`logger.set_level`](https://www.home-assistant.io/actions/logger.set_level/)
+reset at restart unless configured persistently. Earlier DEBUG output therefore
+does not establish that DEBUG remained enabled after the overlay restart.
+
+No app Continue request was captured that day. A historical incoming
+`trigger: continue` report from 28 September is not the missing 29 September
+outbound request. The failed action cannot be reconstructed from these logs;
+a new bounded capture is required. Do not keep asking for the missing lines.
+
+The app comparison leaves different actions or task parameters as a plausible
+explanation. The missing logs do not favour START over RESUME. This is not a
+captured comparison in which only `act` changed:
 the app's complete request, any extra commands, the HA command response and the
 device's task reports are missing. The app button's label does not establish
 the exact wire payload. The earlier physical obstruction remains a separate,
@@ -88,11 +125,16 @@ They are test inputs, not claimed Lawna2 telemetry:
 | Idle, then charging | DOCKED | START | `{"act":"start","content":{"type":"auto"}}` |
 
 An independent code review reproduced the ordering effect and the explicit
-RESUME rewrite. It confirms that aggregate activity cannot distinguish a
-charging mower with a paused job from a charging mower without one. It does
-not establish which task report Lawna2 actually sent before the failed Start.
+RESUME rewrite. When charging lands last and leaves DOCKED, aggregate activity
+cannot distinguish the paused-job case from the idle case. With the reverse
+order, PAUSED remains visible, as the table shows. This does not establish which
+task report Lawna2 actually sent before the failed Start.
 
-### Smallest defensible patch plan, pending the raw task reports
+### Conditional patch outline, pending the raw task reports
+
+Choose the implementation scope after the capture. These are design concerns
+if task selection is implicated, not a commitment to a new task-state system.
+The trace may justify a smaller change or identify a different cause.
 
 1. **Retain mower task evidence separately from activity.** In
    `deebot_client/messages/json/clean_info.py`, the parser currently reduces
@@ -137,8 +179,40 @@ command failures through the HA service would make HTTP 200 less misleading.
 
 ### Immediate evidence handoff and next dogfood
 
-Ask Grok Bot to preserve the ordered trace from roughly **15:50–15:53 BST
-(14:50–14:53 UTC)** before a reload or another test. Needed evidence:
+The attempted historical capture for **15:50–15:53 BST (14:50–14:53 UTC)**
+returned no command evidence, as recorded above. Keep `3132dfb` installed and
+do not interrupt the current mow. At the next test agreed with Mike:
+
+1. Record the actual pre-test app state, any Continue option, HA state, battery
+   and any fault. A docked HA state alone does not establish a pending job.
+2. Set both `deebot_client` and `homeassistant.components.ecovacs` to `debug`
+   using HA's [`logger.set_level` action](https://www.home-assistant.io/actions/logger.set_level/).
+   Verify that fresh DEBUG messages actually appear before issuing any control.
+   If they do not, resolve logging first. Retain the previous levels for restoration.
+   Keep that proof line in the same saved Core stream used for the test, and
+   do not restart HA between checking logging and issuing Start.
+3. Save the complete bounded Core log window, starting before the pre-command
+   task/status reports and continuing through the response and following state
+   reports. A live filtered view is useful, but **do not save only lines matching
+   Start/Resume**: API replies, faults and task reports may lack those words.
+   Require fresh clean and charging reports before proceeding. If needed, use
+   `homeassistant.update_entity` for `lawn_mower.lawna2`: the
+   [HA 2026.9.2 entity implementation](https://github.com/home-assistant/core/blob/2026.9.2/homeassistant/components/ecovacs/entity.py)
+   requests the subscribed events' refreshes. Wait for their actual replies;
+   service completion is not a response barrier. Record HA activity before and
+   after this refresh, which itself can change the cached action-selection state.
+   Do not send an extra mowing command to obtain a snapshot.
+4. From docked with app evidence of a pending job, issue one HA Start and record
+   UTC/BST times. If it fails, retain the evidence and stop repeating commands.
+   Any subsequent app Continue comparison must be supervised and separately
+   timestamped, with physical/app observations alongside the logs.
+   If the app shows no pending job, label it a fresh-job test rather than a
+   reproduction of the reported docked/Continue case. Save the broader
+   pause/resume/dock test until this first command trace has been assessed.
+5. Restore the earlier logging levels after the bounded test and redact credentials
+   and identifiers before sharing the trace.
+
+The captured evidence should include:
 
 - The exact `Mower clean request: action=..., cached_state=...` and
   `Mower clean result: sent_action=..., handling=...` lines.
@@ -149,6 +223,12 @@ Ask Grok Bot to preserve the ordered trace from roughly **15:50–15:53 BST
 - The successful app Continue's complete command body and any adjacent commands
   **if captured**. HA logs should not be assumed to contain outbound app requests.
   If unavailable, say so; the HA response and task reports are still useful.
+
+The relevant existing client log prefixes are `Calling api`,
+`Success calling api` and `Try to handle message`. The two new `Mower clean`
+lines do not include the full body or response. Preserve command fields while
+redacting account/device identifiers: the existing sanitisation filter does
+not scrub preformatted strings, including the API request summary.
 
 On the synthetic docked case the current code logs a request with
 `action=start, cached_state=DOCKED` and a result with `sent_action=start`.
@@ -178,6 +258,17 @@ Then, in supervised daylight with adequate charge and genuine faults addressed:
 4. Preserve the next morning's first command and ordered state/error reports.
    Keep PR 1847 draft until the exact proposed runtime tip passes the relevant
    live tests; record any documentation-only difference from that tested SHA.
+
+### Independent review of the evidence and next step
+
+At Mike's request, Grok 4.7 Extra High reviewed the local code, tests and this
+documentation through Cursor CLI in read-only Ask mode. The first attempt
+failed with a connection-stalled error; the retry completed successfully.
+The reviewer confirmed the action-selection weakness, distinguished it from
+the unproven cause of the live failure, and recommended keeping `3132dfb`
+deployed until a bounded capture exists. Its documentation and capture
+clarifications have been checked against the source and incorporated above.
+This review did not add live telemetry or validate a new runtime fix.
 
 ## What the code establishes
 
@@ -242,7 +333,8 @@ These logs contain no account credentials or device identifiers. Existing API
 DEBUG logs remain necessary for the raw payload and response. The candidate
 does not alter clean bodies, the START/RESUME conversion, header `0.0.50`,
 fault dismissal, availability policy or the successful nine-file overlay's
-state-recovery behaviour. No live mower commands were sent in this investigation.
+state-recovery behaviour. The local repository investigation issued no live
+mower commands; the live HA/app commands above were reported by Mike and Grok Bot.
 
 ## Automated verification
 
