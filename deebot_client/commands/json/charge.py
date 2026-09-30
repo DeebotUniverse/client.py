@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from deebot_client.capabilities import DeviceType
 from deebot_client.events import StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult
@@ -33,6 +34,11 @@ class Charge(ExecuteCommand):
         :return: A message response
         """
         code = int(body.get(CODE, -1))
+        if (
+            code in (0, 30007)
+            and event_bus.capabilities.device_type is DeviceType.MOWER
+        ):
+            event_bus.request_refresh(StateEvent, queue_if_busy=True)
         if code == 0:
             event_bus.notify(StateEvent(State.RETURNING))
             return HandlingResult.success()

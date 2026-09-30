@@ -53,6 +53,7 @@ class _EventProcessingData[E: Event]:
             list[Callable[[E], Coroutine[Any, Any, None]]]
         ] = []
         self.semaphore: Final = asyncio.Semaphore(1)
+        self.refresh_pending = False
         self.last_event: E | None = None
         self.last_event_time: datetime = datetime(1, 1, 1, 1, 1, 1, tzinfo=UTC)
         self.notify_handle: asyncio.TimerHandle | None = None
@@ -169,10 +170,15 @@ class EventBus:
                 debounce_time, _notify, event
             )
 
-    def request_refresh(self, event_class: type[T]) -> None:
-        """Request manual refresh."""
+    def request_refresh(
+        self, event_class: type[T], *, queue_if_busy: bool = False
+    ) -> None:
+        """Request manual refresh, optionally coalescing a follow-up if busy."""
         if self.has_subscribers(event_class):
-            create_task(self._tasks, self._call_refresh_function(event_class))
+            create_task(
+                self._tasks,
+                self._call_refresh_function(event_class, queue_if_busy=queue_if_busy),
+            )
 
     async def teardown(self) -> None:
         """Teardown eventbus."""
@@ -181,13 +187,18 @@ class EventBus:
             if handle := data.notify_handle:
                 handle.cancel()
 
-    async def _call_refresh_function(self, event_class: type[T]) -> None:
+    async def _call_refresh_function(
+        self, event_class: type[T], *, queue_if_busy: bool = False
+    ) -> None:
         processing_data = self._event_processing_dict[event_class]
         semaphore = processing_data.semaphore
         if semaphore.locked():
+            if queue_if_busy:
+                processing_data.refresh_pending = True
             _LOGGER.debug(
-                "Already refresh function running for %s. Skipping...",
+                "Refresh already running for %s (follow-up pending: %s)",
                 event_class.__name__,
+                processing_data.refresh_pending,
             )
             return
 
@@ -196,12 +207,21 @@ class EventBus:
             if not commands:
                 return
 
-            if len(commands) == 1:
-                await self._execute_command(commands[0])
-            else:
-                async with asyncio.TaskGroup() as tg:
-                    for command in commands:
-                        tg.create_task(self._execute_command(command))
+            try:
+                while True:
+                    processing_data.refresh_pending = False
+                    if len(commands) == 1:
+                        await self._execute_command(commands[0])
+                    else:
+                        async with asyncio.TaskGroup() as tg:
+                            for command in commands:
+                                tg.create_task(self._execute_command(command))
+                    if not processing_data.refresh_pending or not self.has_subscribers(
+                        event_class
+                    ):
+                        return
+            finally:
+                processing_data.refresh_pending = False
 
     def _get_or_create_event_processing_data(
         self, event_class: type[T]
