@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+from time import monotonic
 from typing import TYPE_CHECKING, Any, ClassVar
 from weakref import WeakKeyDictionary
 
 from deebot_client.capabilities import DeviceType
 from deebot_client.const import ERROR_CODES
 from deebot_client.events import ErrorEvent, StateEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
@@ -16,14 +18,17 @@ from .common import JsonCommandWithMessageHandling
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
+_LOGGER = get_logger(__name__)
+_ERROR_RECOVERY_RETRY_INTERVAL = 30.0
+
 
 class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get error command."""
 
     NAME = "getError"
-    _recovery_requested: ClassVar[WeakKeyDictionary[EventBus, StateEvent]] = (
-        WeakKeyDictionary()
-    )
+    _recovery_requested: ClassVar[
+        WeakKeyDictionary[EventBus, tuple[StateEvent, float]]
+    ] = WeakKeyDictionary()
 
     @classmethod
     def _handle_body_data_dict(
@@ -54,12 +59,25 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 error == 0
                 and event_bus.capabilities.device_type is DeviceType.MOWER
                 and previous_state == StateEvent(State.ERROR)
-                and cls._recovery_requested.get(event_bus) is not previous_state
+                and event_bus.has_subscribers(StateEvent)
             ):
-                # EventBus retains the same event object until activity changes.
-                # Query once per ERROR episode, even if the cached code was zero.
-                cls._recovery_requested[event_bus] = previous_state
-                event_bus.request_refresh(StateEvent, queue_if_busy=True)
+                last_request = cls._recovery_requested.get(event_bus)
+                now = monotonic()
+                same_episode = (
+                    last_request is not None and last_request[0] is previous_state
+                )
+                if not same_episode or (
+                    last_request is not None
+                    and now - last_request[1] >= _ERROR_RECOVERY_RETRY_INTERVAL
+                ):
+                    # Failed reads retain ERROR. A later clear report may retry,
+                    # while duplicate reports within the interval remain quiet.
+                    cls._recovery_requested[event_bus] = (previous_state, now)
+                    _LOGGER.debug(
+                        "Mower error-clear activity refresh: retry=%s, cached_state=ERROR",
+                        same_episode,
+                    )
+                    event_bus.request_refresh(StateEvent, queue_if_busy=True)
             return HandlingResult.success()
 
         return HandlingResult.analyse()

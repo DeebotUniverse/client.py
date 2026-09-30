@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
-from unittest.mock import patch
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -42,7 +42,7 @@ async def test_getErrors(
 @pytest.mark.parametrize("codes", [[], [0]])
 @pytest.mark.parametrize("previous_error", [None, 105, 0])
 @pytest.mark.parametrize("state", [State.ERROR, State.CLEANING])
-async def test_error_clear_refreshes_mower_activity_once(
+async def test_error_clear_refreshes_mower_activity_without_duplicate_reads(
     event_bus: EventBus,
     device_class: str,
     codes: list[int],
@@ -52,6 +52,7 @@ async def test_error_clear_refreshes_mower_activity_once(
     if previous_error is not None:
         event_bus.notify(ErrorEvent(previous_error, None))
     event_bus.notify(StateEvent(state))
+    event_bus.subscribe(StateEvent, AsyncMock())
     with patch.object(event_bus, "request_refresh") as refresh:
         GetError.handle(event_bus, {"body": {"data": {"code": codes}}})
         if device_class == "300lc5" and state is State.ERROR:
@@ -66,6 +67,7 @@ async def test_error_clear_refreshes_mower_activity_once(
         refresh.reset_mock()
         GetError.handle(event_bus, {"body": {"data": {"code": codes}}})
         refresh.assert_not_called()
+    await event_bus.teardown()
 
 
 @pytest.mark.parametrize("device_class", ["300lc5"])
@@ -73,6 +75,8 @@ async def test_error_recovery_for_each_alert_episode(event_bus: EventBus) -> Non
     """A status alert can arrive while the last error-code report is still zero."""
     clear: dict[str, Any] = {"body": {"data": {"code": []}}}
     GetError.handle(event_bus, clear)
+    event_bus.notify(StateEvent(State.CLEANING))
+    event_bus.subscribe(StateEvent, AsyncMock())
     with patch.object(event_bus, "request_refresh") as refresh:
         for _ in range(2):
             event_bus.notify(StateEvent(State.CLEANING))
@@ -85,6 +89,7 @@ async def test_error_recovery_for_each_alert_episode(event_bus: EventBus) -> Non
             GetError.handle(event_bus, clear)
             refresh.assert_called_once()
             refresh.reset_mock()
+    await event_bus.teardown()
 
 
 @pytest.mark.parametrize("device_class", ["300lc5"])
@@ -93,6 +98,7 @@ async def test_error_recovery_after_new_fault_while_still_in_error(
 ) -> None:
     """A new fault clearance needs a read even if earlier recovery stayed ERROR."""
     event_bus.notify(StateEvent(State.ERROR))
+    event_bus.subscribe(StateEvent, AsyncMock())
     clear: dict[str, Any] = {"body": {"data": {"code": []}}}
     with patch.object(event_bus, "request_refresh") as refresh:
         GetError.handle(event_bus, clear)
@@ -103,6 +109,7 @@ async def test_error_recovery_after_new_fault_while_still_in_error(
         refresh.assert_called_once_with(StateEvent, queue_if_busy=True)
         GetError.handle(event_bus, clear)
         refresh.assert_called_once()
+    await event_bus.teardown()
 
 
 @pytest.mark.parametrize("device_class", ["300lc5"])

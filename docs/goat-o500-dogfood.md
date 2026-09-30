@@ -13,9 +13,18 @@ for the evidence, a small charging-state reporting fix, and the next retest.
 The historical nine-file overlay and successful run below remain the baseline.
 Grok Bot subsequently reported deploying the ten-file `3132dfb` candidate with
 verified hashes: HA showed stable docked activity and rising battery after the
-restart. No mower commands were tested on that revision. Keep the upstream PR
-draft; neither this recovery nor the earlier control cycle establishes
-unattended reliability.
+restart. No mower commands were issued during that initial deployment check.
+A later HA Start on that revision failed, while app Continue succeeded; the
+follow-up records this separately. Keep the upstream PR draft; neither the
+restart recovery nor the earlier control cycle establishes unattended reliability.
+
+**30 September recovery fix:** A failed activity read could permanently consume
+the error-clear refresh for an unchanged ERROR episode. The
+[new recovery candidate and deployment handoff](goat-o500-error-recovery-2026-09-30.md)
+allow another read on a later error-clear report after 30 seconds. This is a
+ten-file overlay, with only `commands/json/error.py` changed since `3132dfb`.
+It has automated verification but still needs live testing; it does not establish
+the cause of the failed HA Start or change Start/Resume selection.
 
 ## Confirmed daylight dogfood: 28 September 2026
 
@@ -57,7 +66,7 @@ or merge either PR. Upstream
 tested commit or a strict successor containing only review polish before
 being marked ready for review.
 
-## What is included
+## What was included in the original daylight overlay
 
 - `300lc5` selects `CleanMower`/`CleanAreaMower`: the `clean` command with nested
   `content.type`. Other hardware definitions keep their existing clean commands.
@@ -74,6 +83,8 @@ being marked ready for review.
   once per error episode, including when the cached error code was already zero.
   Repeated error-free reports do not create a polling loop. Active errors and
   `trigger: alert` still report ERROR.
+  The 30 September candidate replaces the permanent once-per-episode limit with
+  retries driven by later clear reports, at least 30 seconds apart.
 - These recovery reads queue one follow-up when a state poll is already running,
   so a stale in-flight response cannot consume the post-control refresh.
   Other refresh callers keep their existing behavior.
@@ -111,6 +122,7 @@ All runtime files needed relative to the package parent:
 ```text
 deebot_client/commands/json/__init__.py
 deebot_client/commands/json/charge.py
+deebot_client/commands/json/charge_state.py
 deebot_client/commands/json/clean.py
 deebot_client/commands/json/error.py
 deebot_client/event_bus.py
@@ -162,6 +174,7 @@ async def check():
     print("imported package:", root)
     for rel in (
         "commands/json/__init__.py", "commands/json/charge.py",
+        "commands/json/charge_state.py",
         "commands/json/clean.py", "commands/json/error.py", "event_bus.py",
         "hardware/300lc5.py",
         "messages/json/__init__.py", "messages/json/charge_info.py",

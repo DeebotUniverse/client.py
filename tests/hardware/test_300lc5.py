@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import asyncio
 from typing import TYPE_CHECKING, Any, cast
+from unittest.mock import AsyncMock, patch
 
 import pytest
 
@@ -212,5 +213,128 @@ async def test_300lc5_recovery_queries_real_activity(
         assert "getChargeState" in queried
         assert "getCleanInfo" in queried
         assert "getCleanInfo_V2" not in queried
+    finally:
+        await events.teardown()
+
+
+async def test_300lc5_error_clear_retries_after_failed_activity_reads(
+    authenticator: Authenticator, api_device_info: ApiDeviceInfo
+) -> None:
+    """An outage must not permanently consume error-clear recovery."""
+    info = await get_static_device_info("300lc5")
+    assert info is not None
+    queried: list[str] = []
+    transport_recovered = False
+
+    async def respond(
+        _path: str, payload: dict[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        name = payload["cmdName"]
+        queried.append(name)
+        assert name in {"getChargeState", "getCleanInfo"}
+        if not transport_recovered:
+            return {"ret": "fail", "errno": 500}
+        data = (
+            {"isCharging": 0}
+            if name == "getChargeState"
+            else {"state": "clean", "cleanState": {"motionState": "working"}}
+        )
+        return {"ret": "ok", "resp": {"body": {"code": 0, "data": data}}}
+
+    cast("Mock", authenticator.post_authenticated).side_effect = respond
+
+    async def execute(command: Command) -> dict[str, Any]:
+        return (
+            await command.execute(authenticator, api_device_info, events)
+        ).raw_response
+
+    async def drain() -> None:
+        while events._tasks:
+            await asyncio.gather(*tuple(events._tasks))
+            await asyncio.sleep(0)
+
+    events = EventBus(execute, info.capabilities)
+    events.notify(StateEvent(State.ERROR))
+    events.subscribe(StateEvent, AsyncMock())
+    clear: dict[str, Any] = {"body": {"data": {"code": []}}}
+    try:
+        with patch(
+            "deebot_client.commands.json.error.monotonic", create=True
+        ) as recovery_clock:
+            # More than three failed attempts: an absolute retry cap would
+            # strand ERROR again if the outage outlasted the allotted attempts.
+            for now in (0.0, 30.0, 60.0, 90.0):
+                recovery_clock.return_value = now
+                queried.clear()
+                GetError.handle(events, clear)
+                await asyncio.wait_for(drain(), 1)
+                assert sorted(queried) == ["getChargeState", "getCleanInfo"]
+                assert events.get_last_event(StateEvent) == StateEvent(State.ERROR)
+
+                recovery_clock.return_value = now + 29.9
+                queried.clear()
+                for _ in range(3):
+                    GetError.handle(events, clear)
+                await asyncio.wait_for(drain(), 1)
+                assert queried == []
+                assert events.get_last_event(StateEvent) == StateEvent(State.ERROR)
+
+            transport_recovered = True
+            recovery_clock.return_value = 120.0
+            GetError.handle(events, clear)
+            await asyncio.wait_for(drain(), 1)
+            assert sorted(queried) == ["getChargeState", "getCleanInfo"]
+            assert events.get_last_event(StateEvent) == StateEvent(State.CLEANING)
+
+            queried.clear()
+            recovery_clock.return_value = 150.0
+            GetError.handle(events, clear)
+            await asyncio.wait_for(drain(), 1)
+            assert queried == []
+    finally:
+        await events.teardown()
+
+
+async def test_300lc5_unsubscribed_clear_does_not_consume_recovery(
+    authenticator: Authenticator, api_device_info: ApiDeviceInfo
+) -> None:
+    """An ignored refresh before HA subscribes must not suppress a later read."""
+    info = await get_static_device_info("300lc5")
+    assert info is not None
+    queried: list[str] = []
+
+    async def respond(
+        _path: str, payload: dict[str, Any], **_kwargs: Any
+    ) -> dict[str, Any]:
+        name = payload["cmdName"]
+        queried.append(name)
+        assert name in {"getChargeState", "getCleanInfo"}
+        data = {"isCharging": 1} if name == "getChargeState" else {"state": "idle"}
+        return {"ret": "ok", "resp": {"body": {"code": 0, "data": data}}}
+
+    cast("Mock", authenticator.post_authenticated).side_effect = respond
+
+    async def execute(command: Command) -> dict[str, Any]:
+        return (
+            await command.execute(authenticator, api_device_info, events)
+        ).raw_response
+
+    events = EventBus(execute, info.capabilities)
+    events.notify(StateEvent(State.ERROR))
+    updated = asyncio.Event()
+
+    async def on_state(event: StateEvent) -> None:
+        if event.state is State.DOCKED:
+            updated.set()
+
+    clear: dict[str, Any] = {"body": {"data": {"code": [0]}}}
+    try:
+        GetError.handle(events, clear)
+        assert queried == []
+        events.subscribe(StateEvent, on_state)
+        GetError.handle(events, clear)
+        await asyncio.wait_for(updated.wait(), 1)
+        assert sorted(queried) == ["getChargeState", "getCleanInfo"]
+        assert events.get_last_event(StateEvent) == StateEvent(State.DOCKED)
     finally:
         await events.teardown()

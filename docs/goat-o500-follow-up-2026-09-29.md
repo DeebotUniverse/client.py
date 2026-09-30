@@ -2,6 +2,14 @@
 
 Lawna2 can mow when Mike presses Continue in the Ecovacs app, but the latest Home Assistant Start attempt still left her showing an error. The deployed update corrects a separate charging-status bug and adds diagnostic logs; it has not fixed this control failure. A local reproduction now shows that a charging report can hide a paused job from the client's Start/Resume decision. That is a concrete weakness in the code, but the retained live logs contain neither the failed command nor its response, so its role in this incident remains unproven. The next step is one supervised test with logging verified beforehand, after the current mow has finished and Mike agrees to the test. Any subsequent fix must preserve genuine faults and distinguish a current unfinished job from stale history. PR 1847 remains draft.
 
+**30 September addendum:** Review found a separate reproducible recovery defect:
+after a failed error-clear activity read, later clear reports could never retry
+while the same ERROR remained cached. Mike authorised fixing and publishing it.
+The [recovery candidate and deployment handoff](goat-o500-error-recovery-2026-09-30.md)
+supersede this report's earlier instruction to retain `3132dfb` unchanged.
+The Start/Resume diagnosis and missing live evidence below remain unresolved;
+no new live control result is claimed.
+
 Mike previously relayed Grok Bot's deployment report: `3132dfb` is live, file
 hashes passed after restarting HA Core, and HA then showed stable docking with
 a rising battery level. No mower controls were issued in that test. This is
@@ -46,8 +54,10 @@ it does not itself clear an old ERROR. Charging alongside HA error also does
 not distinguish an active device fault from a cached or repeated alert without
 the actual error code and incoming messages.
 
-Keep the live runtime pinned to `3132dfb` while gathering the next evidence.
-This record adds documentation only and requires no new overlay installation.
+At this stage on 29 September the advice was to retain `3132dfb` while
+gathering evidence; this report originally changed documentation only.
+For the subsequently authorised runtime fix, use the 30 September recovery
+handoff linked above and its exact new SHA.
 The subsequent HA Start attempt failed as reported below. A complete successful
 control cycle on this revision and the next morning's ordered command/events
 remain unverified. PR 1847 stays draft; raw Start/Resume response traces have
