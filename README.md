@@ -52,40 +52,42 @@ country = "DE"
 
 
 async def main():
-  async with aiohttp.ClientSession() as session:
-    logging.basicConfig(level=logging.DEBUG)
-    rest_config = create_rest_config(session, device_id=device_id, alpha_2_country=country)
+    async with aiohttp.ClientSession() as session:
+        logging.basicConfig(level=logging.DEBUG)
+        rest_config = create_rest_config(
+            session, device_id=device_id, alpha_2_country=country
+        )
 
-    authenticator = Authenticator(rest_config, account_id, password_hash)
-    api_client = ApiClient(authenticator)
+        authenticator = Authenticator(rest_config, account_id, password_hash)
+        api_client = ApiClient(authenticator)
 
-    devices_ = await api_client.get_devices()
+        devices_ = await api_client.get_devices()
 
-    bot = Device(devices_.mqtt[0], authenticator)
+        bot = Device(devices_.mqtt[0], authenticator)
 
-    mqtt_config = create_mqtt_config(device_id=device_id, country=country)
-    mqtt = MqttClient(mqtt_config, authenticator)
-    await bot.initialize(mqtt)
+        mqtt_config = create_mqtt_config(device_id=device_id, country=country)
+        mqtt = MqttClient(mqtt_config, authenticator)
+        await bot.initialize(mqtt)
 
-    async def on_battery(event: BatteryEvent):
-      # Do stuff on battery event
-      if event.value == 100:
-        # Battery full
-        pass
+        async def on_battery(event: BatteryEvent):
+            # Do stuff on battery event
+            if event.value == 100:
+                # Battery full
+                pass
 
-    # Subscribe for events (more events available)
-    bot.events.subscribe(BatteryEvent, on_battery)
+        # Subscribe for events (more events available)
+        bot.events.subscribe(BatteryEvent, on_battery)
 
-    # Execute commands
-    await bot.execute_command(Clean(CleanAction.START))
-    await asyncio.sleep(900)  # Wait for...
-    await bot.execute_command(Charge())
+        # Execute commands
+        await bot.execute_command(Clean(CleanAction.START))
+        await asyncio.sleep(900)  # Wait for...
+        await bot.execute_command(Charge())
 
 
-if __name__ == '__main__':
-  loop = asyncio.get_event_loop()
-  loop.create_task(main())
-  loop.run_forever()
+if __name__ == "__main__":
+    loop = asyncio.get_event_loop()
+    loop.create_task(main())
+    loop.run_forever()
 ```
 
 A more advanced example can be found [here](https://github.com/And3rsL/Deebot-for-Home-Assistant).
