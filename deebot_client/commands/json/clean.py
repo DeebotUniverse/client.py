@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
+from deebot_client.events.station import State as StationState, StationEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
@@ -130,15 +131,32 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
         state = data.get("state")
         if data.get("trigger") == "alert":
             status = State.ERROR
+        elif (
+            state in ("washing", "drying")
+            and data.get("cleanState", {}).get("motionState") == "working"
+        ):
+            station_state = {
+                "washing": StationState.WASHING_MOP,
+                "drying": StationState.DRYING_MOP,
+            }[state]
+            event_bus.notify(StationEvent(station_state))
+            if state == "drying":
+                # Drying does not prove robot location; charging confirms docking.
+                return HandlingResult.success()
+            status = State.DOCKED
         elif state in ("clean", "washing"):
             clean_state = data.get("cleanState", {})
             motion_state = clean_state.get("motionState")
-            if motion_state == "working":
-                status = State.CLEANING
-            elif motion_state == "pause":
-                status = State.PAUSED
-            elif motion_state == "goCharging":
-                status = State.RETURNING
+            motion_states = {
+                "working": State.CLEANING,
+                "pause": State.PAUSED,
+                "goCharging": State.RETURNING,
+            }
+            status = (
+                motion_states.get(motion_state)
+                if isinstance(motion_state, str)
+                else None
+            )
 
             clean_type = clean_state.get("type")
             content = clean_state.get("content", {})
