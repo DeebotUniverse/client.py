@@ -91,3 +91,45 @@ def test_washing_state(state: str, motion: str, trigger: str, expected: State) -
     assert StateEvent(expected) in emitted
     washing = state == "washing" and expected == State.DOCKED
     assert (StationEvent(StationState.WASHING_MOP) in emitted) == washing
+
+
+@pytest.mark.parametrize("trigger", ["none", "alert"])
+def test_drying_reports_station_activity_without_inventing_docking(
+    trigger: str,
+) -> None:
+    bus = Mock()
+    result = GetCleanInfoV2._handle_body_data_dict(
+        bus,
+        {
+            "state": "drying",
+            "trigger": trigger,
+            "cleanState": {
+                "category": 0,
+                "cid": "42",
+                "content": {"subContent": {"subContent": None}},
+                "motionState": "working",
+                "router": "plan",
+            },
+        },
+    )
+    assert result.state == HandlingState.SUCCESS
+    expected = (
+        StateEvent(State.ERROR)
+        if trigger == "alert"
+        else StationEvent(StationState.DRYING_MOP)
+    )
+    bus.notify.assert_called_once_with(expected)
+
+
+def test_unrecognized_drying_motion_does_not_report_ready() -> None:
+    bus = Mock()
+    result = GetCleanInfoV2._handle_body_data_dict(
+        bus,
+        {
+            "state": "drying",
+            "trigger": "none",
+            "cleanState": {"motionState": "unexpected"},
+        },
+    )
+    assert result.state == HandlingState.ANALYSE
+    bus.notify.assert_not_called()
