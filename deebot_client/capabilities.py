@@ -242,6 +242,7 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+    water_tank: CapabilityEvent[ErrorEvent] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
