@@ -10,7 +10,9 @@ from deebot_client.commands.json.clean import (
     Clean,
     CleanArea,
     CleanAreaV2,
+    CleanRoomsV2,
     CleanV2,
+    CleanV2StopAndReturn,
     GetCleanInfoV2,
 )
 from deebot_client.event_bus import EventBus
@@ -150,6 +152,27 @@ async def test_Clean_act(
                 "content": {"type": "freeClean", "value": "2,0"},
             },
         ),
+        (
+            CleanRoomsV2([2]),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,2"},
+            },
+        ),
+        (
+            CleanRoomsV2([2, 1]),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,2;1,1"},
+            },
+        ),
+        (
+            CleanRoomsV2([7, 6, 3], cleanings=2),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "2,7;2,6;2,3"},
+            },
+        ),
     ],
     ids=[
         "Rooms",
@@ -158,9 +181,25 @@ async def test_Clean_act(
         "Coordinates V2",
         "FreeClean",
         "FreeClean single room 2x",
+        "CleanRoomsV2 single room",
+        "CleanRoomsV2 multiple rooms",
+        "CleanRoomsV2 multiple rooms 2x",
     ],
 )
 async def test_CleanArea(
-    command: CleanArea | CleanAreaV2, args: dict[str, str]
+    command: CleanArea | CleanAreaV2 | CleanRoomsV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
+
+
+@pytest.mark.parametrize(
+    ("action", "args"),
+    [
+        (CleanAction.START, {"act": "start", "content": {"type": "auto"}}),
+        (CleanAction.PAUSE, {"act": "pause", "content": {"type": ""}}),
+        (CleanAction.RESUME, {"act": "resume", "content": {}}),
+        (CleanAction.STOP, {"act": "stop_and_return"}),
+    ],
+)
+async def test_CleanV2StopAndReturn(action: CleanAction, args: dict[str, Any]) -> None:
+    await assert_execute_command(CleanV2StopAndReturn(action), args)
