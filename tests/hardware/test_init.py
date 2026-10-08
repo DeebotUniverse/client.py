@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest import mock
@@ -9,6 +10,7 @@ from unittest import mock
 import pytest
 
 from deebot_client import hardware
+from deebot_client.capabilities import CapabilityNumber
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty
@@ -85,6 +87,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
+from deebot_client.hardware import cuoipb, elrxgb
 from deebot_client.hardware.r8ead0 import get_device_info as get_r8ead0_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
 from deebot_client.models import StaticDeviceInfo
@@ -266,6 +269,13 @@ async def test_capabilities_event_extraction(
     ("class_", "supported"),
     [
         ("cuoipb", True),
+        ("c8rj4y", False),
+        ("7c26ui", False),
+        ("bheggm", False),
+        ("elrxgb", False),
+        ("czjwet", False),
+        ("qnkybo", False),
+        ("xztz07", False),
         ("qhe2o2", False),
         ("yna5xi", False),
         ("5xu9h3", False),
@@ -299,3 +309,59 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
+
+
+@pytest.mark.parametrize(
+    "class_",
+    ["c8rj4y", "7c26ui", "bheggm", "elrxgb", "cuoipb", "czjwet", "qnkybo", "xztz07"],
+)
+async def test_station_water_tank_preserves_shared_profile(class_: str) -> None:
+    """Only the verified marker may differ from the shared profile."""
+    shared = await hardware.get_static_device_info("c8rj4y")
+    info = await hardware.get_static_device_info(class_)
+    assert shared is not None
+    assert info is not None
+    station = info.capabilities.station
+    assert station is not None
+    # Each profile constructs a fresh lambda for custom water amounts.
+    water = info.capabilities.water
+    shared_water = shared.capabilities.water
+    assert water is not None
+    assert shared_water is not None
+    assert isinstance(water.amount, CapabilityNumber)
+    assert isinstance(shared_water.amount, CapabilityNumber)
+    for amount in (0, 25, 50):
+        assert water.amount.set(amount) == shared_water.amount.set(amount)
+    assert (
+        replace(
+            info,
+            capabilities=replace(
+                info.capabilities,
+                station=replace(station, water_tank=None),
+                water=replace(
+                    water, amount=replace(water.amount, set=shared_water.amount.set)
+                ),
+            ),
+        )
+        == shared
+    )
+    for event in shared.capabilities._events:
+        assert info.capabilities.get_refresh_commands(event) == (
+            shared.capabilities.get_refresh_commands(event)
+        )
+    assert info.capabilities._events.keys() == shared.capabilities._events.keys()
+
+
+async def test_station_water_tank_wrapper_does_not_mutate_shared_profile() -> None:
+    """A wrapper must leave even a reused shared profile unchanged."""
+    shared = elrxgb.get_device_info()
+    with mock.patch.object(elrxgb, "get_device_info", return_value=shared):
+        info = cuoipb.get_device_info()
+        second = cuoipb.get_device_info()
+    assert shared.capabilities.station is not None
+    assert shared.capabilities.station.water_tank is None
+    assert info.capabilities.station is not None
+    assert info.capabilities.station.water_tank is not None
+    assert second == info
+    assert info.capabilities is not shared.capabilities
+    assert info.capabilities.station is not shared.capabilities.station
