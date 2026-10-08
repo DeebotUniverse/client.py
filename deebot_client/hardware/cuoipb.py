@@ -5,9 +5,7 @@ from __future__ import annotations
 from dataclasses import replace
 from typing import TYPE_CHECKING
 
-from deebot_client.capabilities import CapabilityEvent
-from deebot_client.commands.json.error import GetError
-from deebot_client.events import ErrorEvent
+from deebot_client.capabilities import CapabilityWaterTank
 from deebot_client.hardware import elrxgb
 
 if TYPE_CHECKING:
@@ -25,7 +23,7 @@ def get_device_info() -> StaticDeviceInfo:
         capabilities=replace(
             info.capabilities,
             station=replace(
-                station, water_tank=CapabilityEvent(ErrorEvent, [GetError()])
+                station, water_tank=CapabilityWaterTank(clean=True, dirty=True)
             ),
         ),
     )

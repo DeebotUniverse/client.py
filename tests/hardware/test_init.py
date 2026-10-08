@@ -10,7 +10,7 @@ from unittest import mock
 import pytest
 
 from deebot_client import hardware
-from deebot_client.capabilities import CapabilityNumber
+from deebot_client.capabilities import CapabilityNumber, CapabilityWaterTank
 from deebot_client.commands.json import GetCutDirection
 from deebot_client.commands.json.advanced_mode import GetAdvancedMode
 from deebot_client.commands.json.auto_empty import GetAutoEmpty
@@ -289,6 +289,9 @@ async def test_station_water_tank_capability(class_: str, supported: bool) -> No
 
     station = capabilities.station
     assert (station is not None and station.water_tank is not None) is supported
+    if supported:
+        assert station is not None
+        assert station.water_tank == CapabilityWaterTank(clean=True, dirty=True)
     assert capabilities.get_refresh_commands(ErrorEvent) == [GetError()]
 
 

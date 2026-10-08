@@ -232,6 +232,14 @@ class CapabilitySettings:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityWaterTank:
+    """Verified tank-fault support, independent of the reporting event source."""
+
+    clean: bool
+    dirty: bool
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityStation:
     """Capabilities for the station."""
 
@@ -242,7 +250,7 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
-    water_tank: CapabilityEvent[ErrorEvent] | None = None
+    water_tank: CapabilityWaterTank | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
