@@ -52,6 +52,15 @@ class Room:
     coordinates: str
 
 
+@dataclass(frozen=True)
+class Scenario:
+    """Scenario representation (called "Scenario Cleaning" in the app)."""
+
+    id: str
+    name: str
+    map_id: str
+
+
 @unique
 class State(IntEnum):
     """State representation."""

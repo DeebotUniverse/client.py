@@ -13,6 +13,7 @@ from deebot_client.capabilities import (
     CapabilityLifeSpan,
     CapabilityMap,
     CapabilityNumber,
+    CapabilityScenario,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -34,7 +35,7 @@ from deebot_client.commands.json.carpet import (
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
-from deebot_client.commands.json.clean import CleanAreaV2, CleanV2
+from deebot_client.commands.json.clean import CleanAreaV2, CleanScenarioV2, CleanV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
@@ -67,6 +68,7 @@ from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.pos import GetPos
+from deebot_client.commands.json.quick_command import GetQuickCommand
 from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
@@ -107,6 +109,7 @@ from deebot_client.events import (
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
+    ScenariosEvent,
     StateEvent,
     StationEvent,
     StatsEvent,
@@ -147,6 +150,9 @@ def get_device_info() -> StaticDeviceInfo:
                 log=CapabilityEvent(CleanLogEvent, [GetCleanLogs()]),
                 preference=CapabilitySetEnable(
                     CleanPreferenceEvent, [GetCleanPreference()], SetCleanPreference
+                ),
+                scenario=CapabilityScenario(
+                    event=ScenariosEvent, get=[GetQuickCommand()], start=CleanScenarioV2
                 ),
                 work_mode=CapabilitySetTypes(
                     event=WorkModeEvent,
