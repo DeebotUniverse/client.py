@@ -11,6 +11,9 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .native_info import OnNativeInfo
+from .native_map import OnNativeMapReport
+from .native_stats import OnNativeCleanInfo
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -24,6 +27,9 @@ __all__ = [
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnNativeCleanInfo",
+    "OnNativeInfo",
+    "OnNativeMapReport",
     "OnStats",
     "OnWorkState",
     "ReportStats",
@@ -42,6 +48,10 @@ _MESSAGES: list[type[Message]] = [
     OnMajorMap,
     OnMapInfoV2,
     OnMapSetV2,
+
+    OnNativeInfo,
+    OnNativeMapReport,
+    OnNativeCleanInfo,
 
     OnStationState,
 
