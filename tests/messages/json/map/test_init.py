@@ -153,7 +153,8 @@ def test_onMajorMap() -> None:
     [
         ("0", HandlingState.SUCCESS, False),
         ("1", HandlingState.SUCCESS, True),
-        ("2", HandlingState.ANALYSE_LOGGED, False),
+        ("2", HandlingState.SUCCESS, True),
+        ("3", HandlingState.ANALYSE_LOGGED, False),
     ],
 )
 @pytest.mark.benchmark
