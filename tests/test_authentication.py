@@ -558,7 +558,8 @@ async def test_login_stores_and_notifies_account_credentials(
     """A password login stores the account credentials and notifies subscribers."""
     changed: asyncio.Queue[AccountCredentials] = asyncio.Queue()
     auth.subscribe_account_credentials(changed.put)
-    assert auth.account_credentials is None
+    before = auth.account_credentials
+    assert before is None
 
     await auth.authenticate()
 
@@ -576,3 +577,25 @@ async def test_verify_device_stores_account_credentials(auth: Authenticator) -> 
         access_token="access-token",  # noqa: S106
         user_id="user-id",
     )
+
+
+async def test_teardown_lets_account_credentials_be_stored(auth: Authenticator) -> None:
+    """Teardown right after a login must not cancel storing the account credentials.
+
+    Losing them sends the next start back to the password login, which is the
+    1013 loop this renewal exists to avoid.
+    """
+    stored: list[AccountCredentials] = []
+
+    async def _store(account: AccountCredentials) -> None:
+        await asyncio.sleep(0.01)
+        stored.append(account)
+
+    auth.subscribe_account_credentials(_store)
+
+    await auth.authenticate()
+    await auth.teardown()
+
+    assert stored == [
+        AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
+    ]

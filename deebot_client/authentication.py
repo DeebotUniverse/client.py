@@ -43,6 +43,8 @@ _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
 _PRIVATE_API_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/{endpoint}"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
+# How long teardown waits for subscribers to store new account credentials.
+_ACCOUNT_CALLBACK_TIMEOUT = 5
 _META = {
     "lang": "EN",
     "appCode": "global_e",
@@ -504,6 +506,7 @@ class Authenticator:
         self._account_credentials = account_credentials
         self._refresh_handle: asyncio.TimerHandle | None = None
         self._tasks: set[asyncio.Future[Any]] = set()
+        self._account_tasks: set[asyncio.Future[Any]] = set()
 
     @property
     def account_credentials(self) -> AccountCredentials | None:
@@ -566,7 +569,7 @@ class Authenticator:
         self._account_credentials = account
 
         for on_account_changed in self._on_account_credentials_changed:
-            create_task(self._tasks, on_account_changed(account))
+            create_task(self._account_tasks, on_account_changed(account))
 
     def subscribe(
         self, callback: Callable[[Credentials], Coroutine[Any, Any, None]]
@@ -610,6 +613,14 @@ class Authenticator:
     async def teardown(self) -> None:
         """Teardown authenticator."""
         self._cancel_refresh_task()
+        # Let subscribers finish storing new account credentials. Cancelling
+        # them would lose the only way to renew without the password, and the
+        # next start would fall back to the password login.
+        if self._account_tasks:
+            await asyncio.wait(
+                set(self._account_tasks), timeout=_ACCOUNT_CALLBACK_TIMEOUT
+            )
+        await cancel(self._account_tasks)
         await cancel(self._tasks)
 
     def _cancel_refresh_task(self) -> None:
