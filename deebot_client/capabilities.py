@@ -180,8 +180,10 @@ class CapabilityMap:
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
     info: CapabilityExecute[[str]] | None = None
-    major: CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]]
-    minor: CapabilityExecute[[int, str]]
+    major: (
+        CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]] | None
+    ) = None
+    minor: CapabilityExecute[[int, str]] | None = None
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None

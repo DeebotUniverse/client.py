@@ -49,7 +49,7 @@ def _wrap_command(
 async def assert_command(
     command: Command,
     json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
-    expected_events: Event | None | Sequence[Event],
+    expected_events: Event | Sequence[Event] | None,
     *,
     device_class: str,
     handling_result: HandlingResult | None = None,

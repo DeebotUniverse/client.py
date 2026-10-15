@@ -367,7 +367,7 @@ def test_config(
     override_mqtt_url: str | None,
     expected_hostname: str,
     expected_port: int,
-    ssl_context: ssl.SSLContext | None | UndefinedType,
+    ssl_context: ssl.SSLContext | UndefinedType | None,
     *,
     expect_ssl_context: bool,
 ) -> None:

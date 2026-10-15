@@ -64,7 +64,7 @@ def create_mqtt_config(
     device_id: str,
     country: str,
     override_mqtt_url: str | None = None,
-    ssl_context: ssl.SSLContext | None | UndefinedType = UNDEFINED,
+    ssl_context: ssl.SSLContext | UndefinedType | None = UNDEFINED,
 ) -> MqttConfiguration:
     """Create configuration."""
     continent_postfix = get_continent_url_postfix(country.upper())

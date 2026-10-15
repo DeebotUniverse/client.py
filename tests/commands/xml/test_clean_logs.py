@@ -27,9 +27,11 @@ if TYPE_CHECKING:
             ),
         ),
         (
-            "<CleanSt a='20' s='1710244976' l='1392' t='a' f='a'/>"
-            "<CleanSt a='wrong' s='1710083567' l='894' t='a' f='a'/>"
-            "<CleanSt a='21' s='1710244999' l='2392' t='a' f='????'/>",
+            (
+                "<CleanSt a='20' s='1710244976' l='1392' t='a' f='a'/>"
+                "<CleanSt a='wrong' s='1710083567' l='894' t='a' f='a'/>"
+                "<CleanSt a='21' s='1710244999' l='2392' t='a' f='????'/>"
+            ),
             CleanLogEvent(
                 [
                     CleanLogEntry(

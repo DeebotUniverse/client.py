@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 def assert_message(
     message: type[Message],
     data: MessagePayloadType,
-    expected_events: Event | None | Sequence[Event],
+    expected_events: Event | Sequence[Event] | None,
     *,
     device_class: str = "2pv572",
     expected_state: HandlingState = HandlingState.SUCCESS,

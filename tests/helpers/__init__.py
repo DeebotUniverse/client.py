@@ -20,7 +20,7 @@ def get_request_json(body: dict[str, Any]) -> tuple[dict[str, Any], FirmwareEven
     return {"id": "ALZf", "ret": "ok", "resp": message}, firmware
 
 
-def get_success_body(data: dict[str, Any] | None | list[Any] = None) -> dict[str, Any]:
+def get_success_body(data: dict[str, Any] | list[Any] | None = None) -> dict[str, Any]:
     body = {
         "code": 0,
         "msg": "ok",
