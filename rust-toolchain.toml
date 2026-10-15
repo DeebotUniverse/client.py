@@ -1,5 +1,5 @@
 [toolchain]
 # Keep in sync with `rust-version` in Cargo.toml
-channel = "1.94"
+channel = "1.99"
 components = ["clippy", "rustfmt"]
 profile = "minimal"
