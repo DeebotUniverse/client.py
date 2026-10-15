@@ -9,8 +9,12 @@ from deebot_client.message import Message
 
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
+from .charge_info import OnChargeInfo
+from .clean_info import OnCleanInfo, OnScheduleTaskInfo
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .protect_state import OnProtectState
+from .rtk import OnRtk
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -20,10 +24,15 @@ _LOGGER = get_logger(__name__)
 __all__ = [
     "OnBattery",
     "OnCachedMapInfo",
+    "OnChargeInfo",
+    "OnCleanInfo",
     "OnGpsPos",
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnProtectState",
+    "OnRtk",
+    "OnScheduleTaskInfo",
     "OnStats",
     "OnWorkState",
     "ReportStats",
@@ -36,12 +45,21 @@ _MESSAGES: list[type[Message]] = [
 
     OnBattery,
 
+    OnChargeInfo,
+
+    OnCleanInfo,
+    OnScheduleTaskInfo,
+
     OnGpsPos,
 
     OnCachedMapInfo,
     OnMajorMap,
     OnMapInfoV2,
     OnMapSetV2,
+
+    OnProtectState,
+
+    OnRtk,
 
     OnStationState,
 
@@ -68,17 +86,25 @@ _MAP_LEGACY_COMMANDS = frozenset(
 _LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
     {
         "getAdvancedMode",
+        "getAnimProtect",
+        "getAreaParameter",
+        "getAutoCutDirection",
+        "getBorderSwitch",
         "getBreakPoint",
         "getCarpertPressure",
         "getChargeState",
         "getCleanCount",
         "getCleanInfo",
         "getCleanPreference",
+        "getCutEfficiency",
         "getEfficiency",
         "getError",
+        "getGeolocation",
         "getLifeSpan",
         "getNetInfo",
         "getPos",
+        "getRainDelay",
+        "getRecognization",
         "getSpeed",
         "getSweepMode",
         "getTotalStats",

@@ -5,17 +5,17 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
-from deebot_client.logging_filter import get_logger
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.events.mower import MowingTaskEvent
+from deebot_client.message import HandlingResult, HandlingState
+from deebot_client.messages.json.clean_info import OnCleanInfo, OnScheduleTaskInfo
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
 
 from .common import ExecuteCommand, JsonCommandWithMessageHandling
+from .schedule_task import SetScheduleTask
 
 if TYPE_CHECKING:
     from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
-
-_LOGGER = get_logger(__name__)
 
 
 class Clean(ExecuteCommand):
@@ -113,10 +113,31 @@ class CleanAreaV2(CleanV2):
         return args
 
 
-class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetCleanInfo(OnCleanInfo, JsonCommandWithMessageHandling):
     """Get clean info command."""
 
     NAME = "getCleanInfo"
+
+
+class GetCleanInfoV2(GetCleanInfo):
+    """Get clean info v2 command."""
+
+    NAME = "getCleanInfo_V2"
+
+
+class GetScheduleTaskInfo(OnScheduleTaskInfo, JsonCommandWithMessageHandling):
+    """Get schedule task info command."""
+
+    NAME = "getScheduleTaskInfo"
+
+
+class GetCleanInfoMower(GetCleanInfo):
+    """Get clean info command for mowers with schedule task info.
+
+    Manual tasks are reported by getCleanInfo, scheduled tasks by getScheduleTaskInfo.
+    The other one reports idle, therefore the schedule task info is only requested,
+    when getCleanInfo reports idle.
+    """
 
     @classmethod
     def _handle_body_data_dict(
@@ -126,45 +147,106 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
         :return: A message response
         """
-        status: State | None = None
-        state = data.get("state")
-        if data.get("trigger") == "alert":
-            status = State.ERROR
-        elif state in ("clean", "washing"):
-            clean_state = data.get("cleanState", {})
-            motion_state = clean_state.get("motionState")
-            if motion_state == "working":
-                status = State.CLEANING
-            elif motion_state == "pause":
-                status = State.PAUSED
-            elif motion_state == "goCharging":
-                status = State.RETURNING
+        if data.get("state") == "idle" and data.get("trigger") != "alert":
+            return HandlingResult(HandlingState.SUCCESS, {_CHECK_SCHEDULE: True})
+        return super()._handle_body_data_dict(event_bus, data)
 
-            clean_type = clean_state.get("type")
-            content = clean_state.get("content", {})
-            if "type" in content:
-                clean_type = content.get("type")
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle response from a command.
 
-            if clean_type == "customArea":
-                area_values = content
-                if "value" in content:
-                    area_values = content.get("value")
-
-                _LOGGER.debug("Last custom area values (x1,y1,x2,y2): %s", area_values)
-
-        elif state == "goCharging":
-            status = State.RETURNING
-        elif state == "idle":
-            status = State.IDLE
-
-        if status:
-            event_bus.notify(StateEvent(status))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if (
+            result.state == HandlingState.SUCCESS
+            and result.args
+            and result.args.get(_CHECK_SCHEDULE)
+        ):
+            result.requested_commands.append(GetScheduleTaskInfo())
+        return result
 
 
-class GetCleanInfoV2(GetCleanInfo):
-    """Get clean info v2 command."""
+_CHECK_SCHEDULE = "check_schedule"
 
-    NAME = "getCleanInfo_V2"
+
+class CleanMower(CleanV2):
+    """Clean command for newer mowers.
+
+    Uses the command name of the V1 command, but the arguments of the V2 command.
+    Pause, resume and stop contain the type of the current task like the app does.
+    """
+
+    NAME = "clean"
+    _task_type: str = ""
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        """Execute command.
+
+        A scheduled task is paused and resumed with setScheduleTask like the app does.
+        """
+        task = event_bus.get_last_event(MowingTaskEvent)
+        if isinstance(task, MowingTaskEvent) and task.type:
+            self._task_type = task.type
+            if isinstance(self._args, dict) and self._args["act"] != "start":
+                self._args = self._get_args(CleanAction(self._args["act"]))
+
+            if task.scheduled and isinstance(self._args, dict):
+                action = CleanAction(self._args["act"])
+                state = event_bus.get_last_event(StateEvent)
+                if (
+                    action == CleanAction.START
+                    and isinstance(state, StateEvent)
+                    and state.state == State.PAUSED
+                ):
+                    action = CleanAction.RESUME
+                if action in (CleanAction.PAUSE, CleanAction.RESUME):
+                    return await SetScheduleTask(action)._execute(  # noqa: SLF001
+                        authenticator, device_info, event_bus
+                    )
+
+        return await super()._execute(authenticator, device_info, event_bus)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action != CleanAction.START:
+            args["content"] = {"type": self._task_type}
+        return args
+
+
+class CleanAreaMower(CleanAreaV2):
+    """Clean area command for newer mowers.
+
+    Always starts a new task, also if a task is paused.
+    """
+
+    NAME = "clean"
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        """Execute command without converting start into resume."""
+        return await super(Clean, self)._execute(authenticator, device_info, event_bus)
+
+
+class CleanBorderMower(CleanAreaMower):
+    """Start the edge (border) mowing of one or more areas.
+
+    Multiple areas are send as "aid:2;aid:1" like the app does.
+    """
+
+    def __init__(self, area_ids: list[str] | str) -> None:
+        if isinstance(area_ids, str):
+            area_ids = [area_ids]
+        value = ";".join(f"aid:{area_id}" for area_id in area_ids)
+        self._additional_content = {"type": "border", "value": value}
+        super(CleanAreaV2, self).__init__(CleanAction.START)

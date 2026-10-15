@@ -8,7 +8,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.util.enum import StrEnumWithXml
 
-from . import auto_empty, mop_auto_wash_frequency, station, water_info
+from . import auto_empty, mop_auto_wash_frequency, mower, station, water_info
 from .auto_empty import AutoEmptyEvent
 from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -64,6 +64,7 @@ __all__ = [
     "WorkModeEvent",
     "auto_empty",
     "mop_auto_wash_frequency",
+    "mower",
     "station",
     "water_info",
 ]
@@ -317,6 +318,21 @@ class MoveUpWarningEvent(EnableEvent):
 @dataclass(frozen=True)
 class SafeProtectEvent(EnableEvent):
     """Safe protect event."""
+
+
+@dataclass(frozen=True)
+class AutoCutDirectionEvent(EnableEvent):
+    """Auto cut direction (change direction weekly) event."""
+
+
+@dataclass(frozen=True)
+class AiRecognitionEvent(EnableEvent):
+    """AI recognition (animals, hoses, ...) event."""
+
+
+@dataclass(frozen=True)
+class GeolocationEvent(EnableEvent):
+    """Geolocation (real-time positioning) event."""
 
 
 @dataclass(frozen=True)

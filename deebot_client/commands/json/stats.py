@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StatsEvent, TotalStatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.messages.json.stats import notify_mowed_area
 
 from .common import JsonCommandWithMessageHandling
 
@@ -32,6 +33,7 @@ class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
             type=data.get("type"),
         )
         event_bus.notify(stats_event)
+        notify_mowed_area(event_bus, data)
         return HandlingResult.success()
 
 

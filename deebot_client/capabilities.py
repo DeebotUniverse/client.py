@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
+    AiRecognitionEvent,
+    AutoCutDirectionEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSpinEvent,
@@ -28,6 +30,7 @@ from deebot_client.events import (
     Event,
     FanSpeedEvent,
     FanSpeedLevel,
+    GeolocationEvent,
     LifeSpan,
     LifeSpanEvent,
     MajorMapEvent,
@@ -54,6 +57,7 @@ from deebot_client.events import (
     WorkModeEvent,
     auto_empty,
     mop_auto_wash_frequency,
+    mower,
     water_info,
 )
 
@@ -202,17 +206,54 @@ class CapabilityStats:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityMower:
+    """Capabilities for mowers."""
+
+    areas: CapabilityEvent[mower.MowingAreasEvent] | None = None
+    border: CapabilityExecute[[list[str]]] | None = None
+    area_parameters: (
+        CapabilitySet[mower.AreaParametersEvent, [str, int, int, int]] | None
+    ) = None
+    mowed_area: CapabilityEvent[mower.MowedAreaEvent] | None = None
+    protect_state: CapabilityEvent[mower.ProtectStateEvent] | None = None
+    rtk_base_station: CapabilityEvent[mower.RtkBaseStationEvent] | None = None
+    rtk_signal: CapabilityEvent[mower.RtkSignalEvent] | None = None
+    task: CapabilityEvent[mower.MowingTaskEvent] | None = None
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilitySettings:
     """Capabilities for settings."""
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
+    ai_recognition: CapabilitySetEnable[AiRecognitionEvent] | None = None
+    animal_protection: (
+        CapabilitySet[mower.AnimalProtectionEvent, [bool, str, str]] | None
+    ) = None
+    auto_cut_direction: CapabilitySetEnable[AutoCutDirectionEvent] | None = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
+    cut_efficiency: (
+        CapabilitySetTypes[
+            mower.CutEfficiencyEvent,
+            [mower.CutEfficiency | str],
+            mower.CutEfficiency,
+        ]
+        | None
+    ) = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
         | None
     ) = None
     border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
+    border_switch_mode: (
+        CapabilitySetTypes[
+            mower.BorderSwitchModeEvent,
+            [mower.BorderSwitchMode | str],
+            mower.BorderSwitchMode,
+        ]
+        | None
+    ) = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
     mop_auto_wash_frequency: (
@@ -224,7 +265,9 @@ class CapabilitySettings:
         None
     )
     safe_protect: CapabilitySetEnable[SafeProtectEvent] | None = None
+    geolocation: CapabilitySetEnable[GeolocationEvent] | None = None
     ota: CapabilitySetEnable[OtaEvent] | CapabilityEvent[OtaEvent] | None = None
+    rain_delay: CapabilitySet[mower.RainDelayEvent, [bool, int]] | None = None
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
     voice_assistant: CapabilitySetEnable[VoiceAssistantStateEvent] | None = None
@@ -276,6 +319,7 @@ class Capabilities(ABC):
     ) = None
     life_span: CapabilityLifeSpan
     map: CapabilityMap | None = None
+    mower: CapabilityMower | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute[[]]
     settings: CapabilitySettings

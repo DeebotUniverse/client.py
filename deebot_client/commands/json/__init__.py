@@ -6,14 +6,26 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
+from .anim_protect import GetAnimProtect, SetAnimProtect
+from .area_parameter import GetAreaParameter, SetAreaParameter
+from .area_set import GetAreaSet
+from .auto_cut_direction import GetAutoCutDirection, SetAutoCutDirection
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
+from .charge_info import GetChargeInfo
 from .charge_state import GetChargeState
 from .child_lock import GetChildLock, SetChildLock
-from .clean import Clean, CleanArea, CleanV2, GetCleanInfo, GetCleanInfoV2
+from .clean import (
+    Clean,
+    CleanArea,
+    CleanV2,
+    GetCleanInfo,
+    GetCleanInfoV2,
+    GetScheduleTaskInfo,
+)
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
@@ -21,9 +33,11 @@ from .clear_map import ClearMap
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .cross_map_border_warning import GetCrossMapBorderWarning, SetCrossMapBorderWarning
 from .cut_direction import GetCutDirection, SetCutDirection
+from .cut_efficiency import GetCutEfficiency, SetCutEfficiency
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
+from .geolocation import GetGeolocation, SetGeolocation
 from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
@@ -43,8 +57,13 @@ from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
+from .protect_state import GetProtectState
+from .rain_delay import GetRainDelay, SetRainDelay
+from .recognization import GetRecognization, SetRecognization
 from .relocation import SetRelocationState
+from .rtk import GetRtk
 from .safe_protect import GetSafeProtect, SetSafeProtect
+from .schedule_task import SetScheduleTask
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
@@ -65,11 +84,16 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
+    "GetAnimProtect",
+    "GetAreaParameter",
+    "GetAreaSet",
+    "GetAutoCutDirection",
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
     "GetCachedMapInfo",
     "GetCarpetAutoFanBoost",
+    "GetChargeInfo",
     "GetChargeState",
     "GetChildLock",
     "GetCleanCount",
@@ -80,9 +104,11 @@ __all__ = [
     "GetContinuousCleaning",
     "GetCrossMapBorderWarning",
     "GetCutDirection",
+    "GetCutEfficiency",
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
+    "GetGeolocation",
     "GetLifeSpan",
     "GetMajorMap",
     "GetMapInfoV2",
@@ -98,7 +124,12 @@ __all__ = [
     "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
+    "GetProtectState",
+    "GetRainDelay",
+    "GetRecognization",
+    "GetRtk",
     "GetSafeProtect",
+    "GetScheduleTaskInfo",
     "GetStats",
     "GetSweepMode",
     "GetTotalStats",
@@ -110,6 +141,9 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
+    "SetAnimProtect",
+    "SetAreaParameter",
+    "SetAutoCutDirection",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
@@ -119,15 +153,20 @@ __all__ = [
     "SetContinuousCleaning",
     "SetCrossMapBorderWarning",
     "SetCutDirection",
+    "SetCutEfficiency",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetGeolocation",
     "SetMajorMap",
     "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
+    "SetRainDelay",
+    "SetRecognization",
     "SetRelocationState",
     "SetSafeProtect",
+    "SetScheduleTask",
     "SetSweepMode",
     "SetTrueDetect",
     "SetVoiceAssistantState",
@@ -141,6 +180,17 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    GetAnimProtect,
+    SetAnimProtect,
+
+    GetAreaParameter,
+    SetAreaParameter,
+
+    GetAreaSet,
+
+    GetAutoCutDirection,
+    SetAutoCutDirection,
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
@@ -166,6 +216,8 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     Charge,
 
+    GetChargeInfo,
+
     GetChargeState,
 
     GetChildLock,
@@ -176,6 +228,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     CleanArea,
     GetCleanInfo,
     GetCleanInfoV2,
+    GetScheduleTaskInfo,
 
 
     GetCleanLogs,
@@ -186,6 +239,10 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetCrossMapBorderWarning,
     SetCrossMapBorderWarning,
 
+    GetCutEfficiency,
+    SetCutEfficiency,
+
+
     GetEfficiencyMode,
     SetEfficiencyMode,
 
@@ -193,6 +250,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetFanSpeed,
     SetFanSpeed,
+
+    GetGeolocation,
+    SetGeolocation,
 
     GetLifeSpan,
     ResetLifeSpan,
@@ -226,10 +286,22 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetPos,
 
+    GetProtectState,
+
+    GetRainDelay,
+    SetRainDelay,
+
+    GetRecognization,
+    SetRecognization,
+
     SetRelocationState,
+
+    GetRtk,
 
     GetSafeProtect,
     SetSafeProtect,
+
+    SetScheduleTask,
 
     station_action.StationAction,
 

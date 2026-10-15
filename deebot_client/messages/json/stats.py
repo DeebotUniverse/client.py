@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import CleanJobStatus, ReportStatsEvent, StatsEvent
+from deebot_client.events.mower import MowedAreaEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 
 if TYPE_CHECKING:
@@ -58,4 +59,13 @@ class OnStats(MessageBodyDataDict):
         event_bus.notify(
             StatsEvent(area=data["area"], time=data["time"], type=data.get("type"))
         )
+        notify_mowed_area(event_bus, data)
         return HandlingResult.success()
+
+
+def notify_mowed_area(event_bus: EventBus, data: dict[str, Any]) -> None:
+    """Notify the mowed area, which is reported by newer mowers."""
+    if (mowed_area := data.get("mowedArea")) is not None:
+        event_bus.notify(
+            MowedAreaEvent(mowed_area=int(mowed_area), total_area=int(data["area"]))
+        )

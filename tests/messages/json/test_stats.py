@@ -6,10 +6,12 @@ import pytest
 
 from deebot_client.events import (
     CleanJobStatus,
+    Event,
     FirmwareEvent,
     ReportStatsEvent,
     StatsEvent,
 )
+from deebot_client.events.mower import MowedAreaEvent
 from deebot_client.messages.json import OnStats, ReportStats
 from tests.messages.json import assert_message
 
@@ -112,16 +114,19 @@ def test_ReportStats(data: dict[str, Any], expected: ReportStatsEvent) -> None:
         ),
         (
             {"mowid": "0", "time": 11269, "area": 2889500, "mowedArea": 1005475},
-            StatsEvent(
-                area=2889500,
-                time=11269,
-                type=None,
+            (
+                StatsEvent(
+                    area=2889500,
+                    time=11269,
+                    type=None,
+                ),
+                MowedAreaEvent(mowed_area=1005475, total_area=2889500),
             ),
         ),
     ],
 )
 @pytest.mark.benchmark
-def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
+def test_onStats(data: dict[str, Any], expected: Event | tuple[Event, ...]) -> None:
     data = {
         "header": {
             "pri": 1,
@@ -134,4 +139,6 @@ def test_onStats(data: dict[str, Any], expected: StatsEvent) -> None:
         "body": {"data": data},
     }
 
-    assert_message(OnStats, data, (FirmwareEvent("1.8.2"), expected))
+    if not isinstance(expected, tuple):
+        expected = (expected,)
+    assert_message(OnStats, data, (FirmwareEvent("1.8.2"), *expected))
