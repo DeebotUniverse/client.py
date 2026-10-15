@@ -91,3 +91,14 @@ class Credentials:
     token: str
     user_id: str
     expires_at: int = 0
+
+
+@dataclass(frozen=True)
+class AccountCredentials:
+    """Account credentials as returned by the login or device verification api.
+
+    The access token can mint new portal credentials without the password.
+    """
+
+    access_token: str
+    user_id: str
