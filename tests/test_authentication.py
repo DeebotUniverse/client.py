@@ -487,7 +487,9 @@ async def test_request_device_verification_rejects_non_rsa_public_key(
     public_key = ec.generate_private_key(ec.SECP256R1()).public_key()
     api.responses["getConfig"]["data"] = [_key_config(_public_key_config(public_key))]
 
-    with pytest.raises(AuthenticationError, match="public key is not an RSA key"):
+    with pytest.raises(
+        AuthenticationError, match="Invalid Ecovacs public key: not an RSA key"
+    ):
         await auth.request_device_verification_code()
 
 

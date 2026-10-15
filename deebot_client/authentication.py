@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 import orjson
 
 from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
@@ -26,6 +24,7 @@ from .exceptions import (
 )
 from .logging_filter import get_logger
 from .models import AccountCredentials, Credentials
+from .rs.crypto import RsaPublicKey
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
@@ -122,7 +121,7 @@ class _AuthClient:
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
-        self._public_key: rsa.RSAPublicKey | None = None
+        self._public_key: RsaPublicKey | None = None
 
     async def login(self) -> Credentials:
         """Login using username and password."""
@@ -273,7 +272,7 @@ class _AuthClient:
             "authTimeZone": "GMT-8",
         }
 
-    async def __get_public_key(self) -> rsa.RSAPublicKey:
+    async def __get_public_key(self) -> RsaPublicKey:
         # The key is the same for all accounts, therefore we cache it for the
         # lifetime of the client
         if self._public_key is not None:
@@ -297,7 +296,7 @@ class _AuthClient:
         raise AuthenticationError("Ecovacs public key configuration is missing")
 
     @staticmethod
-    def __load_public_key(config_value: str) -> rsa.RSAPublicKey:
+    def __load_public_key(config_value: str) -> RsaPublicKey:
         """Load the public key from the configuration value."""
         try:
             encoded_key = orjson.loads(config_value)["publicKey"]
@@ -308,20 +307,15 @@ class _AuthClient:
 
         try:
             # base64 and DER errors are both a ValueError
-            key = serialization.load_der_public_key(
-                base64.b64decode(encoded_key, validate=True)
-            )
+            return RsaPublicKey.from_der(base64.b64decode(encoded_key, validate=True))
         except ValueError as ex:
-            raise AuthenticationError("Invalid Ecovacs public key") from ex
-
-        if not isinstance(key, rsa.RSAPublicKey):
-            raise AuthenticationError("Ecovacs public key is not an RSA key")
-        return key
+            msg = f"Invalid Ecovacs public key: {ex}"
+            raise AuthenticationError(msg) from ex
 
     async def __encrypt_account(self, account: str) -> str:
         public_key = await self.__get_public_key()
         # PKCS1v15 padding is required by the Ecovacs api
-        encrypted = public_key.encrypt(account.encode(), padding.PKCS1v15())
+        encrypted = public_key.encrypt_pkcs1v15(account.encode())
         return base64.b64encode(encrypted).decode()
 
     @staticmethod
