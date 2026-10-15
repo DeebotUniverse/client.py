@@ -477,13 +477,13 @@ dependencies = [
     { name = "aiohttp" },
     { name = "aiomqtt" },
     { name = "cachetools" },
-    { name = "cryptography" },
     { name = "defusedxml" },
     { name = "orjson" },
 ]
 
 [package.dev-dependencies]
 dev = [
+    { name = "cryptography" },
     { name = "maturin", extra = ["patchelf"] },
     { name = "maturin-import-hook" },
     { name = "mypy" },
@@ -509,6 +509,7 @@ lint = [
     { name = "types-mock" },
 ]
 test = [
+    { name = "cryptography" },
     { name = "pycountry" },
     { name = "pytest" },
     { name = "pytest-asyncio" },
@@ -527,13 +528,13 @@ requires-dist = [
     { name = "aiohttp", specifier = ">=3.13.3,<4.0" },
     { name = "aiomqtt", specifier = ">=2.5.0,<3.0" },
     { name = "cachetools", specifier = ">=5.0.0,<8.0" },
-    { name = "cryptography", specifier = ">=48.0.1,<51.0" },
     { name = "defusedxml", specifier = ">=0.7.1" },
     { name = "orjson", specifier = ">=3.11.3" },
 ]
 
 [package.metadata.requires-dev]
 dev = [
+    { name = "cryptography", specifier = "==50.0.1" },
     { name = "maturin", extras = ["patchelf"], specifier = "==1.15.0" },
     { name = "maturin-import-hook", specifier = "==0.3.0" },
     { name = "mypy", specifier = "==2.3.1" },
@@ -559,6 +560,7 @@ lint = [
     { name = "types-mock", specifier = ">=5.1.0.20240425" },
 ]
 test = [
+    { name = "cryptography", specifier = "==50.0.1" },
     { name = "pycountry", specifier = "==26.2.16" },
     { name = "pytest", specifier = "==9.1.1" },
     { name = "pytest-asyncio", specifier = "==1.4.0" },
