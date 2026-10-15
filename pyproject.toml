@@ -61,7 +61,7 @@ lint = [
     "types-mock>=5.1.0.20240425",
 ]
 test = [
-    "cryptography==50.0.1",
+    "cryptography==50.0.2",
     "pycountry==26.2.16",
     "pytest-asyncio==1.4.0",
     "pytest-codspeed>=3.1.2",
