@@ -244,12 +244,19 @@ jobs:
         if: ${{ matrix.platform.name == 'Windows' && github.event_name == 'release' }}
         run: |
           (Get-Content pyproject.toml) -replace 'version = ".*"', 'version = "${{ github.event.release.tag_name }}"' | Set-Content pyproject.toml
+      # Release wheels are always built from scratch
+      - name: Cache Rust target directory
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target
+          key: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.platform.target }}
           args: --release --strip --out dist -i python${{ matrix.python-version }}
-          sccache: ${{ github.event_name != 'release' }}
+          sccache: "false"
           manylinux: ${{ matrix.manylinux }}
           before-script-linux: python3 -m ensurepip
       - name: Upload wheels
@@ -314,12 +321,19 @@ jobs:
         if: ${{ github.event_name == 'release' }}
         run: |
           sed -i "s/^version = \".*\"/version = \"${{ github.event.release.tag_name }}\"/" pyproject.toml
+      # Release wheels are always built from scratch
+      - name: Cache Rust target directory
+        if: ${{ github.event_name != 'release' }}
+        uses: actions/cache@55cc8345863c7cc4c66a329aec7e433d2d1c52a9 # v6.1.0
+        with:
+          path: target
+          key: wheels-musllinux-${{ matrix.target }}-${{ matrix.python-version }}-${{ hashFiles('Cargo.lock', 'rust-toolchain.toml') }}
       - name: Build wheels
         uses: PyO3/maturin-action@e83996d129638aa358a18fbd1dfb82f0b0fb5d3b # v1.51.0
         with:
           target: ${{ matrix.target }}
           args: --release --strip --out dist -i python${{ matrix.python-version }}
-          sccache: ${{ github.event_name != 'release' }}
+          sccache: "false"
           manylinux: musllinux_1_2
       - name: Upload wheels
         uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
