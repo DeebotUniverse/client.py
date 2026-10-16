@@ -267,8 +267,10 @@ async def test_GetLifeSpan_unknown_type_skipped(
         assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
             (
                 logging.WARNING,
-                "Unknown LifeSpan types skipped: ['unknownFutureType']. "
-                "Please report them",
+                (
+                    "Unknown LifeSpan types skipped: ['unknownFutureType']. "
+                    "Please report them"
+                ),
             )
         ]
 
