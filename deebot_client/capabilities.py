@@ -54,6 +54,7 @@ from deebot_client.events import (
     WorkModeEvent,
     auto_empty,
     mop_auto_wash_frequency,
+    mower,
     water_info,
 )
 
@@ -213,6 +214,14 @@ class CapabilitySettings:
     ) = None
     border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
+    border_switch_mode: (
+        CapabilitySetTypes[
+            mower.BorderSwitchModeEvent,
+            [mower.BorderSwitchMode | str],
+            mower.BorderSwitchMode,
+        ]
+        | None
+    ) = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
     mop_auto_wash_frequency: (
