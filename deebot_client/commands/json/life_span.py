@@ -17,6 +17,7 @@ if TYPE_CHECKING:
     from deebot_client.util import LST
 
 _LOGGER = get_logger(__name__)
+_REPORTED_UNKNOWN_TYPES: set[str] = set()
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
@@ -54,7 +55,16 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
             event_bus.notify(LifeSpanEvent(component_type, percent, left))
 
         if unknown_types:
-            _LOGGER.debug("Unknown LifeSpan types skipped: %s", unknown_types)
+            if new_types := set(unknown_types) - _REPORTED_UNKNOWN_TYPES:
+                _REPORTED_UNKNOWN_TYPES.update(new_types)
+                _LOGGER.warning(
+                    "Unknown LifeSpan types skipped: %s. Please report them",
+                    sorted(new_types),
+                )
+            if already_reported := set(unknown_types) - new_types:
+                _LOGGER.debug(
+                    "Unknown LifeSpan types skipped: %s", sorted(already_reported)
+                )
 
         return HandlingResult.success()
 

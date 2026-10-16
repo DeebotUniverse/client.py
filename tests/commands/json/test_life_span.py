@@ -1,7 +1,8 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import pytest
 
@@ -247,7 +248,9 @@ async def test_ResetLifeSpan(command: ResetLifeSpan, args: dict[str, str]) -> No
     await assert_execute_command(command, args)
 
 
-async def test_GetLifeSpan_unknown_type_skipped() -> None:
+async def test_GetLifeSpan_unknown_type_skipped(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
     """Unknown LifeSpan types should be skipped, not raise an exception."""
     event_bus = MagicMock()
     data = [
@@ -255,7 +258,23 @@ async def test_GetLifeSpan_unknown_type_skipped() -> None:
         {"type": "unknownFutureType", "left": 100, "total": 100},
         {"type": "heap", "left": 7179, "total": 7200},
     ]
-    result = GetLifeSpan._handle_body_data_list(event_bus, data)
-    assert result.state == HandlingState.SUCCESS
-    # brush and heap notified; unknown type silently skipped
-    assert event_bus.notify.call_count == 2
+    caplog.set_level(logging.DEBUG)
+    with patch("deebot_client.commands.json.life_span._REPORTED_UNKNOWN_TYPES", set()):
+        result = GetLifeSpan._handle_body_data_list(event_bus, data)
+        assert result.state == HandlingState.SUCCESS
+        # brush and heap notified; unknown type skipped
+        assert event_bus.notify.call_count == 2
+        assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
+            (
+                logging.WARNING,
+                "Unknown LifeSpan types skipped: ['unknownFutureType']. "
+                "Please report them",
+            )
+        ]
+
+        # Second occurrence is only logged as debug
+        caplog.clear()
+        GetLifeSpan._handle_body_data_list(event_bus, data)
+        assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
+            (logging.DEBUG, "Unknown LifeSpan types skipped: ['unknownFutureType']")
+        ]
