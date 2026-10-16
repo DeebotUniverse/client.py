@@ -3,10 +3,12 @@
 from __future__ import annotations
 
 from abc import ABC, abstractmethod
+import secrets
 import time
 from types import MappingProxyType
 from typing import TYPE_CHECKING, Any
 
+import aiohttp
 import orjson
 
 from deebot_client.command import (
@@ -34,6 +36,84 @@ if TYPE_CHECKING:
     from deebot_client.events import EnableEvent
 
 _LOGGER = get_logger(__name__)
+
+_SST_URL = "https://api-base.dc-na.ww.ecouser.net/api/new-perm/token/sst/issue"
+_NGIOT_URL = "https://api-ngiot.dc-na.ww.ecouser.net/api/iot/endpoint/control"
+
+# Static signature block required by appsvr/app.do.
+_APP_ID = "ecovacs"
+_APP_SIGNATURE = "f66440b16af096f33575d1e396eab38e93991cc8"  # noqa: S105
+
+
+async def get_sst(
+    session: aiohttp.ClientSession,
+    *,
+    token: str,
+    user_id: str,
+    did: str,
+    mid: str,
+) -> str:
+    """Obtain a Service Session Token (SST) for ngiot control commands."""
+    body = {
+        "acl": [
+            {
+                "policy": [{"obj": [f"Endpoint:{mid}:{did}"], "perms": ["Control"]}],
+                "svc": "dim",
+            }
+        ],
+        "exp": 600,
+        "sub": user_id,
+    }
+    headers = {
+        "authorization": f"Bearer {token}",
+        "x-eco-request-id": secrets.token_hex(16),
+        "content-type": "application/json; charset=utf-8",
+        "accept-encoding": "gzip",
+        "user-agent": "okhttp/4.9.1",
+    }
+    async with session.post(_SST_URL, json=body, headers=headers) as resp:
+        data = await resp.json(content_type=None)
+    return data["data"]["data"]["token"]  # type: ignore[no-any-return]
+
+
+async def ngiot_post(
+    session: aiohttp.ClientSession,
+    *,
+    sst: str,
+    eid: str,
+    et: str,
+    er: str,
+    apn: str,
+    body_data: dict[str, Any],
+) -> dict[str, Any]:
+    """POST a command to the ngiot endpoint/control API."""
+    si = secrets.token_urlsafe(12)[:16]
+    reqid = secrets.token_urlsafe(6)[:6]
+    params = {"si": si, "ct": "q", "eid": eid, "et": et, "er": er, "apn": apn, "fmt": "j"}
+    payload: dict[str, Any] = {
+        "body": {"data": body_data},
+        "header": {
+            "channel": "Android",
+            "m": "request",
+            "pri": 2,
+            "reqid": reqid,
+            "ts": str(int(time.time() * 1000)),
+            "tzc": "Australia/Melbourne",
+            "tzm": 600,
+            "ver": "0.0.22",
+        },
+    }
+    headers = {
+        "authorization": f"Bearer {sst}",
+        "appid": _APP_ID,
+        "x-eco-request-id": reqid,
+        "content-type": "application/json",
+        "accept-encoding": "gzip",
+        "user-agent": "okhttp/4.9.1",
+    }
+    async with session.post(_NGIOT_URL, json=payload, params=params, headers=headers) as resp:
+        text = await resp.text()
+        return await resp.json(content_type=None) if text.strip() else {}  # type: ignore[no-any-return]
 
 
 class JsonCommand(Command, ABC):
