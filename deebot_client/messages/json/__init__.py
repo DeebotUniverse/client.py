@@ -80,6 +80,7 @@ _LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
         "getCleanCount",
         "getCleanInfo",
         "getCleanPreference",
+        "getCutEfficiency",
         "getEfficiency",
         "getError",
         "getLifeSpan",
