@@ -11,6 +11,7 @@ from deebot_client.capabilities import (
     CapabilityExecute,
     CapabilityExecuteTypes,
     CapabilityLifeSpan,
+    CapabilityMap,
     CapabilityNumber,
     CapabilitySet,
     CapabilitySetEnable,
@@ -42,6 +43,12 @@ from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.fan_speed import GetFanSpeed, SetFanSpeed
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
+from deebot_client.commands.json.map import (
+    GetCachedMapInfo,
+    GetMapInfoV2,
+    GetMapSetV2,
+    GetMapTrace,
+)
 from deebot_client.commands.json.mop_auto_wash_frequency import (
     GetMopAutoWashFrequency,
     SetMopAutoWashFrequency,
@@ -49,6 +56,8 @@ from deebot_client.commands.json.mop_auto_wash_frequency import (
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
 from deebot_client.commands.json.play_sound import PlaySound
+from deebot_client.commands.json.pos import GetPos
+from deebot_client.commands.json.relocation import SetRelocationState
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.commands.json.sweep_mode import GetSweepMode, SetSweepMode
 from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
@@ -64,6 +73,7 @@ from deebot_client.const import DataType
 from deebot_client.events import (
     AvailabilityEvent,
     BatteryEvent,
+    CachedMapInfoEvent,
     ChildLockEvent,
     CleanCountEvent,
     CleanLogEvent,
@@ -74,9 +84,13 @@ from deebot_client.events import (
     FanSpeedLevel,
     LifeSpan,
     LifeSpanEvent,
+    MapChangedEvent,
+    MapTraceEvent,
     NetworkInfoEvent,
     OtaEvent,
+    PositionsEvent,
     ReportStatsEvent,
+    RoomsEvent,
     StateEvent,
     StationEvent,
     StatsEvent,
@@ -177,6 +191,16 @@ def get_device_info() -> StaticDeviceInfo:
                     )
                 ],
                 reset=ResetLifeSpan,
+            ),
+            map=CapabilityMap(
+                cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
+                changed=CapabilityEvent(MapChangedEvent, []),
+                info=CapabilityExecute(GetMapInfoV2),
+                position=CapabilityEvent(PositionsEvent, [GetPos()]),
+                relocation=CapabilityExecute(SetRelocationState),
+                rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
+                set=CapabilityExecute(GetMapSetV2),
+                trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
             ),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),

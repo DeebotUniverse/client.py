@@ -517,6 +517,57 @@ async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
+    """Test newer room subset format with two extra trailing fields.
+
+    Captured from a DEEBOT T90 PRO OMNI (twunby) on firmware 1.97.0, which
+    reports 12 fields per room and doesn't support getMapSubSet.
+    """
+    mid = "658564180"
+    msid = "2147157086"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WDzALUGAGJLIBtgR6MOqNpY//lX94si29XwrWSDO9wczCEIAh6GsUkA"
+        "VSgcD1EE7iwVPpcgiBu4r4saJw8yXPd0b0pCcEDc1TInEd3dshwFQyMMLWHm"
+        "Uagty/EOg0bckWHqoFOQFnDPixqmD/dEg+ee1lL3lAzh3dwXJkSY9zx3lzhC"
+        "8p4j7ueiCCAAi0vAyHIADVUXsrN9J9liSRgGS1gM2gKQFRWOIkgYgCJB1dog"
+        "h8tRILgaA1ZjQDGwmRlVgtzCSDiYAQMcuC4kzB8aE+FOUAvUbL8LA4IrRAE="
+    )
+    subsets = [1, 2, 3, 5, 6, 7, 8]
+    rooms_names = [
+        "Corridoio",
+        "Bagno",
+        "Cameretta",
+        "Camera da letto",
+        "Cucina",
+        "Soggiorno",
+        "Ingresso",
+    ]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": msid,
+                "batid": "felnaf",
+                "subsets": subsets_comp,
+                "infoSize": 499,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, subset, "")
+        for subset, room_name in zip(subsets, rooms_names, strict=False)
+    ]
+    events = [firmware_event, RoomsEvent(mid, rooms)]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        events,
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160

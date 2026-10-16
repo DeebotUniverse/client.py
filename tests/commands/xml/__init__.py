@@ -20,7 +20,7 @@ if TYPE_CHECKING:
 async def assert_command(
     command: Command,
     json_api_response: dict[str, Any] | tuple[dict[str, Any], ...],
-    expected_events: Event | None | Sequence[Event],
+    expected_events: Event | Sequence[Event] | None,
     *,
     device_class: str = "2pv572",
     handling_result: HandlingResult | None = None,

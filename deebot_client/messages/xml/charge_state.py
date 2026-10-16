@@ -37,7 +37,7 @@ class ChargeState(XmlMessage):
         if (charge := xml.find("charge")) is not None and (
             charge_type := charge.attrib["type"]
         ) is not None:
-            status: None | State = None
+            status: State | None = None
             match charge_type.lower():
                 case "slotcharging" | "slot_charging" | "wirecharging":
                     status = State.DOCKED
