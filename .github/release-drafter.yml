@@ -5,38 +5,36 @@ sort-direction: ascending
 filter-by-commitish: true
 categories:
   - title: ":boom: Breaking changes"
-    label: "pr: Breaking Change"
+    label: "breaking-change"
 
   - title: ":sparkles: New features"
-    label: "pr: new-feature"
+    label: "new-feature"
 
   - title: ":zap: Enhancements"
-    label: "pr: enhancement"
+    label: "enhancement"
 
   - title: ":recycle: Refactor"
-    label: "pr: refactor"
+    label: "refactor"
 
   - title: ":bug: Bug Fixes"
-    label: "pr: bugfix"
+    label: "bug"
 
   - title: ":arrow_up: Dependency Updates"
     collapse-after: 0
     labels:
-      - "pr: dependency-update"
       - "dependencies"
 
 version-resolver:
   major:
     labels:
-      - "pr: Breaking Change"
+      - "breaking-change"
   minor:
     labels:
-      - "pr: enhancement"
-      - "pr: new-feature"
+      - "enhancement"
+      - "new-feature"
   patch:
     labels:
-      - "pr: bugfix"
-      - "pr: dependency-update"
+      - "bug"
       - "dependencies"
   default: patch
 
