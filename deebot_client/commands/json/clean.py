@@ -142,6 +142,19 @@ class CleanRoomsV2(CleanV2):
         }
         super().__init__(CleanAction.START)
 
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        """Execute command.
+
+        A room clean must always send "start": while the robot is paused,
+        Clean._execute would turn it into a bare "resume" and drop the rooms.
+        """
+        return await super(Clean, self)._execute(authenticator, device_info, event_bus)
+
     def _get_args(self, action: CleanAction) -> dict[str, Any]:
         args = super()._get_args(action)
         if action == CleanAction.START:

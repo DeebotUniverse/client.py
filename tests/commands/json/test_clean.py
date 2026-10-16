@@ -109,6 +109,29 @@ async def test_Clean_act(
 
 
 @pytest.mark.parametrize(
+    "state", [None, State.CLEANING, State.PAUSED, State.DOCKED, State.IDLE]
+)
+async def test_CleanRoomsV2_always_starts(
+    authenticator: Authenticator,
+    api_device_info: ApiDeviceInfo,
+    state: State | None,
+) -> None:
+    """Room cleaning must send "start" with the rooms, even while paused."""
+    event_bus = Mock(spec_set=EventBus)
+    event_bus.get_last_event.return_value = (
+        StateEvent(state) if state is not None else None
+    )
+    command = CleanRoomsV2([5])
+
+    await command.execute(authenticator, api_device_info, event_bus)
+
+    assert command._args == {
+        "act": "start",
+        "content": {"type": "freeClean", "value": "1,5"},
+    }
+
+
+@pytest.mark.parametrize(
     ("command", "args"),
     [
         (
