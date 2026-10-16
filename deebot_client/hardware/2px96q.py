@@ -34,6 +34,7 @@ from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import CleanAreaV2, CleanV2, GetCleanInfoV2
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
+from deebot_client.commands.json.geolocation import GetGeolocation, SetGeolocation
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.play_sound import PlaySound
@@ -47,6 +48,7 @@ from deebot_client.events import (
     CustomCommandEvent,
     CutDirectionEvent,
     ErrorEvent,
+    GeolocationEvent,
     LifeSpan,
     LifeSpanEvent,
     MoveUpWarningEvent,
@@ -107,6 +109,9 @@ def get_device_info() -> StaticDeviceInfo:
                     CrossMapBorderWarningEvent,
                     [GetCrossMapBorderWarning()],
                     SetCrossMapBorderWarning,
+                ),
+                geolocation=CapabilitySetEnable(
+                    GeolocationEvent, [GetGeolocation()], SetGeolocation
                 ),
                 safe_protect=CapabilitySetEnable(
                     SafeProtectEvent, [GetSafeProtect()], SetSafeProtect

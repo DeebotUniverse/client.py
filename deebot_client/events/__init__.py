@@ -320,6 +320,11 @@ class SafeProtectEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class GeolocationEvent(EnableEvent):
+    """Geolocation (real-time positioning) event."""
+
+
+@dataclass(frozen=True)
 class CutDirectionEvent(Event):
     """Cut direction event representation."""
 

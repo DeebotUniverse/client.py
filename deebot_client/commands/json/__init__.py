@@ -24,6 +24,7 @@ from .cut_direction import GetCutDirection, SetCutDirection
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
+from .geolocation import GetGeolocation, SetGeolocation
 from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
@@ -83,6 +84,7 @@ __all__ = [
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
+    "GetGeolocation",
     "GetLifeSpan",
     "GetMajorMap",
     "GetMapInfoV2",
@@ -121,6 +123,7 @@ __all__ = [
     "SetCutDirection",
     "SetEfficiencyMode",
     "SetFanSpeed",
+    "SetGeolocation",
     "SetMajorMap",
     "SetMopAutoWashFrequency",
     "SetMoveUpWarning",
@@ -193,6 +196,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetFanSpeed,
     SetFanSpeed,
+
+    GetGeolocation,
+    SetGeolocation,
 
     GetLifeSpan,
     ResetLifeSpan,
