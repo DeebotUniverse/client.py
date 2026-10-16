@@ -1,12 +1,15 @@
 from __future__ import annotations
 
+import logging
 from typing import Any
+from unittest.mock import MagicMock, patch
 
 import pytest
 
 from deebot_client.commands.json import GetLifeSpan
 from deebot_client.commands.json.life_span import ResetLifeSpan
 from deebot_client.events import FirmwareEvent, LifeSpan, LifeSpanEvent
+from deebot_client.message import HandlingState
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command, assert_execute_command
@@ -195,6 +198,31 @@ from . import assert_command, assert_execute_command
             ),
             (LifeSpanEvent(LifeSpan.SEWAGE_BOX, 100.0, 3600),),
         ),
+        (
+            GetLifeSpan({LifeSpan.DUST_BUCKET}),
+            get_request_json(
+                get_success_body([{"type": "dustBucket", "left": 1500, "total": 1500}])
+            ),
+            (LifeSpanEvent(LifeSpan.DUST_BUCKET, 100.0, 1500),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.DUST_CONTAINER_FILTER}),
+            get_request_json(
+                get_success_body(
+                    [{"type": "dustContainerFilter", "left": 90, "total": 90}]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.DUST_CONTAINER_FILTER, 100.0, 90),),
+        ),
+        (
+            GetLifeSpan({LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION}),
+            get_request_json(
+                get_success_body(
+                    [{"type": "heavyDutyCleaningSolution", "left": 100, "total": 100}]
+                )
+            ),
+            (LifeSpanEvent(LifeSpan.HEAVY_DUTY_CLEANING_SOLUTION, 100.0, 100),),
+        ),
     ],
 )
 async def test_GetLifeSpan(
@@ -218,3 +246,37 @@ async def test_GetLifeSpan(
 )
 async def test_ResetLifeSpan(command: ResetLifeSpan, args: dict[str, str]) -> None:
     await assert_execute_command(command, args)
+
+
+async def test_GetLifeSpan_unknown_type_skipped(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """Unknown LifeSpan types should be skipped, not raise an exception."""
+    event_bus = MagicMock()
+    data = [
+        {"type": "brush", "left": 17979, "total": 18000},
+        {"type": "unknownFutureType", "left": 100, "total": 100},
+        {"type": "heap", "left": 7179, "total": 7200},
+    ]
+    caplog.set_level(logging.DEBUG)
+    with patch("deebot_client.commands.json.life_span._REPORTED_UNKNOWN_TYPES", set()):
+        result = GetLifeSpan._handle_body_data_list(event_bus, data)
+        assert result.state == HandlingState.SUCCESS
+        # brush and heap notified; unknown type skipped
+        assert event_bus.notify.call_count == 2
+        assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
+            (
+                logging.WARNING,
+                (
+                    "Unknown LifeSpan types skipped: ['unknownFutureType']. "
+                    "Please report them"
+                ),
+            )
+        ]
+
+        # Second occurrence is only logged as debug
+        caplog.clear()
+        GetLifeSpan._handle_body_data_list(event_bus, data)
+        assert [(r.levelno, r.getMessage()) for r in caplog.records] == [
+            (logging.DEBUG, "Unknown LifeSpan types skipped: ['unknownFutureType']")
+        ]
