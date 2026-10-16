@@ -17,7 +17,12 @@ from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
-from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
+from deebot_client.commands.json.clean import (
+    CleanAreaV2,
+    CleanV2,
+    GetCleanInfo,
+    GetCleanInfoV2,
+)
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -87,7 +92,7 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware.r8ead0 import get_device_info as get_r8ead0_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanMode, StaticDeviceInfo
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
@@ -279,3 +284,21 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
+
+
+async def test_c4wu9j_uses_free_clean_for_room_cleaning() -> None:
+    """Test X12 OmniCyclone serializes room cleaning as freeClean."""
+    info = await hardware.get_static_device_info("c4wu9j")
+    assert info is not None
+
+    capabilities = info.capabilities
+    assert capabilities.clean.action.command is CleanV2
+    assert capabilities.clean.action.area is not None
+
+    area_command = capabilities.clean.action.area(CleanMode.SPOT_AREA, [5], 1)
+    assert isinstance(area_command, CleanAreaV2)
+    assert area_command.NAME == "clean_V2"
+    assert area_command._args == {
+        "act": "start",
+        "content": {"type": "freeClean", "value": "1,5"},
+    }

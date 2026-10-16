@@ -568,6 +568,37 @@ async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_with_four_extra_fields() -> None:
+    """Test the 14-field room subset format used by the X12 OmniCyclone."""
+    mid = "409328429"
+    set_type = MapSetType.ROOMS
+    subsets_comp = "KLUv/WCKAMUFADLJGx5gRZQOYMx+WfdbD2raWzaIuQDEb4TsfW8O5giCgAsLXnJ5eMd1n5iB52EK9zZYBwNyBJzDnanDxU6QOCkCJMQ9lUrYIdcu78i9EUUAjcQQ7rjSZfXjjqdu3Rtm3lvC8u7qzu7tDi2ahOQY7mtFCRwAJUugChysBpu4bNAWsgpidsPwhIYA42gCiCx7FCNelm8TBD6Bw6qNIwQ6sZnFpARNIL4oYFjdSELDKuVmJjalkh1u1R4="
+    room_ids = [1, 2, 3, 4, 5]
+    room_names = ["Kitchen", "Bathroom", "Study", "Living room", "Hallway"]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": "127210242",
+                "batid": "mhkhao",
+                "subsets": subsets_comp,
+                "infoSize": 394,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, room_id, "")
+        for room_id, room_name in zip(room_ids, room_names, strict=True)
+    ]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        [firmware_event, RoomsEvent(mid, rooms)],
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160
