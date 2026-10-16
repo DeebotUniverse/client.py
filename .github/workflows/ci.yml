@@ -27,7 +27,7 @@ jobs:
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: ⤵️  Check out code from GitHub
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -76,7 +76,7 @@ jobs:
           path: requirements-dev.txt
 
   python-code-quality:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Check Python code quality
     steps:
       - name: ⤵️ Checkout repository
@@ -110,7 +110,7 @@ jobs:
         run: scripts/check_getLogger.sh
 
   rust-code-quality:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Check Rust code quality
     env:
       RUSTFLAGS: "-Dwarnings"
@@ -125,7 +125,7 @@ jobs:
           args: --all-features
 
   prek:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Run prek checks
     steps:
       - name: ⤵️ Checkout repository
@@ -137,7 +137,7 @@ jobs:
 
   tests:
     name: Execute tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - info
       - python-code-quality
@@ -215,10 +215,10 @@ jobs:
             pytest_args: -m "not docker"
         platform:
           - name: Linux
-            runner: ubuntu-latest
+            runner: ubuntu-26.04
             target: x86_64
           - name: Linux
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
             target: aarch64
           - name: Windows
             runner: windows-latest
@@ -293,7 +293,7 @@ jobs:
 
   build-test-musl:
     name: Musllinux ${{ matrix.target }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'ubuntu-26.04' }}
     needs:
       - info
       - tests
@@ -311,7 +311,7 @@ jobs:
           # aarch64
           - target: aarch64
             docker_arch: arm64
-            os: ubuntu-24.04-arm
+            os: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
@@ -365,7 +365,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.docker_arch }} deebot_client:${{ matrix.target }}-${{ matrix.python-version }}
 
   benchmarks:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Run benchmarks (${{ matrix.mode }})
     if: ${{ github.event_name != 'release' }}
     needs:
@@ -411,7 +411,7 @@ jobs:
 
   sdist:
     name: Create source distribution
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: tests
     steps:
       - name: ⤵️ Check out code from GitHub
@@ -433,7 +433,7 @@ jobs:
   release:
     name: Releasing to PyPi
     if: ${{ github.event_name == 'release' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - build-test-native
       - build-test-musl
@@ -466,7 +466,7 @@ jobs:
 
   all-required-green: # This job does nothing and is only used for the branch protection
     name: All required checks pass
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - build-test-native
       - build-test-musl
