@@ -10,6 +10,7 @@ from deebot_client.capabilities import (
     CapabilityEvent,
     CapabilityExecute,
     CapabilityLifeSpan,
+    CapabilityLiveView,
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
@@ -57,6 +58,7 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
 )
+from deebot_client.live_view import PinEncoding
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -91,6 +93,7 @@ def get_device_info() -> StaticDeviceInfo:
                 ],
                 reset=ResetLifeSpan,
             ),
+            live_view=CapabilityLiveView(pin_encoding=PinEncoding.GOAT_MD5),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
             settings=CapabilitySettings(
