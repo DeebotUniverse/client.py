@@ -34,7 +34,7 @@ from deebot_client.commands.json.advanced_mode import GetAdvancedMode, SetAdvanc
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import CleanAreaV2, CleanV2, GetCleanInfoV2
+from deebot_client.commands.json.clean import CleanAreaMower, CleanMower, GetCleanInfo
 from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
@@ -80,8 +80,9 @@ def get_device_info() -> StaticDeviceInfo:
             ),
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
+            # O500 answers `clean` with content.type. `clean_V2` times out.
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
+                action=CapabilityCleanAction(command=CleanMower, area=CleanAreaMower),
             ),
             custom=CapabilityCustomCommand(
                 event=CustomCommandEvent, get=[], set=CustomCommand
@@ -131,7 +132,7 @@ def get_device_info() -> StaticDeviceInfo:
                 ),
                 volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
             ),
-            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfoV2()]),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
             stats=CapabilityStats(
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
                 report=CapabilityEvent(ReportStatsEvent, []),
