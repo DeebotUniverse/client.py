@@ -1,7 +1,7 @@
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
-use rand_core::OsRng;
 use rsa::pkcs8::{DecodePublicKey, spki};
+use rsa::rand_core::OsRng;
 use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 
 /// RSA public key
