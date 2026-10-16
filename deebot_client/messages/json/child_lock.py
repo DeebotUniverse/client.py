@@ -24,16 +24,5 @@ class OnChildLock(MessageBodyDataDict):
 
         :return: A message response
         """
-        value = data["on"]
-        if isinstance(value, bool):
-            enabled = value
-        elif isinstance(value, int):
-            enabled = value != 0
-        elif isinstance(value, str) and value in ("0", "1"):
-            enabled = value == "1"
-        else:
-            # Unknown representation: do not fabricate a latch state.
-            return HandlingResult.analyse()
-
-        event_bus.notify(ChildLockEvent(enabled))
+        event_bus.notify(ChildLockEvent(bool(int(data["on"]))))
         return HandlingResult.success()

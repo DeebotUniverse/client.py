@@ -10,7 +10,15 @@ from tests.messages.json import assert_message
 
 @pytest.mark.parametrize(
     ("on", "expected"),
-    [(0, False), (1, True), (2, True), ("0", False), ("1", True)],
+    [
+        (0, False),
+        (1, True),
+        (2, True),
+        (False, False),
+        (True, True),
+        ("0", False),
+        ("1", True),
+    ],
 )
 @pytest.mark.benchmark
 def test_onChildLock(on: object, expected: bool) -> None:
@@ -35,10 +43,10 @@ def test_onChildLock(on: object, expected: bool) -> None:
     )
 
 
-@pytest.mark.parametrize("value", ["false", None, 2.0, [1]])
+@pytest.mark.parametrize("value", ["false", "", None, [1]])
 @pytest.mark.benchmark
-def test_onChildLock_unknown(value: object) -> None:
-    """Unrepresentable values must not fabricate a latch state."""
+def test_onChildLock_invalid(value: object) -> None:
+    """Invalid values must not fabricate a latch state."""
     data = {
         "header": {
             "pri": 1,
@@ -56,6 +64,6 @@ def test_onChildLock_unknown(value: object) -> None:
         OnChildLock,
         data,
         (FirmwareEvent("1.8.2"),),
-        expected_state=HandlingState.ANALYSE_LOGGED,
+        expected_state=HandlingState.ERROR,
         device_class="55uoqe",
     )
