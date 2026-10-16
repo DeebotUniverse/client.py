@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
+import datetime as dt
 from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, Mock
 
@@ -28,7 +28,7 @@ async def verify_subscribe(
     expected_called: bool,
 ) -> None:
     command = "test"
-    data = orjson.dumps({"test": str(datetime.datetime.now(tz=datetime.UTC))})
+    data = orjson.dumps({"test": str(dt.datetime.now(tz=dt.UTC))})
     api = device_info.api
     topic = f"iot/atr/{command}/{api['did']}/{api['class']}/{api['resource']}/j"
     await test_client.publish(topic, data)
