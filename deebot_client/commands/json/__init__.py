@@ -186,6 +186,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetCrossMapBorderWarning,
     SetCrossMapBorderWarning,
 
+    GetCutDirection,
+    SetCutDirection,
+
     GetEfficiencyMode,
     SetEfficiencyMode,
 
