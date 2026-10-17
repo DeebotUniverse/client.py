@@ -1,15 +1,19 @@
 from __future__ import annotations
 
 import asyncio
+from contextlib import suppress
 import datetime as dt
 import logging
 import ssl
 from typing import TYPE_CHECKING, Any
-from unittest.mock import DEFAULT, MagicMock, Mock, patch
+from unittest.mock import DEFAULT, AsyncMock, MagicMock, Mock, patch
 
 from aiomqtt import Client, Message, MqttError as AioMqttError
+from aiomqtt.exceptions import MqttConnectError
 from cachetools import TTLCache
 import orjson
+from paho.mqtt.packettypes import PacketTypes
+from paho.mqtt.reasoncodes import ReasonCode
 import pytest
 
 from deebot_client.commands.json.battery import GetBattery
@@ -445,3 +449,105 @@ async def test_verify_config_fails(authenticator: Authenticator) -> None:
             await client.verify_config()
 
         client_mock.return_value.__aenter__.assert_called()
+
+
+def _failing_client(exception: Exception) -> MagicMock:
+    client = MagicMock()
+    client.__aenter__.side_effect = exception
+    return client
+
+
+def _connected_then_lost_client() -> MagicMock:
+    client = MagicMock()
+    client.__aenter__.return_value = client
+    client.messages.__aiter__.return_value.__anext__.side_effect = AioMqttError(
+        "Connection lost"
+    )
+    return client
+
+
+async def _run_mqtt_task(
+    authenticator: Authenticator, clients: list[MagicMock]
+) -> AsyncMock:
+    """Run the mqtt task until all clients are used and return the sleep mock."""
+    sleep_mock = AsyncMock(
+        side_effect=[None] * (len(clients) - 1) + [asyncio.CancelledError]
+    )
+    with (
+        patch("deebot_client.mqtt_client.Client", side_effect=clients),
+        patch("deebot_client.mqtt_client.asyncio.sleep", sleep_mock),
+    ):
+        mqtt_client = MqttClient(
+            create_mqtt_config(device_id="123", country="IT"), authenticator
+        )
+        await mqtt_client.connect()
+        assert mqtt_client._mqtt_task
+        with suppress(asyncio.CancelledError):
+            await mqtt_client._mqtt_task
+
+    return sleep_mock
+
+
+@pytest.mark.parametrize(
+    ("exception", "expected_force"),
+    [
+        pytest.param(
+            MqttConnectError(ReasonCode(PacketTypes.CONNACK, "Not authorized")),
+            [False, True, False],
+            id="not_authorized",
+        ),
+        pytest.param(
+            MqttConnectError(
+                ReasonCode(PacketTypes.CONNACK, "Bad user name or password")
+            ),
+            [False, True, False],
+            id="bad_user_name_or_password",
+        ),
+        pytest.param(
+            MqttConnectError(ReasonCode(PacketTypes.CONNACK, "Server unavailable")),
+            [False, False, False],
+            id="server_unavailable",
+        ),
+        pytest.param(
+            AioMqttError("Connection lost"),
+            [False, False, False],
+            id="connection_lost",
+        ),
+    ],
+)
+async def test_mqtt_task_reauthenticate_on_rejected_credentials(
+    authenticator: Authenticator,
+    exception: Exception,
+    expected_force: list[bool],
+) -> None:
+    """Test a credential rejection forces one re-authentication."""
+    await _run_mqtt_task(authenticator, [_failing_client(exception)] * 3)
+
+    # First call is the credential check in connect()
+    assert [
+        c.kwargs.get("force", False)
+        for c in authenticator.authenticate.await_args_list[1:]  # type: ignore[attr-defined]
+    ] == expected_force
+
+
+async def test_mqtt_task_reconnect_backoff(authenticator: Authenticator) -> None:
+    """Test the reconnect interval doubles up to the cap and resets on connect."""
+    failing = _failing_client(AioMqttError("Connection refused"))
+    sleep_mock = await _run_mqtt_task(
+        authenticator,
+        [failing] * 8 + [_connected_then_lost_client()] + [failing] * 2,
+    )
+
+    assert [c.args[0] for c in sleep_mock.await_args_list] == [
+        5,
+        10,
+        20,
+        40,
+        80,
+        160,
+        300,
+        300,
+        5,
+        10,
+        20,
+    ]

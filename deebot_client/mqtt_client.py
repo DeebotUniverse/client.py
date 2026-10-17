@@ -10,7 +10,7 @@ import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
-from aiomqtt import Client, Message, MqttError as AioMqttError
+from aiomqtt import Client, Message, MqttCodeError, MqttError as AioMqttError
 from cachetools import TTLCache
 
 from deebot_client.const import UNDEFINED, DataType, UndefinedType
@@ -29,6 +29,9 @@ if TYPE_CHECKING:
     from .models import Credentials, DeviceInfo
 
 RECONNECT_INTERVAL = 5  # seconds
+MAX_RECONNECT_INTERVAL = 300  # seconds
+# Reason codes: bad user name or password, not authorized
+_NOT_AUTHORIZED_REASON_CODES = (134, 135)
 
 _LOGGER = get_logger(__name__)
 _CLIENT_LOGGER = get_logger(f"{__name__}.client")
@@ -133,6 +136,9 @@ class MqttClient:
             maxsize=200, ttl=60
         )
         self._last_message_received_at: datetime | None = None
+        # Survives task restarts on credential changes, so a rejected fresh token
+        # does not cause a login loop
+        self._reauthenticated = False
 
         async def on_credentials_changed(_: Credentials) -> None:
             await self._create_mqtt_task()
@@ -175,8 +181,8 @@ class MqttClient:
         """Disconnect from MQTT."""
         await self._cancel_mqtt_task()
 
-    async def _get_client(self) -> Client:
-        credentials = await self._authenticator.authenticate()
+    async def _get_client(self, *, force_authenticate: bool = False) -> Client:
+        credentials = await self._authenticator.authenticate(force=force_authenticate)
         client_id = f"{credentials.user_id}@ecouser/{self._config.device_id}"
         return Client(
             hostname=self._config.hostname,
@@ -196,9 +202,15 @@ class MqttClient:
 
     async def _create_mqtt_task(self) -> None:
         async def mqtt() -> None:
+            reconnect_interval = RECONNECT_INTERVAL
+            force_authenticate = False
             while True:
                 try:
-                    async with await self._get_client() as client:
+                    async with await self._get_client(
+                        force_authenticate=force_authenticate
+                    ) as client:
+                        self._reauthenticated = False
+                        reconnect_interval = RECONNECT_INTERVAL
                         _LOGGER.debug("Subscribe to all previous subscriptions")
                         for info in self._subscriptions.values():
                             for topic in _get_topics(info.device_info):
@@ -225,10 +237,17 @@ class MqttClient:
                         finally:
                             for task in tasks:
                                 task.cancel()
-                except AioMqttError:
+                except AioMqttError as ex:
+                    force_authenticate = (
+                        isinstance(ex, MqttCodeError)
+                        and ex.rc in _NOT_AUTHORIZED_REASON_CODES
+                        and not self._reauthenticated
+                    )
+                    if force_authenticate:
+                        self._reauthenticated = True
                     _LOGGER.warning(
                         "Connection lost; Reconnecting in %d seconds ...",
-                        RECONNECT_INTERVAL,
+                        reconnect_interval,
                         exc_info=True,
                     )
                 except AuthenticationError:
@@ -240,7 +259,8 @@ class MqttClient:
                     _LOGGER.exception("An exception occurred")
                     return
 
-                await asyncio.sleep(RECONNECT_INTERVAL)
+                await asyncio.sleep(reconnect_interval)
+                reconnect_interval = min(reconnect_interval * 2, MAX_RECONNECT_INTERVAL)
 
         await self._cancel_mqtt_task()
         self._mqtt_task = asyncio.create_task(mqtt())
