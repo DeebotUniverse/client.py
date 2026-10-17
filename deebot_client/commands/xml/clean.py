@@ -49,7 +49,7 @@ class CleanArea(Clean):
     def __init__(
         self,
         mode: CleanMode,
-        area_or_coordinates: list[int | float],
+        area_or_coordinates: list[int | float | str],
         cleanings: int = 1,
     ) -> None:
         key = "mid" if mode == CleanMode.SPOT_AREA else "p"
