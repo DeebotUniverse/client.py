@@ -119,3 +119,9 @@ async def test_SetAutoEmpty(
     """Test SetAutoEmpty."""
     command = SetAutoEmpty(enabled, frequency)
     await assert_execute_command(command, args)
+
+
+async def test_SetAutoEmpty_act() -> None:
+    """Test SetAutoEmpty with act."""
+    command = SetAutoEmpty(act="start")
+    await assert_execute_command(command, {"act": "start"})
