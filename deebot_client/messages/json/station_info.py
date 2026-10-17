@@ -11,11 +11,6 @@ if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
 
 
-def _as_str(value: Any) -> str:
-    """Return the value when it is a string, else an empty string."""
-    return value if isinstance(value, str) else ""
-
-
 class OnStationInfo(MessageBodyDataDict):
     """On station info message."""
 
@@ -31,9 +26,9 @@ class OnStationInfo(MessageBodyDataDict):
         """
         event_bus.notify(
             StationInfoEvent(
-                name=_as_str(data.get("name")),
-                model=_as_str(data.get("model")),
-                firmware=_as_str(data.get("wkVer")),
+                name=data["name"],
+                model=data["model"],
+                firmware=data["wkVer"],
             )
         )
         return HandlingResult.success()
