@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import StateEvent
-from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 from deebot_client.models import State
 
 from .common import JsonCommandWithMessageHandling
@@ -20,6 +20,14 @@ class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
 
     NAME = "getChargeState"
 
+    @staticmethod
+    def _notify_docked(event_bus: EventBus) -> None:
+        # Charging readback can lag departure after mop preparation. An active
+        # clean-state report takes precedence until idle/return/washing reports.
+        current = event_bus.get_last_event(StateEvent)
+        if current is None or current.state != State.CLEANING:
+            event_bus.notify(StateEvent(State.DOCKED))
+
     @classmethod
     def _handle_body_data_dict(
         cls, event_bus: EventBus, data: dict[str, Any]
@@ -29,7 +37,7 @@ class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
         :return: A message response
         """
         if data.get("isCharging") == 1:
-            event_bus.notify(StateEvent(State.DOCKED))
+            cls._notify_docked(event_bus)
         return HandlingResult.success()
 
     @classmethod
@@ -38,17 +46,15 @@ class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
             # Call this also if code is not in the body
             return super()._handle_body(event_bus, body)
 
-        status: State | None = None
         if body.get("msg") == "fail":
-            if body["code"] == "30007":  # Already charging
-                status = State.DOCKED
-            elif body["code"] in ("3", "5"):
-                # 3 -> Bot in stuck state, example dust bin out
-                # 5 -> Busy with another command
-                status = State.ERROR
-
-        if status:
-            event_bus.notify(StateEvent(State.DOCKED))
-            return HandlingResult.success()
+            code = str(body.get(CODE))
+            if code == "30007":  # Already charging
+                cls._notify_docked(event_bus)
+                return HandlingResult.success()
+            if code == "3":  # Stuck, for example dust bin out
+                event_bus.notify(StateEvent(State.ERROR))
+                return HandlingResult.success()
+            if code == "5":  # Query rejected while busy; no robot-state evidence
+                return HandlingResult(HandlingState.FAILED)
 
         return HandlingResult.analyse()
