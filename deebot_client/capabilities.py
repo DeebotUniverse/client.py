@@ -12,6 +12,7 @@ from deebot_client.events import (
     AdvancedModeEvent,
     AvailabilityEvent,
     BatteryEvent,
+    BlockEvent,
     BorderSpinEvent,
     BorderSwitchEvent,
     CachedMapInfoEvent,
@@ -42,6 +43,7 @@ from deebot_client.events import (
     ReportStatsEvent,
     RoomsEvent,
     SafeProtectEvent,
+    SleepEvent,
     StateEvent,
     StationEvent,
     StatsEvent,
@@ -206,6 +208,7 @@ class CapabilitySettings:
     """Capabilities for settings."""
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
+    block: CapabilitySet[BlockEvent, [bool, str, str]] | None = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
@@ -224,6 +227,7 @@ class CapabilitySettings:
         None
     )
     safe_protect: CapabilitySetEnable[SafeProtectEvent] | None = None
+    sleep: CapabilitySetEnable[SleepEvent] | None = None
     ota: CapabilitySetEnable[OtaEvent] | CapabilityEvent[OtaEvent] | None = None
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None
