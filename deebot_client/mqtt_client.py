@@ -10,11 +10,12 @@ import ssl
 from typing import TYPE_CHECKING, Any
 from urllib.parse import urlparse
 
+from aiohttp import ClientError
 from aiomqtt import Client, Message, MqttCodeError, MqttError as AioMqttError
 from cachetools import TTLCache
 
 from deebot_client.const import UNDEFINED, DataType, UndefinedType
-from deebot_client.exceptions import AuthenticationError, MqttError
+from deebot_client.exceptions import ApiError, AuthenticationError, MqttError
 
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
@@ -210,6 +211,7 @@ class MqttClient:
                         force_authenticate=force_authenticate
                     ) as client:
                         self._reauthenticated = False
+                        force_authenticate = False
                         reconnect_interval = RECONNECT_INTERVAL
                         _LOGGER.debug("Subscribe to all previous subscriptions")
                         for info in self._subscriptions.values():
@@ -243,10 +245,17 @@ class MqttClient:
                         and ex.rc in _NOT_AUTHORIZED_REASON_CODES
                         and not self._reauthenticated
                     )
-                    if force_authenticate:
-                        self._reauthenticated = True
+                    self._reauthenticated |= force_authenticate
                     _LOGGER.warning(
                         "Connection lost; Reconnecting in %d seconds ...",
+                        reconnect_interval,
+                        exc_info=True,
+                    )
+                except TimeoutError, ClientError, ApiError:
+                    # Network errors during login are transient; a pending forced
+                    # login is kept for the retry
+                    _LOGGER.warning(
+                        "Could not authenticate; Retrying in %d seconds ...",
                         reconnect_interval,
                         exc_info=True,
                     )

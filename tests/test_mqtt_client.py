@@ -8,6 +8,7 @@ import ssl
 from typing import TYPE_CHECKING, Any
 from unittest.mock import DEFAULT, AsyncMock, MagicMock, Mock, patch
 
+from aiohttp import ClientConnectionError
 from aiomqtt import Client, Message, MqttError as AioMqttError
 from aiomqtt.exceptions import MqttConnectError
 from cachetools import TTLCache
@@ -19,7 +20,7 @@ import pytest
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
 from deebot_client.const import UNDEFINED, DataType, UndefinedType
-from deebot_client.exceptions import AuthenticationError, MqttError
+from deebot_client.exceptions import ApiError, AuthenticationError, MqttError
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_mqtt_config
 
 from .mqtt_util import subscribe, verify_subscribe
@@ -458,21 +459,21 @@ def _failing_client(exception: Exception) -> MagicMock:
 
 
 def _connected_then_lost_client() -> MagicMock:
+    messages = MagicMock()
+    messages.__anext__.side_effect = AioMqttError("Connection lost")
     client = MagicMock()
     client.__aenter__.return_value = client
-    client.messages.__aiter__.return_value.__anext__.side_effect = AioMqttError(
-        "Connection lost"
-    )
+    client.messages.__aiter__.side_effect = lambda: messages
     return client
 
 
 async def _run_mqtt_task(
-    authenticator: Authenticator, clients: list[MagicMock]
+    authenticator: Authenticator, clients: list[MagicMock], sleeps: int | None = None
 ) -> AsyncMock:
-    """Run the mqtt task until all clients are used and return the sleep mock."""
-    sleep_mock = AsyncMock(
-        side_effect=[None] * (len(clients) - 1) + [asyncio.CancelledError]
-    )
+    """Run the mqtt task until the given number of sleeps and return the sleep mock."""
+    if sleeps is None:
+        sleeps = len(clients)
+    sleep_mock = AsyncMock(side_effect=[None] * (sleeps - 1) + [asyncio.CancelledError])
     with (
         patch("deebot_client.mqtt_client.Client", side_effect=clients),
         patch("deebot_client.mqtt_client.asyncio.sleep", sleep_mock),
@@ -533,10 +534,14 @@ async def test_mqtt_task_reauthenticate_on_rejected_credentials(
 async def test_mqtt_task_reconnect_backoff(authenticator: Authenticator) -> None:
     """Test the reconnect interval doubles up to the cap and resets on connect."""
     failing = _failing_client(AioMqttError("Connection refused"))
+    connected = _connected_then_lost_client()
     sleep_mock = await _run_mqtt_task(
         authenticator,
-        [failing] * 8 + [_connected_then_lost_client()] + [failing] * 2,
+        [failing] * 8 + [connected] + [failing] * 2,
     )
+
+    connected.__aexit__.assert_awaited_once()
+    assert connected.__aexit__.await_args.args[0] is AioMqttError
 
     assert [c.args[0] for c in sleep_mock.await_args_list] == [
         5,
@@ -551,3 +556,41 @@ async def test_mqtt_task_reconnect_backoff(authenticator: Authenticator) -> None
         10,
         20,
     ]
+
+
+@pytest.mark.parametrize(
+    "exception",
+    [
+        pytest.param(TimeoutError(), id="timeout"),
+        pytest.param(ClientConnectionError(), id="client_error"),
+        pytest.param(ApiError(), id="api_error"),
+    ],
+)
+async def test_mqtt_task_retry_transient_error_on_forced_login(
+    authenticator: Authenticator, exception: Exception
+) -> None:
+    """Test a transient error during the forced login is retried with backoff."""
+    credentials = authenticator.authenticate.return_value  # type: ignore[attr-defined]
+    authenticator.authenticate.side_effect = [  # type: ignore[attr-defined]
+        credentials,
+        credentials,
+        exception,
+        exception,
+        credentials,
+        credentials,
+    ]
+    rejected = _failing_client(
+        MqttConnectError(ReasonCode(PacketTypes.CONNACK, "Not authorized"))
+    )
+    sleep_mock = await _run_mqtt_task(
+        authenticator,
+        [rejected, _connected_then_lost_client(), rejected],
+        sleeps=5,
+    )
+
+    # First call is the credential check in connect()
+    assert [
+        c.kwargs.get("force", False)
+        for c in authenticator.authenticate.await_args_list[1:]  # type: ignore[attr-defined]
+    ] == [False, True, True, True, False]
+    assert [c.args[0] for c in sleep_mock.await_args_list] == [5, 10, 20, 5, 10]
