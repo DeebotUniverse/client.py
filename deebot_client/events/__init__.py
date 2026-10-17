@@ -128,6 +128,8 @@ class ErrorEvent(Event):
 
     code: int
     description: str | None
+    codes: tuple[int, ...] = ()
+    """All active error codes as reported by the robot."""
 
 
 @unique
