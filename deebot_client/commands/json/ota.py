@@ -31,7 +31,7 @@ class GetOta(JsonGetCommand):
         ota_event = OtaEvent(
             support_auto=bool(data.get("supportAuto", False)),
             auto_enabled=bool(data.get("autoSwitch", False)),
-            version=data["ver"],
+            version=data.get("cver") or data.get("ver"),
             status=data["status"],
             progress=data["progress"],
         )
