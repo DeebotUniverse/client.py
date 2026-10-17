@@ -24,7 +24,18 @@ if TYPE_CHECKING:
         ({"code": []}, (ErrorEvent(0, "NoError: Robot is operational"),)),
         (
             {"code": [105]},
-            (StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")),
+            (StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck", (105,))),
+        ),
+        (
+            {"code": [102, 105]},
+            (
+                StateEvent(State.ERROR),
+                ErrorEvent(105, "Stuck: Robot is stuck", (102, 105)),
+            ),
+        ),
+        (
+            {"code": [105, 0]},
+            (StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck", (105,))),
         ),
     ],
 )

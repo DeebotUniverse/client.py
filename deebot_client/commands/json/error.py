@@ -32,17 +32,13 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if not isinstance(codes, list):
             return HandlingResult.analyse()
 
-        error: int | None = 0
+        if not all(isinstance(code, int) for code in codes):
+            return HandlingResult.analyse()
 
-        if codes:
-            # the last error code
-            error = codes[-1]
-
-        if error is not None:
-            description = ERROR_CODES.get(error)
-            if error != 0:
-                event_bus.notify(StateEvent(State.ERROR))
-            event_bus.notify(ErrorEvent(error, description))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        active = tuple(code for code in codes if code != 0)
+        # The app shows the most recently added (last) error first
+        error = active[-1] if active else 0
+        if error != 0:
+            event_bus.notify(StateEvent(State.ERROR))
+        event_bus.notify(ErrorEvent(error, ERROR_CODES.get(error), active))
+        return HandlingResult.success()

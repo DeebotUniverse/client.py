@@ -20,7 +20,10 @@ if TYPE_CHECKING:
     ("errs", "expected_events"),
     [
         ("", ErrorEvent(0, "NoError: Robot is operational")),
-        ("105", [StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck")]),
+        (
+            "105",
+            [StateEvent(State.ERROR), ErrorEvent(105, "Stuck: Robot is stuck", (105,))],
+        ),
     ],
 )
 async def test_getErrors(errs: str, expected_events: Event | Sequence[Event]) -> None:

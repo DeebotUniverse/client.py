@@ -34,5 +34,6 @@ class GetError(XmlCommandWithMessageHandling):
             event_bus.notify(StateEvent(State.ERROR))
 
         description = ERROR_CODES.get(error_code)
-        event_bus.notify(ErrorEvent(error_code, description))
+        codes = (error_code,) if error_code != 0 else ()
+        event_bus.notify(ErrorEvent(error_code, description, codes))
         return HandlingResult.success()
