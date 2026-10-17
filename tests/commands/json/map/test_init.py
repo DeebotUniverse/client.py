@@ -10,7 +10,7 @@ from deebot_client.commands.json import (
     GetMapSubSet,
     GetMapTrace,
 )
-from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
+from deebot_client.commands.json.map import GetAreaSet, GetMapInfoV2, GetMapSetV2
 from deebot_client.events import (
     Event,
     FirmwareEvent,
@@ -25,6 +25,30 @@ from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
+
+
+async def test_getAreaSet() -> None:
+    subsets = "XQAABACRAAAAAC2WwEIAXhHX9FS5sGj0QZjR5C9LwgskaRv7NNnlwYLfW5cqizd8DELGgHRrytM6XLeHVxHTtCZRrB5hCVldTC+NInBErb3e8FmImM2Df07MYA=="
+    json, firmware_event = get_request_json(
+        get_success_body({"type": "ar", "subsets": subsets})
+    )
+    command = GetAreaSet()
+    assert command._args == {"mid": "1", "aid": "0", "type": "ar"}
+    await assert_command(
+        command,
+        json,
+        [
+            firmware_event,
+            RoomsEvent(
+                "1",
+                [
+                    Room("Østkanten", 4, ""),
+                    Room("Sentrum", 1, ""),
+                    Room("Vestkanten", 2, ""),
+                ],
+            ),
+        ],
+    )
 
 
 @pytest.mark.parametrize(
