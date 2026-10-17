@@ -28,11 +28,24 @@ class GetBlock(JsonGetCommand):
 
         :return: A message response
         """
+        enable = data["enable"]
+        start = data["start"]
+        end = data["end"]
+
+        if (
+            not isinstance(enable, int)
+            or isinstance(enable, bool)
+            or enable not in (0, 1)
+            or not isinstance(start, str)
+            or not isinstance(end, str)
+        ):
+            return HandlingResult.analyse()
+
         event_bus.notify(
             BlockEvent(
-                enabled=bool(data["enable"]),
-                start=str(data["start"]),
-                end=str(data["end"]),
+                enabled=bool(enable),
+                start=start,
+                end=end,
             )
         )
         return HandlingResult.success()
