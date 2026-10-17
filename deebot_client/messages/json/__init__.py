@@ -11,6 +11,16 @@ from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .mower_settings import (
+    OnAnimalProtection,
+    OnHumanoidAi,
+    OnMoveUpWarning,
+    OnNarrowAdapt,
+    OnRecognization,
+    OnVolume,
+)
+from .protect_state import OnProtectState
+from .rain_delay import OnRainDelay
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -18,13 +28,21 @@ from .work_state import OnWorkState
 _LOGGER = get_logger(__name__)
 
 __all__ = [
+    "OnAnimalProtection",
     "OnBattery",
     "OnCachedMapInfo",
     "OnGpsPos",
+    "OnHumanoidAi",
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnMoveUpWarning",
+    "OnNarrowAdapt",
+    "OnProtectState",
+    "OnRainDelay",
+    "OnRecognization",
     "OnStats",
+    "OnVolume",
     "OnWorkState",
     "ReportStats",
 ]
@@ -42,6 +60,17 @@ _MESSAGES: list[type[Message]] = [
     OnMajorMap,
     OnMapInfoV2,
     OnMapSetV2,
+
+    OnAnimalProtection,
+    OnHumanoidAi,
+    OnMoveUpWarning,
+    OnNarrowAdapt,
+    OnRecognization,
+    OnVolume,
+
+    OnProtectState,
+
+    OnRainDelay,
 
     OnStationState,
 
