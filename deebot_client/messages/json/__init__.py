@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from typing import TYPE_CHECKING
 
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
@@ -14,6 +15,9 @@ from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
+
+if TYPE_CHECKING:
+    from deebot_client.capabilities import Capabilities
 
 _LOGGER = get_logger(__name__)
 
@@ -95,7 +99,7 @@ def get_legacy_message(
     message_name: str,
     converted_name: str,
     *,
-    has_map: bool = True,
+    capabilities: Capabilities,
 ) -> type[Message] | None:
     """Try to find the message for the given name using legacy way."""
     # Handle message starting with "on","off","report" the same as "get" commands
@@ -109,18 +113,21 @@ def get_legacy_message(
         _LOGGER.debug('Unknown message "%s"', message_name)
         return None
 
-    if not has_map and converted_name in _MAP_LEGACY_COMMANDS:
+    if capabilities.map is None and converted_name in _MAP_LEGACY_COMMANDS:
         _LOGGER.debug(
             'Skipping legacy map fallback for "%s" on device without map capability',
             message_name,
         )
         return None
 
-    from deebot_client.commands.json import (  # noqa: PLC0415
-        COMMANDS,
-    )
+    found_command = capabilities.get_command(converted_name)
 
-    if found_command := COMMANDS.get(converted_name, None):
+    if found_command is None:
+        from deebot_client.commands.json import COMMANDS  # noqa: PLC0415
+
+        found_command = COMMANDS.get(converted_name)
+
+    if found_command:
         if issubclass(found_command, Message):
             _LOGGER.debug("Falling back to legacy way for %s", message_name)
             return found_command
