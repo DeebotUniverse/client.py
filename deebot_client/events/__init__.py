@@ -29,6 +29,11 @@ from .map import (
 )
 from .network import NetworkInfoEvent
 from .station import StationEvent
+from .status import (
+    BreakPointStatusEvent,
+    MapStateEvent,
+    RelocationStateEvent,
+)
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
@@ -37,6 +42,7 @@ if TYPE_CHECKING:
 __all__ = [
     "AutoEmptyEvent",
     "BatteryEvent",
+    "BreakPointStatusEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
@@ -52,12 +58,14 @@ __all__ = [
     "MapInfoEvent",
     "MapSetEvent",
     "MapSetType",
+    "MapStateEvent",
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "RelocationStateEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",
