@@ -166,3 +166,9 @@ async def test_x1_turbo_profile_stays_station_less() -> None:
     info = await hardware.get_static_device_info("2o4lnm")
     assert info is not None
     assert info.capabilities.station is None
+
+
+async def test_1b23du_uses_omni_profile() -> None:
+    """The white X1 OMNI alias must resolve to the same profile as 1vxt52."""
+    info = await hardware.get_static_device_info("1b23du")
+    assert info == await hardware.get_static_device_info("1vxt52")
