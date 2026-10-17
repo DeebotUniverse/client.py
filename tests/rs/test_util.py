@@ -98,7 +98,7 @@ def _decompress_7z_base64_data_python(data: str) -> bytes:
     decoded = base64.b64decode(data)
 
     for i, idx in enumerate(decoded):
-        if i == 8:
+        if i == 9:
             final_array.extend(b"\x00\x00\x00\x00")
         final_array.append(idx)
 
