@@ -310,6 +310,17 @@ async def test_login_completes_login_and_sanitizes_response_log(
     }
 
 
+async def test_login_without_validity_expires_after_7_days(
+    api: _FakeEcovacsApi, auth: Authenticator
+) -> None:
+    del api.responses["user.do"]["last"]
+    started = time.time()
+
+    credentials = await auth.authenticate()
+
+    assert credentials.expires_at >= int(started + 7 * 24 * 60 * 60 * 0.99)
+
+
 @pytest.mark.parametrize("alpha_2_country", ["CN"])
 async def test_login_china_uses_check_mobile_endpoint(
     api: _FakeEcovacsApi, auth: Authenticator
