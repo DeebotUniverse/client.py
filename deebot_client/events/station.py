@@ -7,7 +7,7 @@ from enum import IntEnum, unique
 
 from .base import Event as _Event
 
-__all__ = ["State", "StationEvent"]
+__all__ = ["State", "StationErrorEvent", "StationEvent"]
 
 
 @unique
@@ -25,3 +25,16 @@ class StationEvent(_Event):
     """Base Station Event representation."""
 
     state: State
+
+
+@dataclass(frozen=True)
+class StationErrorEvent(_Event):
+    """Errors reported by the base station, e.g. a water-tank condition.
+
+    ``errors`` holds the raw Ecovacs codes exactly as reported, including the
+    0/100 "no error" sentinels; map them via
+    :data:`deebot_client.const.ERROR_CODES`. An empty tuple means the station
+    reported an empty error list.
+    """
+
+    errors: tuple[int, ...]
