@@ -30,6 +30,7 @@ class GetStats(JsonCommandWithMessageHandling, MessageBodyDataDict):
             area=data.get("area"),
             time=data.get("time"),
             type=data.get("type"),
+            mowed_area=data.get("mowedArea"),
         )
         event_bus.notify(stats_event)
         return HandlingResult.success()
