@@ -1,19 +1,31 @@
 from __future__ import annotations
 
+from copy import deepcopy
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
+from unittest.mock import Mock, call
 
+import orjson
 import pytest
 
+from deebot_client.commands.json.charge_state import GetChargeState
+from deebot_client.event_bus import EventBus
 from deebot_client.events import FirmwareEvent, StateEvent
 from deebot_client.events.station import State as StationState, StationEvent
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.work_state import OnWorkState
 from deebot_client.models import State as RobotState
+from tests.helpers.tasks import block_till_done
 from tests.messages import assert_message_failure
 from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
     from deebot_client.events.base import Event
+
+
+_X11_MANUAL_MOVEMENT_SEQUENCE = (
+    Path(__file__).parents[2] / "data" / "work_state" / "x11_manual_movement.json"
+)
 
 
 @pytest.mark.parametrize(
@@ -173,6 +185,11 @@ def test_onWorkState(
             "paused": 0,
             "stationState": {"state": "emptying", "trigger": "app"},
         },
+        {
+            "paused": 0,
+            "robotState": {"state": "moving", "trigger": "app"},
+            "stationState": {"state": "anotherUnknownState", "trigger": "app"},
+        },
     ],
 )
 @pytest.mark.benchmark
@@ -193,3 +210,102 @@ def test_onWorkState_edge_cases(message_data: dict[str, Any]) -> None:
     assert_message_failure(
         OnWorkState, data, HandlingState.ANALYSE_LOGGED, FirmwareEvent("1.30.0")
     )
+
+
+def test_onWorkState_malformed_robot_state_retains_failure_handling() -> None:
+    data = {
+        "header": {"fwVer": "1.30.0"},
+        "body": {
+            "data": {
+                "paused": 0,
+                "robotState": [],
+                "stationState": {"state": "idle", "trigger": "app"},
+            }
+        },
+    }
+
+    assert_message_failure(
+        OnWorkState, data, HandlingState.ERROR, FirmwareEvent("1.30.0")
+    )
+
+
+def test_onWorkState_moving_paused_does_not_bypass_docked_guard() -> None:
+    message = orjson.loads(_X11_MANUAL_MOVEMENT_SEQUENCE.read_bytes())["messages"][0][
+        "payload"
+    ]
+    message = deepcopy(message)
+    message["body"]["data"]["paused"] = 1
+    event_bus = Mock(spec_set=EventBus)
+
+    result = OnWorkState.handle(event_bus, message)
+
+    assert result.state == HandlingState.SUCCESS
+    event_bus.notify.assert_has_calls(
+        [
+            call(FirmwareEvent("1.84.0")),
+            call(StateEvent(RobotState.PAUSED)),
+            call(StationEvent(StationState.IDLE)),
+        ]
+    )
+    assert event_bus.notify.call_count == 3
+
+
+async def test_onWorkState_x11_manual_movement_sequence(event_bus: EventBus) -> None:
+    """Replay the captured manual movement sequence through handlers and EventBus."""
+    captured_sequence = orjson.loads(_X11_MANUAL_MOVEMENT_SEQUENCE.read_bytes())[
+        "messages"
+    ]
+    received_states: list[StateEvent] = []
+
+    async def on_state(event: StateEvent) -> None:
+        received_states.append(event)
+
+    event_bus.subscribe(StateEvent, on_state)
+    event_bus.notify(StateEvent(RobotState.DOCKED))
+    await block_till_done(event_bus._tasks)
+
+    for index, message in enumerate(captured_sequence):
+        handler = (
+            OnWorkState
+            if message["message_name"] == OnWorkState.NAME
+            else GetChargeState
+        )
+        result = handler.handle(event_bus, message["payload"])
+        assert result.state == HandlingState.SUCCESS
+        await block_till_done(event_bus._tasks)
+
+        if index == 5:
+            assert event_bus.get_last_event(StateEvent) == StateEvent(
+                RobotState.RETURNING
+            )
+
+    assert received_states == [
+        StateEvent(RobotState.DOCKED),
+        StateEvent(RobotState.IDLE),
+        StateEvent(RobotState.RETURNING),
+        StateEvent(RobotState.DOCKED),
+    ]
+    assert event_bus.get_last_event(StateEvent) == StateEvent(RobotState.DOCKED)
+
+
+async def test_onWorkState_docked_idle_and_charging_stay_docked(
+    event_bus: EventBus,
+) -> None:
+    captured_sequence = orjson.loads(_X11_MANUAL_MOVEMENT_SEQUENCE.read_bytes())[
+        "messages"
+    ]
+    received_states: list[StateEvent] = []
+
+    async def on_state(event: StateEvent) -> None:
+        received_states.append(event)
+
+    event_bus.subscribe(StateEvent, on_state)
+    event_bus.notify(StateEvent(RobotState.DOCKED))
+    await block_till_done(event_bus._tasks)
+
+    OnWorkState.handle(event_bus, captured_sequence[3]["payload"])
+    GetChargeState.handle(event_bus, captured_sequence[6]["payload"])
+    await block_till_done(event_bus._tasks)
+
+    assert received_states == [StateEvent(RobotState.DOCKED)]
+    assert event_bus.get_last_event(StateEvent) == StateEvent(RobotState.DOCKED)

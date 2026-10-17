@@ -29,6 +29,9 @@ _WORK_STATE_2_EVENTS: dict[str, dict[str, tuple[RobotState | None, StationState]
         "washing": (RobotState.DOCKED, StationState.WASHING_MOP),
         "drying": (RobotState.DOCKED, StationState.DRYING_MOP),
     },
+    "moving": {
+        "idle": (RobotState.IDLE, StationState.IDLE),
+    },
 }
 
 
@@ -59,7 +62,11 @@ class OnWorkState(MessageBodyDataDict):
             robot_status = RobotState.PAUSED
 
         if robot_status is not None:
-            event_bus.notify(StateEvent(robot_status))
+            event = StateEvent(robot_status)
+            if robot_state == "moving" and robot_status == RobotState.IDLE:
+                event_bus.notify(event, allow_docked_to_idle=True)
+            else:
+                event_bus.notify(event)
         if station_status is not None:
             event_bus.notify(StationEvent(station_status))
 

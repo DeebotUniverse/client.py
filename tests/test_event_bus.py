@@ -168,6 +168,32 @@ async def test_StateEvent(
         assert event_bus.get_last_event(StateEvent) == StateEvent(last)
 
 
+async def test_trusted_docked_to_idle_state_event_is_delivered_and_deduplicated(
+    event_bus: EventBus,
+) -> None:
+    event_bus.notify(StateEvent(State.DOCKED))
+    await asyncio.sleep(0)
+
+    mock = AsyncMock()
+    event_bus.subscribe(StateEvent, mock)
+    await asyncio.sleep(0)
+    mock.assert_called_once_with(StateEvent(State.DOCKED))
+    mock.reset_mock()
+
+    event_bus.notify(
+        StateEvent(State.IDLE), allow_docked_to_idle=True, debounce_time=0.01
+    )
+    assert event_bus.get_last_event(StateEvent) == StateEvent(State.DOCKED)
+    await asyncio.sleep(0.1)
+    mock.assert_called_once_with(StateEvent(State.IDLE))
+    assert event_bus.get_last_event(StateEvent) == StateEvent(State.IDLE)
+    mock.reset_mock()
+
+    event_bus.notify(StateEvent(State.IDLE), allow_docked_to_idle=True)
+    await asyncio.sleep(0)
+    mock.assert_not_called()
+
+
 @pytest.mark.parametrize(
     "debounce_time",
     [-1, 0, 1],
