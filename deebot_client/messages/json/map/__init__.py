@@ -8,6 +8,7 @@ from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
 from .cached_map_info import OnCachedMapInfo
+from .map_track import OnMapTrack
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -17,6 +18,7 @@ __all__ = [
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnMapTrack",
 ]
 
 

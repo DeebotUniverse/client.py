@@ -49,6 +49,34 @@ class MapTraceEvent(Event):
 
 
 @dataclass(frozen=True)
+class MowerMapTrackSegment:
+    """One parsed GOAT mower map-track geometry segment."""
+
+    points: tuple[tuple[int, int], ...]
+
+
+@dataclass(frozen=True)
+class MowerMapTrackRecord:
+    """One opaque GOAT mower map-track record with segmented parsed geometry."""
+
+    key: tuple[str, str, str]
+    raw: str
+    segments: tuple[MowerMapTrackSegment, ...]
+    geometry_encoding: str | None = None
+
+
+@dataclass(frozen=True)
+class MowerMapTrackEvent(Event):
+    """Current replayed GOAT mower map-track state."""
+
+    mid: str
+    protocol_version: str
+    update_type: int
+    records: tuple[MowerMapTrackRecord, ...]
+    step_size: int
+
+
+@dataclass(frozen=True)
 class MapInfoEvent(Event):
     """Map info event representation."""
 
