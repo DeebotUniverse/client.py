@@ -39,7 +39,7 @@ _CLIENT_KEY = "1520391301804"
 _CLIENT_SECRET = "6c319b2a5cd3e66e39159c2e28f2fce9"  # noqa: S105
 _AUTH_CLIENT_KEY = "1520391491841"
 _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
-_PRIVATE_API_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/{endpoint}"
+_PRIVATE_API_PATH_FORMAT = "/{apiVersion}/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/{endpoint}"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
 # How long teardown waits for subscribers to store new account credentials.
@@ -47,7 +47,7 @@ _ACCOUNT_CALLBACK_TIMEOUT = 5
 _META = {
     "lang": "EN",
     "appCode": "global_e",
-    "appVersion": "3.14.0",
+    "appVersion": "3.16.1",
     "channel": "google_play",
     "deviceType": "1",
 }
@@ -109,12 +109,16 @@ class _AuthClient:
         account_id: str,
         password_hash: str,
         *,
+        password: str | None = None,
         on_account_credentials: Callable[[AccountCredentials], None] | None = None,
     ) -> None:
         self._config = config
         self._account_id = account_id
         self._password_hash = password_hash
+        self._password = password
         self._on_account_credentials = on_account_credentials
+        self._risk_ticket: str | None = None
+        self._verify_id: str | None = None
 
         self._meta: dict[str, str] = {
             **_META,
@@ -126,29 +130,41 @@ class _AuthClient:
     async def login(self) -> Credentials:
         """Login using username and password."""
         _LOGGER.debug("Start login to EcovacsAPI")
-        login_password_resp = await self.__call_login_api(
-            self._account_id, self._password_hash
-        )
-        return await self.__complete_login(
-            login_password_resp, "Invalid login response"
-        )
+        if self._password is not None and self._config.country != COUNTRY_CHINA:
+            response = await self.__call_login2_api(self._password)
+        else:
+            response = await self.__call_login_api(
+                self._account_id, self._password_hash
+            )
+        return await self.__complete_login(response, "Invalid login response")
 
     async def request_device_verification_code(self) -> None:
         """Request a one-time email code to verify the configured device ID."""
-        encrypted_email = await self.__encrypt_account(self._account_id)
-        await self.__call_private_api(
+        encrypted_email = await self.__encrypt(self._account_id)
+        response = await self.__call_private_api(
             "user/sendEmailVerifyCode",
             {
                 "encryptEmail": encrypted_email,
-                "verifyType": "EMAIL_VERIFY_DEVICE",
+                "verifyType": "EMAIL_LOGIN_RISK_CHECK"
+                if self._risk_ticket
+                else "EMAIL_VERIFY_DEVICE",
                 "supportChar": "N",
                 "isForce": "N",
             },
         )
+        if isinstance(response, dict) and isinstance(
+            verify_id := response.get("verifyId"), str
+        ):
+            self._verify_id = verify_id
 
     async def verify_device(self, verification_code: str) -> Credentials:
         """Verify the configured device ID using a one-time email code."""
-        encrypted_account = await self.__encrypt_account(self._account_id)
+        if self._risk_ticket is not None and self._verify_id is not None:
+            return await self.__login_by_risk_verify(
+                self._risk_ticket, self._verify_id, verification_code
+            )
+
+        encrypted_account = await self.__encrypt(self._account_id)
         response = await self.__call_private_api(
             "user/verifyDevice",
             {
@@ -160,6 +176,26 @@ class _AuthClient:
             },
         )
         return await self.__complete_login(response, "Invalid verifyDevice response")
+
+    async def __login_by_risk_verify(
+        self, risk_ticket: str, verify_id: str, verification_code: str
+    ) -> Credentials:
+        """Complete a login, which was flagged as risky, using an email code."""
+        response = await self.__call_private_api(
+            "user/loginByRiskVerify",
+            {
+                "riskTicket": risk_ticket,
+                "encryptEmail": await self.__encrypt(self._account_id),
+                "verifyId": verify_id,
+                "verifyCode": verification_code.strip(),
+            },
+            api_version="v2",
+        )
+        credentials = await self.__complete_login(
+            response, "Invalid loginByRiskVerify response"
+        )
+        self._risk_ticket = self._verify_id = None
+        return credentials
 
     async def __complete_login(self, response: Any, error: str) -> Credentials:
         """Complete login using the Ecovacs user credentials of the response."""
@@ -245,13 +281,40 @@ class _AuthClient:
             endpoint, {"account": account_id, "password": password_hash}
         )
 
+    async def __call_login2_api(self, password: str) -> Any:
+        """Login like the Ecovacs app, which may require a risk verification."""
+        _LOGGER.debug("calling login2 api")
+        response = await self.__call_private_api(
+            "user/login2",
+            {
+                "encryptAccount": await self.__encrypt(self._account_id),
+                "encryptPwd": await self.__encrypt(password),
+            },
+            api_version="v2",
+        )
+        data = self.__expect_dict(response, "Invalid login response")
+        result = data.get("loginResult")
+        if result == "HIGH_RISK" and isinstance(
+            risk_ticket := data.get("riskTicket"), str
+        ):
+            self._risk_ticket = risk_ticket
+            self._verify_id = None
+            msg = f"Login verification required ({data.get('loginRiskScene')})"
+            raise DeviceVerificationRequiredError(msg)
+        if result != "SUCCESS":
+            msg = f"Login rejected ({result})"
+            raise AuthenticationError(msg)
+        return data
+
     async def __call_private_api(
-        self, endpoint: str, params: dict[str, str | int]
+        self, endpoint: str, params: dict[str, str | int], *, api_version: str = "v1"
     ) -> Any:
         """Call a signed private authentication API endpoint."""
         url = urljoin(
             self._config.login_url,
-            _PRIVATE_API_PATH_FORMAT.format(endpoint=endpoint, **self._meta),
+            _PRIVATE_API_PATH_FORMAT.format(
+                apiVersion=api_version, endpoint=endpoint, **self._meta
+            ),
         )
         return await self.__do_auth_response(
             url,
@@ -312,10 +375,10 @@ class _AuthClient:
             msg = f"Invalid Ecovacs public key: {ex}"
             raise AuthenticationError(msg) from ex
 
-    async def __encrypt_account(self, account: str) -> str:
+    async def __encrypt(self, value: str) -> str:
         public_key = await self.__get_public_key()
         # PKCS1v15 padding is required by the Ecovacs api
-        encrypted = public_key.encrypt_pkcs1v15(account.encode())
+        encrypted = public_key.encrypt_pkcs1v15(value.encode())
         return base64.b64encode(encrypted).decode()
 
     @staticmethod
@@ -480,12 +543,14 @@ class Authenticator:
         account_id: str,
         password_hash: str,
         *,
+        password: str | None = None,
         account_credentials: AccountCredentials | None = None,
     ) -> None:
         self._auth_client = _AuthClient(
             config,
             account_id,
             password_hash,
+            password=password,
             on_account_credentials=self._set_account_credentials,
         )
 

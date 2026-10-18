@@ -32,6 +32,7 @@ if TYPE_CHECKING:
 
 _ACCOUNT_ID = "test@example.com"
 _PASSWORD_HASH = "password-hash"  # noqa: S105
+_PASSWORD = "p@ss+word/="  # noqa: S105
 _DEVICE_ID = "ABC12345"
 _PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
 
@@ -114,10 +115,19 @@ def _public_key_config(
 
 def _successful_responses(private_key: rsa.RSAPrivateKey) -> dict[str, Any]:
     """Return the responses of a successful login and device verification."""
-    user = {"code": "0000", "data": {"uid": "user-id", "accessToken": "access-token"}}
+    user_data = {"uid": "user-id", "accessToken": "access-token"}
+    user = {"code": "0000", "data": user_data}
     return {
         "login": user,
         "loginCheckMobile": user,
+        "login2": {
+            "code": "0000",
+            "data": {**user_data, "loginResult": "SUCCESS", "riskTicket": None},
+        },
+        "loginByRiskVerify": {
+            "code": "0000",
+            "data": {**user_data, "loginResult": "SUCCESS", "riskTicket": None},
+        },
         "verifyDevice": user,
         "sendEmailVerifyCode": {"code": "0000", "data": {"verifyId": "verify-id"}},
         "getAuthCode": {"code": "0000", "data": {"authCode": "auth-code"}},
@@ -168,6 +178,38 @@ async def auth(
     )
     yield authenticator
     await authenticator.teardown()
+
+
+@pytest.fixture
+async def password_auth(
+    session: ClientSession, api: _FakeEcovacsApi, alpha_2_country: str
+) -> AsyncGenerator[Authenticator]:
+    authenticator = Authenticator(
+        create_rest_config(
+            session=session,
+            device_id=_DEVICE_ID,
+            alpha_2_country=alpha_2_country,
+            override_rest_url=api.url,
+        ),
+        _ACCOUNT_ID,
+        _PASSWORD_HASH,
+        password=_PASSWORD,
+    )
+    yield authenticator
+    await authenticator.teardown()
+
+
+def _require_risk_verification(api: _FakeEcovacsApi) -> None:
+    api.responses["login2"] = {
+        "code": "0000",
+        "data": {
+            "uid": None,
+            "accessToken": None,
+            "loginResult": "HIGH_RISK",
+            "riskTicket": "risk-ticket",
+            "loginRiskScene": "NEW_DEVICE",
+        },
+    }
 
 
 def _decrypt_parameter(
@@ -293,7 +335,7 @@ async def test_login_completes_login_and_sanitizes_response_log(
 
     request = api.requests["login"][0]
     assert request.path == (
-        f"/v1/private/us/EN/{_DEVICE_ID}/global_e/3.14.0/google_play/1/user/login"
+        f"/v1/private/us/EN/{_DEVICE_ID}/global_e/3.16.1/google_play/1/user/login"
     )
     assert request.query["account"] == _ACCOUNT_ID
     assert request.query["password"] == _PASSWORD_HASH
@@ -329,7 +371,7 @@ async def test_login_china_uses_check_mobile_endpoint(
 
     assert credentials.token == "portal-token"  # noqa: S105
     assert api.requests["loginCheckMobile"][0].path == (
-        f"/v1/private/cn/EN/{_DEVICE_ID}/global_e/3.14.0/google_play/1/user/loginCheckMobile"
+        f"/v1/private/cn/EN/{_DEVICE_ID}/global_e/3.16.1/google_play/1/user/loginCheckMobile"
     )
     portal_json = api.requests["user.do"][0].json
     assert portal_json is not None
@@ -612,3 +654,110 @@ async def test_teardown_lets_account_credentials_be_stored(auth: Authenticator) 
     assert stored == [
         AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
     ]
+
+
+async def test_password_login_uses_encrypted_login2(
+    api: _FakeEcovacsApi,
+    password_auth: Authenticator,
+    private_key: rsa.RSAPrivateKey,
+) -> None:
+    credentials = await password_auth.authenticate()
+
+    assert credentials.token == "portal-token"  # noqa: S105
+    assert password_auth.account_credentials == AccountCredentials(
+        access_token="access-token",  # noqa: S106
+        user_id="user-id",
+    )
+    request = api.requests["login2"][0]
+    assert request.path == (
+        f"/v2/private/us/EN/{_DEVICE_ID}/global_e/3.16.1/google_play/1/user/login2"
+    )
+    assert _decrypt_parameter(private_key, request.query, "encryptAccount") == (
+        _ACCOUNT_ID
+    )
+    assert _decrypt_parameter(private_key, request.query, "encryptPwd") == _PASSWORD
+    assert "account" not in request.query
+    assert "password" not in request.query
+    assert "login" not in api.requests
+
+
+async def test_password_login_risk_verification_with_email_code(
+    api: _FakeEcovacsApi,
+    password_auth: Authenticator,
+    private_key: rsa.RSAPrivateKey,
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    _require_risk_verification(api)
+
+    with pytest.raises(DeviceVerificationRequiredError, match="NEW_DEVICE"):
+        await password_auth.authenticate()
+
+    await password_auth.request_device_verification_code()
+    params = api.requests["sendEmailVerifyCode"][0].query
+    assert params["verifyType"] == "EMAIL_LOGIN_RISK_CHECK"
+
+    credentials = await password_auth.verify_device(" 123456 ")
+
+    assert credentials.token == "portal-token"  # noqa: S105
+    assert password_auth.account_credentials == AccountCredentials(
+        access_token="access-token",  # noqa: S106
+        user_id="user-id",
+    )
+    request = api.requests["loginByRiskVerify"][0]
+    assert request.path == (
+        f"/v2/private/us/EN/{_DEVICE_ID}/global_e/3.16.1/google_play/1/user/loginByRiskVerify"
+    )
+    assert request.query["riskTicket"] == "risk-ticket"
+    assert request.query["verifyId"] == "verify-id"
+    assert request.query["verifyCode"] == "123456"
+    assert _decrypt_parameter(private_key, request.query, "encryptEmail") == (
+        _ACCOUNT_ID
+    )
+    assert "verifyDevice" not in api.requests
+    assert "risk-ticket" not in caplog.text
+
+
+async def test_risk_verification_keeps_ticket_after_wrong_code(
+    api: _FakeEcovacsApi, password_auth: Authenticator
+) -> None:
+    _require_risk_verification(api)
+    with pytest.raises(DeviceVerificationRequiredError):
+        await password_auth.authenticate()
+    await password_auth.request_device_verification_code()
+    correct_response = api.responses["loginByRiskVerify"]
+    api.responses["loginByRiskVerify"] = {
+        "code": "1012",
+        "msg": "Wrong code",
+        "data": None,
+    }
+
+    with pytest.raises(InvalidVerificationCodeError):
+        await password_auth.verify_device("000000")
+
+    api.responses["loginByRiskVerify"] = correct_response
+    await password_auth.verify_device("123456")
+
+    assert len(api.requests["loginByRiskVerify"]) == 2
+    assert "verifyDevice" not in api.requests
+
+
+@pytest.mark.parametrize("login_result", ["PASSWORD_ERROR", "MEDIUM_RISK", None])
+async def test_password_login_rejects_other_login_results(
+    api: _FakeEcovacsApi, password_auth: Authenticator, login_result: str | None
+) -> None:
+    api.responses["login2"]["data"]["loginResult"] = login_result
+
+    with pytest.raises(AuthenticationError, match="Login rejected"):
+        await password_auth.authenticate()
+
+    assert "getAuthCode" not in api.requests
+
+
+@pytest.mark.parametrize("alpha_2_country", ["CN"])
+async def test_password_login_china_uses_check_mobile_endpoint(
+    api: _FakeEcovacsApi, password_auth: Authenticator
+) -> None:
+    await password_auth.authenticate()
+
+    assert api.requests["loginCheckMobile"][0].query["password"] == _PASSWORD_HASH
+    assert "login2" not in api.requests
