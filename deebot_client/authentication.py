@@ -188,9 +188,9 @@ class _AuthClient:
         user_access_token = login_token_resp["token"]
         # last is validity in milliseconds. Usually 7 days
         # we set the expiry at 99% of the validity
-        # 604800 = 7 days
+        # 604800000 = 7 days
         expires_at = int(
-            time.time() + int(login_token_resp.get("last", 604800)) / 1000 * 0.99
+            time.time() + int(login_token_resp.get("last", 604800000)) / 1000 * 0.99
         )
 
         _LOGGER.debug("Login to EcovacsAPI successfully")
