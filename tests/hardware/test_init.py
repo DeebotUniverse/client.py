@@ -286,19 +286,45 @@ async def test_all_models_loaded() -> None:
         )
 
 
-async def test_c4wu9j_uses_free_clean_for_room_cleaning() -> None:
+@pytest.mark.parametrize("class_", ["c4wu9j", "bmf9n5"])
+@pytest.mark.parametrize(
+    ("mode", "area", "cleanings", "content"),
+    [
+        (CleanMode.SPOT_AREA, [5], 1, {"type": "freeClean", "value": "1,5"}),
+        (
+            CleanMode.SPOT_AREA,
+            [5, 2],
+            2,
+            {"type": "freeClean", "value": "2,5;2,2"},
+        ),
+        (CleanMode.FREE_CLEAN, [0], 2, {"type": "freeClean", "value": "2,0"}),
+        (
+            CleanMode.CUSTOM_AREA,
+            [1580.0, -4087.0, 3833.0, -7525.0],
+            1,
+            {"type": "customArea", "value": "1580.0,-4087.0,3833.0,-7525.0"},
+        ),
+    ],
+)
+async def test_c4wu9j_uses_free_clean_for_room_cleaning(
+    class_: str,
+    mode: CleanMode,
+    area: list[int | float],
+    cleanings: int,
+    content: dict[str, str],
+) -> None:
     """Test X12 OmniCyclone serializes room cleaning as freeClean."""
-    info = await hardware.get_static_device_info("c4wu9j")
+    info = await hardware.get_static_device_info(class_)
     assert info is not None
 
     capabilities = info.capabilities
     assert capabilities.clean.action.command is CleanV2
     assert capabilities.clean.action.area is not None
 
-    area_command = capabilities.clean.action.area(CleanMode.SPOT_AREA, [5], 1)
+    area_command = capabilities.clean.action.area(mode, area, cleanings)
     assert isinstance(area_command, CleanAreaV2)
     assert area_command.NAME == "clean_V2"
     assert area_command._args == {
         "act": "start",
-        "content": {"type": "freeClean", "value": "1,5"},
+        "content": content,
     }
