@@ -6,7 +6,7 @@ from dataclasses import replace
 
 from deebot_client.commands.json.clean import CleanAreaV2
 from deebot_client.hardware.fd60kt import get_device_info as get_t50_device_info
-from deebot_client.models import CleanMode, StaticDeviceInfo
+from deebot_client.models import CleanAction, CleanMode, StaticDeviceInfo
 
 
 class _CleanAreaFreeCleanV2(CleanAreaV2):
@@ -20,6 +20,7 @@ class _CleanAreaFreeCleanV2(CleanAreaV2):
             self._additional_content["value"] = ";".join(
                 f"{cleanings},{int(room)}" for room in area
             )
+            self._args = self._get_args(CleanAction.START)
         else:
             super().__init__(mode, area, cleanings)
 
