@@ -16,6 +16,7 @@ class SanitizeFilter(Filter):
         "email",
         "login",
         "mobile",
+        "ticket",
         "token",
         "uid",
         "user",
