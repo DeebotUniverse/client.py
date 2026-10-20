@@ -30,6 +30,7 @@ rsa = { version = "0.9.10", default-features = false, features = ["std"] }
 aes-gcm = "0.11.0"
 sha2 = "0.11.0"
 p256 = { version = "0.14.0", default-features = false, features = ["ecdh", "pkcs8", "std"] }
+getrandom = { version = "0.4.3", features = ["sys_rng"] }
 
 [dev-dependencies]
 rstest = "0.28.0"
