@@ -46,6 +46,7 @@ __all__ = [
     "FanSpeedEvent",
     "FanSpeedLevel",
     "FirmwareEvent",
+    "GoatCleanModeEvent",
     "GpsPositionEvent",
     "MajorMapEvent",
     "MapChangedEvent",
@@ -232,6 +233,13 @@ class StateEvent(Event):
     """State event representation."""
 
     state: State
+
+
+@dataclass(frozen=True)
+class GoatCleanModeEvent(Event):
+    """Observed GOAT clean mode used by subsequent control commands."""
+
+    mode: str
 
 
 @dataclass(frozen=True)
