@@ -14,7 +14,7 @@ import pytest
 
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.volume import SetVolume
-from deebot_client.const import UNDEFINED, DataType, UndefinedType
+from deebot_client.const import UNDEFINED, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
 from deebot_client.mqtt_client import MqttClient, MqttConfiguration, create_mqtt_config
 
@@ -123,9 +123,11 @@ async def test_p2p_success(
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
-    with patch.dict(
-        "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {DataType.JSON: {command_name: command_type}},
+
+    with patch.object(
+        mqtt_client,
+        "_get_p2p_command_type",
+        return_value=command_type,
     ):
         request_id = "req"
         payload = await _publish_p2p(
@@ -224,9 +226,11 @@ async def test_p2p_to_late(
     command_type = Mock(spec=SetVolume)
     create_from_mqtt = command_type.create_from_mqtt
     create_from_mqtt.return_value = command_object
-    with patch.dict(
-        "deebot_client.mqtt_client.COMMANDS_WITH_MQTT_P2P_HANDLING",
-        {DataType.JSON: {command_name: command_type}},
+
+    with patch.object(
+        mqtt_client,
+        "_get_p2p_command_type",
+        return_value=command_type,
     ):
         request_id = "req"
         payload = await _publish_p2p(
