@@ -28,7 +28,7 @@ itertools = "0.15.0"
 rsa = { version = "0.9.10", default-features = false, features = ["std"] }
 
 [dev-dependencies]
-rstest = "0.27.0"
+rstest = "0.28.0"
 strum = "0.28.0"
 strum_macros = "0.28.0"
 
