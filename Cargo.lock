@@ -246,7 +246,6 @@ dependencies = [
  "aes-gcm",
  "base64",
  "crc32fast",
- "getrandom 0.4.3",
  "image",
  "itertools",
  "liblzma",

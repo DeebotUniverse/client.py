@@ -1,9 +1,11 @@
-use aes_gcm::aead::Aead;
+use aes_gcm::aead::{Aead, Nonce};
 use aes_gcm::{Aes256Gcm, Key as AesKey, KeyInit};
+use p256::NistP256;
 use p256::ecdh::EphemeralSecret;
 use p256::elliptic_curve::Generate;
 use p256::elliptic_curve::sec1::ToSec1Point;
 use p256::elliptic_curve::zeroize::Zeroizing;
+use p256::pkcs8::AssociatedOid;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use rsa::pkcs8::spki::SubjectPublicKeyInfoRef;
@@ -23,17 +25,18 @@ impl Key {
     fn from_der(data: &[u8]) -> Result<Self, String> {
         let spki = SubjectPublicKeyInfoRef::from_der(data).map_err(|e| e.to_string())?;
         let oid = spki.algorithm.oid;
-        if oid.to_string() == "1.2.840.113549.1.1.1" {
+        if oid == rsa::pkcs1::ALGORITHM_OID {
             return RsaPublicKey::try_from(spki)
                 .map(Self::Rsa)
                 .map_err(|e| e.to_string());
         }
-        if oid.to_string() != "1.2.840.10045.2.1" {
+        // rsa and p256 depend on different const-oid versions, so compare the DER encoding
+        if oid.as_bytes() != p256::elliptic_curve::ALGORITHM_OID.as_bytes() {
             return Err(format!("unsupported key algorithm {oid}"));
         }
 
         let curve = spki.algorithm.parameters_oid().map_err(|e| e.to_string())?;
-        if curve.to_string() != "1.2.840.10045.3.1.7" {
+        if curve.as_bytes() != NistP256::OID.as_bytes() {
             return Err(format!("unsupported elliptic curve {curve}"));
         }
         let public_key = spki
@@ -53,8 +56,7 @@ impl Key {
 /// HKDF-SHA256 from the ECDH shared secret, without salt and the ephemeral public
 /// key as info.
 fn ecies_encrypt(public_key: &p256::PublicKey, data: &[u8]) -> Result<Vec<u8>, String> {
-    let ephemeral = EphemeralSecret::try_generate_from_rng(&mut getrandom::SysRng)
-        .map_err(|e| e.to_string())?;
+    let ephemeral = EphemeralSecret::try_generate().map_err(|e| e.to_string())?;
     let ephemeral_public = ephemeral.public_key().to_sec1_point(false);
 
     let mut key = Zeroizing::new([0u8; 32]);
@@ -64,11 +66,9 @@ fn ecies_encrypt(public_key: &p256::PublicKey, data: &[u8]) -> Result<Vec<u8>, S
         .expand(ephemeral_public.as_bytes(), key.as_mut())
         .map_err(|e| e.to_string())?;
 
-    let cipher_key = AesKey::<Aes256Gcm>::try_from(&key[..]).map_err(|e| e.to_string())?;
-    let cipher = Aes256Gcm::new(&cipher_key);
-    let mut nonce_bytes = [0; 12];
-    getrandom::fill(&mut nonce_bytes).map_err(|e| e.to_string())?;
-    let nonce = aes_gcm::Nonce::<aes_gcm::aead::consts::U12>::from(nonce_bytes);
+    let cipher_key: &AesKey<Aes256Gcm> = (&*key).into();
+    let cipher = Aes256Gcm::new(cipher_key);
+    let nonce = Nonce::<Aes256Gcm>::try_generate().map_err(|e| e.to_string())?;
     let ciphertext = cipher
         .encrypt(&nonce, data)
         .map_err(|_| "encryption failed".to_owned())?;
