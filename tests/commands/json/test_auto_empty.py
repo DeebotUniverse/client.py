@@ -6,8 +6,17 @@ from typing import Any
 
 import pytest
 
-from deebot_client.commands.json.auto_empty import GetAutoEmpty, SetAutoEmpty
-from deebot_client.events.auto_empty import AutoEmptyEvent, Frequency
+from deebot_client.commands.json.auto_empty import (
+    GetAutoEmpty,
+    SetAutoEmpty,
+    SetAutoEmptyIntensity,
+)
+from deebot_client.events.auto_empty import (
+    AutoEmptyEvent,
+    AutoEmptyIntensity,
+    AutoEmptyIntensityEvent,
+    Frequency,
+)
 from tests.helpers import (
     get_request_json,
     get_success_body,
@@ -43,12 +52,34 @@ from . import assert_command, assert_execute_command
             {"enable": 1, "frequency": "smart"},
             AutoEmptyEvent(True, Frequency.SMART),
         ),
+        (
+            {"enable": 1, "frequency": "smart", "intensity": 1},
+            (
+                AutoEmptyEvent(True, Frequency.SMART),
+                AutoEmptyIntensityEvent(AutoEmptyIntensity.HIGH_FREQUENCY),
+            ),
+        ),
+        (
+            {"enable": 1, "frequency": "auto", "intensity": 0},
+            (
+                AutoEmptyEvent(True, Frequency.AUTO),
+                AutoEmptyIntensityEvent(AutoEmptyIntensity.STANDARD),
+            ),
+        ),
     ],
 )
-async def test_GetAutoEmpty(json: dict[str, Any], expected: AutoEmptyEvent) -> None:
+async def test_GetAutoEmpty(
+    json: dict[str, Any],
+    expected: AutoEmptyEvent | tuple[AutoEmptyEvent, AutoEmptyIntensityEvent],
+) -> None:
     """Test GetAutoEmpty."""
     json, firmware_event = get_request_json(get_success_body(json))
-    await assert_command(GetAutoEmpty(), json, (firmware_event, expected))
+    expected_events = (
+        (firmware_event, *expected)
+        if isinstance(expected, tuple)
+        else (firmware_event, expected)
+    )
+    await assert_command(GetAutoEmpty(), json, expected_events)
 
 
 @pytest.mark.parametrize(
@@ -119,3 +150,35 @@ async def test_SetAutoEmpty(
     """Test SetAutoEmpty."""
     command = SetAutoEmpty(enabled, frequency)
     await assert_execute_command(command, args)
+
+
+@pytest.mark.parametrize(
+    ("intensity", "args"),
+    [
+        (
+            AutoEmptyIntensity.STANDARD,
+            {"intensity": 0},
+        ),
+        (
+            AutoEmptyIntensity.HIGH_FREQUENCY,
+            {"intensity": 1},
+        ),
+        (
+            "standard",
+            {"intensity": 0},
+        ),
+        (
+            "high_frequency",
+            {"intensity": 1},
+        ),
+    ],
+)
+async def test_SetAutoEmptyIntensity(
+    intensity: AutoEmptyIntensity | str,
+    args: dict[str, Any],
+) -> None:
+    """Test SetAutoEmptyIntensity."""
+    command = SetAutoEmptyIntensity(intensity)
+    await assert_execute_command(command, args)
+    # The command keeps the current auto-empty enabled state.
+    assert command._args == {**args, "enable": 1}
