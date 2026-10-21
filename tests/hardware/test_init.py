@@ -262,6 +262,17 @@ async def test_capabilities_event_extraction(
         )
 
 
+async def test_a7lhb1_capabilities() -> None:
+    """Test DEEBOT N9+ capabilities."""
+    info = await hardware.get_static_device_info("a7lhb1")
+    assert info is not None
+
+    capabilities = info.capabilities
+    assert capabilities.station is None
+    assert capabilities.get_refresh_commands(CachedMapInfoEvent) == [GetMajorMap()]
+    assert capabilities.get_refresh_commands(RoomsEvent) == [GetMajorMap()]
+
+
 async def test_all_models_loaded() -> None:
     """Test that all models can be loaded."""
     folder = Path(hardware.__file__).parent
