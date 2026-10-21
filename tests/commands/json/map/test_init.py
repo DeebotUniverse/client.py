@@ -596,25 +596,41 @@ async def test_getMapTrace() -> None:
     )
 
 
-async def test_getMapInfoV2() -> None:
+def _map_info_v2_body(
+    mid: str, info: str, outline_version: str | None
+) -> dict[str, Any]:
+    data: dict[str, Any] = {
+        "batid": "zaajbd",
+        "index": "1",
+        "info": info,
+        "infoSize": 19,
+        "mid": mid,
+        "msgid": "",
+        "outlineComplete": 0,
+        "serial": "1",
+        "type": "0",
+        "using": 0,
+    }
+    if outline_version is not None:
+        data["outlineVer"] = outline_version
+    return get_success_body(data)
+
+
+@pytest.mark.parametrize(
+    "outline_version",
+    [
+        "1",
+        "2",
+        "5",
+        "9",
+        None,
+    ],
+)
+async def test_getMapInfoV2(outline_version: str | None) -> None:
     mid = "98100521"
     info = "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4="
     json, firmware_event = get_request_json(
-        get_success_body(
-            {
-                "batid": "zaajbd",
-                "index": "1",
-                "info": info,
-                "infoSize": 19,
-                "mid": mid,
-                "msgid": "",
-                "outlineComplete": 0,
-                "outlineVer": "1",
-                "serial": "1",
-                "type": "0",
-                "using": 0,
-            }
-        )
+        _map_info_v2_body(mid, info, outline_version)
     )
     await assert_command(
         GetMapInfoV2(mid),
@@ -623,25 +639,17 @@ async def test_getMapInfoV2() -> None:
     )
 
 
-async def test_getMapInfoV2_unsupported_version() -> None:
+async def test_getMapInfoV2_inactive_map_is_skipped() -> None:
     mid = "98100521"
     json, firmware_event = get_request_json(
-        get_success_body(
-            {
-                "batid": "zaajbd",
-                "index": "1",
-                "info": "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4=",
-                "infoSize": 19,
-                "mid": mid,
-                "msgid": "",
-                "outlineComplete": 0,
-                "outlineVer": "2",
-                "serial": "1",
-                "type": "0",
-                "using": 0,
-            }
-        )
+        _map_info_v2_body(mid, "KLUv/QRYmQAAW1siMSJdLFsiMiJdLFsiNiJdXbBRuA4=", "0")
     )
+    await assert_command(GetMapInfoV2(mid), json, firmware_event)
+
+
+async def test_getMapInfoV2_without_info() -> None:
+    mid = "98100521"
+    json, firmware_event = get_request_json(_map_info_v2_body(mid, "", "1"))
     await assert_command(
         GetMapInfoV2(mid),
         json,

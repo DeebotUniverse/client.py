@@ -153,7 +153,9 @@ def test_onMajorMap() -> None:
     [
         ("0", HandlingState.SUCCESS, False),
         ("1", HandlingState.SUCCESS, True),
-        ("2", HandlingState.ANALYSE_LOGGED, False),
+        ("2", HandlingState.SUCCESS, True),
+        ("5", HandlingState.SUCCESS, True),
+        ("9", HandlingState.SUCCESS, True),
     ],
 )
 @pytest.mark.benchmark
@@ -162,7 +164,7 @@ def test_onMapInfo_V2(
     expected_state: HandlingState,
     should_notify: bool,
 ) -> None:
-    """Test onMapInfo_V2 message with unsupported version."""
+    """Test onMapInfo_V2 message with different outline versions."""
     map_id = "1132127808"
     info = "KLUv/WBuAOUEAMKHEhGgJc0B/t+e/8tOpCUXnv6wB8MgkzOv8aaVcx83Ob970V2jqKjyDrpZulk0ORMwrriigTNeNNYSRZhBAHQ196KaaTODukBGSgQhJSCAojXXDSMFoBmkm5nkvB5Fd1Y/Egyq8WAN/OJ0DezknG5gqwa6MBfBRW+sfLOsgLwKK4gZv4feNsH2ufM7AGNqAo/2u6QQXgAi1EMPAw=="
     data = {
