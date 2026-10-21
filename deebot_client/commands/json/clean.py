@@ -113,6 +113,21 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class CleanAreaFreeCleanV2(CleanAreaV2):
+    """Clean area command V2 for models, which only accept "freeClean" for rooms.
+
+    Some models (e.g. DEEBOT T90 PRO OMNI) reject "spotArea" as content type
+    and expect "freeClean" with the room ids instead.
+    """
+
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        if mode == CleanMode.SPOT_AREA:
+            mode = CleanMode.FREE_CLEAN
+        super().__init__(mode, area, cleanings)
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
