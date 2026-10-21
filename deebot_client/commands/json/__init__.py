@@ -21,6 +21,7 @@ from .clear_map import ClearMap
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .cross_map_border_warning import GetCrossMapBorderWarning, SetCrossMapBorderWarning
 from .cut_direction import GetCutDirection, SetCutDirection
+from .cut_efficiency import GetCutEfficiency, SetCutEfficiency
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
@@ -80,6 +81,7 @@ __all__ = [
     "GetContinuousCleaning",
     "GetCrossMapBorderWarning",
     "GetCutDirection",
+    "GetCutEfficiency",
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
@@ -119,6 +121,7 @@ __all__ = [
     "SetContinuousCleaning",
     "SetCrossMapBorderWarning",
     "SetCutDirection",
+    "SetCutEfficiency",
     "SetEfficiencyMode",
     "SetFanSpeed",
     "SetMajorMap",
@@ -185,6 +188,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetCrossMapBorderWarning,
     SetCrossMapBorderWarning,
+
+    GetCutEfficiency,
+    SetCutEfficiency,
 
     GetEfficiencyMode,
     SetEfficiencyMode,
