@@ -41,6 +41,7 @@ from deebot_client.events import (
     PositionsEvent,
     ReportStatsEvent,
     RoomsEvent,
+    RtkEvent,
     SafeProtectEvent,
     StateEvent,
     StationEvent,
@@ -278,6 +279,7 @@ class Capabilities(ABC):
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute[[]]
+    rtk: CapabilityEvent[RtkEvent] | None = None
     settings: CapabilitySettings
     state: CapabilityEvent[StateEvent]
     station: CapabilityStation | None = None

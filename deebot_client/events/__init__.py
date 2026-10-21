@@ -28,6 +28,7 @@ from .map import (
     PositionsEvent,
 )
 from .network import NetworkInfoEvent
+from .rtk import RtkBaseStation, RtkEvent
 from .station import StationEvent
 from .work_mode import WorkMode, WorkModeEvent
 
@@ -58,6 +59,8 @@ __all__ = [
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "RtkBaseStation",
+    "RtkEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",
