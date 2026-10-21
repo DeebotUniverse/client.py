@@ -1,18 +1,26 @@
 from __future__ import annotations
 
+from base64 import b64encode
+from compression.zstd import compress
 from typing import TYPE_CHECKING
 
+from defusedxml.ElementTree import fromstring
+import orjson
 import pytest
 
-from deebot_client.commands.json.map import GetMapSetV2
+from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
 from deebot_client.events import FirmwareEvent
 from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
 from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
 from deebot_client.messages.json.map import OnMajorMap, OnMapInfoV2
+from deebot_client.rs.map import MapData, RotationAngle
+from tests.helpers import get_request_json, get_success_body
 from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
+    from unittest.mock import Mock
+
     from deebot_client.events.base import Event
 
 
@@ -153,7 +161,8 @@ def test_onMajorMap() -> None:
     [
         ("0", HandlingState.SUCCESS, False),
         ("1", HandlingState.SUCCESS, True),
-        ("2", HandlingState.ANALYSE_LOGGED, False),
+        ("2", HandlingState.SUCCESS, True),
+        ("3", HandlingState.ANALYSE_LOGGED, False),
     ],
 )
 @pytest.mark.benchmark
@@ -201,4 +210,41 @@ def test_onMapInfo_V2(
         data,
         expected_events,
         expected_state=expected_state,
+    )
+
+
+@pytest.mark.parametrize("message", [OnMapInfoV2, GetMapInfoV2])
+def test_map_info_v2_renders_outline_version_2(
+    message: type[OnMapInfoV2], event_bus_mock: Mock
+) -> None:
+    """Render synthetic V2 outline, room and block-line layers without map tiles."""
+    layers = [
+        ["1", "1;0,0,1;200,0,1;200,100,1;0,100,1"],
+        ["2", "1;0,0;200,0;200,100;0,100"],
+        ["6", "1;0,0;200,0;200,100;0,100"],
+    ]
+    info = b64encode(compress(orjson.dumps(layers))).decode()
+    payload, _ = get_request_json(
+        get_success_body({"mid": "1", "outlineVer": "2", "info": info})
+    )
+
+    result = message.handle(event_bus_mock, payload["resp"])
+
+    assert result.state is HandlingState.SUCCESS
+    map_events = [
+        call.args[0]
+        for call in event_bus_mock.notify.call_args_list
+        if isinstance(call.args[0], MapInfoEvent)
+    ]
+    assert map_events == [MapInfoEvent("1", info)]
+    map_data = MapData()
+    map_data.map_info.set(map_events[0].info)
+    svg = map_data.generate_svg([], [], RotationAngle.DEG_0)
+
+    assert svg is not None
+    root = fromstring(svg)
+    # The renderer uses 50 mm per SVG unit and inverts the Y axis.
+    assert root.attrib["viewBox"] == "0 -2 4 2"
+    assert (
+        len(root.findall("svg:g/svg:path", {"svg": "http://www.w3.org/2000/svg"})) == 4
     )
