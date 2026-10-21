@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  ADDITIONAL_PYTHON_VERSIONS: "[]"
+  ADDITIONAL_PYTHON_VERSIONS: "['3.15']"
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}
@@ -131,7 +131,7 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run prek
-        uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
         env:
           PREK_SKIP: no-commit-to-branch,mypy,verifyNoGetLogger,rust-fmt,rust-check,rust-clippy
 
@@ -454,7 +454,7 @@ jobs:
           path: dist
           merge-multiple: true
       - name: 🚀 Publish to PyPi
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
           print-hash: true

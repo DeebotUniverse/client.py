@@ -19,7 +19,7 @@ repos:
         exclude_types:
           - csv
           - json
-        exclude: ^uv.lock$
+        exclude: ^.+\.lock$
   - repo: builtin
     hooks:
       - id: trailing-whitespace
