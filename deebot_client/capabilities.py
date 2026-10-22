@@ -113,9 +113,9 @@ class CapabilityExecute[**P]:
 
 @dataclass(frozen=True, kw_only=True)
 class CapabilityTypes[T]:
-    """Capability to specify types support."""
+    """Capability to specify types support (use dict when passing two or more parameters)."""
 
-    types: tuple[T, ...]
+    types: tuple[T, ...] | dict[T, dict[str, Any]]
 
 
 @dataclass(frozen=True, kw_only=True)
