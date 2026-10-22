@@ -51,7 +51,7 @@ from deebot_client.commands.json.map import (
 )
 from deebot_client.commands.json.mop_auto_wash_frequency import (
     GetMopAutoWashFrequency,
-    SetMopAutoWashFrequency,
+    SetWashInfo,
 )
 from deebot_client.commands.json.network import GetNetInfo
 from deebot_client.commands.json.ota import GetOta, SetOta
@@ -106,6 +106,12 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
+from deebot_client.events.wash_info import (
+    MopAutoWashMode,
+    MopAutoWashModeEvent,
+    MopWashMode,
+    MopWashModeEvent,
+)
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -211,9 +217,33 @@ def get_device_info() -> StaticDeviceInfo:
                 mop_auto_wash_frequency=CapabilityNumber(
                     event=MopAutoWashFrequencyEvent,
                     get=[GetMopAutoWashFrequency()],
-                    set=SetMopAutoWashFrequency,
+                    # The interval is only applied together with wiseMode
+                    set=lambda interval: SetWashInfo(
+                        wise_mode=MopAutoWashMode.BY_TIME, interval=interval
+                    ),
                     min=0,
                     max=60,
+                ),
+                mop_auto_wash_mode=CapabilitySetTypes(
+                    event=MopAutoWashModeEvent,
+                    get=[GetMopAutoWashFrequency()],
+                    set=lambda mode: SetWashInfo(wise_mode=mode),
+                    types=(
+                        MopAutoWashMode.BY_TIME,
+                        MopAutoWashMode.BY_ROOM,
+                        MopAutoWashMode.SMART,
+                    ),
+                ),
+                mop_wash_mode=CapabilitySetTypes(
+                    event=MopWashModeEvent,
+                    get=[GetMopAutoWashFrequency()],
+                    set=lambda mode: SetWashInfo(mode=mode),
+                    types=(
+                        MopWashMode.ECO,
+                        MopWashMode.STANDARD,
+                        MopWashMode.DEEP,
+                        MopWashMode.INTELLIGENT_TEMPERATURE,
+                    ),
                 ),
                 ota=CapabilitySetEnable(OtaEvent, [GetOta()], SetOta),
                 sweep_mode=CapabilitySetEnable(
