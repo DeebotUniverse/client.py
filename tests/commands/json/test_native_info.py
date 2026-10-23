@@ -5,12 +5,25 @@ import re
 import pytest
 
 from deebot_client.command import GetCommand
-from deebot_client.commands.json import GetBattery
+from deebot_client.commands.json import (
+    COMMANDS,
+    GetBattery,
+    NativeCleanRoom,
+    NativeCleanZone,
+    NativeSetAutoBoost,
+    NativeSetChildLock,
+    NativeSetContinuousCleaning,
+    NativeSetDoNotDisturb,
+    NativeSetVolume,
+)
 from deebot_client.commands.json.common import JsonGetCommand
 from deebot_client.commands.json.native_info import GetNativeInfo
 from deebot_client.events import BatteryEvent, ErrorEvent, StateEvent
-from deebot_client.messages.json.native_info import NativeInfoEvent
+from deebot_client.messages import get_message
+from deebot_client.messages.json import MESSAGES
+from deebot_client.messages.json.native_info import NativeInfoEvent, OnNativeInfo
 from deebot_client.models import State
+from tests import get_static_device_info
 from tests.helpers import get_request_json, get_success_body
 
 from . import assert_command
@@ -88,6 +101,22 @@ async def test_get_native_error_description_through_transport(
         payload,
         (firmware_event, ErrorEvent(code, description)),
     )
+
+
+def test_registry_uniqueness_and_mqtt_route() -> None:
+    assert COMMANDS["10001"] is GetNativeInfo
+    assert MESSAGES["10000"] is OnNativeInfo
+    assert [cmd for cmd in COMMANDS.values() if cmd.NAME == "10001"] == [GetNativeInfo]
+    assert COMMANDS["50038"] is NativeSetChildLock
+    assert COMMANDS["50036"] is NativeSetAutoBoost
+    assert COMMANDS["50025"] is NativeSetContinuousCleaning
+    assert COMMANDS["50019"] is NativeSetDoNotDisturb
+    assert COMMANDS["50023"] is NativeSetVolume
+    assert COMMANDS["40007"] is NativeCleanRoom
+    assert COMMANDS["40005"] is NativeCleanZone
+    static = get_static_device_info("kr0277")
+    assert static is not None
+    assert get_message("10000", static) is OnNativeInfo
 
 
 def test_legacy_getter_header_unaffected() -> None:

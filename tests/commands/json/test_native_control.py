@@ -8,6 +8,7 @@ import pytest
 
 from deebot_client.authentication import Authenticator
 from deebot_client.command import Command, GetCommand
+from deebot_client.commands.json import COMMANDS
 from deebot_client.commands.json.native_control import (
     NativeCustomCommand,
     NativeLocate,
@@ -107,6 +108,25 @@ async def test_native_wire_payload(
         # Refresh behavior has dedicated coverage below.
         return
     await assert_execute_command(command, args)
+
+
+def test_registry_unique_numeric_names() -> None:
+    expected = {
+        "40001": NativeStartClean,
+        "40009": NativePauseClean,
+        "40011": NativeResumeClean,
+        "40013": NativeReturnToDock,
+        "40019": NativeLocate,
+        "50011": NativeSetFanSpeed,
+        "50013": NativeSetWaterAmount,
+        "50017": NativeResetLifeSpan,
+        "10001": GetNativeInfo,
+    }
+    for name, cls in expected.items():
+        assert COMMANDS[name] is cls
+    assert [cmd for cmd in COMMANDS.values() if cmd.NAME == "40013"] == [
+        NativeReturnToDock
+    ]
 
 
 def test_get_native_info_uses_shared_native_header() -> None:

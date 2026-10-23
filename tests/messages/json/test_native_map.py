@@ -16,7 +16,9 @@ from deebot_client.events import (
     PositionsEvent,
     RoomsEvent,
 )
-from deebot_client.events.map import Map as SavedMap
+from deebot_client.events.map import Map as SavedMap, MapChangedEvent
+from deebot_client.hardware.cqyi87 import get_device_info as y1_device_info
+from deebot_client.map import Map as MapCls
 from deebot_client.message import HandlingState
 from deebot_client.messages.json.native_map import (
     OnNativeMapReport,
@@ -24,6 +26,7 @@ from deebot_client.messages.json.native_map import (
 )
 from deebot_client.models import Room
 from deebot_client.rs.map import PositionType, RotationAngle
+from tests.common import block_till_done
 
 SYNTHETIC_LZ4_5X3 = "8AD/AAAAAQAAAAAAAgAAAAM="
 SYNTHETIC_TRACE_2PTS = "oAoAFAAADwAZAAA="
@@ -303,3 +306,36 @@ def test_empty_catalog_clears_and_malformed_safe() -> None:
         bus2, {"mapInfos": "bad", "mapData": "bad", "areas": "bad", "pos": []}
     )
     assert result2.state == HandlingState.SUCCESS
+
+
+async def test_robot_only_pose_keeps_dock_at_map_layer(event_bus: EventBus) -> None:
+    async def _mc(_: MapChangedEvent) -> None:
+        pass
+
+    event_bus.subscribe(MapChangedEvent, _mc)
+    await block_till_done(event_bus)
+    caps = y1_device_info().capabilities
+    assert caps.map is not None
+    m = MapCls(Mock(), event_bus, caps.map)
+    await block_till_done(event_bus)
+    m.select_map("2")
+    event_bus.notify(
+        PositionsEvent(
+            positions=[
+                Position(type=PositionType.DEEBOT, x=100, y=100, a=0),
+                Position(type=PositionType.CHARGER, x=400, y=0, a=0),
+            ],
+            map_id="2",
+        )
+    )
+    await block_till_done(event_bus)
+    assert len(m._map_data._positions) == 2
+    event_bus.notify(
+        PositionsEvent(
+            positions=[Position(type=PositionType.DEEBOT, x=200, y=200, a=0)],
+            map_id="2",
+        )
+    )
+    await block_till_done(event_bus)
+    assert len(m._map_data._positions) == 2
+    await m.teardown()
