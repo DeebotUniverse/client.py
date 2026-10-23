@@ -39,6 +39,36 @@ from .map import (
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
+from .native_area import NativeCleanRoom, NativeCleanZone
+from .native_control import (
+    NativeLocate,
+    NativePauseClean,
+    NativeResetLifeSpan,
+    NativeResumeClean,
+    NativeReturnToDock,
+    NativeSetFanSpeed,
+    NativeSetWaterAmount,
+    NativeStartClean,
+)
+from .native_info import GetNativeInfo
+from .native_map import GetNativeMapData, NativeMapSwitch
+from .native_map_edit import (
+    NativeAddNoMopZone,
+    NativeAddVirtualWall,
+    NativeDeleteNoMopZone,
+    NativeDeleteVirtualWall,
+    NativeMapOverlay,
+    NativeMergeRooms,
+    NativeRenameRoom,
+    NativeSplitRoom,
+)
+from .native_settings import (
+    NativeSetAutoBoost,
+    NativeSetChildLock,
+    NativeSetContinuousCleaning,
+    NativeSetDoNotDisturb,
+    NativeSetVolume,
+)
 from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
@@ -94,6 +124,8 @@ __all__ = [
     "GetMopAutoWashFrequency",
     "GetMoveUpWarning",
     "GetMultimapState",
+    "GetNativeInfo",
+    "GetNativeMapData",
     "GetNetInfo",
     "GetNetInfoLegacy",
     "GetOta",
@@ -107,6 +139,30 @@ __all__ = [
     "GetVolume",
     "GetWaterInfo",
     "GetWorkMode",
+    "NativeAddNoMopZone",
+    "NativeAddVirtualWall",
+    "NativeCleanRoom",
+    "NativeCleanZone",
+    "NativeDeleteNoMopZone",
+    "NativeDeleteVirtualWall",
+    "NativeLocate",
+    "NativeMapOverlay",
+    "NativeMapSwitch",
+    "NativeMergeRooms",
+    "NativePauseClean",
+    "NativeRenameRoom",
+    "NativeResetLifeSpan",
+    "NativeResumeClean",
+    "NativeReturnToDock",
+    "NativeSetAutoBoost",
+    "NativeSetChildLock",
+    "NativeSetContinuousCleaning",
+    "NativeSetDoNotDisturb",
+    "NativeSetFanSpeed",
+    "NativeSetVolume",
+    "NativeSetWaterAmount",
+    "NativeSplitRoom",
+    "NativeStartClean",
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
@@ -215,6 +271,30 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetMultimapState,
     SetMultimapState,
+
+    GetNativeInfo,
+    GetNativeMapData,
+
+    NativeStartClean,
+    NativePauseClean,
+    NativeResumeClean,
+    NativeReturnToDock,
+    NativeLocate,
+    NativeSetFanSpeed,
+    NativeSetWaterAmount,
+    NativeResetLifeSpan,
+    NativeCleanRoom,
+    NativeCleanZone,
+    NativeSetChildLock,
+    NativeSetAutoBoost,
+    NativeSetContinuousCleaning,
+    NativeSetDoNotDisturb,
+    NativeSetVolume,
+    NativeMapSwitch,
+    NativeMapOverlay,
+    NativeSplitRoom,
+    NativeMergeRooms,
+    NativeRenameRoom,
 
     GetNetInfo,
     GetNetInfoLegacy,
