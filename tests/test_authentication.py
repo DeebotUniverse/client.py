@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 from aiohttp import ClientSession, hdrs, web
 from aiohttp.test_utils import TestServer
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
 import orjson
 import pytest
 
@@ -22,7 +22,8 @@ from deebot_client.exceptions import (
     InvalidAuthenticationError,
     InvalidVerificationCodeError,
 )
-from deebot_client.models import Credentials
+from deebot_client.models import AccountCredentials, Credentials
+from tests.helpers.crypto import decrypt
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -100,7 +101,7 @@ def _key_config(value: Any) -> dict[str, Any]:
 
 
 def _public_key_config(
-    public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey,
+    public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey,
 ) -> str:
     """Return the public key configuration value as sent by the api."""
     encoded_key = base64.b64encode(
@@ -171,11 +172,11 @@ async def auth(
 
 
 def _decrypt_parameter(
-    private_key: rsa.RSAPrivateKey, params: dict[str, Any], parameter: str
+    private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey,
+    params: dict[str, Any],
+    parameter: str,
 ) -> str:
-    return private_key.decrypt(
-        base64.b64decode(params[parameter]), padding.PKCS1v15()
-    ).decode()
+    return decrypt(private_key, base64.b64decode(params[parameter])).decode()
 
 
 async def test_authenticator_authenticate(rest_config: RestConfiguration) -> None:
@@ -308,6 +309,17 @@ async def test_login_completes_login_and_sanitizes_response_log(
         "country": "US",
         "todo": "loginByItToken",
     }
+
+
+async def test_login_without_validity_expires_after_7_days(
+    api: _FakeEcovacsApi, auth: Authenticator
+) -> None:
+    del api.responses["user.do"]["last"]
+    started = time.time()
+
+    credentials = await auth.authenticate()
+
+    assert credentials.expires_at >= int(started + 7 * 24 * 60 * 60 * 0.99)
 
 
 @pytest.mark.parametrize("alpha_2_country", ["CN"])
@@ -481,14 +493,32 @@ async def test_request_device_verification_rejects_invalid_public_key(
     assert list(api.requests) == ["getConfig"]
 
 
-async def test_request_device_verification_rejects_non_rsa_public_key(
+async def test_request_device_verification_rejects_unsupported_public_key(
     api: _FakeEcovacsApi, auth: Authenticator
 ) -> None:
-    public_key = ec.generate_private_key(ec.SECP256R1()).public_key()
+    public_key = ed25519.Ed25519PrivateKey.generate().public_key()
     api.responses["getConfig"]["data"] = [_key_config(_public_key_config(public_key))]
 
-    with pytest.raises(AuthenticationError, match="public key is not an RSA key"):
+    with pytest.raises(
+        AuthenticationError,
+        match=r"Invalid Ecovacs public key: unsupported key algorithm 1\.3\.101\.112",
+    ):
         await auth.request_device_verification_code()
+
+
+async def test_request_device_verification_with_ec_public_key(
+    api: _FakeEcovacsApi,
+    auth: Authenticator,
+) -> None:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    api.responses["getConfig"]["data"] = [
+        _key_config(_public_key_config(private_key.public_key()))
+    ]
+
+    await auth.request_device_verification_code()
+
+    params = api.requests["sendEmailVerifyCode"][0].query
+    assert _decrypt_parameter(private_key, params, "encryptEmail") == _ACCOUNT_ID
 
 
 async def test_request_device_verification_skips_invalid_duplicate_config(
@@ -499,3 +529,103 @@ async def test_request_device_verification_skips_invalid_duplicate_config(
     await auth.request_device_verification_code()
 
     assert len(api.requests["sendEmailVerifyCode"]) == 1
+
+
+async def test_authenticate_prefers_token_based_renewal(
+    session: ClientSession, api: _FakeEcovacsApi
+) -> None:
+    """A seeded access token mints portal credentials without a password login."""
+    authenticator = Authenticator(
+        create_rest_config(
+            session=session,
+            device_id=_DEVICE_ID,
+            alpha_2_country="US",
+            override_rest_url=api.url,
+        ),
+        _ACCOUNT_ID,
+        _PASSWORD_HASH,
+        account_credentials=AccountCredentials(
+            access_token="access-token",  # noqa: S106
+            user_id="user-id",
+        ),
+    )
+    try:
+        credentials = await authenticator.authenticate()
+
+        assert credentials.token == "portal-token"  # noqa: S105
+        assert credentials.user_id == "user-id"
+        assert "login" not in api.requests
+        assert api.requests["getAuthCode"][0].query["accessToken"] == "access-token"
+        assert api.requests["user.do"][0].json is not None
+    finally:
+        await authenticator.teardown()
+
+
+async def test_authenticate_falls_back_to_password_login(
+    rest_config: RestConfiguration,
+) -> None:
+    """An expired access token falls back to the password login."""
+    with patch("deebot_client.authentication._AuthClient", spec_set=True) as api_client:
+        login_with_account_mock: AsyncMock = api_client.return_value.login_with_account
+        login_with_account_mock.side_effect = AuthenticationError("token expired")
+        login_mock: AsyncMock = api_client.return_value.login
+        login_mock.return_value = Credentials(
+            "token", "user_id", int(time.time() + 123456789)
+        )
+        account = AccountCredentials(access_token="expired", user_id="user_id")  # noqa: S106
+        authenticator = Authenticator(
+            rest_config, "test", "test", account_credentials=account
+        )
+
+        assert (await authenticator.authenticate()) == login_mock.return_value
+        login_with_account_mock.assert_awaited_once_with(account)
+        login_mock.assert_awaited_once()
+
+
+async def test_login_stores_and_notifies_account_credentials(
+    auth: Authenticator,
+) -> None:
+    """A password login stores the account credentials and notifies subscribers."""
+    changed: asyncio.Queue[AccountCredentials] = asyncio.Queue()
+    auth.subscribe_account_credentials(changed.put)
+    before = auth.account_credentials
+    assert before is None
+
+    await auth.authenticate()
+
+    account = AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
+    assert auth.account_credentials == account
+    async with asyncio.timeout(0.1):
+        assert await changed.get() == account
+
+
+async def test_verify_device_stores_account_credentials(auth: Authenticator) -> None:
+    """A device verification stores the account credentials for later renewals."""
+    await auth.verify_device("123456")
+
+    assert auth.account_credentials == AccountCredentials(
+        access_token="access-token",  # noqa: S106
+        user_id="user-id",
+    )
+
+
+async def test_teardown_lets_account_credentials_be_stored(auth: Authenticator) -> None:
+    """Teardown right after a login must not cancel storing the account credentials.
+
+    Losing them sends the next start back to the password login, which is the
+    1013 loop this renewal exists to avoid.
+    """
+    stored: list[AccountCredentials] = []
+
+    async def _store(account: AccountCredentials) -> None:
+        await asyncio.sleep(0.01)
+        stored.append(account)
+
+    auth.subscribe_account_credentials(_store)
+
+    await auth.authenticate()
+    await auth.teardown()
+
+    assert stored == [
+        AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
+    ]

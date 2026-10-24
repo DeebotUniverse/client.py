@@ -29,7 +29,6 @@ dependencies = [
     "aiohttp>=3.13.3,<4.0",
     "aiomqtt>=2.5.0,<3.0",
     "cachetools>=5.0.0,<8.0",
-    "cryptography>=48.0.1,<51.0",
     "defusedxml>=0.7.1",
     "orjson>=3.11.3",
 ]
@@ -56,12 +55,13 @@ dev = [
     "maturin-import-hook==0.3.0",
 ]
 lint = [
-    "mypy==2.3.1",
-    "prek==0.5.2",
+    "mypy==2.4.0",
+    "prek==0.5.7",
     "types-cachetools>=5.5.0.20240820",
     "types-mock>=5.1.0.20240425",
 ]
 test = [
+    "cryptography==50.0.2",
     "pycountry==26.2.16",
     "pytest-asyncio==1.4.0",
     "pytest-codspeed>=3.1.2",
@@ -69,10 +69,10 @@ test = [
     "pytest-docker-fixtures==1.4.4",
     "pytest-timeout==2.4.0",
     "pytest==9.1.1",
-    "testfixtures==12.3.0",
+    "testfixtures==12.4.0",
     "pytest-github-actions-annotate-failures==0.4.2",
     "pytest-xdist==3.8.0",
-    "syrupy==6.0.0",
+    "syrupy==6.1.1",
 ]
 
 [tool.maturin]

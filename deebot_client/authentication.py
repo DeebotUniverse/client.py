@@ -11,8 +11,6 @@ from typing import TYPE_CHECKING, Any
 from urllib.parse import urljoin
 
 from aiohttp import ClientResponseError, ClientSession, ClientTimeout, hdrs
-from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import padding, rsa
 import orjson
 
 from .const import COUNTRY_CHINA, PATH_API_USERS_USER, REALM
@@ -25,7 +23,8 @@ from .exceptions import (
     InvalidVerificationCodeError,
 )
 from .logging_filter import get_logger
-from .models import Credentials
+from .models import AccountCredentials, Credentials
+from .rs.crypto import PublicKey
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
@@ -43,6 +42,8 @@ _AUTH_CLIENT_SECRET = "77ef58ce3afbe337da74aa8c5ab963a9"  # noqa: S105
 _PRIVATE_API_PATH_FORMAT = "/v1/private/{country}/{lang}/{deviceId}/{appCode}/{appVersion}/{channel}/{deviceType}/{endpoint}"
 _GLOBAL_AUTHCODE_PATH = "/v1/global/auth/getAuthCode"
 _PUBLIC_KEY_CONFIG = "PUBLIC.KEY.CONFIG"
+# How long teardown waits for subscribers to store new account credentials.
+_ACCOUNT_CALLBACK_TIMEOUT = 5
 _META = {
     "lang": "EN",
     "appCode": "global_e",
@@ -107,17 +108,20 @@ class _AuthClient:
         config: RestConfiguration,
         account_id: str,
         password_hash: str,
+        *,
+        on_account_credentials: Callable[[AccountCredentials], None] | None = None,
     ) -> None:
         self._config = config
         self._account_id = account_id
         self._password_hash = password_hash
+        self._on_account_credentials = on_account_credentials
 
         self._meta: dict[str, str] = {
             **_META,
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
-        self._public_key: rsa.RSAPublicKey | None = None
+        self._public_key: PublicKey | None = None
 
     async def login(self) -> Credentials:
         """Login using username and password."""
@@ -161,12 +165,20 @@ class _AuthClient:
         """Complete login using the Ecovacs user credentials of the response."""
         data = self.__expect_dict(response, error)
         try:
-            user_id = str(data["uid"])
-            access_token = str(data["accessToken"])
+            account = AccountCredentials(
+                access_token=str(data["accessToken"]), user_id=str(data["uid"])
+            )
         except KeyError as ex:
             raise AuthenticationError(error) from ex
 
-        auth_code = await self.__call_auth_api(access_token, user_id)
+        if self._on_account_credentials is not None:
+            self._on_account_credentials(account)
+        return await self.login_with_account(account)
+
+    async def login_with_account(self, account: AccountCredentials) -> Credentials:
+        """Mint portal credentials from account credentials, without the password."""
+        user_id = account.user_id
+        auth_code = await self.__call_auth_api(account.access_token, user_id)
 
         login_token_resp = await self.__call_login_by_it_token(user_id, auth_code)
         if login_token_resp["userId"] != user_id:
@@ -176,9 +188,9 @@ class _AuthClient:
         user_access_token = login_token_resp["token"]
         # last is validity in milliseconds. Usually 7 days
         # we set the expiry at 99% of the validity
-        # 604800 = 7 days
+        # 604800000 = 7 days
         expires_at = int(
-            time.time() + int(login_token_resp.get("last", 604800)) / 1000 * 0.99
+            time.time() + int(login_token_resp.get("last", 604800000)) / 1000 * 0.99
         )
 
         _LOGGER.debug("Login to EcovacsAPI successfully")
@@ -260,7 +272,7 @@ class _AuthClient:
             "authTimeZone": "GMT-8",
         }
 
-    async def __get_public_key(self) -> rsa.RSAPublicKey:
+    async def __get_public_key(self) -> PublicKey:
         # The key is the same for all accounts, therefore we cache it for the
         # lifetime of the client
         if self._public_key is not None:
@@ -284,8 +296,8 @@ class _AuthClient:
         raise AuthenticationError("Ecovacs public key configuration is missing")
 
     @staticmethod
-    def __load_public_key(config_value: str) -> rsa.RSAPublicKey:
-        """Load the public key from the configuration value."""
+    def __load_public_key(config_value: str) -> PublicKey:
+        """Load the public key (RSA or EC) from the configuration value."""
         try:
             encoded_key = orjson.loads(config_value)["publicKey"]
         except (KeyError, TypeError, orjson.JSONDecodeError) as ex:
@@ -295,20 +307,20 @@ class _AuthClient:
 
         try:
             # base64 and DER errors are both a ValueError
-            key = serialization.load_der_public_key(
+            public_key = PublicKey.from_der(
                 base64.b64decode(encoded_key, validate=True)
             )
         except ValueError as ex:
-            raise AuthenticationError("Invalid Ecovacs public key") from ex
+            msg = f"Invalid Ecovacs public key: {ex}"
+            raise AuthenticationError(msg) from ex
 
-        if not isinstance(key, rsa.RSAPublicKey):
-            raise AuthenticationError("Ecovacs public key is not an RSA key")
-        return key
+        _LOGGER.debug("Loaded Ecovacs public key: %s", public_key.algorithm)
+        return public_key
 
     async def __encrypt_account(self, account: str) -> str:
         public_key = await self.__get_public_key()
-        # PKCS1v15 padding is required by the Ecovacs api
-        encrypted = public_key.encrypt(account.encode(), padding.PKCS1v15())
+        # RSA keys use PKCS1v15 padding as required by the Ecovacs api, EC keys ECIES
+        encrypted = public_key.encrypt(account.encode())
         return base64.b64encode(encrypted).decode()
 
     @staticmethod
@@ -472,31 +484,62 @@ class Authenticator:
         config: RestConfiguration,
         account_id: str,
         password_hash: str,
+        *,
+        account_credentials: AccountCredentials | None = None,
     ) -> None:
         self._auth_client = _AuthClient(
             config,
             account_id,
             password_hash,
+            on_account_credentials=self._set_account_credentials,
         )
 
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
             Callable[[Credentials], Coroutine[Any, Any, None]]
         ] = set()
+        self._on_account_credentials_changed: set[
+            Callable[[AccountCredentials], Coroutine[Any, Any, None]]
+        ] = set()
         self._credentials: Credentials | None = None
+        self._account_credentials = account_credentials
         self._refresh_handle: asyncio.TimerHandle | None = None
         self._tasks: set[asyncio.Future[Any]] = set()
+        self._account_tasks: set[asyncio.Future[Any]] = set()
+
+    @property
+    def account_credentials(self) -> AccountCredentials | None:
+        """Return the account credentials, if some are known."""
+        return self._account_credentials
 
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
         async with self._lock:
             credentials = self._credentials
             if credentials is None or force or credentials.expires_at < time.time():
-                _LOGGER.debug("Performing login")
-                credentials = await self._auth_client.login()
+                credentials = await self._login()
                 self._set_credentials(credentials)
 
             return credentials
+
+    async def _login(self) -> Credentials:
+        """Login, preferring the password-free token based renewal.
+
+        The password login endpoint rejects some accounts with code 1013
+        ("Please update to the latest version to continue"), while portal
+        credentials can still be minted from the stored account credentials.
+        """
+        if (account := self._account_credentials) is not None:
+            _LOGGER.debug("Performing token based login")
+            try:
+                return await self._auth_client.login_with_account(account)
+            except AuthenticationError:
+                _LOGGER.debug(
+                    "Token based login failed, falling back to password login",
+                    exc_info=True,
+                )
+        _LOGGER.debug("Performing login")
+        return await self._auth_client.login()
 
     async def request_device_verification_code(self) -> None:
         """Request a one-time email code to verify the configured device ID."""
@@ -518,6 +561,15 @@ class Authenticator:
         for on_changed in self._on_credentials_changed:
             create_task(self._tasks, on_changed(credentials))
 
+    def _set_account_credentials(self, account: AccountCredentials) -> None:
+        """Store account credentials received during a login."""
+        if account == self._account_credentials:
+            return
+        self._account_credentials = account
+
+        for on_account_changed in self._on_account_credentials_changed:
+            create_task(self._account_tasks, on_account_changed(account))
+
     def subscribe(
         self, callback: Callable[[Credentials], Coroutine[Any, Any, None]]
     ) -> Callable[[], None]:
@@ -527,6 +579,17 @@ class Authenticator:
             self._on_credentials_changed.remove(callback)
 
         self._on_credentials_changed.add(callback)
+        return unsubscribe
+
+    def subscribe_account_credentials(
+        self, callback: Callable[[AccountCredentials], Coroutine[Any, Any, None]]
+    ) -> Callable[[], None]:
+        """Add callback on new account credentials and return unsubscribe callback."""
+
+        def unsubscribe() -> None:
+            self._on_account_credentials_changed.remove(callback)
+
+        self._on_account_credentials_changed.add(callback)
         return unsubscribe
 
     async def post_authenticated(
@@ -549,6 +612,14 @@ class Authenticator:
     async def teardown(self) -> None:
         """Teardown authenticator."""
         self._cancel_refresh_task()
+        # Let subscribers finish storing new account credentials. Cancelling
+        # them would lose the only way to renew without the password, and the
+        # next start would fall back to the password login.
+        if self._account_tasks:
+            await asyncio.wait(
+                set(self._account_tasks), timeout=_ACCOUNT_CALLBACK_TIMEOUT
+            )
+        await cancel(self._account_tasks)
         await cancel(self._tasks)
 
     def _cancel_refresh_task(self) -> None:
