@@ -65,6 +65,7 @@ if TYPE_CHECKING:
     from deebot_client.command import Command, CommandWithMessageHandling
     from deebot_client.commands import StationAction
     from deebot_client.events.efficiency_mode import EfficiencyMode, EfficiencyModeEvent
+    from deebot_client.live_view import PinEncoding
     from deebot_client.models import CleanAction, CleanMode
 
 
@@ -202,6 +203,13 @@ class CapabilityStats:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityLiveView:
+    """Capabilities for the live view (camera)."""
+
+    pin_encoding: PinEncoding
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilitySettings:
     """Capabilities for settings."""
 
@@ -275,6 +283,7 @@ class Capabilities(ABC):
         CapabilitySetTypes[FanSpeedEvent, [FanSpeedLevel | str], FanSpeedLevel] | None
     ) = None
     life_span: CapabilityLifeSpan
+    live_view: CapabilityLiveView | None = None
     map: CapabilityMap | None = None
     network: CapabilityEvent[NetworkInfoEvent]
     play_sound: CapabilityExecute[[]]
