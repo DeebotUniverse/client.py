@@ -5,7 +5,9 @@ from __future__ import annotations
 import pytest
 from testfixtures import LogCapture
 
-from deebot_client.rs.map import MapData, PositionType
+from deebot_client.events.map import MapInfoEvent
+from deebot_client.rs.map import MapData, PositionType, RotationAngle
+from tests.data.map.test_4 import EVENTS as MAP_INFO_EVENTS
 
 
 @pytest.mark.parametrize(
@@ -101,3 +103,16 @@ def test_PositionType_eq() -> None:
     assert PositionType.CHARGER == 1
 
     assert PositionType.DEEBOT != PositionType.CHARGER
+
+
+def test_MapData_generate_svg_without_subsets_and_positions() -> None:
+    """Test MapData.generate_svg with only map info."""
+    map_info = next(e for e in MAP_INFO_EVENTS if isinstance(e, MapInfoEvent))
+    map_data = MapData()
+    map_data.map_info.set(map_info.info)
+
+    svg = map_data.generate_svg([], [], RotationAngle.DEG_0)
+
+    assert svg is not None
+    assert svg.startswith("<svg")
+    assert "<use" not in svg
