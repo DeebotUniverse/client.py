@@ -4,21 +4,24 @@ from __future__ import annotations
 
 import hashlib
 from typing import Any, Self
-from unittest.mock import AsyncMock, Mock
+from unittest.mock import AsyncMock, Mock, patch
 from urllib.parse import parse_qs, urlparse
 
 import orjson
 import pytest
 
 from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.device import Device
+from deebot_client.hardware import get_static_device_info
 from deebot_client.live_view import (
     LiveViewError,
     LiveViewPinError,
+    LiveViewSource,
     PinEncoding,
     async_get_live_view_source,
     encode_pin,
 )
-from deebot_client.models import ApiDeviceInfo, Credentials
+from deebot_client.models import ApiDeviceInfo, Credentials, DeviceInfo
 
 _DEVICE_INFO = ApiDeviceInfo(
     {  # type: ignore[typeddict-item]
@@ -60,9 +63,14 @@ class _Response:
 class _Session:
     """Fake aiohttp session, which records the requests."""
 
-    def __init__(self, watch: dict[str, Any]) -> None:
+    def __init__(
+        self,
+        watch: Any,
+        overrides: dict[str, _Response] | None = None,
+    ) -> None:
         self.requests: list[tuple[str, str, dict[str, Any]]] = []
         self._watch = watch
+        self._overrides = overrides or {}
 
     def get(self, url: str, **kwargs: Any) -> _Response:
         self.requests.append(("GET", url, kwargs))
@@ -70,6 +78,8 @@ class _Session:
 
     def post(self, url: str, **kwargs: Any) -> _Response:
         self.requests.append(("POST", url, kwargs))
+        if response := self._overrides.get(url.rsplit("/", 1)[-1]):
+            return response
         if url.endswith("/describeSignalingChannel"):
             return _Response({"ChannelInfo": {"ChannelARN": "arn:channel"}})
         if url.endswith("/getSignalingChannelEndpoint"):
@@ -171,3 +181,94 @@ async def test_live_view_errors(watch: dict[str, Any], error: type[Exception]) -
             _authenticator(session), _DEVICE_INFO, "1234", PinEncoding.GOAT_MD5
         )
     assert len(session.requests) == 1
+
+
+async def test_live_view_invalid_start_watch_response() -> None:
+    session = _Session(["unexpected"])
+    with pytest.raises(LiveViewError, match="invalid response"):
+        await async_get_live_view_source(
+            _authenticator(session), _DEVICE_INFO, "1234", PinEncoding.GOAT_MD5
+        )
+
+
+async def test_live_view_without_mqs_skips_app_ping() -> None:
+    session = _Session(_WATCH_OK)
+    device_info = ApiDeviceInfo(
+        {"did": "did-1", "class": "2px96q", "resource": "res"}  # type: ignore[typeddict-item]
+    )
+    source = await async_get_live_view_source(
+        _authenticator(session), device_info, "1234", PinEncoding.GOAT_MD5
+    )
+    assert source.url.startswith("webrtc:wss://v-1.kvs/?")
+    assert [r[1].rsplit("/", 1)[-1] for r in session.requests[1:]] == [
+        "describeSignalingChannel",
+        "getSignalingChannelEndpoint",
+        "get-ice-server-config",
+    ]
+
+
+async def test_live_view_app_ping_error_is_ignored() -> None:
+    session = _Session(_WATCH_OK, {"control": _Response({}, status=500)})
+    source = await async_get_live_view_source(
+        _authenticator(session), _DEVICE_INFO, "1234", PinEncoding.GOAT_MD5
+    )
+    assert source.url.startswith("webrtc:wss://v-1.kvs/?")
+
+
+@pytest.mark.parametrize(
+    ("overrides", "match"),
+    [
+        (
+            {"describeSignalingChannel": _Response({}, status=403)},
+            "failed with HTTP 403",
+        ),
+        (
+            {"getSignalingChannelEndpoint": _Response(["unexpected"])},
+            "invalid response",
+        ),
+    ],
+)
+async def test_live_view_aws_errors(
+    overrides: dict[str, _Response], match: str
+) -> None:
+    session = _Session(_WATCH_OK, overrides)
+    with pytest.raises(LiveViewError, match=match):
+        await async_get_live_view_source(
+            _authenticator(session), _DEVICE_INFO, "1234", PinEncoding.GOAT_MD5
+        )
+
+
+async def test_device_live_view(
+    api_device_info: ApiDeviceInfo, authenticator: Authenticator
+) -> None:
+    static = await get_static_device_info("2px96q")
+    assert static
+    device = Device(DeviceInfo(api_device_info, static), authenticator)
+    source = LiveViewSource(url="webrtc:wss://x", created=0)
+    with patch(
+        "deebot_client.device.async_get_live_view_source",
+        AsyncMock(return_value=source),
+    ) as mock_get:
+        assert await device.async_get_live_view_source("1234") is source
+    mock_get.assert_awaited_once_with(
+        authenticator, device.device_info, "1234", PinEncoding.GOAT_MD5
+    )
+
+
+async def test_device_live_view_not_supported(
+    api_device_info: ApiDeviceInfo, authenticator: Authenticator
+) -> None:
+    static = await get_static_device_info("yna5xi")
+    assert static
+    device = Device(DeviceInfo(api_device_info, static), authenticator)
+    with pytest.raises(LiveViewError, match="not supported"):
+        await device.async_get_live_view_source("1234")
+
+
+def test_authenticator_config() -> None:
+    config = create_rest_config(
+        Mock(),
+        device_id="CLIENT01",
+        alpha_2_country="DE",
+    )
+    assert Authenticator(config, "account", "hash").config is config
