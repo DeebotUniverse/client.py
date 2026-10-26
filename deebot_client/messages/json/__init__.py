@@ -12,6 +12,12 @@ from .battery import OnBattery
 from .border_spin import OnBorderSpin
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .mower_task import (
+    OnMowAreaTaskStop,
+    OnMowAutoTaskStop,
+    OnMowBorderTaskStop,
+    OnMowScheduleTaskStop,
+)
 from .ota import OnOta
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
@@ -26,6 +32,10 @@ __all__ = [
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnMowAreaTaskStop",
+    "OnMowAutoTaskStop",
+    "OnMowBorderTaskStop",
+    "OnMowScheduleTaskStop",
     "OnStats",
     "OnWorkState",
     "ReportStats",
@@ -48,6 +58,11 @@ _MESSAGES: list[type[Message]] = [
     OnMapSetV2,
 
     OnOta,
+
+    OnMowAreaTaskStop,
+    OnMowAutoTaskStop,
+    OnMowBorderTaskStop,
+    OnMowScheduleTaskStop,
 
     OnStationState,
 
