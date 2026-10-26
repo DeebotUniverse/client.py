@@ -32,7 +32,7 @@ from .station import StationEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
-    from deebot_client.models import Room, State
+    from deebot_client.models import Room, Scenario, State
 
 __all__ = [
     "AutoEmptyEvent",
@@ -180,6 +180,13 @@ class RoomsEvent(Event):
 
     map_id: str
     rooms: list[Room]
+
+
+@dataclass(frozen=True)
+class ScenariosEvent(Event):
+    """Scenarios event representation."""
+
+    scenarios: list[Scenario]
 
 
 @dataclass(frozen=True)
