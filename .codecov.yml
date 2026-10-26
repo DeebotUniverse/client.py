@@ -6,21 +6,21 @@ coverage:
       python:
         target: auto
         paths:
-          - deebot_client/*
+          - deebot_client/**
       rust:
         target: 99.7%
         threshold: 0
         paths:
-          - src/*
+          - src/**
     patch:
       default:
         target: auto
       python:
         target: auto
         paths:
-          - deebot_client/*
+          - deebot_client/**
       rust:
         target: 99.7%
         threshold: 0
         paths:
-          - src/*
+          - src/**
