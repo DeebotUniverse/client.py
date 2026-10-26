@@ -28,7 +28,7 @@ from deebot_client.commands.json.carpet import (
 )
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
-from deebot_client.commands.json.clean import Clean, CleanArea, GetCleanInfo
+from deebot_client.commands.json.clean import CleanAreaV2, CleanV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import (
@@ -46,7 +46,8 @@ from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.map import (
     GetCachedMapInfo,
     GetMajorMap,
-    GetMapSet,
+    GetMapInfoV2,
+    GetMapSetV2,
     GetMapTrace,
     GetMinorMap,
     SetMajorMap,
@@ -68,6 +69,7 @@ from deebot_client.commands.json.true_detect import GetTrueDetect, SetTrueDetect
 from deebot_client.commands.json.volume import GetVolume, SetVolume
 from deebot_client.commands.json.water_info import GetWaterInfo, SetWaterInfo
 from deebot_client.commands.json.work_mode import GetWorkMode, SetWorkMode
+from deebot_client.commands.json.work_state import GetWorkState
 from deebot_client.const import DataType
 from deebot_client.events import (
     AdvancedModeEvent,
@@ -118,7 +120,7 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=Clean, area=CleanArea),
+                action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
                 continuous=CapabilitySetEnable(
                     ContinuousCleaningEvent,
                     [GetContinuousCleaning()],
@@ -167,6 +169,7 @@ def get_device_info() -> StaticDeviceInfo:
             map=CapabilityMap(
                 cached_info=CapabilityEvent(CachedMapInfoEvent, [GetCachedMapInfo()]),
                 changed=CapabilityEvent(MapChangedEvent, []),
+                info=CapabilityExecute(GetMapInfoV2),
                 major=CapabilitySet(MajorMapEvent, [GetMajorMap()], SetMajorMap),
                 minor=CapabilityExecute(GetMinorMap),
                 multi_state=CapabilitySetEnable(
@@ -175,7 +178,7 @@ def get_device_info() -> StaticDeviceInfo:
                 position=CapabilityEvent(PositionsEvent, [GetPos()]),
                 relocation=CapabilityExecute(SetRelocationState),
                 rooms=CapabilityEvent(RoomsEvent, [GetCachedMapInfo()]),
-                set=CapabilityExecute(GetMapSet),
+                set=CapabilityExecute(GetMapSetV2),
                 trace=CapabilityEvent(MapTraceEvent, [GetMapTrace()]),
             ),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
@@ -201,7 +204,7 @@ def get_device_info() -> StaticDeviceInfo:
                 ),
                 volume=CapabilitySet(VolumeEvent, [GetVolume()], SetVolume),
             ),
-            state=CapabilityEvent(StateEvent, [GetChargeState(), GetCleanInfo()]),
+            state=CapabilityEvent(StateEvent, [GetChargeState(), GetWorkState()]),
             stats=CapabilityStats(
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
                 report=CapabilityEvent(ReportStatsEvent, []),
