@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
+from deebot_client.rs.util import parse_csv_ints
 
 from .cached_map_info import OnCachedMapInfo
 
@@ -57,7 +58,7 @@ class OnMajorMap(MessageBodyDataDict):
 
         :return: A message response
         """
-        values = [int(value) for value in data["value"].split(",") if value]
+        values = parse_csv_ints(data["value"])
         map_id = data["mid"]
 
         event_bus.notify(MajorMapEvent(map_id, values, requested=False))
