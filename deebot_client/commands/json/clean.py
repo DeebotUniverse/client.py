@@ -91,6 +91,19 @@ class CleanV2(Clean):
         return args
 
 
+class CleanMower(Clean):
+    """Clean command for GOAT mowers.
+
+    Sent as "clean" (not "clean_V2"), but with the nested V2 content.
+    The mower firmware does not answer "clean_V2" at all. The app sends
+    the content type "auto" for all actions; an empty type is rejected
+    with code 20003 ("unknow type").
+    """
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        return {"act": action.value, "content": {"type": CleanMode.AUTO.value}}
+
+
 class CleanAreaV2(CleanV2):
     """Clean area command."""
 
