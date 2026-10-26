@@ -199,6 +199,7 @@ class CapabilityStats:
     clean: CapabilityEvent[StatsEvent]
     report: CapabilityEvent[ReportStatsEvent]
     total: CapabilityEvent[TotalStatsEvent]
+    mowing_job_progress: bool = False
 
 
 @dataclass(frozen=True, kw_only=True)
