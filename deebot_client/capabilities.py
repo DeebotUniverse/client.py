@@ -24,6 +24,7 @@ from deebot_client.events import (
     CrossMapBorderWarningEvent,
     CustomCommandEvent,
     CutDirectionEvent,
+    DoNotDisturbEvent,
     ErrorEvent,
     Event,
     FanSpeedEvent,
@@ -36,6 +37,7 @@ from deebot_client.events import (
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
+    NativeTraceEvent,
     NetworkInfoEvent,
     OtaEvent,
     PositionsEvent,
@@ -58,7 +60,7 @@ from deebot_client.events import (
 )
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Sequence
 
     from _typeshed import DataclassInstance
 
@@ -173,6 +175,19 @@ class CapabilityLifeSpan(CapabilityEvent[LifeSpanEvent], CapabilityTypes[LifeSpa
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityMapEdit:
+    """Capabilities for map editing."""
+
+    add_virtual_wall: Callable[[str, Sequence[int | float]], Command]
+    delete_virtual_wall: Callable[[str, int], Command]
+    add_no_mop_zone: Callable[[str, Sequence[int | float]], Command]
+    delete_no_mop_zone: Callable[[str, int], Command]
+    split_room: Callable[[str, int, Sequence[int | float]], Command]
+    merge_rooms: Callable[[str, Sequence[int]], Command]
+    rename_room: Callable[[str, int, str], Command]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityMap:
     """Capabilities for map."""
 
@@ -189,7 +204,9 @@ class CapabilityMap:
     relocation: CapabilityExecute[[]] | None = None
     rooms: CapabilityEvent[RoomsEvent]
     set: CapabilityExecute[[str, MapSetType]]
-    trace: CapabilityEvent[MapTraceEvent]
+    trace: CapabilityEvent[MapTraceEvent] | CapabilityEvent[NativeTraceEvent]
+    map_switch: CapabilityExecute[[str]] | None = None
+    edit: CapabilityMapEdit | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
@@ -215,6 +232,7 @@ class CapabilitySettings:
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
+    do_not_disturb: CapabilitySetEnable[DoNotDisturbEvent] | None = None
     mop_auto_wash_frequency: (
         CapabilityNumber[mop_auto_wash_frequency.MopAutoWashFrequencyEvent, [int]]
         | None
