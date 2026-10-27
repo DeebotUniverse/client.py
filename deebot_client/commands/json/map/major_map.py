@@ -12,9 +12,12 @@ from deebot_client.commands.json.common import (
 )
 from deebot_client.events import (
     MajorMapEvent,
+    MapSetType,
 )
+from deebot_client.events.map import CachedMapInfoEvent, Map
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.messages.json.map import OnMajorMap
+from deebot_client.rs.map import RotationAngle
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -34,7 +37,25 @@ class GetMajorMap(JsonGetCommand, OnMajorMap):
         """
         result = super()._handle_response(event_bus, response)
         if result.state == HandlingState.SUCCESS and result.args:
+            map_id = result.args["map_id"]
+            event_bus.notify(
+                CachedMapInfoEvent(
+                    maps={
+                        Map(
+                            id=map_id,
+                            name="",
+                            using=True,
+                            built=True,
+                            angle=RotationAngle.DEG_0,
+                        )
+                    }
+                )
+            )
             event_bus.notify(MajorMapEvent(requested=True, **result.args))
+            if map_cap := event_bus.capabilities.map:
+                result.requested_commands.append(
+                    map_cap.set.execute(map_id, MapSetType.ROOMS)
+                )
 
         return result
 
