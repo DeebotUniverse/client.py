@@ -24,7 +24,7 @@ from .exceptions import (
 )
 from .logging_filter import get_logger
 from .models import AccountCredentials, Credentials
-from .rs.crypto import RsaPublicKey
+from .rs.crypto import PublicKey
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
 from .util.countries import get_ecovacs_country
@@ -121,7 +121,7 @@ class _AuthClient:
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
-        self._public_key: RsaPublicKey | None = None
+        self._public_key: PublicKey | None = None
 
     async def login(self) -> Credentials:
         """Login using username and password."""
@@ -188,9 +188,9 @@ class _AuthClient:
         user_access_token = login_token_resp["token"]
         # last is validity in milliseconds. Usually 7 days
         # we set the expiry at 99% of the validity
-        # 604800 = 7 days
+        # 604800000 = 7 days
         expires_at = int(
-            time.time() + int(login_token_resp.get("last", 604800)) / 1000 * 0.99
+            time.time() + int(login_token_resp.get("last", 604800000)) / 1000 * 0.99
         )
 
         _LOGGER.debug("Login to EcovacsAPI successfully")
@@ -272,7 +272,7 @@ class _AuthClient:
             "authTimeZone": "GMT-8",
         }
 
-    async def __get_public_key(self) -> RsaPublicKey:
+    async def __get_public_key(self) -> PublicKey:
         # The key is the same for all accounts, therefore we cache it for the
         # lifetime of the client
         if self._public_key is not None:
@@ -296,8 +296,8 @@ class _AuthClient:
         raise AuthenticationError("Ecovacs public key configuration is missing")
 
     @staticmethod
-    def __load_public_key(config_value: str) -> RsaPublicKey:
-        """Load the public key from the configuration value."""
+    def __load_public_key(config_value: str) -> PublicKey:
+        """Load the public key (RSA or EC) from the configuration value."""
         try:
             encoded_key = orjson.loads(config_value)["publicKey"]
         except (KeyError, TypeError, orjson.JSONDecodeError) as ex:
@@ -307,15 +307,20 @@ class _AuthClient:
 
         try:
             # base64 and DER errors are both a ValueError
-            return RsaPublicKey.from_der(base64.b64decode(encoded_key, validate=True))
+            public_key = PublicKey.from_der(
+                base64.b64decode(encoded_key, validate=True)
+            )
         except ValueError as ex:
             msg = f"Invalid Ecovacs public key: {ex}"
             raise AuthenticationError(msg) from ex
 
+        _LOGGER.debug("Loaded Ecovacs public key: %s", public_key.algorithm)
+        return public_key
+
     async def __encrypt_account(self, account: str) -> str:
         public_key = await self.__get_public_key()
-        # PKCS1v15 padding is required by the Ecovacs api
-        encrypted = public_key.encrypt_pkcs1v15(account.encode())
+        # RSA keys use PKCS1v15 padding as required by the Ecovacs api, EC keys ECIES
+        encrypted = public_key.encrypt(account.encode())
         return base64.b64encode(encrypted).decode()
 
     @staticmethod

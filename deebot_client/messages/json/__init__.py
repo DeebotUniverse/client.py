@@ -9,8 +9,10 @@ from deebot_client.message import Message
 
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
+from .border_spin import OnBorderSpin
 from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
+from .ota import OnOta
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
 from .work_state import OnWorkState
@@ -36,12 +38,16 @@ _MESSAGES: list[type[Message]] = [
 
     OnBattery,
 
+    OnBorderSpin,
+
     OnGpsPos,
 
     OnCachedMapInfo,
     OnMajorMap,
     OnMapInfoV2,
     OnMapSetV2,
+
+    OnOta,
 
     OnStationState,
 
