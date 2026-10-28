@@ -13,6 +13,7 @@ from tests.messages import assert_message_failure
 from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
     from deebot_client.events.base import Event
 
 
@@ -24,7 +25,14 @@ if TYPE_CHECKING:
             "idle",
             {},
             "idle",
-            [StationEvent(StationState.IDLE)],
+            [StateEvent(RobotState.IDLE), StationEvent(StationState.IDLE)],
+        ),
+        (
+            1,
+            "idle",
+            {},
+            "idle",
+            [StateEvent(RobotState.PAUSED), StationEvent(StationState.IDLE)],
         ),
         (
             0,
@@ -193,3 +201,27 @@ def test_onWorkState_edge_cases(message_data: dict[str, Any]) -> None:
     assert_message_failure(
         OnWorkState, data, HandlingState.ANALYSE_LOGGED, FirmwareEvent("1.30.0")
     )
+
+
+def _idle_work_state() -> dict[str, Any]:
+    return {
+        "paused": 0,
+        "robotState": {"state": "idle", "trigger": "app"},
+        "stationState": {"state": "idle", "trigger": "app"},
+    }
+
+
+async def test_idle_report_does_not_clear_an_existing_docked_state(
+    event_bus: EventBus,
+) -> None:
+    """A first idle report is real. A later idle report keeps an existing dock."""
+    result = OnWorkState._handle_body_data_dict(event_bus, _idle_work_state())
+    assert result.state == HandlingState.SUCCESS
+    assert event_bus.get_last_event(StateEvent) == StateEvent(RobotState.IDLE)
+    assert event_bus.get_last_event(StationEvent) == StationEvent(StationState.IDLE)
+
+    event_bus.notify(StateEvent(RobotState.DOCKED))
+    result = OnWorkState._handle_body_data_dict(event_bus, _idle_work_state())
+    assert result.state == HandlingState.SUCCESS
+    assert event_bus.get_last_event(StateEvent) == StateEvent(RobotState.DOCKED)
+    assert event_bus.get_last_event(StationEvent) == StationEvent(StationState.IDLE)
