@@ -137,17 +137,24 @@ async def test_Clean_act(
             },
         ),
         (
-            CleanAreaV2(CleanMode.FREE_CLEAN, [5, 8]),
+            CleanAreaV2(CleanMode.FREE_CLEAN, [2]),
             {
                 "act": "start",
-                "content": {"type": "freeClean", "value": "1,5,8"},
+                "content": {"type": "freeClean", "value": "1,2"},
             },
         ),
         (
-            CleanAreaV2(CleanMode.FREE_CLEAN, [0], cleanings=2),
+            CleanAreaV2(CleanMode.FREE_CLEAN, [5, 8]),
             {
                 "act": "start",
-                "content": {"type": "freeClean", "value": "2,0"},
+                "content": {"type": "freeClean", "value": "1,5;1,8"},
+            },
+        ),
+        (
+            CleanAreaV2(CleanMode.FREE_CLEAN, [0], 2),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,0"},
             },
         ),
     ],
@@ -156,8 +163,9 @@ async def test_Clean_act(
         "Rooms V2",
         "Coordinates",
         "Coordinates V2",
-        "FreeClean",
-        "FreeClean single room 2x",
+        "FreeClean single room",
+        "FreeClean rooms",
+        "FreeClean ignores cleanings",
     ],
 )
 async def test_CleanArea(
