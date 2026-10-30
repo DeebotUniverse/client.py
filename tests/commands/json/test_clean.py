@@ -157,6 +157,50 @@ async def test_Clean_act(
                 "content": {"type": "freeClean", "value": "1,0"},
             },
         ),
+        (
+            CleanAreaV2(CleanMode.SPOT_AREA, [2, 5], free_clean=True),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,2;1,5"},
+            },
+        ),
+        (
+            CleanAreaV2(
+                CleanMode.CUSTOM_AREA, [2201, 621, 4801, 3221], free_clean=True
+            ),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "3,null,2201,621,4801,3221"},
+            },
+        ),
+        (
+            CleanAreaV2(
+                CleanMode.CUSTOM_AREA,
+                [-479, 2514, -1962, 1374, 1595, 2815, -120, 2215],
+                free_clean=True,
+            ),
+            {
+                "act": "start",
+                "content": {
+                    "type": "freeClean",
+                    "value": "3,null,-479,2514,-1962,1374;3,null,1595,2815,-120,2215",
+                },
+            },
+        ),
+        (
+            CleanAreaV2(
+                CleanMode.CUSTOM_AREA,
+                [1580.0, -4087.0, 3833.0, -7525.0],
+                free_clean=True,
+            ),
+            {
+                "act": "start",
+                "content": {
+                    "type": "freeClean",
+                    "value": "3,null,1580,-4087,3833,-7525",
+                },
+            },
+        ),
     ],
     ids=[
         "Rooms",
@@ -166,9 +210,38 @@ async def test_Clean_act(
         "FreeClean single room",
         "FreeClean rooms",
         "FreeClean ignores cleanings",
+        "FreeClean option rooms",
+        "FreeClean option custom area",
+        "FreeClean option two custom areas",
+        "FreeClean option custom area floats",
     ],
 )
 async def test_CleanArea(
     command: CleanArea | CleanAreaV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
+
+
+@pytest.mark.parametrize(
+    "area",
+    [[], [1, 2, 3], [1, 2, 3, 4, 5]],
+    ids=["empty", "3 coordinates", "5 coordinates"],
+)
+def test_CleanAreaV2_free_clean_invalid_custom_area(area: list[int | float]) -> None:
+    with pytest.raises(ValueError, match="4 coordinates"):
+        CleanAreaV2(CleanMode.CUSTOM_AREA, area, free_clean=True)
+
+
+@pytest.mark.parametrize(
+    ("mode", "free_clean"),
+    [(CleanMode.SPOT_AREA, True), (CleanMode.FREE_CLEAN, False)],
+    ids=["free_clean option", "FREE_CLEAN mode"],
+)
+def test_CleanAreaV2_free_clean_no_rooms(mode: CleanMode, *, free_clean: bool) -> None:
+    with pytest.raises(ValueError, match="At least one room"):
+        CleanAreaV2(mode, [], free_clean=free_clean)
+
+
+def test_CleanAreaV2_free_clean_unsupported_mode() -> None:
+    with pytest.raises(ValueError, match="does not support the auto mode"):
+        CleanAreaV2(CleanMode.AUTO, [1], free_clean=True)
