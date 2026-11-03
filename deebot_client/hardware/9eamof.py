@@ -182,23 +182,28 @@ def get_device_info() -> StaticDeviceInfo:
             life_span=CapabilityLifeSpan(
                 types=(
                     LifeSpan.BRUSH,
+                    LifeSpan.CLEANING_SOLUTION,
+                    LifeSpan.DUST_BAG,
                     LifeSpan.FILTER,
-                    LifeSpan.HAND_FILTER,
+                    LifeSpan.ROUND_MOP,
+                    LifeSpan.SEWAGE_BOX,
                     LifeSpan.SIDE_BRUSH,
                     LifeSpan.UNIT_CARE,
-                    LifeSpan.CLEANING_SOLUTION,
-                    LifeSpan.SEWAGE_BOX,
+                    LifeSpan.WATER_SINK,
                 ),
                 event=LifeSpanEvent,
                 get=[
                     GetLifeSpan(
                         [
                             LifeSpan.BRUSH,
-                            LifeSpan.FILTER,
-                            LifeSpan.HAND_FILTER,
-                            LifeSpan.SIDE_BRUSH,
                             LifeSpan.CLEANING_SOLUTION,
+                            LifeSpan.DUST_BAG,
+                            LifeSpan.FILTER,
+                            LifeSpan.ROUND_MOP,
                             LifeSpan.SEWAGE_BOX,
+                            LifeSpan.SIDE_BRUSH,
+                            LifeSpan.UNIT_CARE,
+                            LifeSpan.WATER_SINK,
                         ]
                     )
                 ],

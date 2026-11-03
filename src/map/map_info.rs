@@ -371,4 +371,39 @@ mod tests {
             "Empty map info entry at line 1 column 4"
         );
     }
+
+    #[test]
+    fn test_generate_skips_empty_layers_and_entries_without_path() {
+        let point = |x, y| Point {
+            x,
+            y,
+            connected: true,
+        };
+        let map_info = MapInfo {
+            data: HashMap::from([
+                (MapInfoType::Room, Vec::new()),
+                (
+                    MapInfoType::Outline,
+                    vec![
+                        MapInfoTypeDataEntry {
+                            points: vec![point(0.0, 0.0)],
+                            close_path: false,
+                        },
+                        MapInfoTypeDataEntry {
+                            points: vec![point(0.0, 0.0), point(5000.0, 5000.0)],
+                            close_path: false,
+                        },
+                    ],
+                ),
+            ]),
+        };
+
+        let (elements, _, _) = map_info.generate(RotationAngle::Deg0).unwrap();
+
+        // Empty room layer is skipped; both outline layers only contain the valid entry
+        assert_eq!(elements.len(), 2);
+        for element in elements {
+            assert_eq!(element.to_string().matches("<path").count(), 1);
+        }
+    }
 }

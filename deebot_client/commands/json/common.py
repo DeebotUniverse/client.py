@@ -25,13 +25,12 @@ from deebot_client.message import (
     MessageBody,
     MessageBodyDataDict,
 )
-from deebot_client.util import verify_required_class_variables_exists
+from deebot_client.messages.json.common import OnEnableMessage
 
 from .const import CODE
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
-    from deebot_client.events import EnableEvent
 
 _LOGGER = get_logger(__name__)
 
@@ -122,27 +121,8 @@ class JsonGetCommand(
         return cls._handle_body_data_dict(event_bus, args)
 
 
-class GetEnableCommand(JsonGetCommand, ABC):
+class GetEnableCommand(OnEnableMessage, JsonGetCommand, ABC):
     """Abstract get enable command."""
-
-    _field_name: str = "enable"
-    EVENT_TYPE: type[EnableEvent]
-
-    def __init_subclass__(cls) -> None:
-        verify_required_class_variables_exists(cls, ("EVENT_TYPE",))
-        return super().__init_subclass__()
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        event: EnableEvent = cls.EVENT_TYPE(bool(data[cls._field_name]))
-        event_bus.notify(event)
-        return HandlingResult.success()
 
 
 _ENABLE = "enable"

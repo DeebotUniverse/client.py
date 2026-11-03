@@ -1,5 +1,6 @@
 use pyo3::prelude::*;
 
+mod crypto;
 mod map;
 mod util;
 
@@ -8,6 +9,7 @@ mod util;
 fn rs(py: Python<'_>, m: &Bound<'_, PyModule>) -> PyResult<()> {
     pyo3_log::init();
 
+    register_submodule(py, m, crypto::init_module)?;
     register_submodule(py, m, map::init_module)?;
     register_submodule(py, m, util::init_module)?;
     Ok(())

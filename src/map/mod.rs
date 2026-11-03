@@ -502,6 +502,12 @@ mod tests {
         assert_eq!(result, expected);
     }
 
+    #[test]
+    fn test_get_svg_positions_empty() {
+        let viewbox = tuple_2_view_box((-500, -500, 1000, 1000));
+        assert!(get_svg_positions(&[], &viewbox, RotationAngle::Deg0).is_empty());
+    }
+
     #[rstest]
     #[case(MapSubset{set_type:"vw".to_string(), coordinates:"[-3900,668,-2133,668]".to_string()}, RotationAngle::Deg0, "<path class=\"v\" d=\"M-78-13.36h35.34\"/>")]
     #[case(MapSubset{set_type:"mw".to_string(), coordinates:"[-442,2910,-442,982,1214,982,1214,2910]".to_string()}, RotationAngle::Deg0, "<path class=\"m\" d=\"M-8.84-58.2v38.56h33.12v-38.56z\"/>")]
@@ -518,6 +524,16 @@ mod tests {
         let (_, node) = get_svg_subset(&subset, rotation).unwrap();
 
         assert_eq!(node.to_string(), expected);
+    }
+
+    #[test]
+    fn test_get_svg_subset_invalid_set_type() {
+        let subset = MapSubset {
+            set_type: "invalid".to_string(),
+            coordinates: "[-3900,668,-2133,668]".to_string(),
+        };
+        let result = get_svg_subset(&subset, RotationAngle::Deg0);
+        assert!(result.is_err());
     }
 
     #[rstest]

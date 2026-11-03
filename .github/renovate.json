@@ -2,6 +2,16 @@
   "$schema": "https://docs.renovatebot.com/renovate-schema.json",
   "commitMessagePrefix": "⬆️",
   "configMigration": true,
+  "customManagers": [
+    {
+      "customType": "regex",
+      "datasourceTemplate": "rust-version",
+      "depNameTemplate": "rust",
+      "description": "Update rust-version in Cargo.toml",
+      "managerFilePatterns": ["/(^|/)Cargo\\.toml$/"],
+      "matchStrings": ["rust-version\\s*=\\s*\"(?<currentValue>[^\"]+)\""]
+    }
+  ],
   "dependencyDashboard": true,
   "labels": ["dependencies", "no-stale"],
   "lockFileMaintenance": {
@@ -25,6 +35,18 @@
     {
       "addLabels": ["rust"],
       "matchManagers": ["cargo"]
+    },
+    {
+      "description": "RustCrypto crates share der/spki/rand_core and must be updated together",
+      "groupName": "RustCrypto",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["aes-gcm", "p256", "rsa", "sha2"]
+    },
+    {
+      "addLabels": ["rust"],
+      "groupName": "Rust toolchain",
+      "matchDatasources": ["rust-version"],
+      "matchDepNames": ["rust"]
     }
   ],
   "pre-commit": {

@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-import datetime
+import datetime as dt
 import logging
 import ssl
 from typing import TYPE_CHECKING, Any
@@ -34,9 +34,9 @@ async def test_last_message_received_at(
     await asyncio.sleep(4)
 
     # Mock time for assertion
-    expected = datetime.datetime(2023, 1, 1, tzinfo=datetime.UTC)
-    with patch("deebot_client.mqtt_client.datetime", wraps=datetime.datetime) as dt:
-        dt.now.return_value = expected
+    expected = dt.datetime(2023, 1, 1, tzinfo=dt.UTC)
+    with patch("deebot_client.mqtt_client.datetime", wraps=dt.datetime) as mqdt:
+        mqdt.now.return_value = expected
 
         # Simulate message received
         mqtt_client._handle_message(

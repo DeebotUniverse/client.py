@@ -34,6 +34,18 @@ async def test_GetChargeState(
     await assert_command(GetChargeState(), json, events)
 
 
+@pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("30007", StateEvent(State.DOCKED)),
+        ("3", StateEvent(State.ERROR)),
+    ],
+)
+async def test_GetChargeState_fail(code: str, expected: StateEvent) -> None:
+    json, firmware_event = get_request_json({"code": code, "msg": "fail"})
+    await assert_command(GetChargeState(), json, (firmware_event, expected))
+
+
 @pytest.mark.parametrize("code", [5, "5", 3, "3", 30007, "30007"])
 def test_busy_stuck_and_already_charging(code: int | str) -> None:
     bus = Mock()
