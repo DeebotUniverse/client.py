@@ -37,6 +37,7 @@ if TYPE_CHECKING:
 __all__ = [
     "AutoEmptyEvent",
     "BatteryEvent",
+    "BlockEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
@@ -58,6 +59,7 @@ __all__ = [
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "SleepEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",
@@ -317,6 +319,20 @@ class MoveUpWarningEvent(EnableEvent):
 @dataclass(frozen=True)
 class SafeProtectEvent(EnableEvent):
     """Safe protect event."""
+
+
+@dataclass(frozen=True)
+class BlockEvent(Event):
+    """Quiet-hours block event representation."""
+
+    enabled: bool
+    start: str
+    end: str
+
+
+@dataclass(frozen=True)
+class SleepEvent(EnableEvent):
+    """Sleep (do-not-disturb) event."""
 
 
 @dataclass(frozen=True)
