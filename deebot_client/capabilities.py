@@ -14,6 +14,7 @@ from deebot_client.events import (
     BatteryEvent,
     BorderSpinEvent,
     BorderSwitchEvent,
+    BreakPointStatusEvent,
     CachedMapInfoEvent,
     CarpetAutoFanBoostEvent,
     ChildLockEvent,
@@ -33,12 +34,14 @@ from deebot_client.events import (
     MajorMapEvent,
     MapChangedEvent,
     MapSetType,
+    MapStateEvent,
     MapTraceEvent,
     MoveUpWarningEvent,
     MultimapStateEvent,
     NetworkInfoEvent,
     OtaEvent,
     PositionsEvent,
+    RelocationStateEvent,
     ReportStatsEvent,
     RoomsEvent,
     SafeProtectEvent,
@@ -149,6 +152,7 @@ class CapabilityClean:
     """Capabilities for clean."""
 
     action: CapabilityCleanAction
+    break_point_status: CapabilityEvent[BreakPointStatusEvent] | None = None
     continuous: CapabilitySetEnable[ContinuousCleaningEvent] | None = None
     count: CapabilitySet[CleanCountEvent, [int]] | None = None
     log: CapabilityEvent[CleanLogEvent] | None = None
@@ -187,8 +191,10 @@ class CapabilityMap:
     multi_state: CapabilitySetEnable[MultimapStateEvent] | None = None
     position: CapabilityEvent[PositionsEvent]
     relocation: CapabilityExecute[[]] | None = None
+    relocation_state: CapabilityEvent[RelocationStateEvent] | None = None
     rooms: CapabilityEvent[RoomsEvent]
     set: CapabilityExecute[[str, MapSetType]]
+    state: CapabilityEvent[MapStateEvent] | None = None
     trace: CapabilityEvent[MapTraceEvent]
 
 
