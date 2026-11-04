@@ -76,6 +76,7 @@ ERROR_CODES = {
     126: "Reservoir is not installed",
     128: "Mopping Pad Plates are not both installed",
     129: "Mopping Pad Plate is tangled",
+    200: "It's raining: Docking",
     201: "AirFilterUninstall:",
     202: "UltrasonicComponentAbnormal",
     203: "SmallWheelError",
