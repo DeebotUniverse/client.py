@@ -207,13 +207,13 @@ class _MapInfoChunks:
     """Collect the chunks of the latest map info batch."""
 
     def __init__(self) -> None:
-        self._batch_id: str | None = None
+        self._batch: tuple[str, int] | None = None
         self._chunks: dict[int, str] = {}
 
     def add(self, event: MapInfoChunkEvent) -> str | None:
         """Add a chunk and return the map info if the batch is complete."""
-        if event.batch_id != self._batch_id:
-            self._batch_id = event.batch_id
+        if (batch := (event.batch_id, event.total)) != self._batch:
+            self._batch = batch
             self._chunks = {}
 
         self._chunks[event.index] = event.info

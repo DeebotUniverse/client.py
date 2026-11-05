@@ -217,6 +217,14 @@ def _chunk(batch_id: str, index: int, total: int, info: str) -> MapInfoChunkEven
             ],
             ["efgh"],
         ),
+        (
+            [
+                _chunk("a", 2, 3, "ij"),
+                _chunk("a", 0, 2, "ab"),
+                _chunk("a", 1, 2, "cd"),
+            ],
+            ["abcd"],
+        ),
     ],
     ids=[
         "single",
@@ -226,6 +234,7 @@ def _chunk(batch_id: str, index: int, total: int, info: str) -> MapInfoChunkEven
         "padding_in_first_chunk",
         "incomplete",
         "replaced_by_new_batch",
+        "inconsistent_total",
     ],
 )
 async def test_map_info_chunks(
