@@ -6,7 +6,11 @@ import asyncio
 from datetime import UTC, datetime
 from typing import TYPE_CHECKING, Final
 
-from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MapChangedEvent,
+    MapInfoChunkEvent,
+)
 
 from .events import (
     MajorMapEvent,
@@ -84,6 +88,16 @@ class Map:
             self._map_data.set_map_info(event.info)
 
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
+
+        map_info_chunks = _MapInfoChunks()
+
+        async def on_map_info_chunk(event: MapInfoChunkEvent) -> None:
+            if (info := map_info_chunks.add(event)) is not None:
+                self._map_data.set_map_info(info)
+
+        self._unsubscribers.append(
+            event_bus.subscribe(MapInfoChunkEvent, on_map_info_chunk)
+        )
 
     # ---------------------------- METHODS ----------------------------
 
@@ -187,6 +201,28 @@ class Map:
             unsubscribe()
         self._unsubscribers.clear()
         self._map_data.teardown()
+
+
+class _MapInfoChunks:
+    """Collect the chunks of the latest map info batch."""
+
+    def __init__(self) -> None:
+        self._batch_id: str | None = None
+        self._chunks: dict[int, str] = {}
+
+    def add(self, event: MapInfoChunkEvent) -> str | None:
+        """Add a chunk and return the map info if the batch is complete."""
+        if event.batch_id != self._batch_id:
+            self._batch_id = event.batch_id
+            self._chunks = {}
+
+        self._chunks[event.index] = event.info
+        if len(self._chunks) < event.total:
+            return None
+
+        info = "".join(self._chunks[index] for index in range(event.total))
+        self._chunks = {}
+        return info
 
 
 class MapData:

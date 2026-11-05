@@ -10,6 +10,7 @@ from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
     MapChangedEvent,
+    MapInfoChunkEvent,
     MapInfoEvent,
     MapSetEvent,
     MapSubsetEvent,
@@ -93,7 +94,12 @@ async def test_Map_subscriptions(
     assert capabilities_map is not None
     map_obj = Map(execute_mock, event_bus_mock, capabilities_map)
 
-    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY), call(MapInfoEvent, ANY)]
+    calls = [
+        call(MapSetEvent, ANY),
+        call(MapSubsetEvent, ANY),
+        call(MapInfoEvent, ANY),
+        call(MapInfoChunkEvent, ANY),
+    ]
     event_bus_mock.subscribe.assert_has_calls(calls)
     event_bus_mock.add_on_subscription_callback.assert_called_once_with(
         MapChangedEvent, ANY
@@ -181,6 +187,63 @@ async def test_invalid_map_piece_index(
 
     for err in exceptions:
         assert "Index out of bounds" in str(err)
+
+
+def _chunk(batch_id: str, index: int, total: int, info: str) -> MapInfoChunkEvent:
+    return MapInfoChunkEvent("1", batch_id, index, total, info)
+
+
+@pytest.mark.parametrize(
+    ("events", "expected"),
+    [
+        ([_chunk("a", 0, 1, "ab")], ["ab"]),
+        ([_chunk("a", 0, 2, "ab"), _chunk("a", 1, 2, "cd")], ["abcd"]),
+        ([_chunk("a", 1, 2, "cd"), _chunk("a", 0, 2, "ab")], ["abcd"]),
+        (
+            [
+                _chunk("a", 0, 2, "ab"),
+                _chunk("a", 0, 2, "ab"),
+                _chunk("a", 1, 2, "cd"),
+            ],
+            ["abcd"],
+        ),
+        ([_chunk("a", 0, 2, "a="), _chunk("a", 1, 2, "cd")], ["a=cd"]),
+        ([_chunk("a", 0, 2, "ab")], []),
+        (
+            [
+                _chunk("a", 0, 2, "ab"),
+                _chunk("b", 0, 2, "ef"),
+                _chunk("b", 1, 2, "gh"),
+            ],
+            ["efgh"],
+        ),
+    ],
+    ids=[
+        "single",
+        "ordered",
+        "out_of_order",
+        "duplicate",
+        "padding_in_first_chunk",
+        "incomplete",
+        "replaced_by_new_batch",
+    ],
+)
+async def test_map_info_chunks(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+    events: list[MapInfoChunkEvent],
+    expected: list[str],
+) -> None:
+    """Test map info is set once all chunks of a batch are received."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+
+    with patch.object(map_obj._map_data, "set_map_info") as set_map_info:
+        for event in events:
+            event_bus.notify(event)
+            await block_till_done(event_bus)
+
+    assert set_map_info.call_args_list == [call(info) for info in expected]
 
 
 async def test_get_svg_map_empty(
