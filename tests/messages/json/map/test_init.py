@@ -6,10 +6,18 @@ import pytest
 
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import FirmwareEvent
-from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
+from deebot_client.events.map import (
+    CachedMapInfoEvent,
+    MajorMapEvent,
+    Map,
+    MapInfoChunkEvent,
+    MapInfoEvent,
+    MapSetType,
+)
 from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
 from deebot_client.messages.json.map import OnMajorMap, OnMapInfoV2
+from deebot_client.rs.map import RotationAngle
 from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
@@ -201,4 +209,95 @@ def test_onMapInfo_V2(
         data,
         expected_events,
         expected_state=expected_state,
+    )
+
+
+def _map_info_frame(data: dict[str, object]) -> dict[str, object]:
+    return {"header": {"ver": "0.0.1"}, "body": {"data": data}}
+
+
+def test_onMapInfo_V2_chunk() -> None:
+    """Test onMapInfo_V2 chunk without outlineVer."""
+    assert_message(
+        OnMapInfoV2,
+        _map_info_frame(
+            {
+                "batid": "265357",
+                "serial": 2,
+                "index": 1,
+                "using": 1,
+                "mid": "453392179",
+                "type": "0",
+                "infoSize": 3539,
+                "info": "abc",
+            }
+        ),
+        MapInfoChunkEvent("453392179", "265357", 1, 2, "abc"),
+    )
+
+
+@pytest.mark.parametrize(
+    ("serial", "index", "expected_state"),
+    [
+        (0, 0, HandlingState.SUCCESS),
+        (2, 2, HandlingState.ANALYSE_LOGGED),
+    ],
+    ids=["empty", "index_out_of_range"],
+)
+def test_onMapInfo_V2_chunk_ignored(
+    serial: int, index: int, expected_state: HandlingState
+) -> None:
+    """Test onMapInfo_V2 chunks, which can't be used."""
+    assert_message(
+        OnMapInfoV2,
+        _map_info_frame(
+            {
+                "batid": "265357",
+                "serial": serial,
+                "index": index,
+                "mid": "453392179",
+                "info": "",
+            }
+        ),
+        None,
+        expected_state=expected_state,
+    )
+
+
+@pytest.mark.parametrize(
+    ("serial", "built"),
+    [(2, True), (0, False)],
+)
+def test_onMapInfo_V2_response_without_info(serial: int, built: bool) -> None:
+    """Test getMapInfo_V2 response with only map id and chunk amount."""
+    result = assert_message(
+        OnMapInfoV2,
+        _map_info_frame({"mid": "453392179", "serial": serial}),
+        CachedMapInfoEvent(
+            {
+                Map(
+                    id="453392179",
+                    name="",
+                    using=True,
+                    built=built,
+                    angle=RotationAngle.DEG_0,
+                )
+            }
+        ),
+    )
+    assert result.args == {"map_id": "453392179"}
+
+
+@pytest.mark.parametrize(
+    "data",
+    [{}, {"mid": "453392179"}, {"mid": "0", "serial": 1}, {"serial": 1}],
+    ids=["empty", "no_serial", "map_id_0", "no_map_id"],
+)
+def test_onMapInfo_V2_unknown_format(data: dict[str, object]) -> None:
+    """Test onMapInfo_V2 with an unknown format."""
+    assert_message(
+        OnMapInfoV2,
+        _map_info_frame(data),
+        None,
+        expected_state=HandlingState.ANALYSE_LOGGED,
     )
