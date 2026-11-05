@@ -12,13 +12,12 @@ from deebot_client.events import (
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
-    MapTraceEvent,
     MinorMapEvent,
     RoomsEvent,
 )
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
-from deebot_client.messages.json.map import OnMapInfoV2
+from deebot_client.messages.json.map import OnMapInfoV2, OnMapTrace
 from deebot_client.models import Room
 from deebot_client.rs.util import decompress_base64_data
 
@@ -316,7 +315,7 @@ class GetMapSetV2(GetMapSet):
         return cls._get_handling_success_with_subset_command_args(data, subset_ids)
 
 
-class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
+class GetMapTrace(JsonCommandWithMessageHandling, OnMapTrace):
     """Get map trace command."""
 
     _TRACE_POINT_COUNT = 200
@@ -327,26 +326,6 @@ class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):
         super().__init__(
             {"pointCount": self._TRACE_POINT_COUNT, "traceStart": trace_start},
         )
-
-    @classmethod
-    def _handle_body_data_dict(
-        cls, event_bus: EventBus, data: dict[str, Any]
-    ) -> HandlingResult:
-        """Handle message->body->data and notify the correct event subscribers.
-
-        :return: A message response
-        """
-        total = int(data["totalCount"])
-        start = int(data["traceStart"])
-
-        if "traceValue" not in data:
-            # TODO verify that this is legit
-            return HandlingResult.analyse()
-
-        event_bus.notify(
-            MapTraceEvent(start=start, total=total, data=data["traceValue"])
-        )
-        return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
 
     def _handle_response(
         self, event_bus: EventBus, response: dict[str, Any]
