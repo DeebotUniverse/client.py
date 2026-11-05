@@ -1,15 +1,20 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
 from deebot_client.commands.json.map import GetMapSetV2
 from deebot_client.events import FirmwareEvent
-from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
+from deebot_client.events.map import (
+    MajorMapEvent,
+    MapInfoEvent,
+    MapSetType,
+    MapTraceEvent,
+)
 from deebot_client.message import HandlingState
 from deebot_client.messages.json import OnMapSetV2
-from deebot_client.messages.json.map import OnMajorMap, OnMapInfoV2
+from deebot_client.messages.json.map import OnMajorMap, OnMapInfoV2, OnMapTraceV2
 from tests.messages.json import assert_message
 
 if TYPE_CHECKING:
@@ -201,4 +206,51 @@ def test_onMapInfo_V2(
         data,
         expected_events,
         expected_state=expected_state,
+    )
+
+
+@pytest.mark.parametrize(
+    ("data"),
+    [
+        {
+            "batid": "980878",
+            "serial": 0,
+            "index": 0,
+            "mid": "453392179",
+            "type": "",
+            "infoSize": 0,
+            "info": "",
+        },
+        {
+            "batid": "729238",
+            "serial": 1,
+            "index": 0,
+            "mid": "453392179",
+            "type": "1",
+            "infoSize": 39,
+            "info": "XQAABAAnAAAAAC3ghGIjMKGNR5NHtRNFTlk80+QIc4F0VtkBj3//lkkAAA==",
+        },
+    ],
+    ids=["empty", "with_layers"],
+)
+def test_onMapTrace_V2_batched(data: dict[str, Any]) -> None:
+    """Test batched onMapTrace_V2 frames don't reach the trace parser."""
+    assert_message(
+        OnMapTraceV2,
+        {"header": {"ver": "0.0.1"}, "body": {"data": data}},
+        None,
+    )
+
+
+def test_onMapTrace_V2_trace_points() -> None:
+    """Test onMapTrace_V2 with the format of getMapTrace."""
+    assert_message(
+        OnMapTraceV2,
+        {
+            "header": {"ver": "0.0.1"},
+            "body": {
+                "data": {"totalCount": 1, "traceStart": 0, "traceValue": "abc"},
+            },
+        },
+        MapTraceEvent(start=0, total=1, data="abc"),
     )
