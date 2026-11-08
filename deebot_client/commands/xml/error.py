@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING
 
 from deebot_client.const import ERROR_CODES
-from deebot_client.events import ErrorEvent, StateEvent
+from deebot_client.events import Error, ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult
 from deebot_client.models import State
 
@@ -30,9 +30,10 @@ class GetError(XmlCommandWithMessageHandling):
         """
         error_code = int(errs) if (errs := xml.attrib["errs"]) else 0
 
+        errors: list[Error] = []
         if error_code != 0:
+            errors.append(Error(error_code, ERROR_CODES.get(error_code)))
             event_bus.notify(StateEvent(State.ERROR))
 
-        description = ERROR_CODES.get(error_code)
-        event_bus.notify(ErrorEvent(error_code, description))
+        event_bus.notify(ErrorEvent(errors))
         return HandlingResult.success()

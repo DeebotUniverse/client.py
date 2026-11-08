@@ -5,7 +5,7 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from deebot_client.const import ERROR_CODES
-from deebot_client.events import ErrorEvent, StateEvent
+from deebot_client.events import Error, ErrorEvent, StateEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import State
 
@@ -32,17 +32,14 @@ class GetError(JsonCommandWithMessageHandling, MessageBodyDataDict):
         if not isinstance(codes, list):
             return HandlingResult.analyse()
 
-        error: int | None = 0
+        errors: list[Error] = []
+        for code in codes:
+            if not isinstance(code, int):
+                return HandlingResult.analyse()
+            if code != 0:
+                errors.append(Error(code, ERROR_CODES.get(code)))
 
-        if codes:
-            # the last error code
-            error = codes[-1]
-
-        if error is not None:
-            description = ERROR_CODES.get(error)
-            if error != 0:
-                event_bus.notify(StateEvent(State.ERROR))
-            event_bus.notify(ErrorEvent(error, description))
-            return HandlingResult.success()
-
-        return HandlingResult.analyse()
+        if errors:
+            event_bus.notify(StateEvent(State.ERROR))
+        event_bus.notify(ErrorEvent(errors))
+        return HandlingResult.success()

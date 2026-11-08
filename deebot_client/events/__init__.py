@@ -123,11 +123,19 @@ class CustomCommandEvent(Event):
 
 
 @dataclass(frozen=True)
-class ErrorEvent(Event):
-    """Error event representation."""
+class Error:
+    """Error representation."""
 
     code: int
     description: str | None
+
+
+@dataclass(frozen=True)
+class ErrorEvent(Event):
+    """Error event representation."""
+
+    errors: list[Error]
+    """Active errors in the order reported by the robot; empty if there are none."""
 
 
 @unique
