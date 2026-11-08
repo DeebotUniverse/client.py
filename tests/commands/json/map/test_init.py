@@ -12,6 +12,7 @@ from deebot_client.commands.json import (
 )
 from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
 from deebot_client.events import (
+    CachedMapInfoEvent,
     Event,
     FirmwareEvent,
     MapInfoEvent,
@@ -21,8 +22,10 @@ from deebot_client.events import (
     MapTraceEvent,
     RoomsEvent,
 )
+from deebot_client.events.map import Map
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
+from deebot_client.rs.map import RotationAngle
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
 
@@ -647,4 +650,36 @@ async def test_getMapInfoV2_unsupported_version() -> None:
         json,
         firmware_event,
         handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
+    )
+
+
+async def test_getMapInfoV2_response_without_info() -> None:
+    """Test the response of bots, which send the map info in chunks afterwards."""
+    mid = "453392179"
+    json, firmware_event = get_request_json(get_success_body({"mid": mid, "serial": 2}))
+    await assert_command(
+        GetMapInfoV2(),
+        json,
+        (
+            firmware_event,
+            CachedMapInfoEvent(
+                {
+                    Map(
+                        id=mid,
+                        name="",
+                        using=True,
+                        built=True,
+                        angle=RotationAngle.DEG_0,
+                    )
+                }
+            ),
+            # The requested commands get the same response
+            *[firmware_event for _ in MapSetType],
+        ),
+        device_class="yna5xi",
+        handling_result=HandlingResult(
+            HandlingState.SUCCESS,
+            {"map_id": mid},
+            [GetMapSet(mid, entry) for entry in MapSetType],
+        ),
     )
