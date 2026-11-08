@@ -28,7 +28,7 @@ from .map import (
     PositionsEvent,
 )
 from .network import NetworkInfoEvent
-from .station import StationEvent
+from .station import StationErrorEvent, StationEvent
 from .work_mode import WorkMode, WorkModeEvent
 
 if TYPE_CHECKING:
@@ -58,6 +58,7 @@ __all__ = [
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
+    "StationErrorEvent",
     "StationEvent",
     "SweepModeEvent",
     "WorkMode",
