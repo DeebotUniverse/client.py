@@ -242,6 +242,7 @@ dependencies = [
  "aes-gcm",
  "base64",
  "crc32fast",
+ "getrandom",
  "image",
  "itertools",
  "liblzma",
@@ -900,6 +901,7 @@ dependencies = [
  "rand_core",
  "sha2",
  "signature",
+ "spki",
  "zeroize",
 ]
 
