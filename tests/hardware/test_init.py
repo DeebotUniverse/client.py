@@ -86,6 +86,7 @@ from deebot_client.events.map import (
 from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware.r8ead0 import get_device_info as get_r8ead0_info
+from deebot_client.hardware.twunby import get_device_info as get_twunby_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
 from deebot_client.models import StaticDeviceInfo
 
@@ -100,6 +101,7 @@ if TYPE_CHECKING:
         ("not_specified", None),
         ("yna5xi", get_yna5xi_info()),
         ("02uwxm", get_r8ead0_info()),
+        ("u7ytef", get_twunby_info()),
     ],
 )
 async def test_get_static_device_info(
