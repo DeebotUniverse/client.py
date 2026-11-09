@@ -26,6 +26,7 @@ from .events import (
     StatsEvent,
     TotalStatsEvent,
 )
+from .live_view import LiveViewError, async_get_live_view_source
 from .logging_filter import get_logger
 from .map import Map
 from .messages import get_message
@@ -35,6 +36,7 @@ from .rs.map import PositionType
 if TYPE_CHECKING:
     from .authentication import Authenticator
     from .command import DeviceCommandResult
+    from .live_view import LiveViewSource
     from .message import MessagePayloadType
 
 _LOGGER = get_logger(__name__)
@@ -120,6 +122,15 @@ class Device:
             self.fw_version = event.version
 
         self.events.subscribe(FirmwareEvent, on_firmware)
+
+    async def async_get_live_view_source(self, pin: str) -> LiveViewSource:
+        """Start the camera and return the go2rtc source for the live view."""
+        if not (live_view := self.capabilities.live_view):
+            msg = "Live view is not supported"
+            raise LiveViewError(msg)
+        return await async_get_live_view_source(
+            self._authenticator, self.device_info, pin, live_view.pin_encoding
+        )
 
     async def execute_command(self, command: Command) -> dict[str, Any]:
         """Execute given command.
