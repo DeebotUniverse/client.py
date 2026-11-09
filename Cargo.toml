@@ -25,11 +25,19 @@ serde = { version = "1.0", features = ["derive"] }
 serde_json = "1.0"
 ordermap = "1.2.0"
 itertools = "0.15.0"
-rsa = { version = "0.9.10", default-features = false, features = ["std"] }
-# rsa 0.9 uses older der/spki/const-oid/rand_core versions than the EC and AES crates
+rsa = { version = "0.10.0", default-features = false, features = [
+    "encoding",
+    "pkcs1v15",
+    "std",
+] }
 aes-gcm = "0.11.0"
 sha2 = "0.11.0"
-p256 = { version = "0.14.0", default-features = false, features = ["ecdh", "pkcs8", "std"] }
+getrandom = { version = "0.4.3", features = ["sys_rng"] }
+p256 = { version = "0.14.0", default-features = false, features = [
+    "ecdh",
+    "pkcs8",
+    "std",
+] }
 
 [dev-dependencies]
 rstest = "0.28.0"
