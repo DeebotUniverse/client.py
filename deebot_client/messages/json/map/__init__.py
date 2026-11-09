@@ -84,7 +84,7 @@ class OnMapInfoV2(MessageBodyDataDict):
         if (outline_version := data.get("outlineVer")) == "0":
             # Skip it as it will be sent for non-active maps
             return HandlingResult.success()
-        if outline_version != "1":
+        if outline_version not in ("1", "2"):
             # Unsupported version
             return HandlingResult.analyse()
 
