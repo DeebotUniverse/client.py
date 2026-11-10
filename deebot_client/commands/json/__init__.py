@@ -26,6 +26,7 @@ from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
+    GetAreaSet,
     GetCachedMapInfo,
     GetMajorMap,
     GetMapInfoV2,
@@ -65,6 +66,7 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
+    "GetAreaSet",
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
@@ -197,6 +199,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetLifeSpan,
     ResetLifeSpan,
 
+    GetAreaSet,
     GetCachedMapInfo,
     GetMajorMap,
     GetMapInfoV2,
