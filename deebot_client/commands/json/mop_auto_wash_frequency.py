@@ -41,3 +41,24 @@ class SetMopAutoWashFrequency(JsonSetCommand):
 
     def __init__(self, interval: int) -> None:
         super().__init__({"interval": interval})
+
+
+class SetMopAutoWashFrequencyWithWiseMode(JsonSetCommand):
+    """Set Mop Auto-Wash Frequency including the ``wiseMode`` field.
+
+    Some firmwares acknowledge ``{"interval": 10}`` but silently ignore it.
+    They require ``wiseMode`` too; ``0`` selects the time-based mode and
+    ``1`` the room-based mode.
+    """
+
+    NAME = "setWashInfo"
+    get_command = GetMopAutoWashFrequency
+    _mqtt_params = MappingProxyType(
+        {
+            "interval": InitParam(int),
+            "wiseMode": InitParam(int, "wise_mode", optional=True),
+        }
+    )
+
+    def __init__(self, interval: int, wise_mode: int = 0) -> None:
+        super().__init__({"interval": interval, "wiseMode": wise_mode})

@@ -113,6 +113,42 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class FreeCleanV2(CleanV2):
+    """Clean area command for bots that require the freeClean type.
+
+    Newer firmwares reject ``spotArea`` with error 20011 (unknown type) and
+    expect each room as ``<map_id>,<room_id>``, separated by semicolons.
+    The leading ``1`` in ``1,<room_id>`` is map 1, not a room count.
+    """
+
+    def __init__(self, mode: CleanMode, area: list[int | float], _: int = 1) -> None:
+        match mode:
+            case CleanMode.SPOT_AREA:
+                clean_type = CleanMode.FREE_CLEAN
+                value = ";".join(f"1,{item}" for item in area)
+            case CleanMode.CUSTOM_AREA:
+                clean_type = CleanMode.FREE_CLEAN
+                value = "3,null," + ",".join(str(item) for item in area)
+            case CleanMode.FREE_CLEAN:
+                clean_type = mode
+                value = ";".join(str(item) for item in area)
+            case _:
+                msg = f"Unsupported clean mode: {mode!r}"
+                raise ValueError(msg)
+
+        self._additional_content = {
+            "type": clean_type.value,
+            "value": value,
+        }
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 

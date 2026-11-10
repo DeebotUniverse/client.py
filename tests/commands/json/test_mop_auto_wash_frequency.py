@@ -4,7 +4,11 @@ from typing import Any
 
 import pytest
 
-from deebot_client.commands.json import GetMopAutoWashFrequency, SetMopAutoWashFrequency
+from deebot_client.commands.json import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
+    SetMopAutoWashFrequencyWithWiseMode,
+)
 from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
 from tests.helpers import (
     get_request_json,
@@ -39,4 +43,18 @@ async def test_GetMopAutoWashFrequency(
 async def test_SetMopAutoWashFrequency(value: int) -> None:
     command = SetMopAutoWashFrequency(value)
     args = {"interval": value}
+    await assert_set_command(command, args, MopAutoWashFrequencyEvent(value))
+
+
+@pytest.mark.parametrize(
+    ("value", "wise_mode"),
+    [
+        (6, 0),
+        (10, 1),
+        (12, 1),
+    ],
+)
+async def test_SetMopAutoWashFrequencyWithWiseMode(value: int, wise_mode: int) -> None:
+    command = SetMopAutoWashFrequencyWithWiseMode(value, wise_mode)
+    args = {"interval": value, "wiseMode": wise_mode}
     await assert_set_command(command, args, MopAutoWashFrequencyEvent(value))

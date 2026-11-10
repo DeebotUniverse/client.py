@@ -9,8 +9,14 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.util.enum import StrEnumWithXml
 
 from . import auto_empty, mop_auto_wash_frequency, station, water_info
-from .auto_empty import AutoEmptyEvent
+from .auto_empty import (
+    AutoEmptyEvent,
+    AutoEmptyIntensity,
+    AutoEmptyIntensityEvent,
+)
 from .base import Event
+from .custom_area_mode import CustomAreaMode, CustomAreaModeEvent
+from .drying_duration import DryingDuration, DryingDurationEvent
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
@@ -36,10 +42,16 @@ if TYPE_CHECKING:
 
 __all__ = [
     "AutoEmptyEvent",
+    "AutoEmptyIntensity",
+    "AutoEmptyIntensityEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
+    "CustomAreaMode",
+    "CustomAreaModeEvent",
+    "DryingDuration",
+    "DryingDurationEvent",
     "EfficiencyMode",
     "EfficiencyModeEvent",
     "Event",

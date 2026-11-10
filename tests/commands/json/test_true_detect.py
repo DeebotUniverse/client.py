@@ -3,10 +3,11 @@ from __future__ import annotations
 import pytest
 
 from deebot_client.commands.json import GetTrueDetect, SetTrueDetect
+from deebot_client.commands.json.true_detect import SetTrueDetectWithLevel
 from deebot_client.events import TrueDetectEvent
 from tests.helpers import get_request_json, get_success_body
 
-from . import assert_command, assert_set_enable_command
+from . import assert_command, assert_set_command, assert_set_enable_command
 
 
 @pytest.mark.parametrize("value", [False, True])
@@ -23,4 +24,13 @@ async def test_GetTrueDetect(*, value: bool) -> None:
 async def test_SetTrueDetect(*, value: bool) -> None:
     await assert_set_enable_command(
         SetTrueDetect(value), TrueDetectEvent, enabled=value
+    )
+
+
+@pytest.mark.parametrize(("value", "level"), [(False, 1), (True, 2)])
+async def test_SetTrueDetectWithLevel(*, value: bool, level: int) -> None:
+    await assert_set_command(
+        SetTrueDetectWithLevel(value, level),
+        {"enable": 1 if value else 0, "level": level},
+        TrueDetectEvent(value),
     )

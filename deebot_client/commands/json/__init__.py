@@ -13,14 +13,23 @@ from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
 from .child_lock import GetChildLock, SetChildLock
-from .clean import Clean, CleanArea, CleanV2, GetCleanInfo, GetCleanInfoV2
+from .clean import (
+    Clean,
+    CleanArea,
+    CleanV2,
+    FreeCleanV2,
+    GetCleanInfo,
+    GetCleanInfoV2,
+)
 from .clean_count import GetCleanCount, SetCleanCount
 from .clean_logs import GetCleanLogs
 from .clean_preference import GetCleanPreference, SetCleanPreference
 from .clear_map import ClearMap
 from .continuous_cleaning import GetContinuousCleaning, SetContinuousCleaning
 from .cross_map_border_warning import GetCrossMapBorderWarning, SetCrossMapBorderWarning
+from .custom_area_mode import GetCustomAreaMode, SetCustomAreaMode
 from .cut_direction import GetCutDirection, SetCutDirection
+from .drying_duration import GetDryingDuration, SetDryingDuration
 from .efficiency import GetEfficiencyMode, SetEfficiencyMode
 from .error import GetError
 from .fan_speed import GetFanSpeed, SetFanSpeed
@@ -36,7 +45,11 @@ from .map import (
     GetMinorMap,
     SetMajorMap,
 )
-from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
+from .mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
+    SetMopAutoWashFrequencyWithWiseMode,
+)
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo, GetNetInfoLegacy
@@ -64,6 +77,7 @@ __all__ = [
     "CleanArea",
     "CleanV2",
     "ClearMap",
+    "FreeCleanV2",
     "GetAdvancedMode",
     "GetBattery",
     "GetBorderSpin",
@@ -79,7 +93,9 @@ __all__ = [
     "GetCleanPreference",
     "GetContinuousCleaning",
     "GetCrossMapBorderWarning",
+    "GetCustomAreaMode",
     "GetCutDirection",
+    "GetDryingDuration",
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
@@ -118,11 +134,14 @@ __all__ = [
     "SetCleanPreference",
     "SetContinuousCleaning",
     "SetCrossMapBorderWarning",
+    "SetCustomAreaMode",
     "SetCutDirection",
+    "SetDryingDuration",
     "SetEfficiencyMode",
     "SetFanSpeed",
     "SetMajorMap",
     "SetMopAutoWashFrequency",
+    "SetMopAutoWashFrequencyWithWiseMode",
     "SetMoveUpWarning",
     "SetMultimapState",
     "SetOta",
@@ -185,6 +204,12 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetCrossMapBorderWarning,
     SetCrossMapBorderWarning,
+
+    GetCustomAreaMode,
+    SetCustomAreaMode,
+
+    GetDryingDuration,
+    SetDryingDuration,
 
     GetEfficiencyMode,
     SetEfficiencyMode,
