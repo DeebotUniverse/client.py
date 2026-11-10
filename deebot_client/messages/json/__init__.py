@@ -15,6 +15,7 @@ from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
 from .ota import OnOta
 from .station_state import OnStationState
 from .stats import OnStats, ReportStats
+from .wash_info import OnWashInfo
 from .work_state import OnWorkState
 
 _LOGGER = get_logger(__name__)
@@ -27,6 +28,7 @@ __all__ = [
     "OnMapInfoV2",
     "OnMapSetV2",
     "OnStats",
+    "OnWashInfo",
     "OnWorkState",
     "ReportStats",
 ]
@@ -53,6 +55,8 @@ _MESSAGES: list[type[Message]] = [
 
     OnStats,
     ReportStats,
+
+    OnWashInfo,
 
     OnWorkState,
 ]
