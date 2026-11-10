@@ -50,6 +50,33 @@ from tests.messages.json import assert_message
                 None, None, "spotArea", "1897815236", CleanJobStatus.NO_STATUS, []
             ),
         ),
+        (
+            {
+                "cid": "318598306",
+                "stop": 1,
+                "enablePowerMop": 0,
+                "powerMopType": 1,
+                "stopReason": 1,
+                "startReason": 1,
+                "type": "customArea",
+                "mapCount": 16,
+                "area": 8,
+                "start": "1638711826",
+                "time": 1323,
+                "content": "-606.000000,11191.000000,2824.000000,8497.000000",
+                "aiopen": 1,
+                "aitypes": [],
+                "aiavoid": 0,
+            },
+            ReportStatsEvent(
+                8,
+                1323,
+                "customArea",
+                "318598306",
+                CleanJobStatus.FINISHED,
+                [-606, 11191, 2824, 8497],
+            ),
+        ),
     ],
 )
 @pytest.mark.benchmark

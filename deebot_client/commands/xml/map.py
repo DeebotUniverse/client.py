@@ -12,6 +12,7 @@ from deebot_client.events.map import (
 )
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.rs.map import RotationAngle
+from deebot_client.rs.util import parse_csv_ints
 
 from .common import XmlCommandWithMessageHandling
 
@@ -177,7 +178,7 @@ class GetMapM(XmlCommandWithMessageHandling):
         event_bus.notify(
             MajorMapEvent(
                 idx,
-                values=[int(map_hash.strip()) for map_hash in map_hashes.split(",")],
+                values=parse_csv_ints(map_hashes),
                 requested=True,
             )
         )
