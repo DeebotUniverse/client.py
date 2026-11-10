@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events import StateEvent
+from deebot_client.events import GoatCleanModeEvent, StateEvent
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, MessageBodyDataDict
 from deebot_client.models import ApiDeviceInfo, CleanAction, CleanMode, State
@@ -113,6 +113,83 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class GoatClean(Clean):
+    """GOAT mower clean command using the observed ``clean`` wire shape."""
+
+    def __init__(self, action: CleanAction, mode: CleanMode | None = None) -> None:
+        self._mode = mode
+        super().__init__(action)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        return {
+            "act": action.value,
+            "content": {
+                "type": (self._mode or CleanMode.AUTO).value,
+            },
+        }
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        action = CleanAction.START
+        if isinstance(self._args, dict) and isinstance(
+            raw_action := self._args.get("act"), str
+        ):
+            action = CleanAction(raw_action)
+        if self._mode is None:
+            observed = event_bus.get_last_event(GoatCleanModeEvent)
+            observed_mode = (
+                CleanMode(observed.mode)
+                if isinstance(observed, GoatCleanModeEvent)
+                and observed.mode in {CleanMode.AUTO.value, CleanMode.SPOT_AREA.value}
+                else None
+            )
+            state = event_bus.get_last_event(StateEvent)
+            if action == CleanAction.START:
+                self._mode = (
+                    observed_mode
+                    if observed_mode is not None
+                    and isinstance(state, StateEvent)
+                    and state.state == State.PAUSED
+                    else CleanMode.AUTO
+                )
+            else:
+                self._mode = observed_mode or CleanMode.AUTO
+        self._args = self._get_args(action)
+        event_bus.notify(GoatCleanModeEvent((self._mode or CleanMode.AUTO).value))
+        return await super()._execute(authenticator, device_info, event_bus)
+
+
+class GoatCleanArea(GoatClean):
+    """Start one or more GOAT work areas using observed comma serialization."""
+
+    def __init__(
+        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+    ) -> None:
+        if mode != CleanMode.SPOT_AREA:
+            raise ValueError("GOAT area cleaning requires spotArea mode")
+        if cleanings != 1:
+            raise ValueError("GOAT area cleaning supports exactly one cleaning")
+        if not area or any(
+            not isinstance(area_id, int) or isinstance(area_id, bool)
+            for area_id in area
+        ):
+            raise ValueError("GOAT area cleaning requires integer area IDs")
+        self._area_ids = area
+        super().__init__(CleanAction.START, mode=CleanMode.SPOT_AREA)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"]["value"] = ",".join(
+                str(area_id) for area_id in self._area_ids
+            )
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
@@ -144,6 +221,14 @@ class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
             content = clean_state.get("content", {})
             if "type" in content:
                 clean_type = content.get("type")
+
+            if getattr(
+                event_bus.capabilities, "device_type", None
+            ) == "mower" and clean_type in {
+                CleanMode.AUTO.value,
+                CleanMode.SPOT_AREA.value,
+            }:
+                event_bus.notify(GoatCleanModeEvent(clean_type))
 
             if clean_type == "customArea":
                 area_values = content
