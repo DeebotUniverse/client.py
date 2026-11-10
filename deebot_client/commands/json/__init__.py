@@ -43,6 +43,7 @@ from .network import GetNetInfo, GetNetInfoLegacy
 from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
+from .quick_command import GetQuickCommand
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
 from .stats import GetStats, GetTotalStats
@@ -98,6 +99,7 @@ __all__ = [
     "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
+    "GetQuickCommand",
     "GetSafeProtect",
     "GetStats",
     "GetSweepMode",
@@ -225,6 +227,8 @@ _COMMANDS: list[type[JsonCommand]] = [
     PlaySound,
 
     GetPos,
+
+    GetQuickCommand,
 
     SetRelocationState,
 

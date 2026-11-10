@@ -10,6 +10,7 @@ from deebot_client.commands.json.clean import (
     Clean,
     CleanArea,
     CleanAreaV2,
+    CleanScenarioV2,
     CleanV2,
     GetCleanInfoV2,
 )
@@ -164,3 +165,10 @@ async def test_CleanArea(
     command: CleanArea | CleanAreaV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
+
+
+async def test_CleanScenarioV2() -> None:
+    await assert_execute_command(
+        CleanScenarioV2("5802"),
+        {"act": "start", "content": {"type": "qcClean", "value": "5802"}},
+    )

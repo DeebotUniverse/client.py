@@ -113,6 +113,20 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class CleanScenarioV2(CleanV2):
+    """Start a scenario (quick command), which is defined in the app."""
+
+    def __init__(self, scenario_id: str) -> None:
+        self._additional_content = {"type": "qcClean", "value": scenario_id}
+        super().__init__(CleanAction.START)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
