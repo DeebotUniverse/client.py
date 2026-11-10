@@ -17,7 +17,13 @@ from deebot_client.commands.json.border_switch import GetBorderSwitch
 from deebot_client.commands.json.carpet import GetCarpetAutoFanBoost
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock
-from deebot_client.commands.json.clean import GetCleanInfo, GetCleanInfoV2
+from deebot_client.commands.json.clean import (
+    CleanAreaV2,
+    CleanRoomsV2,
+    CleanV2StopAndReturn,
+    GetCleanInfo,
+    GetCleanInfoV2,
+)
 from deebot_client.commands.json.clean_count import GetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.clean_preference import GetCleanPreference
@@ -87,7 +93,7 @@ from deebot_client.events.network import NetworkInfoEvent
 from deebot_client.events.water_info import MopAttachedEvent, WaterAmountEvent
 from deebot_client.hardware.r8ead0 import get_device_info as get_r8ead0_info
 from deebot_client.hardware.yna5xi import get_device_info as get_yna5xi_info
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanAction, CleanMode, StaticDeviceInfo
 
 if TYPE_CHECKING:
     from deebot_client.command import Command
@@ -279,3 +285,46 @@ async def test_all_models_loaded() -> None:
         assert isinstance(device_info, StaticDeviceInfo), (
             f"Failed to load device info for {module_name}"
         )
+
+
+async def test_twunby_uses_clean_v2() -> None:
+    """Test T90 PRO OMNI uses clean_V2 and freeClean room pairs.
+
+    The firmware rejects the V1 "clean" command with 20003 "rcp not support",
+    ignores "stop" (only "stop_and_return" works) and cleans only the first
+    room for "cleanings,room1,room2" values.
+    """
+    info = await hardware.get_static_device_info("twunby")
+    assert info is not None
+
+    action = info.capabilities.clean.action
+    assert action.command is CleanV2StopAndReturn
+    assert action.command(CleanAction.START)._args == {
+        "act": "start",
+        "content": {"type": "auto"},
+    }
+    assert action.command(CleanAction.PAUSE)._args == {
+        "act": "pause",
+        "content": {"type": ""},
+    }
+    assert action.command(CleanAction.RESUME)._args == {
+        "act": "resume",
+        "content": {},
+    }
+    assert action.command(CleanAction.STOP)._args == {"act": "stop_and_return"}
+    assert action.area is not None
+
+    rooms = action.area(CleanMode.SPOT_AREA, [7, 6], 1)
+    assert isinstance(rooms, CleanRoomsV2)
+    assert rooms.NAME == "clean_V2"
+    assert rooms._args == {
+        "act": "start",
+        "content": {"type": "freeClean", "value": "1,7;1,6"},
+    }
+
+    custom = action.area(CleanMode.CUSTOM_AREA, [1.0, 2.0, 3.0, 4.0], 1)
+    assert isinstance(custom, CleanAreaV2)
+    assert custom._args == {
+        "act": "start",
+        "content": {"type": "customArea", "value": "1.0,2.0,3.0,4.0"},
+    }
