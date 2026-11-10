@@ -9,6 +9,7 @@ from typing import TYPE_CHECKING, Any
 from deebot_client.util.enum import StrEnumWithXml
 
 from . import auto_empty, mop_auto_wash_frequency, station, water_info
+from .area_parameter import AreaParameter, AreaParameterEvent
 from .auto_empty import AutoEmptyEvent
 from .base import Event
 from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
@@ -35,6 +36,8 @@ if TYPE_CHECKING:
     from deebot_client.models import Room, State
 
 __all__ = [
+    "AreaParameter",
+    "AreaParameterEvent",
     "AutoEmptyEvent",
     "BatteryEvent",
     "CachedMapInfoEvent",
