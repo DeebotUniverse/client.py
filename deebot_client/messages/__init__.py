@@ -47,7 +47,9 @@ def get_message(
 
     if static.data_type == DataType.JSON and (
         found_message := get_legacy_message(
-            message_name, converted_name, has_map=static.capabilities.map is not None
+            message_name,
+            converted_name,
+            capabilities=static.capabilities,
         )
     ):
         return found_message

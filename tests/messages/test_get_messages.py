@@ -1,9 +1,11 @@
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import TYPE_CHECKING
 
 import pytest
 
+from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.messages import get_message
 from deebot_client.messages.json.battery import OnBattery
@@ -35,3 +37,65 @@ def test_get_messages(
 ) -> None:
     """Test get messages."""
     assert get_message(name, static_device_info) == expected
+
+
+def test_get_message_uses_device_command(
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test legacy message lookup uses the device-specific command."""
+
+    class AlternativeGetError(GetError):
+        """Alternative get error command using the same command name."""
+
+    alternative_static = replace(
+        static_device_info,
+        capabilities=replace(
+            static_device_info.capabilities,
+            error=replace(
+                static_device_info.capabilities.error,
+                get=[AlternativeGetError()],
+            ),
+        ),
+    )
+
+    assert get_message("onError", static_device_info) is GetError
+    assert get_message("onError", alternative_static) is AlternativeGetError
+
+
+def test_get_message_falls_back_to_command_registry(
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Use the global command registry when the device has no command."""
+    without_error_command = replace(
+        static_device_info,
+        capabilities=replace(
+            static_device_info.capabilities,
+            error=replace(static_device_info.capabilities.error, get=[]),
+        ),
+    )
+
+    assert get_message("onError", without_error_command) is GetError
+
+
+def test_get_message_rejects_non_message_legacy_command(
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Do not return a command that cannot handle messages."""
+
+    class NonMessageCommand(CustomCommand):
+        """Command with the legacy command name but no message handling."""
+
+        NAME = "getError"
+
+    non_message_command = replace(
+        static_device_info,
+        capabilities=replace(
+            static_device_info.capabilities,
+            error=replace(
+                static_device_info.capabilities.error,
+                get=[NonMessageCommand("getError")],
+            ),
+        ),
+    )
+
+    assert get_message("onError", non_message_command) is None
