@@ -6,9 +6,11 @@ from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
 
+from deebot_client.events import NativeMapEvent, RoomsEvent
 from deebot_client.events.map import (
     CachedMapInfoEvent,
     MajorMapEvent,
+    Map as SavedMap,
     MapChangedEvent,
     MapInfoEvent,
     MapSetEvent,
@@ -18,11 +20,12 @@ from deebot_client.events.map import (
     Position,
     PositionsEvent,
 )
+from deebot_client.hardware.cqyi87 import get_device_info
 from deebot_client.map import (
     Map,
     MapData,
 )
-from deebot_client.rs.map import PositionType
+from deebot_client.rs.map import PositionType, RotationAngle
 from tests import load_data_folder
 
 from .common import block_till_done
@@ -249,3 +252,142 @@ def test_get_svg_map(
         return event_loop.run_until_complete(test_fn())
 
     assert svg_map == snapshot
+
+
+LEGACY_CATALOG_MAP_ID = "1132127808"
+
+
+async def test_legacy_catalog_does_not_track_current_map(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Given legacy caps, when catalog arrives, then no current tracking."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    event_bus.notify(
+        CachedMapInfoEvent(
+            maps={
+                SavedMap(
+                    id=LEGACY_CATALOG_MAP_ID,
+                    name="Erdgeschoss",
+                    using=True,
+                    built=True,
+                    angle=RotationAngle.DEG_0,
+                ),
+            }
+        )
+    )
+    await block_till_done(event_bus)
+    assert map_obj.current_map_id is None
+    await map_obj.teardown()
+
+
+async def test_legacy_refresh_keeps_exact_original_calls(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Given legacy caps and catalog seen, when refresh, then legacy calls."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    event_bus.notify(
+        CachedMapInfoEvent(
+            maps={
+                SavedMap(
+                    id=LEGACY_CATALOG_MAP_ID,
+                    name="Erdgeschoss",
+                    using=True,
+                    built=True,
+                    angle=RotationAngle.DEG_0,
+                ),
+            }
+        )
+    )
+    await block_till_done(event_bus)
+    refresh_mock = Mock()
+    map_obj._event_bus = cast("EventBus", refresh_mock)
+    map_obj.refresh()
+    assert refresh_mock.request_refresh.call_args_list == [
+        call(CachedMapInfoEvent),
+        call(PositionsEvent),
+        call(MapTraceEvent),
+        call(MajorMapEvent),
+    ]
+    await map_obj.teardown()
+
+
+NATIVE_SYNTHETIC_RASTER = "8AD/AAAAAQAAAAAAAgAAAAM="
+
+
+async def test_followed_active_ignores_stale_raster(event_bus: EventBus) -> None:
+    """Given following active B, when late raster A, then display stays B."""
+
+    async def on_changed(_: MapChangedEvent) -> None:
+        pass
+
+    event_bus.subscribe(MapChangedEvent, on_changed)
+    await block_till_done(event_bus)
+    native_caps = get_device_info().capabilities.map
+    assert native_caps is not None
+    map_obj = Map(Mock(), event_bus, native_caps)
+    await block_till_done(event_bus)
+    event_bus.notify(
+        CachedMapInfoEvent(
+            maps={
+                SavedMap(
+                    id="22",
+                    name="B",
+                    using=True,
+                    built=True,
+                    angle=RotationAngle.DEG_0,
+                ),
+                SavedMap(
+                    id="11",
+                    name="A",
+                    using=False,
+                    built=True,
+                    angle=RotationAngle.DEG_0,
+                ),
+            }
+        )
+    )
+    await block_till_done(event_bus)
+    assert map_obj.current_map_id == "22"
+    map_obj._map_data.set_native_raster(
+        NativeMapEvent(
+            map_id="22",
+            width=5,
+            height=3,
+            x_min=120,
+            y_max=230,
+            resolution=5,
+            base64_map=NATIVE_SYNTHETIC_RASTER,
+        )
+    )
+    svg_active = map_obj.get_svg_map()
+    assert svg_active is not None
+    event_bus.notify(
+        NativeMapEvent(
+            map_id="11",
+            width=5,
+            height=3,
+            x_min=120,
+            y_max=230,
+            resolution=5,
+            base64_map=NATIVE_SYNTHETIC_RASTER,
+        )
+    )
+    await block_till_done(event_bus)
+    assert map_obj.current_map_id == "22"
+    assert map_obj.get_svg_map() == svg_active
+    await map_obj.teardown()
+
+
+async def test_map_does_not_claim_rooms_filtering(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Given map setup, when checked, then no RoomsEvent subscription."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    assert not event_bus.has_subscribers(RoomsEvent)
+    await map_obj.teardown()

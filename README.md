@@ -92,6 +92,64 @@ if __name__ == "__main__":
 
 A more advanced example can be found [here](https://github.com/And3rsL/Deebot-for-Home-Assistant).
 
+### DEEBOT Y1 Pro (cqyi87)
+
+Drive cleaning through the clean action capability, not the legacy `Clean` command:
+
+```python
+from deebot_client.models import CleanAction, CleanMode
+
+await bot.execute_command(bot.capabilities.clean.action.command(CleanAction.START))
+await bot.execute_command(bot.capabilities.clean.action.command(CleanAction.PAUSE))
+await bot.execute_command(bot.capabilities.clean.action.command(CleanAction.RESUME))
+await bot.execute_command(bot.capabilities.clean.action.command(CleanAction.STOP))
+
+# Area cleaning (spot / custom zone):
+await bot.execute_command(
+    bot.capabilities.clean.action.area(CleanMode.SPOT_AREA, [1, 2])
+)
+await bot.execute_command(
+    bot.capabilities.clean.action.area(CleanMode.CUSTOM_AREA, [x1, y1, x2, y2])
+)
+```
+
+`STOP` ends the task and returns to dock. `PAUSE` halts in place.
+Use the room IDs from `RoomsEvent` for room cleaning. Zone and map-edit capability coordinates are in millimeters and must align to 10 mm; the native protocol uses centimeters. Area cleaning supports one repetition per command.
+
+Native settings are exposed through canonical capabilities:
+
+- `bot.capabilities.settings.child_lock`
+- `bot.capabilities.settings.carpet_auto_fan_boost`
+- `bot.capabilities.clean.continuous`
+- `bot.capabilities.settings.do_not_disturb`
+- `bot.capabilities.settings.volume` (range 0..10)
+
+Native map capabilities are exposed through canonical map capabilities:
+
+- `bot.capabilities.map.cached_info`: Saved map catalog query via opcode 30001 (`mapInfos`).
+- `bot.capabilities.map.info`: Read-only map inspection via opcode 30001 (`mapData`, `areas`, `pos`).
+- `bot.capabilities.map.map_switch`: Active navigation map switcher via opcode 30004 (`mapSwitch`).
+- `bot.capabilities.map.edit`: Native map edits with millimeter-adapted API:
+  - `add_virtual_wall(map_id, [x1, y1, x2, y2])` / `delete_virtual_wall(map_id, wall_id)` (opcode 50001)
+  - `add_no_mop_zone(map_id, [x1, y1, ...])` / `delete_no_mop_zone(map_id, zone_id)` (opcode 50001)
+  - `split_room(map_id, room_id, [x1, y1, x2, y2])` (opcode 50005)
+  - `merge_rooms(map_id, [room_id_1, room_id_2])` (opcode 50007)
+  - `rename_room(map_id, room_id, name)` (opcode 50009)
+- `bot.capabilities.map.position`: Real-time robot and charger pose telemetry (opcode 30000 / 30001).
+- `bot.capabilities.map.rooms`: Dynamic room metadata and center coordinates (opcode 30000 / 30001).
+- `bot.capabilities.map.trace`: `NativeTraceEvent` trajectory stream with cursor rewind deduplication (opcode 30000 / 30001).
+- Native whole-raster LZ4 background decoding and SVG rendering integrated via Rust backend.
+- `bot.map.select_map(map_id)`: inspect saved map without navigation switch; stale pushes for other maps are dropped.
+- `await bot.map.fetch_map(map_id)`: select plus read-only 30001 fetch of raster, traces, overlays for that map.
+- `bot.map.refresh()`: refreshes selected inspected map when set, else catalog.
+- `PositionsEvent`, `RoomsEvent`, `NativeTraceEvent`, and overlay subset events carry `map_id`; consumers showing rooms filter on the selected id.
+
+Standalone position, room, and trace subscriptions fetch the catalog and then query the active map. Successful MQTT map edits refresh the edited map, including inactive maps. Legacy models retain their original trace events and integer-keyed map-subset interface.
+
+Station actions and cleaning-duration totals are not yet exposed by this profile.
+
+Firmware may redact `deviceInfo.ssid`/`rssi` (returns `xxx`), leaving network diagnostics unknown; parser skips non-numeric RSSI and emits no fabricated event.
+
 ### Note for Windows users
 
 This library cannot be used out of the box with Windows due a limitation in the requirement `aiomqtt`.
