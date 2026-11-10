@@ -28,6 +28,10 @@ from deebot_client.commands.json import (
     SetMoveUpWarning,
     SetSafeProtect,
 )
+from deebot_client.commands.json.auto_cut_direction import (
+    GetAutoCutDirection,
+    SetAutoCutDirection,
+)
 from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
@@ -40,6 +44,7 @@ from deebot_client.commands.json.play_sound import PlaySound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.const import DataType
 from deebot_client.events import (
+    AutoCutDirectionEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSwitchEvent,
@@ -94,6 +99,9 @@ def get_device_info() -> StaticDeviceInfo:
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
             play_sound=CapabilityExecute(PlaySound),
             settings=CapabilitySettings(
+                auto_cut_direction=CapabilitySetEnable(
+                    AutoCutDirectionEvent, [GetAutoCutDirection()], SetAutoCutDirection
+                ),
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
                 ),
