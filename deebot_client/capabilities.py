@@ -54,6 +54,7 @@ from deebot_client.events import (
     WorkModeEvent,
     auto_empty,
     mop_auto_wash_frequency,
+    mower,
     water_info,
 )
 
@@ -207,6 +208,14 @@ class CapabilitySettings:
 
     advanced_mode: CapabilitySetEnable[AdvancedModeEvent] | None = None
     carpet_auto_fan_boost: CapabilitySetEnable[CarpetAutoFanBoostEvent] | None = None
+    cut_efficiency: (
+        CapabilitySetTypes[
+            mower.CutEfficiencyEvent,
+            [mower.CutEfficiency | str],
+            mower.CutEfficiency,
+        ]
+        | None
+    ) = None
     efficiency_mode: (
         CapabilitySetTypes[EfficiencyModeEvent, [EfficiencyMode | str], EfficiencyMode]
         | None
