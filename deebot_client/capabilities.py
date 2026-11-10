@@ -28,6 +28,7 @@ from deebot_client.events import (
     Event,
     FanSpeedEvent,
     FanSpeedLevel,
+    GeolocationEvent,
     LifeSpan,
     LifeSpanEvent,
     MajorMapEvent,
@@ -224,6 +225,7 @@ class CapabilitySettings:
         None
     )
     safe_protect: CapabilitySetEnable[SafeProtectEvent] | None = None
+    geolocation: CapabilitySetEnable[GeolocationEvent] | None = None
     ota: CapabilitySetEnable[OtaEvent] | CapabilityEvent[OtaEvent] | None = None
     sweep_mode: CapabilitySetEnable[SweepModeEvent] | None = None
     true_detect: CapabilitySetEnable[TrueDetectEvent] | None = None

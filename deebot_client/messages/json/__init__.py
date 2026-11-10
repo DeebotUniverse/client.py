@@ -82,6 +82,7 @@ _LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
         "getCleanPreference",
         "getEfficiency",
         "getError",
+        "getGeolocation",
         "getLifeSpan",
         "getNetInfo",
         "getPos",
