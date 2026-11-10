@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING
 
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
+from .area_parameter import GetAreaParameter
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
@@ -65,6 +66,7 @@ __all__ = [
     "CleanV2",
     "ClearMap",
     "GetAdvancedMode",
+    "GetAreaParameter",
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
@@ -141,6 +143,8 @@ __all__ = [
 _COMMANDS: list[type[JsonCommand]] = [
     GetAdvancedMode,
     SetAdvancedMode,
+
+    GetAreaParameter,
 
     auto_empty.GetAutoEmpty,
     auto_empty.SetAutoEmpty,
