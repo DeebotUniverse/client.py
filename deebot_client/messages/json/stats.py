@@ -56,6 +56,11 @@ class OnStats(MessageBodyDataDict):
         :return: A message response
         """
         event_bus.notify(
-            StatsEvent(area=data["area"], time=data["time"], type=data.get("type"))
+            StatsEvent(
+                area=data["area"],
+                time=data["time"],
+                type=data.get("type"),
+                mowed_area=data.get("mowedArea"),
+            )
         )
         return HandlingResult.success()

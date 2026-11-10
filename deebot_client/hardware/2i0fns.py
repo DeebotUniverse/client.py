@@ -143,6 +143,7 @@ def get_device_info() -> StaticDeviceInfo:
                 clean=CapabilityEvent(StatsEvent, [GetStats()]),
                 report=CapabilityEvent(ReportStatsEvent, []),
                 total=CapabilityEvent(TotalStatsEvent, [GetTotalStats()]),
+                mowing_job_progress=True,
             ),
         ),
     )
