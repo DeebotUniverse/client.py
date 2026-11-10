@@ -36,7 +36,7 @@ from deebot_client.commands.json.custom import CustomCommand
 from deebot_client.commands.json.error import GetError
 from deebot_client.commands.json.life_span import GetLifeSpan, ResetLifeSpan
 from deebot_client.commands.json.network import GetNetInfo
-from deebot_client.commands.json.play_sound import PlaySound
+from deebot_client.commands.json.play_sound import PlayAlarmSound
 from deebot_client.commands.json.stats import GetStats, GetTotalStats
 from deebot_client.const import DataType
 from deebot_client.events import (
@@ -92,7 +92,7 @@ def get_device_info() -> StaticDeviceInfo:
                 reset=ResetLifeSpan,
             ),
             network=CapabilityEvent(NetworkInfoEvent, [GetNetInfo()]),
-            play_sound=CapabilityExecute(PlaySound),
+            play_sound=CapabilityExecute(PlayAlarmSound),
             settings=CapabilitySettings(
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
