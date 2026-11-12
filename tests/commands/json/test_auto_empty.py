@@ -20,6 +20,10 @@ from . import assert_command, assert_execute_command
     ("json", "expected"),
     [
         (
+            {"enable": 0, "frequency": "manual"},
+            AutoEmptyEvent(False, None),
+        ),
+        (
             {"enable": 1, "frequency": "10"},
             AutoEmptyEvent(True, Frequency.MIN_10),
         ),
