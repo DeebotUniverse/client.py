@@ -12,7 +12,9 @@
       "matchStrings": ["rust-version\\s*=\\s*\"(?<currentValue>[^\"]+)\""]
     }
   ],
-  "dependencyDashboard": true,
+  "dependencyDashboard": {
+    "enabled": true
+  },
   "labels": ["dependencies", "no-stale"],
   "lockFileMaintenance": {
     "enabled": true
