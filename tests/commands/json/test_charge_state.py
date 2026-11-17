@@ -6,12 +6,14 @@ import pytest
 
 from deebot_client.commands.json import GetChargeState
 from deebot_client.events import StateEvent
+from deebot_client.message import HandlingState
 from deebot_client.models import State
-from tests.helpers import get_request_json, get_success_body
+from tests.helpers import get_message_json, get_request_json, get_success_body
 
 from . import assert_command
 
 if TYPE_CHECKING:
+    from deebot_client.event_bus import EventBus
     from deebot_client.events import FirmwareEvent
     from deebot_client.events.base import Event
 
@@ -43,3 +45,20 @@ async def test_GetChargeState(
 async def test_GetChargeState_fail(code: str, expected: StateEvent) -> None:
     json, firmware_event = get_request_json({"code": code, "msg": "fail"})
     await assert_command(GetChargeState(), json, (firmware_event, expected))
+
+
+@pytest.mark.parametrize(
+    "state", [State.CLEANING, State.PAUSED, State.RETURNING, State.ERROR]
+)
+async def test_noncharging_does_not_overwrite_existing_state(
+    event_bus: EventBus, state: State
+) -> None:
+    event_bus.notify(StateEvent(state))
+    message, _ = get_message_json(
+        get_success_body({"isCharging": 0, "mode": "autoEmpty"})
+    )
+
+    result = GetChargeState.handle(event_bus, message)
+
+    assert result.state == HandlingState.SUCCESS
+    assert event_bus.get_last_event(StateEvent) == StateEvent(state)
