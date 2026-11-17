@@ -218,6 +218,11 @@ async def test_empty_maptrace(
         cast("Mock", map_obj._map_data.add_trace_points).assert_not_called()
 
 
+def _changed(map_data: MapData) -> bool:
+    """Return if the map data changed (as function, so mypy does not narrow it)."""
+    return map_data.changed
+
+
 async def test_rooms_and_furniture_mark_map_as_changed(
     execute_mock: AsyncMock,
     event_bus: EventBus,
@@ -249,6 +254,31 @@ async def test_rooms_and_furniture_mark_map_as_changed(
     assert map_data._furniture == {"1": furniture}
 
 
+async def test_rooms_and_furniture_order_does_not_matter(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test the same rooms and furniture in another order do not change the image."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    kitchen = Room("Kitchen", 1, "", center=(100, -200))
+    hall = Room("Hall", 2, "", center=(0, 0))
+    carpet = Furniture(id=0, type=20, coordinates="0,0,100,0,100,100")
+    bed = Furniture(id=1, type=8, coordinates="0,0,200,0,200,200")
+    event_bus.notify(RoomsEvent("1", [hall, kitchen]))
+    event_bus.notify(FurnitureEvent("1", [bed, carpet]))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+    assert map_data._furniture == {"1": [carpet, bed]}
+
+    map_data.reset_changed()
+    event_bus.notify(RoomsEvent("1", [kitchen, hall]))
+    event_bus.notify(FurnitureEvent("1", [carpet, bed]))
+    await block_till_done(event_bus)
+    assert not _changed(map_data)
+
+
 def _cached_map_info(active_map_id: str) -> CachedMapInfoEvent:
     return CachedMapInfoEvent(
         {
@@ -262,11 +292,6 @@ def _cached_map_info(active_map_id: str) -> CachedMapInfoEvent:
             for map_id in ("1", "2")
         }
     )
-
-
-def _changed(map_data: MapData) -> bool:
-    """Return if the map data changed (as function, so mypy does not narrow it)."""
-    return map_data.changed
 
 
 async def test_rooms_and_furniture_of_other_maps_are_not_drawn(

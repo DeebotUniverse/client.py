@@ -271,7 +271,8 @@ class MapData:
         """Generate SVG image."""
         map_id = self._drawn_map_id
         return self._data.generate_svg(
-            list(self._map_subsets.values()),
+            # Sorted, so the image does not depend on the order they were received
+            sorted(self._map_subsets.values(), key=lambda subset: subset.id),
             self._positions,
             self._rotation,
             self._rooms.get(map_id, []) if map_id else [],
@@ -305,8 +306,10 @@ class MapData:
 
     def set_rooms(self, map_id: str, rooms: list[Room]) -> None:
         """Set rooms of a map, which are used for the labels and the colors."""
+        # Sorted, so the image does not depend on the order the rooms were received
+        rooms = sorted(rooms, key=lambda room: room.id)
         if rooms != self._rooms.get(map_id):
-            self._rooms[map_id] = list(rooms)
+            self._rooms[map_id] = rooms
             self._on_map_data_change(map_id)
 
     def keep_rooms(self, map_id: str, room_ids: list[int]) -> None:
@@ -319,8 +322,9 @@ class MapData:
 
     def set_furniture(self, map_id: str, furniture: list[Furniture]) -> None:
         """Set furniture of a map."""
+        furniture = sorted(furniture, key=lambda item: item.id)
         if furniture != self._furniture.get(map_id):
-            self._furniture[map_id] = list(furniture)
+            self._furniture[map_id] = furniture
             self._on_map_data_change(map_id)
 
     def set_rotation_angle(self, rotation: RotationAngle) -> None:
