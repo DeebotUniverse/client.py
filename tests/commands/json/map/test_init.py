@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from typing import Any
 
+import orjson
 import pytest
 from testfixtures import LogCapture
 
@@ -10,10 +11,18 @@ from deebot_client.commands.json import (
     GetMapSubSet,
     GetMapTrace,
 )
-from deebot_client.commands.json.map import GetMapInfoV2, GetMapSetV2
+from deebot_client.commands.json.map import (
+    GetFurnitureInfoV2,
+    GetMapInfoV2,
+    GetMapSetV2,
+    _parse_room_center,
+    _parse_room_neighbors,
+)
 from deebot_client.events import (
     Event,
     FirmwareEvent,
+    Furniture,
+    FurnitureEvent,
     MapInfoEvent,
     MapSetEvent,
     MapSetType,
@@ -23,8 +32,15 @@ from deebot_client.events import (
 )
 from deebot_client.message import HandlingResult, HandlingState
 from deebot_client.models import Room
+from deebot_client.rs.util import decompress_base64_data
 from tests.commands.json import assert_command
 from tests.helpers import get_request_json, get_success_body
+
+
+def _decode_subsets(subsets_comp: str) -> list[list[str]]:
+    """Return the raw subsets as sent by the bot."""
+    subsets: list[list[str]] = orjson.loads(decompress_base64_data(subsets_comp))
+    return subsets
 
 
 @pytest.mark.parametrize(
@@ -450,9 +466,39 @@ async def test_getMapSetV2_rooms_v2() -> None:
             }
         )
     )
+    centers = [
+        (-2875, -2575),
+        (2075, -6275),
+        (-2825, -5125),
+        (-225, -6775),
+        (4125, -4925),
+        (375, 25),
+        (2575, 1425),
+        (3775, -1425),
+        (-1825, 9175),
+        (1175, 4625),
+        (2875, 4175),
+        (2975, 7925),
+    ]
+    neighbors: list[tuple[int, ...]] = [
+        (5,),
+        (8,),
+        (3, 8),
+        (8,),
+        (8,),
+        (4, 5, 6, 7, 10, 11, 12, 13),
+        (8,),
+        (8,),
+        (8, 15),
+        (8,),
+        (15,),
+        (12, 14),
+    ]
     rooms = [
-        Room(room_name, subset, "")
-        for subset, room_name in zip(subsets, rooms_names, strict=False)
+        Room(room_name, subset, "", center=center, neighbors=room_neighbors)
+        for subset, room_name, center, room_neighbors in zip(
+            subsets, rooms_names, centers, neighbors, strict=True
+        )
     ]
     events = [firmware_event, RoomsEvent(mid, rooms)]
 
@@ -505,8 +551,16 @@ async def test_getMapSetV2_rooms_v2_with_extra_fields() -> None:
         )
     )
     rooms = [
-        Room(room_name, subset, "")
-        for subset, room_name in zip(subsets, rooms_names, strict=False)
+        Room(
+            room_name,
+            subset,
+            "",
+            center=(round(float(raw[5])), round(float(raw[6]))),
+            neighbors=tuple(int(room_id) for room_id in raw[3].split("-")),
+        )
+        for subset, room_name, raw in zip(
+            subsets, rooms_names, _decode_subsets(subsets_comp), strict=True
+        )
     ]
     events = [firmware_event, RoomsEvent(mid, rooms)]
 
@@ -556,8 +610,16 @@ async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
         )
     )
     rooms = [
-        Room(room_name, subset, "")
-        for subset, room_name in zip(subsets, rooms_names, strict=False)
+        Room(
+            room_name,
+            subset,
+            "",
+            center=(round(float(raw[5])), round(float(raw[6]))),
+            neighbors=tuple(int(room_id) for room_id in raw[3].split("-")),
+        )
+        for subset, room_name, raw in zip(
+            subsets, rooms_names, _decode_subsets(subsets_comp), strict=True
+        )
     ]
     events = [firmware_event, RoomsEvent(mid, rooms)]
 
@@ -648,4 +710,95 @@ async def test_getMapInfoV2_unsupported_version() -> None:
         json,
         firmware_event,
         handling_result=HandlingResult(HandlingState.ANALYSE_LOGGED),
+    )
+
+
+@pytest.mark.parametrize(
+    ("x", "y", "expected"),
+    [
+        ("-8975", "-2925", (-8975, -2925)),
+        ("-2300.000000", "350.6", (-2300, 351)),
+        ("", "100", None),
+        ("abc", "100", None),
+    ],
+)
+def test_parse_room_center(x: str, y: str, expected: tuple[int, int] | None) -> None:
+    assert _parse_room_center(x, y) == expected
+
+
+@pytest.mark.parametrize(
+    ("value", "expected"),
+    [
+        ("8", (8,)),
+        ("1-2-3-4", (1, 2, 3, 4)),
+        ("", ()),
+        (" ", ()),
+        ("1-a", ()),
+        ("1--2", ()),
+    ],
+)
+def test_parse_room_neighbors(value: str, expected: tuple[int, ...]) -> None:
+    assert _parse_room_neighbors(value) == expected
+
+
+async def test_getFurnitureInfoV2() -> None:
+    mid = "123456789"
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "info": [
+                    {
+                        "content": "1000,1000;1000,2600;3400,2600;3400,1000;20",
+                        "direction": "",
+                        "edited": 0,
+                        "fid": 0,
+                        "info": "",
+                        "source": 0,
+                        "type": 20,
+                    },
+                    {
+                        "content": "300,-5300;300,-3300;1900,-3300;1900,-5300;8",
+                        "direction": "",
+                        "edited": 0,
+                        "fid": 8,
+                        "info": "8_1,undefined,270,0,1,0",
+                        "source": 0,
+                        "type": 8,
+                    },
+                ],
+                "mid": mid,
+            }
+        )
+    )
+    await assert_command(
+        GetFurnitureInfoV2(mid),
+        json,
+        (
+            firmware_event,
+            FurnitureEvent(
+                mid,
+                [
+                    Furniture(
+                        id=0,
+                        type=20,
+                        coordinates="1000,1000,1000,2600,3400,2600,3400,1000",
+                    ),
+                    Furniture(
+                        id=8,
+                        type=8,
+                        coordinates="300,-5300,300,-3300,1900,-3300,1900,-5300",
+                    ),
+                ],
+            ),
+        ),
+    )
+
+
+async def test_getFurnitureInfoV2_no_furniture() -> None:
+    mid = "123456789"
+    json, firmware_event = get_request_json(get_success_body({"info": [], "mid": mid}))
+    await assert_command(
+        GetFurnitureInfoV2(mid),
+        json,
+        (firmware_event, FurnitureEvent(mid, [])),
     )

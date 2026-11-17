@@ -15,6 +15,8 @@ from .efficiency_mode import EfficiencyMode, EfficiencyModeEvent
 from .fan_speed import FanSpeedEvent, FanSpeedLevel
 from .map import (
     CachedMapInfoEvent,
+    Furniture,
+    FurnitureEvent,
     GpsPositionEvent,
     MajorMapEvent,
     MapChangedEvent,
@@ -46,6 +48,8 @@ __all__ = [
     "FanSpeedEvent",
     "FanSpeedLevel",
     "FirmwareEvent",
+    "Furniture",
+    "FurnitureEvent",
     "GpsPositionEvent",
     "MajorMapEvent",
     "MapChangedEvent",

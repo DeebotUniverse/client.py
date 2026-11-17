@@ -6,8 +6,11 @@ from unittest.mock import ANY, AsyncMock, Mock, call, patch
 
 import pytest
 
+from deebot_client.events import RoomsEvent
 from deebot_client.events.map import (
     CachedMapInfoEvent,
+    Furniture,
+    FurnitureEvent,
     MajorMapEvent,
     MapChangedEvent,
     MapInfoEvent,
@@ -22,6 +25,7 @@ from deebot_client.map import (
     Map,
     MapData,
 )
+from deebot_client.models import Room
 from deebot_client.rs.map import PositionType
 from tests import load_data_folder
 
@@ -93,7 +97,12 @@ async def test_Map_subscriptions(
     assert capabilities_map is not None
     map_obj = Map(execute_mock, event_bus_mock, capabilities_map)
 
-    calls = [call(MapSetEvent, ANY), call(MapSubsetEvent, ANY), call(MapInfoEvent, ANY)]
+    calls = [
+        call(MapSetEvent, ANY),
+        call(MapSubsetEvent, ANY),
+        call(MapInfoEvent, ANY),
+        call(FurnitureEvent, ANY),
+    ]
     event_bus_mock.subscribe.assert_has_calls(calls)
     event_bus_mock.add_on_subscription_callback.assert_called_once_with(
         MapChangedEvent, ANY
@@ -114,6 +123,7 @@ async def test_Map_subscriptions(
         CachedMapInfoEvent,
         PositionsEvent,
         MapTraceEvent,
+        RoomsEvent,
     ]
 
     calls.append(call(MapChangedEvent, on_change))
@@ -204,6 +214,37 @@ async def test_empty_maptrace(
         event_bus.notify(MapTraceEvent(0, 0, ""))
         await block_till_done(event_bus)
         cast("Mock", map_obj._map_data.add_trace_points).assert_not_called()
+
+
+async def test_rooms_and_furniture_mark_map_as_changed(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test rooms and furniture are only taken over when they are different."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    rooms = [Room("Kitchen", 1, "", center=(100, -200), neighbors=(2,))]
+    furniture = [Furniture(id=0, type=20, coordinates="0,0,100,0,100,100")]
+
+    events: list[tuple[Event, Event]] = [
+        (RoomsEvent("1", rooms), RoomsEvent("2", list(rooms))),
+        (FurnitureEvent("1", furniture), FurnitureEvent("2", list(furniture))),
+    ]
+    for event, same_data_event in events:
+        map_data.reset_changed()
+        event_bus.notify(event)
+        await block_till_done(event_bus)
+        assert map_data.changed
+
+        # Same data again must not trigger a new image
+        map_data.reset_changed()
+        event_bus.notify(same_data_event)
+        await block_till_done(event_bus)
+        assert not map_data.changed
+
+    assert map_data._rooms == rooms
+    assert map_data._furniture == furniture
 
 
 def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:

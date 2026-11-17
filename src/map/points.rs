@@ -1,5 +1,6 @@
 use std::fmt::Write as FmtWrite;
 
+use super::style::{CSSClass, get_style};
 use super::{ROUND_TO_DIGITS, RotationAngle, common::round};
 use crate::util::decompress_base64_data;
 use log::error;
@@ -7,6 +8,9 @@ use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use std::error::Error;
 use svg::node::element::Path;
+
+/// Id of the trace path inside the definitions
+pub(super) const TRACE_PATH_ID: &str = "t";
 
 #[derive(PartialEq)]
 enum SvgPathCommand {
@@ -159,10 +163,10 @@ impl TracePoints {
             false,
         )?;
 
+        // Styling is done by the elements using this path
         Some(
-            path.set("fill", "none")
-                .set("stroke", "#fff")
-                .set("stroke-linejoin", "round")
+            path.set("id", TRACE_PATH_ID)
+                .set("class", get_style(&CSSClass::TracePath).class_name)
                 .set("transform", "scale(0.2-0.2)"),
         )
     }
@@ -237,7 +241,7 @@ mod tests {
     }
 
     #[rstest]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg0, "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg0, "<path class=\"t\" d=\"M16 256h-16\" id=\"t\" transform=\"scale(0.2-0.2)\"/>")]
     #[case(vec![
         TracePoint{x:-215, y:-70, connected:true},
         TracePoint{x:-215, y:-70, connected:true},
@@ -248,10 +252,10 @@ mod tests {
         TracePoint{x:-227, y:-70, connected:true},
         TracePoint{x:-256, y:-69, connected:false},
         TracePoint{x:-260, y:-80, connected:true},
-    ], RotationAngle::Deg0, "<path d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg90, "<path d=\"M256-16v16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg180, "<path d=\"M-16-256h16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
-    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg270, "<path d=\"M-256 16v-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
+    ], RotationAngle::Deg0, "<path class=\"t\" d=\"M-215-70l3-3h-1l-14 1v2m-29 1l-4-11\" id=\"t\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg90, "<path class=\"t\" d=\"M256-16v16\" id=\"t\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg180, "<path class=\"t\" d=\"M-16-256h16\" id=\"t\" transform=\"scale(0.2-0.2)\"/>")]
+    #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg270, "<path class=\"t\" d=\"M-256 16v-16\" id=\"t\" transform=\"scale(0.2-0.2)\"/>")]
     fn test_get_trace_path(
         #[case] points: Vec<TracePoint>,
         #[case] rotation: RotationAngle,

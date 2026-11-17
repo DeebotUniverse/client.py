@@ -9,6 +9,8 @@ from typing import TYPE_CHECKING, Final
 from deebot_client.events.map import CachedMapInfoEvent, MapChangedEvent
 
 from .events import (
+    Furniture,
+    FurnitureEvent,
     MajorMapEvent,
     MapInfoEvent,
     MapSetEvent,
@@ -85,6 +87,11 @@ class Map:
 
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
 
+        async def on_furniture(event: FurnitureEvent) -> None:
+            self._map_data.set_furniture(event.furniture)
+
+        self._unsubscribers.append(event_bus.subscribe(FurnitureEvent, on_furniture))
+
     # ---------------------------- METHODS ----------------------------
 
     async def _subscribe_minor_major_map_events(self) -> list[Callable[[], None]]:
@@ -142,6 +149,11 @@ class Map:
                 self._map_data.add_trace_points(data)
 
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
+
+        async def on_rooms(event: RoomsEvent) -> None:
+            self._map_data.set_rooms(event.rooms)
+
+        unsubscribers.append(self._event_bus.subscribe(RoomsEvent, on_rooms))
 
         def unsub() -> None:
             for unsub in unsubscribers:
@@ -202,6 +214,8 @@ class MapData:
         self._on_change = on_change
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: list[Position] = []
+        self._rooms: list[Room] = []
+        self._furniture: list[Furniture] = []
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
@@ -252,12 +266,26 @@ class MapData:
             list(self._map_subsets.values()),
             self._positions,
             self._rotation,
+            self._rooms,
+            self._furniture,
         )
 
     def set_map_info(self, base64_info: str) -> None:
         """Set compressed map info (parsing happens in Rust)."""
         self._data.map_info.set(base64_info)
         self._on_change()
+
+    def set_rooms(self, rooms: list[Room]) -> None:
+        """Set rooms, which are used for the labels and the colors."""
+        if rooms != self._rooms:
+            self._rooms = list(rooms)
+            self._on_change()
+
+    def set_furniture(self, furniture: list[Furniture]) -> None:
+        """Set furniture."""
+        if furniture != self._furniture:
+            self._furniture = list(furniture)
+            self._on_change()
 
     def set_rotation_angle(self, rotation: RotationAngle) -> None:
         """Set clockwise rotation angle for SVG image."""
