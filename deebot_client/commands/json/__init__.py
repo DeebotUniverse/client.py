@@ -27,6 +27,7 @@ from .fan_speed import GetFanSpeed, SetFanSpeed
 from .life_span import GetLifeSpan, ResetLifeSpan
 from .map import (
     GetCachedMapInfo,
+    GetFurnitureInfoV2,
     GetMajorMap,
     GetMapInfoV2,
     GetMapSet,
@@ -83,6 +84,7 @@ __all__ = [
     "GetEfficiencyMode",
     "GetError",
     "GetFanSpeed",
+    "GetFurnitureInfoV2",
     "GetLifeSpan",
     "GetMajorMap",
     "GetMapInfoV2",
@@ -198,6 +200,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     ResetLifeSpan,
 
     GetCachedMapInfo,
+    GetFurnitureInfoV2,
     GetMajorMap,
     GetMapInfoV2,
     GetMapSet,

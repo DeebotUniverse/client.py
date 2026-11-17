@@ -179,6 +179,7 @@ class CapabilityMap:
     cached_info: CapabilityEvent[CachedMapInfoEvent]
     changed: CapabilityEvent[MapChangedEvent]
     clear: CapabilityExecute[[]] | None = None
+    furniture: CapabilityExecute[[str]] | None = None
     info: CapabilityExecute[[str]] | None = None
     major: (
         CapabilityEvent[MajorMapEvent] | CapabilitySet[MajorMapEvent, [str]] | None

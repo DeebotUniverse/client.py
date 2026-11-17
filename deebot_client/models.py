@@ -50,6 +50,10 @@ class Room:
     name: str
     id: int
     coordinates: str
+    # Position of the room label, in the same unit as the positions (mm)
+    center: tuple[int, int] | None = None
+    # Ids of the rooms next to this one
+    neighbors: tuple[int, ...] = ()
 
 
 @unique

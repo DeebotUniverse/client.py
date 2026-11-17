@@ -1,7 +1,8 @@
 from enum import Enum, auto
 from typing import Self
 
-from deebot_client.events.map import MapSubsetEvent, Position
+from deebot_client.events.map import Furniture, MapSubsetEvent, Position
+from deebot_client.models import Room
 
 class BackgroundImage:
     """Map background image."""
@@ -50,6 +51,8 @@ class MapData:
         subsets: list[MapSubsetEvent],
         position: list[Position],
         rotation: RotationAngle,
+        rooms: list[Room] = ...,
+        furniture: list[Furniture] = ...,
     ) -> str | None:
         """Generate SVG image."""
 

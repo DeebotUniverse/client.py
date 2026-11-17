@@ -57,6 +57,24 @@ class MapInfoEvent(Event):
 
 
 @dataclass(frozen=True)
+class Furniture:
+    """Furniture (or carpet) known by the bot."""
+
+    id: int
+    type: int
+    # Outline as "x1,y1,x2,y2,...", in the same unit as the positions (mm)
+    coordinates: str
+
+
+@dataclass(frozen=True)
+class FurnitureEvent(Event):
+    """Furniture event representation."""
+
+    map_id: str
+    furniture: list[Furniture]
+
+
+@dataclass(frozen=True)
 class MajorMapEvent(Event):
     """Major map event."""
 
