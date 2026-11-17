@@ -6,8 +6,8 @@
         "body": {
           "data": {
             "paused": 0,
-            "robotState": {"state": "moving", "trigger": "app"},
-            "stationState": {"state": "idle", "trigger": "app"}
+            "robotState": { "state": "moving", "trigger": "app" },
+            "stationState": { "state": "idle", "trigger": "app" }
           }
         },
         "header": {
@@ -24,7 +24,9 @@
     {
       "message_name": "onChargeState",
       "payload": {
-        "body": {"data": {"chargeRate": 3, "isCharging": 0, "mode": "autoEmpty"}},
+        "body": {
+          "data": { "chargeRate": 3, "isCharging": 0, "mode": "autoEmpty" }
+        },
         "header": {
           "fwVer": "1.84.0",
           "hwVer": "0.1.1",
@@ -39,7 +41,9 @@
     {
       "message_name": "onChargeState",
       "payload": {
-        "body": {"data": {"chargeRate": 0, "isCharging": 0, "mode": "autoEmpty"}},
+        "body": {
+          "data": { "chargeRate": 0, "isCharging": 0, "mode": "autoEmpty" }
+        },
         "header": {
           "fwVer": "1.84.0",
           "hwVer": "0.1.1",
@@ -57,8 +61,8 @@
         "body": {
           "data": {
             "paused": 0,
-            "robotState": {"state": "idle", "trigger": "app"},
-            "stationState": {"state": "idle", "trigger": "app"}
+            "robotState": { "state": "idle", "trigger": "app" },
+            "stationState": { "state": "idle", "trigger": "app" }
           }
         },
         "header": {
@@ -78,8 +82,8 @@
         "body": {
           "data": {
             "paused": 0,
-            "robotState": {"state": "idle", "trigger": "app"},
-            "stationState": {"state": "goCharging", "trigger": "app"}
+            "robotState": { "state": "idle", "trigger": "app" },
+            "stationState": { "state": "goCharging", "trigger": "app" }
           }
         },
         "header": {
@@ -96,7 +100,9 @@
     {
       "message_name": "onChargeState",
       "payload": {
-        "body": {"data": {"chargeRate": 0, "isCharging": 2, "mode": "autoEmpty"}},
+        "body": {
+          "data": { "chargeRate": 0, "isCharging": 2, "mode": "autoEmpty" }
+        },
         "header": {
           "fwVer": "1.84.0",
           "hwVer": "0.1.1",
@@ -111,7 +117,9 @@
     {
       "message_name": "onChargeState",
       "payload": {
-        "body": {"data": {"chargeRate": 0, "isCharging": 1, "mode": "autoEmpty"}},
+        "body": {
+          "data": { "chargeRate": 0, "isCharging": 1, "mode": "autoEmpty" }
+        },
         "header": {
           "fwVer": "1.84.0",
           "hwVer": "0.1.1",
@@ -129,8 +137,8 @@
         "body": {
           "data": {
             "paused": 0,
-            "robotState": {"state": "idle", "trigger": "app"},
-            "stationState": {"state": "idle", "trigger": "app"}
+            "robotState": { "state": "idle", "trigger": "app" },
+            "stationState": { "state": "idle", "trigger": "app" }
           }
         },
         "header": {
@@ -147,7 +155,9 @@
     {
       "message_name": "onChargeState",
       "payload": {
-        "body": {"data": {"chargeRate": 3, "isCharging": 1, "mode": "autoEmpty"}},
+        "body": {
+          "data": { "chargeRate": 3, "isCharging": 1, "mode": "autoEmpty" }
+        },
         "header": {
           "fwVer": "1.84.0",
           "hwVer": "0.1.1",

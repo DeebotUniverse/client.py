@@ -11,7 +11,7 @@ on:
   workflow_dispatch:
 
 env:
-  ADDITIONAL_PYTHON_VERSIONS: "[]"
+  ADDITIONAL_PYTHON_VERSIONS: "['3.15']"
 
 concurrency:
   group: ${{ github.workflow }}-${{ (github.event_name == 'release' && github.run_id) || github.event.pull_request.number || github.ref }}
@@ -27,7 +27,7 @@ jobs:
     outputs:
       default_python_version: ${{ steps.info.outputs.default_python_version }}
       python_versions: ${{ steps.info.outputs.python_versions }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     steps:
       - name: ⤵️  Check out code from GitHub
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
@@ -57,7 +57,7 @@ jobs:
           echo "python_versions: ${all_python_versions}"
           echo "python_versions=${all_python_versions}" >> $GITHUB_OUTPUT
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           enable-cache: false
       - name: Generate requirements files
@@ -76,24 +76,24 @@ jobs:
           path: requirements-dev.txt
 
   python-code-quality:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Check Python code quality
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
 
       - name: 🏗 Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         id: setup-python
 
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
         with:
           # Shares the cache key with the tests job, which installs the dev group (superset of lint)
           # and therefore must be the one saving the cache.
           save-cache: false
 
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
 
@@ -110,34 +110,34 @@ jobs:
         run: scripts/check_getLogger.sh
 
   rust-code-quality:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Check Rust code quality
     env:
       RUSTFLAGS: "-Dwarnings"
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
       - name: Rust format
         uses: actions-rust-lang/rustfmt@4066006ec54a31931b9b1fddfd38f2fdf2d27143 # v1.1.2
-      - uses: clechasseur/rs-clippy-check@d626afd6670c78ecef6c7872e1c9e1221065d5c5 # v6.1.0
+      - uses: clechasseur/rs-clippy-check@ac75e246ebbd78d106ac9460c668ab7c8044ebe3 # v6.1.1
         with:
           args: --all-features
 
   prek:
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     name: Run prek checks
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: Run prek
-        uses: j178/prek-action@1382ad72dea72f9d53832f2bcb65b3e87a947204 # v3.0.1
+        uses: j178/prek-action@44924fe9ef4a6f88253c4b6b1bf11c689d3ce53d # v3.1.0
         env:
           PREK_SKIP: no-commit-to-branch,mypy,verifyNoGetLogger,rust-fmt,rust-check,rust-clippy
 
   tests:
     name: Execute tests
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - info
       - python-code-quality
@@ -150,13 +150,13 @@ jobs:
     steps:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
         id: setup-python
       - name: 🏗 Install uv and Python
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           components: llvm-tools
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
@@ -183,6 +183,7 @@ jobs:
           maturin develop --uv
           pytest tests -n auto --cov=deebot_client --cov-report xml --junitxml=junit.xml -o junit_family=legacy -v
           cargo llvm-cov report --lcov --output-path coverage.lcov
+          python -m scripts.filter_pyo3_coverage coverage.lcov
       - name: Upload coverage to Codecov
         uses: codecov/codecov-action@303a32d7a59b442fa8d48b6a1cc6825c09c847a5 # v7.1.1
         with:
@@ -215,10 +216,10 @@ jobs:
             pytest_args: -m "not docker"
         platform:
           - name: Linux
-            runner: ubuntu-latest
+            runner: ubuntu-26.04
             target: x86_64
           - name: Linux
-            runner: ubuntu-24.04-arm
+            runner: ubuntu-26.04-arm
             target: aarch64
           - name: Windows
             runner: windows-latest
@@ -232,7 +233,7 @@ jobs:
         python-version: ${{ fromJSON(needs.info.outputs.python_versions) }}
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
           architecture: ${{ (matrix.platform.name == 'Windows') && matrix.platform.target || '' }}
@@ -265,7 +266,7 @@ jobs:
           name: wheels-${{ matrix.platform.name }}-${{ matrix.platform.target }}-${{ matrix.python-version }}
           path: dist
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: Download requirements-test.txt
         uses: actions/download-artifact@9000827ccba6bdab643e8b6fd33ac0654aef8333 # v8.0.2
         with:
@@ -293,7 +294,7 @@ jobs:
 
   build-test-musl:
     name: Musllinux ${{ matrix.target }} ${{ matrix.python-version }}
-    runs-on: ${{ matrix.os || 'ubuntu-latest' }}
+    runs-on: ${{ matrix.os || 'ubuntu-26.04' }}
     needs:
       - info
       - tests
@@ -311,10 +312,10 @@ jobs:
           # aarch64
           - target: aarch64
             docker_arch: arm64
-            os: ubuntu-24.04-arm
+            os: ubuntu-26.04-arm
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
-      - uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         with:
           python-version: ${{ matrix.python-version }}
       - name: 🏗 Set package version
@@ -365,7 +366,7 @@ jobs:
           docker run --rm -v ${{ github.workspace }}:/github/workspace --platform linux/${{ matrix.docker_arch }} deebot_client:${{ matrix.target }}-${{ matrix.python-version }}
 
   benchmarks:
-    runs-on: "ubuntu-latest"
+    runs-on: "ubuntu-26.04"
     name: Run benchmarks (${{ matrix.mode }})
     if: ${{ github.event_name != 'release' }}
     needs:
@@ -381,14 +382,14 @@ jobs:
       - name: ⤵️ Checkout repository
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 🏗 Setup Python
-        uses: actions/setup-python@5fda3b95a4ea91299a34e894583c3862153e4b97 # v7.0.0
+        uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7.1.0
         id: setup-python
         with:
           python-version: ${{ needs.info.outputs.default_python_version }}
       # Set up after Python so the cache key includes the Python version and matches the tests job
       - name: 🏗 Install uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
-      - uses: actions-rust-lang/setup-rust-toolchain@ecabd13d1c56bd1345c230e542e9144811ad706f # v2.0.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+      - uses: actions-rust-lang/setup-rust-toolchain@a188e68d0fd2bd36ad51dccb2b07ba6e75105f30 # v2.0.1
         with:
           cache-key: ${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('Cargo.lock') }}
       - name: Download requirements-dev.txt
@@ -404,20 +405,20 @@ jobs:
         run: |
           rm -rf deebot_client/
       - name: Run benchmarks
-        uses: CodSpeedHQ/action@821a40cd6c80e3cfe387caf55668287addd808da # v5.5.0
+        uses: CodSpeedHQ/action@af75f77f17a054769abefaa42fe8dc2975469b5f # v5.6.3
         with:
           run: pytest tests/ --codspeed
           mode: ${{ matrix.mode }}
 
   sdist:
     name: Create source distribution
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs: tests
     steps:
       - name: ⤵️ Check out code from GitHub
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       - name: 🏗 Set up uv
-        uses: astral-sh/setup-uv@1c37ad07a6a961277cf70c0d37d6f313000f5884 # v10.3.0
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
       - name: 🏗 Set package version
         if: ${{ github.event_name == 'release' }}
         run: |
@@ -433,7 +434,7 @@ jobs:
   release:
     name: Releasing to PyPi
     if: ${{ github.event_name == 'release' }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - build-test-native
       - build-test-musl
@@ -454,7 +455,7 @@ jobs:
           path: dist
           merge-multiple: true
       - name: 🚀 Publish to PyPi
-        uses: pypa/gh-action-pypi-publish@dc37677b2e1c63e2034f94d8a5b11f265b73ba33 # v1.14.2
+        uses: pypa/gh-action-pypi-publish@7245906fb61fa33a13554f9d5fb856fe61758086 # v1.14.3
         with:
           verbose: true
           print-hash: true
@@ -466,7 +467,7 @@ jobs:
 
   all-required-green: # This job does nothing and is only used for the branch protection
     name: All required checks pass
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-26.04
     needs:
       - build-test-native
       - build-test-musl

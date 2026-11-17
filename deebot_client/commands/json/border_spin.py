@@ -2,16 +2,15 @@
 
 from __future__ import annotations
 
-from deebot_client.events import BorderSpinEvent
+from deebot_client.messages.json.border_spin import OnBorderSpin
 
 from .common import GetEnableCommand, SetEnableCommand
 
 
-class GetBorderSpin(GetEnableCommand):
+class GetBorderSpin(OnBorderSpin, GetEnableCommand):
     """Get border spin command."""
 
     NAME = "getBorderSpin"
-    EVENT_TYPE = BorderSpinEvent
 
 
 class SetBorderSpin(SetEnableCommand):

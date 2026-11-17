@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
 from deebot_client.events import LifeSpan, LifeSpanEvent
+from deebot_client.logging_filter import get_logger
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataList
 
 from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHandling
@@ -14,6 +15,9 @@ from .common import ExecuteCommand, JsonCommandMqttP2P, JsonCommandWithMessageHa
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
     from deebot_client.util import LST
+
+_LOGGER = get_logger(__name__)
+_REPORTED_UNKNOWN_TYPES: set[str] = set()
 
 
 class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
@@ -33,8 +37,14 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 
         :return: A message response
         """
+        unknown_types: list[str] = []
         for component in data:
-            component_type = LifeSpan(component["type"])
+            try:
+                component_type = LifeSpan(component["type"])
+            except ValueError:
+                unknown_types.append(component["type"])
+                continue
+
             left = int(component["left"])
             total = int(component["total"])
 
@@ -43,6 +53,18 @@ class GetLifeSpan(JsonCommandWithMessageHandling, MessageBodyDataList):
 
             percent = round((left / total) * 100, 2)
             event_bus.notify(LifeSpanEvent(component_type, percent, left))
+
+        if unknown_types:
+            if new_types := set(unknown_types) - _REPORTED_UNKNOWN_TYPES:
+                _REPORTED_UNKNOWN_TYPES.update(new_types)
+                _LOGGER.warning(
+                    "Unknown LifeSpan types skipped: %s. Please report them",
+                    sorted(new_types),
+                )
+            if already_reported := set(unknown_types) - new_types:
+                _LOGGER.debug(
+                    "Unknown LifeSpan types skipped: %s", sorted(already_reported)
+                )
 
         return HandlingResult.success()
 

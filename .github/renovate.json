@@ -37,6 +37,12 @@
       "matchManagers": ["cargo"]
     },
     {
+      "description": "RustCrypto crates share der/spki/rand_core and must be updated together",
+      "groupName": "RustCrypto",
+      "matchManagers": ["cargo"],
+      "matchPackageNames": ["aes-gcm", "p256", "rsa", "sha2"]
+    },
+    {
       "addLabels": ["rust"],
       "groupName": "Rust toolchain",
       "matchDatasources": ["rust-version"],

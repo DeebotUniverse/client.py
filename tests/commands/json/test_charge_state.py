@@ -35,6 +35,19 @@ async def test_GetChargeState(
 
 
 @pytest.mark.parametrize(
+    ("code", "expected"),
+    [
+        ("30007", StateEvent(State.DOCKED)),
+        ("3", StateEvent(State.ERROR)),
+        ("5", StateEvent(State.ERROR)),
+    ],
+)
+async def test_GetChargeState_fail(code: str, expected: StateEvent) -> None:
+    json, firmware_event = get_request_json({"code": code, "msg": "fail"})
+    await assert_command(GetChargeState(), json, (firmware_event, expected))
+
+
+@pytest.mark.parametrize(
     "state", [State.CLEANING, State.PAUSED, State.RETURNING, State.ERROR]
 )
 async def test_noncharging_does_not_overwrite_existing_state(

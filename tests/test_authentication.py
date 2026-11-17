@@ -11,7 +11,7 @@ from unittest.mock import AsyncMock, patch
 from aiohttp import ClientSession, hdrs, web
 from aiohttp.test_utils import TestServer
 from cryptography.hazmat.primitives import serialization
-from cryptography.hazmat.primitives.asymmetric import ec, padding, rsa
+from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
 import orjson
 import pytest
 
@@ -23,6 +23,7 @@ from deebot_client.exceptions import (
     InvalidVerificationCodeError,
 )
 from deebot_client.models import AccountCredentials, Credentials
+from tests.helpers.crypto import decrypt
 
 if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
@@ -100,7 +101,7 @@ def _key_config(value: Any) -> dict[str, Any]:
 
 
 def _public_key_config(
-    public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey,
+    public_key: rsa.RSAPublicKey | ec.EllipticCurvePublicKey | ed25519.Ed25519PublicKey,
 ) -> str:
     """Return the public key configuration value as sent by the api."""
     encoded_key = base64.b64encode(
@@ -171,11 +172,11 @@ async def auth(
 
 
 def _decrypt_parameter(
-    private_key: rsa.RSAPrivateKey, params: dict[str, Any], parameter: str
+    private_key: rsa.RSAPrivateKey | ec.EllipticCurvePrivateKey,
+    params: dict[str, Any],
+    parameter: str,
 ) -> str:
-    return private_key.decrypt(
-        base64.b64decode(params[parameter]), padding.PKCS1v15()
-    ).decode()
+    return decrypt(private_key, base64.b64decode(params[parameter])).decode()
 
 
 async def test_authenticator_authenticate(rest_config: RestConfiguration) -> None:
@@ -308,6 +309,17 @@ async def test_login_completes_login_and_sanitizes_response_log(
         "country": "US",
         "todo": "loginByItToken",
     }
+
+
+async def test_login_without_validity_expires_after_7_days(
+    api: _FakeEcovacsApi, auth: Authenticator
+) -> None:
+    del api.responses["user.do"]["last"]
+    started = time.time()
+
+    credentials = await auth.authenticate()
+
+    assert credentials.expires_at >= int(started + 7 * 24 * 60 * 60 * 0.99)
 
 
 @pytest.mark.parametrize("alpha_2_country", ["CN"])
@@ -481,16 +493,32 @@ async def test_request_device_verification_rejects_invalid_public_key(
     assert list(api.requests) == ["getConfig"]
 
 
-async def test_request_device_verification_rejects_non_rsa_public_key(
+async def test_request_device_verification_rejects_unsupported_public_key(
     api: _FakeEcovacsApi, auth: Authenticator
 ) -> None:
-    public_key = ec.generate_private_key(ec.SECP256R1()).public_key()
+    public_key = ed25519.Ed25519PrivateKey.generate().public_key()
     api.responses["getConfig"]["data"] = [_key_config(_public_key_config(public_key))]
 
     with pytest.raises(
-        AuthenticationError, match="Invalid Ecovacs public key: not an RSA key"
+        AuthenticationError,
+        match=r"Invalid Ecovacs public key: unsupported key algorithm 1\.3\.101\.112",
     ):
         await auth.request_device_verification_code()
+
+
+async def test_request_device_verification_with_ec_public_key(
+    api: _FakeEcovacsApi,
+    auth: Authenticator,
+) -> None:
+    private_key = ec.generate_private_key(ec.SECP256R1())
+    api.responses["getConfig"]["data"] = [
+        _key_config(_public_key_config(private_key.public_key()))
+    ]
+
+    await auth.request_device_verification_code()
+
+    params = api.requests["sendEmailVerifyCode"][0].query
+    assert _decrypt_parameter(private_key, params, "encryptEmail") == _ACCOUNT_ID
 
 
 async def test_request_device_verification_skips_invalid_duplicate_config(

@@ -225,6 +225,17 @@ mod tests {
         assert!(TracePoints::new().get_path(RotationAngle::Deg0).is_none());
     }
 
+    #[test]
+    fn test_get_trace_points_path_single_point() {
+        let mut trace_points = TracePoints::new();
+        trace_points.add_trace_points(vec![TracePoint {
+            x: 16,
+            y: 256,
+            connected: true,
+        }]);
+        assert!(trace_points.get_path(RotationAngle::Deg0).is_none());
+    }
+
     #[rstest]
     #[case(vec![TracePoint{x:16, y:256, connected:true},TracePoint{x:0, y:256, connected:true}], RotationAngle::Deg0, "<path d=\"M16 256h-16\" fill=\"none\" stroke=\"#fff\" stroke-linejoin=\"round\" transform=\"scale(0.2-0.2)\"/>")]
     #[case(vec![

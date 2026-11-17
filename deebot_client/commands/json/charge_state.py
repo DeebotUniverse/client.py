@@ -48,7 +48,7 @@ class GetChargeState(JsonCommandWithMessageHandling, MessageBodyDataDict):
                 status = State.ERROR
 
         if status:
-            event_bus.notify(StateEvent(State.DOCKED))
+            event_bus.notify(StateEvent(status))
             return HandlingResult.success()
 
         return HandlingResult.analyse()
