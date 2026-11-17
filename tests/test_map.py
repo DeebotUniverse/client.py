@@ -333,43 +333,6 @@ async def test_rooms_and_furniture_of_other_maps_are_not_drawn(
     assert map_data._drawn_map_id == "2"
 
 
-async def test_removed_rooms_are_not_drawn(
-    execute_mock: AsyncMock,
-    event_bus: EventBus,
-    static_device_info: StaticDeviceInfo,
-) -> None:
-    """Test rooms, which the bot does not report anymore, are removed."""
-    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
-    map_data = map_obj._map_data
-    kitchen = Room("Kitchen", 1, "", center=(100, -200))
-    hall = Room("Hall", 2, "", center=(0, 0))
-    event_bus.notify(RoomsEvent("1", [kitchen, hall]))
-    await block_till_done(event_bus)
-
-    # Nothing removed
-    map_data.reset_changed()
-    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1, 2], "1"))
-    await block_till_done(event_bus)
-    assert not _changed(map_data)
-    assert map_data._rooms == {"1": [kitchen, hall]}
-
-    # Rooms of another map are not touched
-    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "2"))
-    await block_till_done(event_bus)
-    assert map_data._rooms == {"1": [kitchen, hall]}
-
-    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [2], "1"))
-    await block_till_done(event_bus)
-    assert _changed(map_data)
-    assert map_data._rooms == {"1": [hall]}
-
-    map_data.reset_changed()
-    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "1"))
-    await block_till_done(event_bus)
-    assert _changed(map_data)
-    assert map_data._rooms == {"1": []}
-
-
 async def test_latest_map_is_drawn_when_no_map_is_in_use(
     execute_mock: AsyncMock,
     event_bus: EventBus,
@@ -393,12 +356,88 @@ async def test_latest_map_is_drawn_when_no_map_is_in_use(
     assert map_data._drawn_map_id == "2"
 
 
+def _room_subset(room: Room) -> MapSubsetEvent:
+    return MapSubsetEvent(
+        id=room.id,
+        type=MapSetType.ROOMS,
+        coordinates=room.coordinates,
+        name=room.name,
+    )
+
+
+async def test_removed_rooms_are_not_drawn(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test rooms, which the bot does not report anymore, are removed."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    kitchen = Room("Kitchen", 1, "0,0;100,0;100,100")
+    hall = Room("Hall", 2, "200,0;300,0;300,100")
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1, 2], "1"))
+    event_bus.notify(_room_subset(kitchen))
+    event_bus.notify(_room_subset(hall))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+
+    # Nothing removed
+    map_data.reset_changed()
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [2, 1], "1"))
+    await block_till_done(event_bus)
+    assert not _changed(map_data)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [2], "1"))
+    await block_till_done(event_bus)
+    assert _changed(map_data)
+    assert map_data._rooms == {"1": [hall]}
+
+    # A removed room can be added again
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1, 2], "1"))
+    event_bus.notify(_room_subset(kitchen))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+
+    map_data.reset_changed()
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "1"))
+    await block_till_done(event_bus)
+    assert _changed(map_data)
+    assert map_data._rooms == {"1": []}
+
+
+async def test_rooms_are_drawn_again_after_all_were_removed(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test the same rooms as before are taken over, after the bot had no rooms."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    rooms = [
+        Room("Kitchen", 1, "", center=(100, -200)),
+        Room("Hall", 2, "", center=(0, 0)),
+    ]
+    event_bus.notify(RoomsEvent("1", rooms))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": rooms}
+
+    # Newer bots send all rooms at once and an empty list ends up as map set event
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "1"))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": []}
+
+    event_bus.notify(RoomsEvent("1", list(rooms)))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": rooms}
+
+
 async def test_rooms_removed_before_the_map_is_enabled_are_not_drawn(
     execute_mock: AsyncMock,
     event_bus: EventBus,
     static_device_info: StaticDeviceInfo,
 ) -> None:
-    """Test the replay of the last rooms event does not bring back removed rooms."""
+    """Test the rooms event, which is sent on subscription, has no removed rooms."""
 
     async def on_change(_: MapChangedEvent) -> None:
         pass
@@ -409,55 +448,42 @@ async def test_rooms_removed_before_the_map_is_enabled_are_not_drawn(
     map_data = map_obj._map_data
     kitchen = Room("Kitchen", 1, "", center=(100, -200))
     hall = Room("Hall", 2, "", center=(0, 0))
-    office = Room("Office", 3, "", center=(300, 0))
 
     # The rooms are not known by the map yet, as nobody has asked for the image
     event_bus.notify(RoomsEvent("1", [kitchen, hall]))
-    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [2], "1"))
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "1"))
     await block_till_done(event_bus)
     assert map_data._rooms == {}
 
-    # The last rooms event is replayed on subscription
     event_bus.subscribe(MapChangedEvent, on_change)
     await block_till_done(event_bus)
-    assert map_data._rooms == {"1": [hall]}
+    assert map_data._rooms == {"1": []}
 
-    # A newer list is taken over completely
-    event_bus.notify(RoomsEvent("1", [kitchen, hall, office]))
+
+async def test_rooms_of_another_map_are_not_mixed(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test the rooms of a map are not reported as rooms of another map."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    kitchen = Room("Kitchen", 1, "0,0;100,0;100,100")
+    hall = Room("Hall", 2, "200,0;300,0;300,100")
+    attic = Room("Attic", 1, "0,0;500,0;500,500")
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1, 2], "1"))
+    event_bus.notify(_room_subset(kitchen))
+    event_bus.notify(_room_subset(hall))
     await block_till_done(event_bus)
-    assert map_data._rooms == {"1": [kitchen, hall, office]}
 
+    # Same room id as the kitchen, but the room of the other map is not known yet
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1], "2"))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall]}
 
-async def test_MapData_outdated_rooms_event(event_bus: EventBus) -> None:
-    """Test only the rooms event, which was the last one on removal, is filtered."""
-    map_data = MapData(event_bus)
-    kitchen = Room("Kitchen", 1, "", center=(100, -200))
-    hall = Room("Hall", 2, "", center=(0, 0))
-    event = RoomsEvent("1", [kitchen, hall])
-    other_map_event = RoomsEvent("2", [kitchen])
-
-    map_data.set_rooms(event)
-    map_data.keep_rooms("1", [2], event)
-    assert map_data._rooms == {"1": [hall]}
-
-    # Same event again, e.g. replayed after the image is requested again
-    map_data.set_rooms(event)
-    assert map_data._rooms == {"1": [hall]}
-
-    # Rooms of other maps are not affected
-    map_data.set_rooms(other_map_event)
-    map_data.set_rooms(event)
-    assert map_data._rooms == {"1": [hall], "2": [kitchen]}
-
-    # The last event is from another map, so the one of this map can't be replayed
-    map_data.keep_rooms("1", [2], other_map_event)
-    map_data.set_rooms(RoomsEvent("1", [kitchen, hall]))
-    assert map_data._rooms == {"1": [kitchen, hall], "2": [kitchen]}
-
-    # An event with the same rooms is a new one and not filtered
-    map_data.keep_rooms("1", [2], event)
-    map_data.set_rooms(RoomsEvent("1", [kitchen, hall]))
-    assert map_data._rooms == {"1": [kitchen, hall], "2": [kitchen]}
+    event_bus.notify(_room_subset(attic))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall], "2": [attic]}
 
 
 def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:

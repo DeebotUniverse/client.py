@@ -58,13 +58,6 @@ class Map:
         self._unsubscribers: list[Callable[[], None]] = []
 
         async def on_map_set(event: MapSetEvent) -> None:
-            if event.type == MapSetType.ROOMS:
-                # Rooms, which do not exist anymore, must not be drawn
-                self._map_data.keep_rooms(
-                    event.map_id, event.subsets, event_bus.get_last_event(RoomsEvent)
-                )
-                return
-
             for subset_id, subset in self._map_data.map_subsets.copy().items():
                 if subset.type == event.type and subset_id not in event.subsets:
                     self._map_data.map_subsets.pop(subset_id, None)
@@ -156,7 +149,7 @@ class Map:
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
         async def on_rooms(event: RoomsEvent) -> None:
-            self._map_data.set_rooms(event)
+            self._map_data.set_rooms(event.map_id, event.rooms)
 
         unsubscribers.append(self._event_bus.subscribe(RoomsEvent, on_rooms))
 
@@ -224,10 +217,6 @@ class MapData:
         self._active_map_id: str | None = None
         self._latest_map_id: str | None = None
         self._rooms: dict[str, list[Room]] = {}
-        # The last rooms event of a map at the time rooms were removed from it,
-        # together with the ids of the remaining rooms. The event bus sends the
-        # last event again on a new subscription and it must not add them again.
-        self._outdated_rooms: dict[str, tuple[RoomsEvent, frozenset[int]]] = {}
         self._furniture: dict[str, list[Furniture]] = {}
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
@@ -310,39 +299,12 @@ class MapData:
             self._active_map_id = map_id
             self._on_change()
 
-    def set_rooms(self, event: RoomsEvent) -> None:
+    def set_rooms(self, map_id: str, rooms: list[Room]) -> None:
         """Set rooms of a map, which are used for the labels and the colors."""
-        map_id = event.map_id
-        rooms = event.rooms
-        outdated = self._outdated_rooms.get(map_id)
-        if outdated and outdated[0] is event:
-            # Same event as before the removal, so the removed rooms are still in
-            rooms = [room for room in rooms if room.id in outdated[1]]
-        else:
-            self._outdated_rooms.pop(map_id, None)
-
         # Sorted, so the image does not depend on the order the rooms were received
         rooms = sorted(rooms, key=lambda room: room.id)
         if rooms != self._rooms.get(map_id):
             self._rooms[map_id] = rooms
-            self._on_map_data_change(map_id)
-
-    def keep_rooms(
-        self, map_id: str, room_ids: list[int], last_event: RoomsEvent | None
-    ) -> None:
-        """Remove all rooms of a map, which are not in the given list.
-
-        The last rooms event is needed, as it can be received (again) later on.
-        """
-        if last_event and last_event.map_id == map_id:
-            self._outdated_rooms[map_id] = (last_event, frozenset(room_ids))
-        else:
-            self._outdated_rooms.pop(map_id, None)
-
-        rooms = self._rooms.get(map_id, [])
-        remaining = [room for room in rooms if room.id in room_ids]
-        if len(remaining) != len(rooms):
-            self._rooms[map_id] = remaining
             self._on_map_data_change(map_id)
 
     def set_furniture(self, map_id: str, furniture: list[Furniture]) -> None:
@@ -375,11 +337,20 @@ class MapRoomHandling:
             if event.type != MapSetType.ROOMS:
                 return
 
+            if self._rooms and event.map_id != self._map_id:
+                # The known rooms are from another map
+                self._rooms.clear()
+
             self._map_id = event.map_id
             self._amount_rooms = len(event.subsets)
             for room_id in self._rooms.copy():
                 if room_id not in event.subsets:
                     self._rooms.pop(room_id, None)
+
+            if len(self._rooms) == self._amount_rooms:
+                # Rooms were removed (or there are none), so the remaining ones
+                # are complete and no subset will follow
+                event_bus.notify(RoomsEvent(self._map_id, list(self._rooms.values())))
 
         self._unsubscribers.append(event_bus.subscribe(MapSetEvent, on_map_set))
 
