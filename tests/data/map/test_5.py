@@ -92,11 +92,6 @@ EVENTS = [
     MapTraceEvent(
         start=0,
         total=33,
-        data="XQAAAQBkAAAAABQACYDUX97ABJsOyExb+T32qvhdzi0vjMKGjs8J3QD2Zd0uJWJEj+46P3//96VYAA==",
-    ),
-    MapTraceEvent(
-        start=20,
-        total=33,
-        data="XQAAAQBBAAAAAFIASJgPhADUv7rFAsZOWWP89RSYFw18o0fDa9llvsjVS5pQphnnrBrn/nuXAA==",
+        data="XQAAAQClAAAAABQACYDUX97ABJsOyExb+T32qvhdzi0vjMKGjs8J3QD2Zd0uJWJEj+blc2V4jXK46B2WJ2ga7po6FLuObX6PW6J9gzhjwyD/88k1AA==",
     ),
 ]

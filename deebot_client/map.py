@@ -59,6 +59,8 @@ class Map:
 
         async def on_map_set(event: MapSetEvent) -> None:
             if event.type == MapSetType.ROOMS:
+                # Rooms, which do not exist anymore, must not be drawn
+                self._map_data.keep_rooms(event.map_id, event.subsets)
                 return
 
             for subset_id, subset in self._map_data.map_subsets.copy().items():
@@ -88,7 +90,7 @@ class Map:
         self._unsubscribers.append(event_bus.subscribe(MapInfoEvent, on_map_info))
 
         async def on_furniture(event: FurnitureEvent) -> None:
-            self._map_data.set_furniture(event.furniture)
+            self._map_data.set_furniture(event.map_id, event.furniture)
 
         self._unsubscribers.append(event_bus.subscribe(FurnitureEvent, on_furniture))
 
@@ -126,6 +128,7 @@ class Map:
         async def on_cached_info(event: CachedMapInfoEvent) -> None:
             used_map = next((m for m in event.maps if m.using), None)
             if used_map:
+                self._map_data.set_active_map(used_map.id)
                 self._map_data.set_rotation_angle(used_map.angle)
 
         cached_map_subscribers = self._event_bus.has_subscribers(CachedMapInfoEvent)
@@ -151,7 +154,7 @@ class Map:
         unsubscribers.append(self._event_bus.subscribe(MapTraceEvent, on_map_trace))
 
         async def on_rooms(event: RoomsEvent) -> None:
-            self._map_data.set_rooms(event.rooms)
+            self._map_data.set_rooms(event.map_id, event.rooms)
 
         unsubscribers.append(self._event_bus.subscribe(RoomsEvent, on_rooms))
 
@@ -214,8 +217,12 @@ class MapData:
         self._on_change = on_change
         self._map_subsets: OnChangedDict[int, MapSubsetEvent] = OnChangedDict(on_change)
         self._positions: list[Position] = []
-        self._rooms: list[Room] = []
-        self._furniture: list[Furniture] = []
+        # Rooms and furniture belong to a map and the bot can also send them for
+        # maps, which are not in use. Only the ones of the active map are drawn.
+        self._active_map_id: str | None = None
+        self._latest_map_id: str | None = None
+        self._rooms: dict[str, list[Room]] = {}
+        self._furniture: dict[str, list[Furniture]] = {}
         self._rotation: RotationAngle = RotationAngle.DEG_0
         self._data = MapDataRs()
         self._room_handling = MapRoomHandling(event_bus, on_change)
@@ -262,12 +269,13 @@ class MapData:
 
     def generate_svg(self) -> str | None:
         """Generate SVG image."""
+        map_id = self._drawn_map_id
         return self._data.generate_svg(
             list(self._map_subsets.values()),
             self._positions,
             self._rotation,
-            self._rooms,
-            self._furniture,
+            self._rooms.get(map_id, []) if map_id else [],
+            self._furniture.get(map_id, []) if map_id else [],
         )
 
     def set_map_info(self, base64_info: str) -> None:
@@ -275,17 +283,45 @@ class MapData:
         self._data.map_info.set(base64_info)
         self._on_change()
 
-    def set_rooms(self, rooms: list[Room]) -> None:
-        """Set rooms, which are used for the labels and the colors."""
-        if rooms != self._rooms:
-            self._rooms = list(rooms)
+    @property
+    def _drawn_map_id(self) -> str | None:
+        """Return the id of the map, which rooms and furniture are drawn.
+
+        Until the active map is known, the map of the latest update is used.
+        """
+        return self._active_map_id or self._latest_map_id
+
+    def _on_map_data_change(self, map_id: str) -> None:
+        """Mark the image as changed, if the given map is the drawn one."""
+        self._latest_map_id = map_id
+        if map_id == self._drawn_map_id:
             self._on_change()
 
-    def set_furniture(self, furniture: list[Furniture]) -> None:
-        """Set furniture."""
-        if furniture != self._furniture:
-            self._furniture = list(furniture)
+    def set_active_map(self, map_id: str) -> None:
+        """Set the map, which is in use."""
+        if map_id != self._active_map_id:
+            self._active_map_id = map_id
             self._on_change()
+
+    def set_rooms(self, map_id: str, rooms: list[Room]) -> None:
+        """Set rooms of a map, which are used for the labels and the colors."""
+        if rooms != self._rooms.get(map_id):
+            self._rooms[map_id] = list(rooms)
+            self._on_map_data_change(map_id)
+
+    def keep_rooms(self, map_id: str, room_ids: list[int]) -> None:
+        """Remove all rooms of a map, which are not in the given list."""
+        rooms = self._rooms.get(map_id, [])
+        remaining = [room for room in rooms if room.id in room_ids]
+        if len(remaining) != len(rooms):
+            self._rooms[map_id] = remaining
+            self._on_map_data_change(map_id)
+
+    def set_furniture(self, map_id: str, furniture: list[Furniture]) -> None:
+        """Set furniture of a map."""
+        if furniture != self._furniture.get(map_id):
+            self._furniture[map_id] = list(furniture)
+            self._on_map_data_change(map_id)
 
     def set_rotation_angle(self, rotation: RotationAngle) -> None:
         """Set clockwise rotation angle for SVG image."""

@@ -106,6 +106,28 @@ fn get_svg_furniture(item: &Furniture, rotation: RotationAngle) -> Option<(CSSCl
     Some((css_key, path.set("class", get_style(&css_key).class_name)))
 }
 
+/// Middle of the area covered by an outline given as `x1,y1;x2,y2;...`
+fn calc_outline_center(coordinates: &str, rotation: RotationAngle) -> Option<(f32, f32)> {
+    let mut bounds: Option<(f32, f32, f32, f32)> = None;
+    for pair in coordinates.split(';') {
+        let mut numbers = pair.split(',').map(|s| s.trim().parse::<f32>());
+        let (Some(Ok(x)), Some(Ok(y))) = (numbers.next(), numbers.next()) else {
+            continue;
+        };
+        let point = calc_point(x, y, rotation);
+        bounds = Some(match bounds {
+            Some((min_x, min_y, max_x, max_y)) => (
+                min_x.min(point.x),
+                min_y.min(point.y),
+                max_x.max(point.x),
+                max_y.max(point.y),
+            ),
+            None => (point.x, point.y, point.x, point.y),
+        });
+    }
+    bounds.map(|(min_x, min_y, max_x, max_y)| ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0))
+}
+
 /// Split a room name into lines, which fit better into the room
 fn split_label(name: &str) -> Vec<&str> {
     let name = name.trim();
@@ -142,7 +164,10 @@ fn get_svg_room_labels(
                 let point = calc_point(x as f32, y as f32, rotation);
                 Some((point.x, point.y))
             }
-            None => room_centers.get(&room.id).copied(),
+            None => room_centers
+                .get(&room.id)
+                .copied()
+                .or_else(|| calc_outline_center(&room.coordinates, rotation)),
         };
         let Some((x, y)) = center else {
             continue;
@@ -266,6 +291,8 @@ struct Position {
 struct Room {
     id: u32,
     name: String,
+    /// Outline of the room as `x1,y1;x2,y2;...`, only sent by older bots
+    coordinates: String,
     /// Position of the label as sent by the bot
     center: Option<(i32, i32)>,
     /// Ids of the rooms next to this one
@@ -804,9 +831,49 @@ mod tests {
         Room {
             id,
             name: name.to_string(),
+            coordinates: String::new(),
             center,
             neighbors: Vec::new(),
         }
+    }
+
+    #[rstest]
+    #[case("-500,1000;-500,-1000;1500,-1000;1500,1000", RotationAngle::Deg0, Some((10.0, 0.0)))]
+    #[case("-500,1000;-500,-1000;1500,-1000;1500,1000", RotationAngle::Deg90, Some((0.0, 10.0)))]
+    // Invalid entries are ignored
+    #[case("0,0;abc;1000;2000,-1000;", RotationAngle::Deg0, Some((20.0, 10.0)))]
+    #[case("", RotationAngle::Deg0, None)]
+    #[case("abc", RotationAngle::Deg0, None)]
+    fn test_calc_outline_center(
+        #[case] coordinates: &str,
+        #[case] rotation: RotationAngle,
+        #[case] expected: Option<(f32, f32)>,
+    ) {
+        assert_eq!(calc_outline_center(coordinates, rotation), expected);
+    }
+
+    #[test]
+    fn test_get_svg_room_labels_uses_outline_as_last_fallback() {
+        let rooms = vec![
+            Room {
+                coordinates: "-500,1000;-500,-1000;1500,-1000;1500,1000".to_string(),
+                ..room(3, "Bad", None)
+            },
+            // The center of the map info wins over the outline
+            Room {
+                coordinates: "-500,1000;-500,-1000;1500,-1000;1500,1000".to_string(),
+                ..room(7, "Flur", None)
+            },
+        ];
+        let room_centers = HashMap::from([(7, (30.0, 40.0))]);
+        let result = get_svg_room_labels(&rooms, &room_centers, RotationAngle::Deg0)
+            .map(|group| group.to_string().replace('\n', ""));
+        assert_eq!(
+            result.as_deref(),
+            Some(
+                "<g class=\"l\"><text x=\"10\" y=\"0\">Bad</text><text x=\"30\" y=\"40\">Flur</text></g>"
+            )
+        );
     }
 
     #[rstest]

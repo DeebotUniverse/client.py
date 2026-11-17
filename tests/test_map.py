@@ -12,9 +12,11 @@ from deebot_client.events.map import (
     Furniture,
     FurnitureEvent,
     MajorMapEvent,
+    Map as MapInfo,
     MapChangedEvent,
     MapInfoEvent,
     MapSetEvent,
+    MapSetType,
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
@@ -26,7 +28,7 @@ from deebot_client.map import (
     MapData,
 )
 from deebot_client.models import Room
-from deebot_client.rs.map import PositionType
+from deebot_client.rs.map import PositionType, RotationAngle
 from tests import load_data_folder
 
 from .common import block_till_done
@@ -228,8 +230,8 @@ async def test_rooms_and_furniture_mark_map_as_changed(
     furniture = [Furniture(id=0, type=20, coordinates="0,0,100,0,100,100")]
 
     events: list[tuple[Event, Event]] = [
-        (RoomsEvent("1", rooms), RoomsEvent("2", list(rooms))),
-        (FurnitureEvent("1", furniture), FurnitureEvent("2", list(furniture))),
+        (RoomsEvent("1", rooms), RoomsEvent("1", list(rooms))),
+        (FurnitureEvent("1", furniture), FurnitureEvent("1", list(furniture))),
     ]
     for event, same_data_event in events:
         map_data.reset_changed()
@@ -243,8 +245,104 @@ async def test_rooms_and_furniture_mark_map_as_changed(
         await block_till_done(event_bus)
         assert not map_data.changed
 
-    assert map_data._rooms == rooms
-    assert map_data._furniture == furniture
+    assert map_data._rooms == {"1": rooms}
+    assert map_data._furniture == {"1": furniture}
+
+
+def _cached_map_info(active_map_id: str) -> CachedMapInfoEvent:
+    return CachedMapInfoEvent(
+        {
+            MapInfo(
+                id=map_id,
+                name=map_id,
+                using=map_id == active_map_id,
+                built=True,
+                angle=RotationAngle.DEG_0,
+            )
+            for map_id in ("1", "2")
+        }
+    )
+
+
+def _changed(map_data: MapData) -> bool:
+    """Return if the map data changed (as function, so mypy does not narrow it)."""
+    return map_data.changed
+
+
+async def test_rooms_and_furniture_of_other_maps_are_not_drawn(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test only rooms and furniture of the active map are used."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    rooms_1 = [Room("Kitchen", 1, "", center=(100, -200))]
+    rooms_2 = [Room("Attic", 1, "", center=(0, 0))]
+    furniture_2 = [Furniture(id=0, type=20, coordinates="0,0,100,0,100,100")]
+
+    # Until the active map is known, the latest data is drawn
+    event_bus.notify(RoomsEvent("2", rooms_2))
+    await block_till_done(event_bus)
+    assert map_data._drawn_map_id == "2"
+
+    event_bus.notify(_cached_map_info("1"))
+    event_bus.notify(RoomsEvent("1", rooms_1))
+    await block_till_done(event_bus)
+    assert map_data._drawn_map_id == "1"
+
+    # Data of a map, which is not in use, is stored but does not change the image
+    map_data.reset_changed()
+    event_bus.notify(FurnitureEvent("2", furniture_2))
+    event_bus.notify(RoomsEvent("2", []))
+    await block_till_done(event_bus)
+    assert not _changed(map_data)
+    assert map_data._drawn_map_id == "1"
+    assert map_data._rooms == {"1": rooms_1, "2": []}
+    assert map_data._furniture == {"2": furniture_2}
+
+    # Switching the map uses the data of the other map
+    event_bus.notify(_cached_map_info("2"))
+    await block_till_done(event_bus)
+    assert _changed(map_data)
+    assert map_data._drawn_map_id == "2"
+
+
+async def test_removed_rooms_are_not_drawn(
+    execute_mock: AsyncMock,
+    event_bus: EventBus,
+    static_device_info: StaticDeviceInfo,
+) -> None:
+    """Test rooms, which the bot does not report anymore, are removed."""
+    map_obj = await setup_map(execute_mock, event_bus, static_device_info)
+    map_data = map_obj._map_data
+    kitchen = Room("Kitchen", 1, "", center=(100, -200))
+    hall = Room("Hall", 2, "", center=(0, 0))
+    event_bus.notify(RoomsEvent("1", [kitchen, hall]))
+    await block_till_done(event_bus)
+
+    # Nothing removed
+    map_data.reset_changed()
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [1, 2], "1"))
+    await block_till_done(event_bus)
+    assert not _changed(map_data)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+
+    # Rooms of another map are not touched
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "2"))
+    await block_till_done(event_bus)
+    assert map_data._rooms == {"1": [kitchen, hall]}
+
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [2], "1"))
+    await block_till_done(event_bus)
+    assert _changed(map_data)
+    assert map_data._rooms == {"1": [hall]}
+
+    map_data.reset_changed()
+    event_bus.notify(MapSetEvent(MapSetType.ROOMS, [], "1"))
+    await block_till_done(event_bus)
+    assert _changed(map_data)
+    assert map_data._rooms == {"1": []}
 
 
 def extractor_for_test_get_svg_map(module: ModuleType, filename: str) -> ParameterSet:
