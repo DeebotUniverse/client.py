@@ -28,14 +28,17 @@ struct MapInfoTypeDataEntry {
     close_path: bool,
 }
 
-/// Assign a color index to each entry.
+/// Assign a color index to each room id.
 ///
 /// The color depends on the room id and not on the position in the list, so it stays the same
 /// between updates. Colors are used evenly and rooms next to each other get different colors
 /// when the neighbors are known.
-fn assign_room_colors(ids: &[Option<u32>], neighbors: &HashMap<u32, Vec<u32>>) -> Vec<usize> {
+fn assign_room_colors(
+    ids: impl Iterator<Item = u32>,
+    neighbors: &HashMap<u32, Vec<u32>>,
+) -> HashMap<u32, usize> {
     let color_count = ROOM_COLORS.len();
-    let mut known: Vec<u32> = ids.iter().flatten().copied().collect();
+    let mut known: Vec<u32> = ids.collect();
     known.sort_unstable();
     known.dedup();
 
@@ -62,13 +65,7 @@ fn assign_room_colors(ids: &[Option<u32>], neighbors: &HashMap<u32, Vec<u32>>) -
         assigned.insert(id, color);
     }
 
-    ids.iter()
-        .enumerate()
-        .map(|(index, id)| match id {
-            Some(id) => assigned[id],
-            None => index % color_count,
-        })
-        .collect()
+    assigned
 }
 
 #[derive(Debug, PartialEq, Hash, Eq, Clone, Copy)]
@@ -159,6 +156,15 @@ impl MapInfo {
         let order = self.get_order();
         let mut svg_elements: Vec<Box<dyn svg::node::Node>> = Vec::with_capacity(order.len());
         let mut used_styles = OrderSet::new();
+        // Based on the ids of all layers, so a room has the same color in each of them
+        let room_colors = assign_room_colors(
+            [MapInfoType::Room, MapInfoType::BlockLine]
+                .iter()
+                .filter_map(|map_info_type| self.data.get(map_info_type))
+                .flatten()
+                .filter_map(|entry| entry.id),
+            neighbors,
+        );
 
         for layer in order {
             if let Some(entries) = self.data.get(&layer.map_info_type) {
@@ -187,12 +193,6 @@ impl MapInfo {
                     })
                     .collect();
 
-                let colors = if layer.colorize {
-                    let ids: Vec<Option<u32>> = entries.iter().map(|e| e.id).collect();
-                    assign_room_colors(&ids, neighbors)
-                } else {
-                    Vec::new()
-                };
                 if layer.map_info_type == MapInfoType::Room && room_centers.is_empty() {
                     for entry in &entries {
                         let mut bounds = None;
@@ -209,7 +209,12 @@ impl MapInfo {
                         points_to_svg_path(&entry.points, entry.close_path, layer.force_connected)
                     {
                         let path = if layer.colorize {
-                            let color_class = ROOM_COLORS[colors[index]];
+                            // Entries without id fall back to their position
+                            let color = entry
+                                .id
+                                .and_then(|id| room_colors.get(&id).copied())
+                                .unwrap_or(index % ROOM_COLORS.len());
+                            let color_class = ROOM_COLORS[color];
                             used_styles.insert(color_class);
                             path.set("class", get_style(&color_class).class_name)
                         } else {
@@ -462,22 +467,22 @@ mod tests {
 
     #[rstest]
     // Ids in order get the colors in order
-    #[case(&[Some(0), Some(1), Some(2)], &[], &[0, 1, 2])]
+    #[case(&[0, 1, 2], &[], &[0, 1, 2])]
     // The color depends on the id, not on the position
-    #[case(&[Some(3), Some(4)], &[], &[3, 4])]
-    #[case(&[Some(4), Some(3)], &[], &[4, 3])]
-    // Entries without id fall back to their position
-    #[case(&[None, None, None], &[], &[0, 1, 2])]
+    #[case(&[3, 4], &[], &[3, 4])]
+    #[case(&[4, 3], &[], &[4, 3])]
+    // An id, which is listed more than once, is counted once
+    #[case(&[0, 1, 7, 0, 7], &[], &[0, 1, 2, 0, 2])]
     // 7 would prefer the color of 1, but an unused color is taken first
-    #[case(&[Some(0), Some(1), Some(7)], &[], &[0, 1, 2])]
+    #[case(&[0, 1, 7], &[], &[0, 1, 2])]
     // All colors are used once, so 7 gets its preferred one ...
-    #[case(&[Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(7)], &[], &[0, 1, 2, 3, 4, 5, 1])]
+    #[case(&[0, 1, 2, 3, 4, 5, 7], &[], &[0, 1, 2, 3, 4, 5, 1])]
     // ... unless a neighbor has it already
-    #[case(&[Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(7)], &[(7, 1)], &[0, 1, 2, 3, 4, 5, 2])]
+    #[case(&[0, 1, 2, 3, 4, 5, 7], &[(7, 1)], &[0, 1, 2, 3, 4, 5, 2])]
     // Neighbors are symmetric, even if only one side lists the other
-    #[case(&[Some(0), Some(1), Some(2), Some(3), Some(4), Some(5), Some(7)], &[(1, 7)], &[0, 1, 2, 3, 4, 5, 2])]
+    #[case(&[0, 1, 2, 3, 4, 5, 7], &[(1, 7)], &[0, 1, 2, 3, 4, 5, 2])]
     fn test_assign_room_colors(
-        #[case] ids: &[Option<u32>],
+        #[case] ids: &[u32],
         #[case] neighbors: &[(u32, u32)],
         #[case] expected: &[usize],
     ) {
@@ -485,7 +490,9 @@ mod tests {
             .iter()
             .map(|(id, other)| (*id, vec![*other]))
             .collect();
-        assert_eq!(assign_room_colors(ids, &neighbors), expected);
+        let colors = assign_room_colors(ids.iter().copied(), &neighbors);
+        let colors: Vec<usize> = ids.iter().map(|id| colors[id]).collect();
+        assert_eq!(colors, expected);
     }
 
     #[test]
@@ -537,5 +544,64 @@ mod tests {
         for element in elements {
             assert_eq!(element.to_string().matches("<path").count(), 1);
         }
+    }
+
+    #[test]
+    fn test_generate_same_room_color_in_all_layers() {
+        let entry = |id| MapInfoTypeDataEntry {
+            id,
+            points: [(0.0, 0.0), (5000.0, 0.0), (5000.0, 5000.0)]
+                .iter()
+                .map(|(x, y)| Point {
+                    x: *x,
+                    y: *y,
+                    connected: true,
+                })
+                .collect(),
+            close_path: true,
+        };
+        let map_info = MapInfo {
+            data: HashMap::from([
+                (
+                    MapInfoType::Room,
+                    vec![entry(Some(0)), entry(Some(1)), entry(Some(7))],
+                ),
+                // Not all rooms have block lines and entries without id are possible
+                (
+                    MapInfoType::BlockLine,
+                    vec![entry(Some(7)), entry(Some(0)), entry(None)],
+                ),
+                (MapInfoType::Outline, vec![entry(None)]),
+            ]),
+        };
+
+        let elements = map_info
+            .generate(RotationAngle::Deg0, &HashMap::new())
+            .unwrap()
+            .elements;
+        let path_classes = |index: usize| -> Vec<String> {
+            elements[index]
+                .to_string()
+                .split("<path")
+                .skip(1)
+                .map(|path| {
+                    let class = path.split("class=\"").nth(1).unwrap();
+                    class.split('"').next().unwrap().to_string()
+                })
+                .collect()
+        };
+        let class_name = |color: usize| get_style(&ROOM_COLORS[color]).class_name.to_string();
+
+        // Layers: rooms, unreachable rooms, block lines, outline
+        assert_eq!(elements.len(), 4);
+        assert_eq!(
+            path_classes(0),
+            vec![class_name(0), class_name(1), class_name(2)]
+        );
+        // Entries without id fall back to their position
+        assert_eq!(
+            path_classes(2),
+            vec![class_name(2), class_name(0), class_name(2)]
+        );
     }
 }
