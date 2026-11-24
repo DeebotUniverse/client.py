@@ -57,6 +57,51 @@ MAX_RETRIES = 3
 
 
 @dataclass(frozen=True, kw_only=True)
+class AppIdentity:
+    """Identity of the mobile app used to log in.
+
+    Ecovacs brands such as yeedi share the portal and the MQTT broker with
+    Ecovacs, but their accounts can only log in with the identity of their own
+    app: its keys, app code, login domain and organisation.
+    """
+
+    client_key: str
+    client_secret: str
+    auth_client_key: str
+    auth_client_secret: str
+    app_code: str
+    app_version: str
+    domain: str
+    org: str
+    org_china: str
+
+
+ECOVACS_APP = AppIdentity(
+    client_key=_CLIENT_KEY,
+    client_secret=_CLIENT_SECRET,
+    auth_client_key=_AUTH_CLIENT_KEY,
+    auth_client_secret=_AUTH_CLIENT_SECRET,
+    app_code=_META["appCode"],
+    app_version=_META["appVersion"],
+    domain="ecovacs",
+    org="ECOWW",
+    org_china="ECOCN",
+)
+
+YEEDI_APP = AppIdentity(
+    client_key="1581917520081",
+    client_secret="ed5b3dd9a0253de7d90305d077eb5fee",  # noqa: S106
+    auth_client_key="1581923437995",
+    auth_client_secret="304a71592690995b2bb304e66b5ddee6",  # noqa: S106
+    app_code="yd_global_e",
+    app_version="1.3.0",
+    domain="yeedi",
+    org="ECOYDWW",
+    org_china="ECOYDCN",
+)
+
+
+@dataclass(frozen=True, kw_only=True)
 class RestConfiguration:
     """Rest configuration."""
 
@@ -66,6 +111,7 @@ class RestConfiguration:
     portal_url: str
     login_url: str
     auth_code_url: str
+    app: AppIdentity = ECOVACS_APP
 
 
 def create_rest_config(
@@ -74,8 +120,12 @@ def create_rest_config(
     device_id: str,
     alpha_2_country: str,
     override_rest_url: str | None = None,
+    app: AppIdentity = ECOVACS_APP,
 ) -> RestConfiguration:
-    """Create configuration."""
+    """Create configuration.
+
+    Pass ``app=YEEDI_APP`` to log in with a yeedi account.
+    """
     continent_postfix = get_continent_url_postfix(alpha_2_country)
     country = get_ecovacs_country(alpha_2_country)
     if override_rest_url:
@@ -84,8 +134,8 @@ def create_rest_config(
         portal_url = f"https://portal{continent_postfix}.ecouser.net"
         country_url = country.lower()
         tld = "com" if alpha_2_country != COUNTRY_CHINA else country_url
-        login_url = f"https://gl-{country_url}-api.ecovacs.{tld}"
-        auth_code_url = f"https://gl-{country_url}-openapi.ecovacs.{tld}"
+        login_url = f"https://gl-{country_url}-api.{app.domain}.{tld}"
+        auth_code_url = f"https://gl-{country_url}-openapi.{app.domain}.{tld}"
 
     return RestConfiguration(
         session=session,
@@ -94,6 +144,7 @@ def create_rest_config(
         portal_url=portal_url,
         login_url=login_url,
         auth_code_url=auth_code_url,
+        app=app,
     )
 
 
@@ -118,6 +169,8 @@ class _AuthClient:
 
         self._meta: dict[str, str] = {
             **_META,
+            "appCode": self._config.app.app_code,
+            "appVersion": self._config.app.app_version,
             "country": self._config.country.lower(),
             "deviceId": self._config.device_id,
         }
@@ -258,8 +311,8 @@ class _AuthClient:
             self.__sign(
                 {**params, **self.__request_metadata()},
                 self._meta,
-                _CLIENT_KEY,
-                _CLIENT_SECRET,
+                self._config.app.client_key,
+                self._config.app.client_secret,
             ),
         )
 
@@ -355,7 +408,10 @@ class _AuthClient:
         response = await self.__do_auth_response(
             url,
             self.__sign(
-                params, {"openId": "global"}, _AUTH_CLIENT_KEY, _AUTH_CLIENT_SECRET
+                params,
+                {"openId": "global"},
+                self._config.app.auth_client_key,
+                self._config.app.auth_client_secret,
             ),
         )
         res = self.__expect_dict(response, "Invalid auth code response")
@@ -370,7 +426,9 @@ class _AuthClient:
             "token": auth_code,
             "realm": REALM,
             "resource": self._config.device_id,
-            "org": "ECOWW" if self._config.country != COUNTRY_CHINA else "ECOCN",
+            "org": self._config.app.org
+            if self._config.country != COUNTRY_CHINA
+            else self._config.app.org_china,
             "last": "",
             "country": self._config.country
             if self._config.country != COUNTRY_CHINA
