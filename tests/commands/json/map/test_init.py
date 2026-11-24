@@ -568,6 +568,46 @@ async def test_getMapSetV2_rooms_v2_with_two_extra_fields() -> None:
     )
 
 
+async def test_getMapSetV2_rooms_v2_with_four_extra_fields() -> None:
+    """Test room subset format with four extra trailing fields.
+
+    The DEEBOT X12 PRO OMNI (tbeztu) on firmware 1.85.0 reports 14 fields per
+    room and rejects getMapSubSet with 20003.
+    """
+    mid = "1795967976"
+    set_type = MapSetType.ROOMS
+    subsets_comp = (
+        "KLUv/WCFAAUFAELGFRpwa9pAiZM2Oe+KafSjZ+gYU7Ob6fCZ9//zBcuPz9q0yxDI"
+        "e9rsNInD2gFySqIKpRYHwlnGEo56zdP7PUwjJUaAbMHD5h9ePlEQc9oMsHk1aVXB"
+        "ZjRCAR0A4UZkCXcg4wHriuxNiBWAWxkZE0xaBBoCuDrYMAEACsMaKgDsGFxdh8Ma"
+        "wg8pBPKSyVFktLozsy6rEIDKU+mbskYUZhM="
+    )
+    room_ids = [0, 1, 2, 3, 5]
+    room_names = ["Toilet", "Hallway", "Living room", "Kitchen", "Utility room"]
+    json, firmware_event = get_request_json(
+        get_success_body(
+            {
+                "type": set_type,
+                "mid": mid,
+                "msid": "127210242",
+                "batid": "mhkhao",
+                "subsets": subsets_comp,
+                "infoSize": 389,
+            }
+        )
+    )
+    rooms = [
+        Room(room_name, room_id, "")
+        for room_id, room_name in zip(room_ids, room_names, strict=True)
+    ]
+
+    await assert_command(
+        GetMapSetV2(mid, set_type),
+        json,
+        [firmware_event, RoomsEvent(mid, rooms)],
+    )
+
+
 async def test_getMapTrace() -> None:
     start = 0
     total = 160
