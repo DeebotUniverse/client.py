@@ -42,6 +42,7 @@ from deebot_client.events import (
     ReportStatsEvent,
     RoomsEvent,
     SafeProtectEvent,
+    ScenariosEvent,
     StateEvent,
     StationEvent,
     StatsEvent,
@@ -145,6 +146,13 @@ class CapabilityCleanAction:
 
 
 @dataclass(frozen=True, kw_only=True)
+class CapabilityScenario(CapabilityEvent[ScenariosEvent]):
+    """Capabilities for scenarios (called "Scenario Cleaning" in the app)."""
+
+    start: Callable[[str], Command]
+
+
+@dataclass(frozen=True, kw_only=True)
 class CapabilityClean:
     """Capabilities for clean."""
 
@@ -153,6 +161,7 @@ class CapabilityClean:
     count: CapabilitySet[CleanCountEvent, [int]] | None = None
     log: CapabilityEvent[CleanLogEvent] | None = None
     preference: CapabilitySetEnable[CleanPreferenceEvent] | None = None
+    scenario: CapabilityScenario | None = None
     work_mode: CapabilitySetTypes[WorkModeEvent, [WorkMode | str], WorkMode] | None = (
         None
     )
