@@ -113,6 +113,55 @@ class CleanAreaV2(CleanV2):
         return args
 
 
+class CleanV2StopAndReturn(CleanV2):
+    """Clean V2 command for models that only support stopping with stop_and_return.
+
+    Some newer models (e.g. T90 PRO OMNI) ignore "stop" and keep cleaning,
+    but accept "stop_and_return", which stops and sends the robot to the dock.
+    """
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        if action == CleanAction.STOP:
+            return {"act": "stop_and_return"}
+        return super()._get_args(action)
+
+
+class CleanRoomsV2(CleanV2):
+    """Clean rooms command using freeClean with one cleanings,room pair per room.
+
+    Some newer models (e.g. T90 PRO OMNI) clean only the first room when
+    called with the "cleanings,room1,room2" value format. They expect a
+    "cleanings,room" pair per room, separated by ";", and clean the rooms
+    in the given order.
+    """
+
+    def __init__(self, rooms: list[int | float], cleanings: int = 1) -> None:
+        self._additional_content = {
+            "type": CleanMode.FREE_CLEAN.value,
+            "value": ";".join(f"{cleanings},{room}" for room in rooms),
+        }
+        super().__init__(CleanAction.START)
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        """Execute command.
+
+        A room clean must always send "start": while the robot is paused,
+        Clean._execute would turn it into a bare "resume" and drop the rooms.
+        """
+        return await super(Clean, self)._execute(authenticator, device_info, event_bus)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._additional_content)
+        return args
+
+
 class GetCleanInfo(JsonCommandWithMessageHandling, MessageBodyDataDict):
     """Get clean info command."""
 
