@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
 from deebot_client.capabilities import (
     Capabilities,
     CapabilityClean,
@@ -29,10 +31,7 @@ from deebot_client.commands.json.battery import GetBattery
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
-from deebot_client.commands.json.clean import (
-    Clean,
-    CleanArea,
-)
+from deebot_client.commands.json.clean import Clean, CleanAreaV2, CleanV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.continuous_cleaning import (
@@ -106,7 +105,56 @@ from deebot_client.events import (
 )
 from deebot_client.events.auto_empty import AutoEmptyEvent
 from deebot_client.events.mop_auto_wash_frequency import MopAutoWashFrequencyEvent
-from deebot_client.models import StaticDeviceInfo
+from deebot_client.models import CleanAction, CleanMode, StaticDeviceInfo
+
+if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
+    from deebot_client.command import Command
+    from deebot_client.event_bus import EventBus
+    from deebot_client.message import HandlingResult
+    from deebot_client.models import ApiDeviceInfo
+
+
+class _CleanRoomsV2(CleanV2):
+    """Clean rooms with clean_V2 freeClean.
+
+    This firmware rejects spotArea (20011 unknown type). The official app
+    sends freeClean with one "1,<room id>" block per room, joined by ";".
+    The leading 1 is the element type (room), not the number of passes;
+    the passes are a robot setting (setCleanCount).
+    """
+
+    def __init__(self, rooms: list[int | float]) -> None:
+        self._rooms_content = {
+            "type": CleanMode.FREE_CLEAN.value,
+            "value": ";".join(f"1,{int(room)}" for room in rooms),
+        }
+        super().__init__(CleanAction.START)
+
+    async def _execute(
+        self,
+        authenticator: Authenticator,
+        device_info: ApiDeviceInfo,
+        event_bus: EventBus,
+    ) -> tuple[HandlingResult, dict[str, Any]]:
+        # Always send "start": while paused, Clean._execute would turn it
+        # into a bare "resume" and drop the rooms.
+        return await super(Clean, self)._execute(authenticator, device_info, event_bus)
+
+    def _get_args(self, action: CleanAction) -> dict[str, Any]:
+        args = super()._get_args(action)
+        if action == CleanAction.START:
+            args["content"].update(self._rooms_content)
+        return args
+
+
+def _clean_area(
+    mode: CleanMode, area: list[int | float], cleanings: int = 1
+) -> Command:
+    """Clean rooms (freeClean) or a custom area (clean_V2)."""
+    if mode == CleanMode.SPOT_AREA:
+        return _CleanRoomsV2(area)
+    return CleanAreaV2(mode, area, cleanings)
 
 
 def get_device_info() -> StaticDeviceInfo:
@@ -121,7 +169,7 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=Clean, area=CleanArea),
+                action=CapabilityCleanAction(command=CleanV2, area=_clean_area),
                 continuous=CapabilitySetEnable(
                     ContinuousCleaningEvent,
                     [GetContinuousCleaning()],
