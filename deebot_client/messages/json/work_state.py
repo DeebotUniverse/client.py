@@ -14,7 +14,8 @@ if TYPE_CHECKING:
 
 _WORK_STATE_2_EVENTS: dict[str, dict[str, tuple[RobotState | None, StationState]]] = {
     "idle": {
-        "idle": (None, StationState.IDLE),
+        # The robot reported idle. Docked comes only from charge state.
+        "idle": (RobotState.IDLE, StationState.IDLE),
         "goCharging": (RobotState.RETURNING, StationState.IDLE),
         "goEmptying": (RobotState.RETURNING, StationState.IDLE),
         "emptying": (RobotState.DOCKED, StationState.EMPTYING_DUSTBIN),

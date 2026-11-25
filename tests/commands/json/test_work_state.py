@@ -25,7 +25,14 @@ if TYPE_CHECKING:
             "idle",
             {},
             "idle",
-            [StationEvent(StationState.IDLE)],
+            [StateEvent(RobotState.IDLE), StationEvent(StationState.IDLE)],
+        ),
+        (
+            1,
+            "idle",
+            {},
+            "idle",
+            [StateEvent(RobotState.PAUSED), StationEvent(StationState.IDLE)],
         ),
         (
             0,
