@@ -15,7 +15,11 @@ from cryptography.hazmat.primitives.asymmetric import ec, ed25519, rsa
 import orjson
 import pytest
 
-from deebot_client.authentication import Authenticator, create_rest_config
+from deebot_client.authentication import (
+    YEEDI_APP,
+    Authenticator,
+    create_rest_config,
+)
 from deebot_client.exceptions import (
     AuthenticationError,
     DeviceVerificationRequiredError,
@@ -219,6 +223,40 @@ async def test_authenticator_authenticate(rest_config: RestConfiguration) -> Non
 
 
 @pytest.mark.parametrize(
+    ("country", "expected_portal_url", "expected_login_url", "expected_auth_code_url"),
+    [
+        (
+            "CN",
+            "https://portal.ecouser.net",
+            "https://gl-cn-api.yeedi.cn",
+            "https://gl-cn-openapi.yeedi.cn",
+        ),
+        (
+            "FR",
+            "https://portal-eu.ecouser.net",
+            "https://gl-fr-api.yeedi.com",
+            "https://gl-fr-openapi.yeedi.com",
+        ),
+    ],
+)
+def test_config_yeedi(
+    session: ClientSession,
+    country: str,
+    expected_portal_url: str,
+    expected_login_url: str,
+    expected_auth_code_url: str,
+) -> None:
+    """Test the rest configuration of a yeedi account."""
+    config = create_rest_config(
+        session=session, device_id="123", alpha_2_country=country, app=YEEDI_APP
+    )
+    assert config.app is YEEDI_APP
+    assert config.portal_url == expected_portal_url
+    assert config.login_url == expected_login_url
+    assert config.auth_code_url == expected_auth_code_url
+
+
+@pytest.mark.parametrize(
     (
         "country",
         "override_rest_url",
@@ -309,6 +347,57 @@ async def test_login_completes_login_and_sanitizes_response_log(
         "country": "US",
         "todo": "loginByItToken",
     }
+
+
+@pytest.fixture
+async def yeedi_auth(
+    session: ClientSession, api: _FakeEcovacsApi, alpha_2_country: str
+) -> AsyncGenerator[Authenticator]:
+    authenticator = Authenticator(
+        create_rest_config(
+            session=session,
+            device_id=_DEVICE_ID,
+            alpha_2_country=alpha_2_country,
+            override_rest_url=api.url,
+            app=YEEDI_APP,
+        ),
+        _ACCOUNT_ID,
+        _PASSWORD_HASH,
+    )
+    yield authenticator
+    await authenticator.teardown()
+
+
+async def test_login_yeedi_uses_yeedi_app_identity(
+    api: _FakeEcovacsApi, yeedi_auth: Authenticator
+) -> None:
+    credentials = await yeedi_auth.authenticate()
+
+    assert credentials.token == "portal-token"  # noqa: S105
+    login = api.requests["login"][0]
+    assert login.path == (
+        f"/v1/private/us/EN/{_DEVICE_ID}/yd_global_e/1.3.0/google_play/1/user/login"
+    )
+    assert login.query["authAppkey"] == YEEDI_APP.client_key
+    assert api.requests["getAuthCode"][0].query["authAppkey"] == (
+        YEEDI_APP.auth_client_key
+    )
+    portal_json = api.requests["user.do"][0].json
+    assert portal_json is not None
+    assert portal_json["org"] == "ECOYDWW"
+    assert portal_json["country"] == "US"
+
+
+@pytest.mark.parametrize("alpha_2_country", ["CN"])
+async def test_login_yeedi_china_org(
+    api: _FakeEcovacsApi, yeedi_auth: Authenticator
+) -> None:
+    await yeedi_auth.authenticate()
+
+    portal_json = api.requests["user.do"][0].json
+    assert portal_json is not None
+    assert portal_json["org"] == "ECOYDCN"
+    assert portal_json["country"] == "Chinese"
 
 
 async def test_login_without_validity_expires_after_7_days(
