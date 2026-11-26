@@ -1,6 +1,8 @@
 mod background_image;
 mod common;
 mod map_info;
+mod native_raster;
+mod native_trace;
 mod points;
 mod style;
 
@@ -22,7 +24,7 @@ use svg::{Document, Node};
 
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
-const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
+pub(super) const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
 
 #[inline]
 fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
@@ -153,6 +155,17 @@ impl RotationAngle {
     }
 }
 
+impl RotationAngle {
+    fn degrees(self) -> u16 {
+        match self {
+            Self::Deg0 => 0,
+            Self::Deg90 => 90,
+            Self::Deg180 => 180,
+            Self::Deg270 => 270,
+        }
+    }
+}
+
 /// Position type
 #[derive(FromPyObject, Debug)]
 struct Position {
@@ -208,6 +221,7 @@ impl MapData {
         positions: Vec<Position>,
         rotation: RotationAngle,
     ) -> PyResult<Option<String>> {
+        let native = self.background_image.borrow(py).is_native();
         let mut defs = Definitions::new()
             .add(
                 // Gradient used by Bot icon
@@ -280,13 +294,22 @@ impl MapData {
                         .generate()
                         .map_err(|err| PyValueError::new_err(err.to_string()))?
                 {
-                    let image = Image::new()
+                    let mut image = Image::new()
                         .set("x", viewbox.min_x)
                         .set("y", viewbox.min_y)
                         .set("width", viewbox.width)
                         .set("height", viewbox.height)
                         .set("style", "image-rendering: pixelated")
                         .set("href", format!("data:image/png;base64,{base64_image}"));
+                    let viewbox = if native {
+                        if rotation != RotationAngle::Deg0 {
+                            image =
+                                image.set("transform", format!("rotate({})", rotation.degrees()));
+                        }
+                        viewbox.rotated(rotation)
+                    } else {
+                        viewbox
+                    };
                     document.append(image);
                     viewbox
                 } else {
@@ -300,7 +323,12 @@ impl MapData {
             .into_iter()
             .for_each(|def| defs.append(def));
 
-        document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
+        let svg_viewbox = if native {
+            viewbox.native_svg_viewbox()
+        } else {
+            viewbox.to_svg_viewbox()
+        };
+        document = document.add(defs).set("viewBox", svg_viewbox);
 
         if !subsets.is_empty() {
             let group_css = [CSSClass::WallBase, CSSClass::StrokeWidth2];
@@ -337,27 +365,41 @@ impl MapData {
     }
 }
 
-#[derive(Debug)]
-struct ViewBox {
-    min_x: i16,
-    min_y: i16,
-    max_x: i16,
-    max_y: i16,
-    width: u16,
-    height: u16,
+#[derive(Clone, PartialEq, Debug)]
+pub(super) struct ViewBox {
+    pub(super) min_x: i32,
+    pub(super) min_y: i32,
+    pub(super) max_x: i32,
+    pub(super) max_y: i32,
+    pub(super) width: u16,
+    pub(super) height: u16,
 }
 
 impl ViewBox {
     fn new(min_x: u16, min_y: u16, max_x: u16, max_y: u16) -> Self {
-        let new_min_x = min_x as i16 - MAP_OFFSET;
-        let new_min_y = min_y as i16 - MAP_OFFSET;
+        let new_min_x = i32::from(min_x) - i32::from(MAP_OFFSET);
+        let new_min_y = i32::from(min_y) - i32::from(MAP_OFFSET);
         let width = max_x - min_x + 1;
         let height = max_y - min_y + 1;
         ViewBox {
             min_x: new_min_x,
             min_y: new_min_y,
-            max_x: new_min_x + width as i16,
-            max_y: new_min_y + height as i16,
+            max_x: new_min_x + i32::from(width),
+            max_y: new_min_y + i32::from(height),
+            width,
+            height,
+        }
+    }
+
+    pub(super) fn from_native_bounds(x_min: i16, y_max: i16, width: u16, height: u16) -> Self {
+        let min_x = i32::from(x_min) - i32::from(MAP_OFFSET);
+        let y_min = i32::from(y_max) - i32::from(height) + 1;
+        let min_y = y_min - i32::from(MAP_OFFSET);
+        ViewBox {
+            min_x,
+            min_y,
+            max_x: min_x + i32::from(width),
+            max_y: min_y + i32::from(height),
             width,
             height,
         }
@@ -368,6 +410,58 @@ impl ViewBox {
         format!(
             "{} {} {} {}",
             self.min_x, self.min_y, self.width, self.height
+        )
+    }
+
+    fn rotated(&self, rotation: RotationAngle) -> Self {
+        let (min_x, min_y, max_x, max_y, width, height) = match rotation {
+            RotationAngle::Deg0 => {
+                return self.clone();
+            }
+            RotationAngle::Deg90 => (
+                -self.max_y,
+                self.min_x,
+                -self.min_y,
+                self.max_x,
+                self.height,
+                self.width,
+            ),
+            RotationAngle::Deg180 => (
+                -self.max_x,
+                -self.max_y,
+                -self.min_x,
+                -self.min_y,
+                self.width,
+                self.height,
+            ),
+            RotationAngle::Deg270 => (
+                self.min_y,
+                -self.max_x,
+                self.max_y,
+                -self.min_x,
+                self.height,
+                self.width,
+            ),
+        };
+        Self {
+            min_x,
+            min_y,
+            max_x,
+            max_y,
+            width,
+            height,
+        }
+    }
+
+    fn native_svg_viewbox(&self) -> String {
+        // Shared dock marker extends 10.4 cells above its anchor.
+        const PADDING: i32 = 12;
+        format!(
+            "{} {} {} {}",
+            self.min_x - PADDING,
+            self.min_y - PADDING,
+            i32::from(self.width) + 2 * PADDING,
+            i32::from(self.height) + 2 * PADDING,
         )
     }
 }
@@ -407,6 +501,9 @@ fn get_svg_positions(
 
 pub fn init_module(m: &Bound<'_, PyModule>) -> PyResult<()> {
     m.add_class::<MapData>()?;
+    m.add_class::<BackgroundImage>()?;
+    m.add_class::<TracePoints>()?;
+    m.add_class::<MapInfo>()?;
     m.add_class::<PositionType>()?;
     m.add_class::<RotationAngle>()?;
     Ok(())
@@ -419,10 +516,10 @@ mod tests {
 
     fn tuple_2_view_box(tuple: (i16, i16, u16, u16)) -> ViewBox {
         ViewBox {
-            min_x: tuple.0,
-            min_y: tuple.1,
-            max_x: tuple.0 + tuple.2 as i16,
-            max_y: tuple.1 + tuple.3 as i16,
+            min_x: i32::from(tuple.0),
+            min_y: i32::from(tuple.1),
+            max_x: i32::from(tuple.0) + i32::from(tuple.2),
+            max_y: i32::from(tuple.1) + i32::from(tuple.3),
             width: tuple.2,
             height: tuple.3,
         }
@@ -436,7 +533,7 @@ mod tests {
     fn test_tuple_2_view_box(#[case] input: (i16, i16, u16, u16)) {
         let result = tuple_2_view_box(input);
         assert_eq!(
-            input,
+            (i32::from(input.0), i32::from(input.1), input.2, input.3),
             (result.min_x, result.min_y, result.width, result.height,)
         );
     }
