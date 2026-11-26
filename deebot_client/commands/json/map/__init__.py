@@ -9,6 +9,8 @@ import orjson
 
 from deebot_client.commands.json.common import JsonCommandWithMessageHandling
 from deebot_client.events import (
+    Furniture,
+    FurnitureEvent,
     MapSetEvent,
     MapSetType,
     MapSubsetEvent,
@@ -30,6 +32,7 @@ if TYPE_CHECKING:
 
 __all__ = [
     "GetCachedMapInfo",
+    "GetFurnitureInfoV2",
     "GetMajorMap",
     "GetMapSet",
     "GetMapSetV2",
@@ -281,7 +284,7 @@ class GetMapSetV2(GetMapSet):
             # 1 -> id
             # 2 -> name
             # 3 -> icon number
-            # 4 -> unknown
+            # 4 -> ids of the rooms next to this one, as '<id>-<id>-...'
             # 5 -> unknown
             # 6 -> room center x
             # 7 -> room center y
@@ -294,7 +297,17 @@ class GetMapSetV2(GetMapSet):
             # coordinates are sent in the MapInfo_V2 message
             event_bus.notify(
                 RoomsEvent(
-                    map_id, [Room(subset[1], int(subset[0]), "") for subset in subsets]
+                    map_id,
+                    [
+                        Room(
+                            subset[1],
+                            int(subset[0]),
+                            "",
+                            center=_parse_room_center(subset[5], subset[6]),
+                            neighbors=_parse_room_neighbors(subset[3]),
+                        )
+                        for subset in subsets
+                    ],
                 )
             )
 
@@ -314,6 +327,56 @@ class GetMapSetV2(GetMapSet):
         subset_ids = [int(subset[0]) for subset in subsets]
         event_bus.notify(MapSetEvent(MapSetType.ROOMS, subset_ids, map_id))
         return cls._get_handling_success_with_subset_command_args(data, subset_ids)
+
+
+def _parse_room_center(x: str, y: str) -> tuple[int, int] | None:
+    """Parse the room center, which is sent as two (decimal) numbers."""
+    try:
+        return (round(float(x)), round(float(y)))
+    except ValueError:
+        return None
+
+
+def _parse_room_neighbors(value: str) -> tuple[int, ...]:
+    """Parse the ids of the rooms next to a room, sent as '<id>-<id>-...'."""
+    parts = value.split("-")
+    if not all(part.isdecimal() for part in parts):
+        return ()
+    return tuple(int(part) for part in parts)
+
+
+class GetFurnitureInfoV2(JsonCommandWithMessageHandling, MessageBodyDataDict):
+    """Get furniture info v2 command."""
+
+    NAME = "getFurnitureInfo_V2"
+
+    def __init__(self, map_id: str = "") -> None:
+        super().__init__({"mid": map_id})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        furniture = []
+        for entry in data.get("info", []):
+            # content is '<x1>,<y1>;<x2>,<y2>;...;<type>'
+            points = [
+                point for point in entry["content"].split(";") if point.count(",") == 1
+            ]
+            furniture.append(
+                Furniture(
+                    id=int(entry["fid"]),
+                    type=int(entry["type"]),
+                    coordinates=",".join(points),
+                )
+            )
+
+        event_bus.notify(FurnitureEvent(map_id=data["mid"], furniture=furniture))
+        return HandlingResult.success()
 
 
 class GetMapTrace(JsonCommandWithMessageHandling, MessageBodyDataDict):

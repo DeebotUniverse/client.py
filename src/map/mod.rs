@@ -8,21 +8,31 @@ use background_image::{BackgroundImage, MAP_MAX_SIZE};
 use common::round;
 use map_info::MapInfo;
 use ordermap::OrderSet;
-use points::{Point, TracePoints, points_to_svg_path};
-use style::{CSSClass, get_class_names, get_style, get_used_definitions};
+use points::{Point, TRACE_PATH_ID, TracePoints, points_to_svg_path};
+use std::collections::HashMap;
+use style::{CSSClass, get_class_names, get_style, get_stylesheet, get_used_definitions};
 
 use super::util::decompress_base64_data;
 use log::debug;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
 use svg::node::element::{
-    Circle, Definitions, Group, Image, Path, RadialGradient, Stop, Style, Use,
+    Circle, Definitions, Group, Image, Path, RadialGradient, Stop, Style, TSpan, Text, Use,
 };
 use svg::{Document, Node};
 
 const PIXEL_WIDTH: f32 = 50.0;
 const ROUND_TO_DIGITS: usize = 3;
 const MAP_OFFSET: i16 = MAP_MAX_SIZE as i16 / 2;
+/// Space around the map, so the icons of the bot and the charger are not cut at the border.
+/// The charger icon is the largest one and is about 10.4 units high.
+const VIEWBOX_PADDING: i16 = 11;
+/// Furniture type used for carpets
+const FURNITURE_TYPE_CARPET: i32 = 20;
+/// Font size of the room labels is 5, so this is a line height of 1.15
+const LABEL_LINE_HEIGHT: f32 = 5.75;
+/// Names longer than this are split into two lines
+const LABEL_MAX_LINE_CHARS: usize = 11;
 
 #[inline]
 fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
@@ -39,18 +49,17 @@ fn calc_point(x: f32, y: f32, rotation: RotationAngle) -> Point {
     }
 }
 
-fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSClass, Path)> {
-    debug!("Adding subset: {subset:?}");
-
+/// Parse a list of comma separated coordinates (x1,y1,x2,y2,...) into points
+fn parse_coordinates(coordinates: &str, rotation: RotationAngle) -> Vec<Point> {
     // Estimate capacity: each point consists of an x and y coordinate, separated by commas.
     // So, the number of points is half the number of comma-separated values.
-    let num_coords = subset.coordinates.split(',').count();
+    let num_coords = coordinates.split(',').count();
     let mut points = Vec::with_capacity(num_coords / 2);
 
-    let mut numbers = subset.coordinates.split(',').filter_map(|s| {
+    let mut numbers = coordinates.split(',').filter_map(|s| {
         let s = s.trim_matches(|c: char| !c.is_numeric() && c != '-' && c != '.');
         if s.is_empty() {
-            debug!("Skipping empty coordinate in subset: {subset:?}");
+            debug!("Skipping empty coordinate in: {coordinates:?}");
             None
         } else {
             s.parse::<f32>().ok()
@@ -60,6 +69,13 @@ fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSC
     while let (Some(x), Some(y)) = (numbers.next(), numbers.next()) {
         points.push(calc_point(x, y, rotation));
     }
+    points
+}
+
+fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSClass, Path)> {
+    debug!("Adding subset: {subset:?}");
+
+    let points = parse_coordinates(&subset.coordinates, rotation);
 
     let css_key = match subset.set_type.as_str() {
         "vw" => CSSClass::VirtualWall,
@@ -69,10 +85,116 @@ fn get_svg_subset(subset: &MapSubset, rotation: RotationAngle) -> PyResult<(CSSC
     let css_obj = get_style(&css_key);
 
     let svg_object = points_to_svg_path(&points, points.len() > 2, false)
-        .unwrap()
+        .ok_or_else(|| PyValueError::new_err("Subset needs at least two points"))?
         .set("class", css_obj.class_name);
 
     Ok((css_key, svg_object))
+}
+
+/// Furniture (bed, sofa, carpet, ...) as outline, as the bot only knows the footprint
+fn get_svg_furniture(item: &Furniture, rotation: RotationAngle) -> Option<(CSSClass, Path)> {
+    let points = parse_coordinates(&item.coordinates, rotation);
+    if points.len() < 3 {
+        return None;
+    }
+    let css_key = if item.furniture_type == FURNITURE_TYPE_CARPET {
+        CSSClass::Carpet
+    } else {
+        CSSClass::Furniture
+    };
+    let path = points_to_svg_path(&points, true, false)?;
+    Some((css_key, path.set("class", get_style(&css_key).class_name)))
+}
+
+/// Middle of the area covered by an outline given as `x1,y1;x2,y2;...`
+fn calc_outline_center(coordinates: &str, rotation: RotationAngle) -> Option<(f32, f32)> {
+    let mut bounds: Option<(f32, f32, f32, f32)> = None;
+    for pair in coordinates.split(';') {
+        let mut numbers = pair.split(',').map(|s| s.trim().parse::<f32>());
+        let (Some(Ok(x)), Some(Ok(y))) = (numbers.next(), numbers.next()) else {
+            continue;
+        };
+        let point = calc_point(x, y, rotation);
+        bounds = Some(match bounds {
+            Some((min_x, min_y, max_x, max_y)) => (
+                min_x.min(point.x),
+                min_y.min(point.y),
+                max_x.max(point.x),
+                max_y.max(point.y),
+            ),
+            None => (point.x, point.y, point.x, point.y),
+        });
+    }
+    bounds.map(|(min_x, min_y, max_x, max_y)| ((min_x + max_x) / 2.0, (min_y + max_y) / 2.0))
+}
+
+/// Split a room name into lines, which fit better into the room
+fn split_label(name: &str) -> Vec<&str> {
+    let name = name.trim();
+    if name.chars().count() <= LABEL_MAX_LINE_CHARS {
+        return vec![name];
+    }
+    // Split at the space closest to the middle
+    let middle = name.len() / 2;
+    match name
+        .match_indices(' ')
+        .map(|(index, _)| index)
+        .min_by_key(|index| index.abs_diff(middle))
+    {
+        Some(index) => vec![name[..index].trim(), name[index..].trim()],
+        None => vec![name],
+    }
+}
+
+fn get_svg_room_labels(
+    rooms: &[Room],
+    room_centers: &HashMap<u32, (f32, f32)>,
+    rotation: RotationAngle,
+) -> Option<Group> {
+    let mut group = Group::new().set("class", get_style(&CSSClass::RoomLabels).class_name);
+    let mut has_labels = false;
+
+    for room in rooms {
+        if room.name.trim().is_empty() {
+            continue;
+        }
+        // The bot tells us where the label belongs, otherwise use the middle of the room
+        let center = match room.center {
+            Some((x, y)) => {
+                let point = calc_point(x as f32, y as f32, rotation);
+                Some((point.x, point.y))
+            }
+            None => room_centers
+                .get(&room.id)
+                .copied()
+                .or_else(|| calc_outline_center(&room.coordinates, rotation)),
+        };
+        let Some((x, y)) = center else {
+            continue;
+        };
+
+        let lines = split_label(&room.name);
+        // Adding 0.0 turns a negative zero into a positive one
+        let first_y = round(
+            y - (lines.len() - 1) as f32 * LABEL_LINE_HEIGHT / 2.0,
+            ROUND_TO_DIGITS,
+        ) + 0.0;
+        let x = round(x, ROUND_TO_DIGITS) + 0.0;
+        let text = if let [line] = lines.as_slice() {
+            Text::new(*line).set("x", x).set("y", first_y)
+        } else {
+            let mut text = Text::new("").set("y", first_y);
+            for (index, line) in lines.iter().enumerate() {
+                let dy = if index == 0 { 0.0 } else { LABEL_LINE_HEIGHT };
+                text = text.add(TSpan::new(*line).set("x", x).set("dy", dy));
+            }
+            text
+        };
+        group = group.add(text);
+        has_labels = true;
+    }
+
+    has_labels.then_some(group)
 }
 
 #[pyclass(from_py_object, eq, eq_int)]
@@ -160,6 +282,36 @@ struct Position {
     position_type: PositionType,
     x: i32,
     y: i32,
+    /// Heading in degrees, counter-clockwise, 0 is along the x axis
+    a: i32,
+}
+
+/// Room representation
+#[derive(FromPyObject, Debug)]
+struct Room {
+    id: u32,
+    name: String,
+    /// Outline of the room as `x1,y1;x2,y2;...`, only sent by older bots
+    coordinates: String,
+    /// Position of the label as sent by the bot
+    center: Option<(i32, i32)>,
+    /// Ids of the rooms next to this one
+    neighbors: Vec<u32>,
+}
+
+/// Furniture representation
+#[derive(FromPyObject, Debug)]
+struct Furniture {
+    #[pyo3(attribute("type"))]
+    furniture_type: i32,
+    coordinates: String,
+}
+
+/// Heading as clockwise SVG rotation in degrees, taking the map rotation into account
+#[inline]
+fn calc_heading(angle: i32, rotation: RotationAngle) -> i32 {
+    // The y axis of the SVG points down, so counter-clockwise becomes clockwise
+    (-angle + rotation as i32).rem_euclid(360)
 }
 
 #[inline]
@@ -201,12 +353,15 @@ impl MapData {
         })
     }
 
+    #[pyo3(signature = (subsets, positions, rotation, rooms=Vec::new(), furniture=Vec::new()))]
     fn generate_svg(
         &self,
         py: Python<'_>,
         subsets: Vec<MapSubset>,
         positions: Vec<Position>,
         rotation: RotationAngle,
+        rooms: Vec<Room>,
+        furniture: Vec<Furniture>,
     ) -> PyResult<Option<String>> {
         let mut defs = Definitions::new()
             .add(
@@ -240,6 +395,13 @@ impl MapData {
                             .set("stroke", "white")
                             .set("fill", "blue")
                             .set("stroke-width", 0.5),
+                    )
+                    // Arrow showing the heading, pointing along the x axis
+                    .add(
+                        Path::new()
+                            .set("fill", "#fff")
+                            .set("stroke", "none")
+                            .set("d", "M2.7 0L-1.3-2-.4 0-1.3 2z"),
                     ),
             )
             .add(
@@ -266,12 +428,21 @@ impl MapData {
         let mut document = Document::new();
 
         // Create map from MapInfo, if exists, or generate background image
-        let viewbox = match self.map_info.borrow(py).generate(rotation) {
-            Some((map_elements, viewbox, info_styles)) => {
+        let neighbors: HashMap<u32, Vec<u32>> = rooms
+            .iter()
+            .map(|room| (room.id, room.neighbors.clone()))
+            .collect();
+        let mut room_centers = HashMap::new();
+        let viewbox = match self.map_info.borrow(py).generate(rotation, &neighbors) {
+            Some(map_info) => {
                 // Append all map background elements to document
-                map_elements.into_iter().for_each(|e| document.append(e));
-                styles.extend(info_styles);
-                viewbox
+                map_info
+                    .elements
+                    .into_iter()
+                    .for_each(|e| document.append(e));
+                styles.extend(map_info.styles);
+                room_centers = map_info.room_centers;
+                map_info.viewbox
             }
             _ => {
                 if let Some((base64_image, viewbox)) =
@@ -295,12 +466,45 @@ impl MapData {
             }
         };
 
+        let mut furniture_group = Group::new();
+        let mut has_furniture = false;
+        // Carpets first, as furniture can stand on them
+        for carpets in [true, false] {
+            for item in furniture
+                .iter()
+                .filter(|item| (item.furniture_type == FURNITURE_TYPE_CARPET) == carpets)
+            {
+                if let Some((css, path)) = get_svg_furniture(item, rotation) {
+                    styles.insert(css);
+                    furniture_group = furniture_group.add(path);
+                    has_furniture = true;
+                }
+            }
+        }
+
+        let trace = self.trace_points.borrow(py).get_path(rotation);
+        let has_trace = trace.is_some();
+        if let Some(trace) = trace {
+            styles.extend([
+                CSSClass::TracePath,
+                CSSClass::TraceCleaned,
+                CSSClass::TraceLine,
+            ]);
+            defs.append(trace);
+        }
+
         // Add required definitions based on used CSS classes
         get_used_definitions(&styles)
             .into_iter()
             .for_each(|def| defs.append(def));
 
-        document = document.add(defs).set("viewBox", viewbox.to_svg_viewbox());
+        document = document
+            .add(defs)
+            .set("viewBox", viewbox.padded(VIEWBOX_PADDING).to_svg_viewbox());
+
+        if has_furniture {
+            document.append(furniture_group);
+        }
 
         if !subsets.is_empty() {
             let group_css = [CSSClass::WallBase, CSSClass::StrokeWidth2];
@@ -314,24 +518,25 @@ impl MapData {
             }
             document.append(group);
         }
-        if let Some(trace) = self.trace_points.borrow(py).get_path(rotation) {
-            document.append(trace);
+        if has_trace {
+            // Cleaned area below the line
+            for css in [CSSClass::TraceCleaned, CSSClass::TraceLine] {
+                document.append(
+                    Use::new()
+                        .set("href", format!("#{TRACE_PATH_ID}"))
+                        .set("class", get_style(&css).class_name),
+                );
+            }
+        }
+        if let Some(labels) = get_svg_room_labels(&rooms, &room_centers, rotation) {
+            styles.insert(CSSClass::RoomLabels);
+            document.append(labels);
         }
         for position in get_svg_positions(&positions, &viewbox, rotation) {
             document.append(position);
         }
 
-        let mut style_string = String::new();
-        for k in styles {
-            let css = get_style(&k);
-            style_string.push_str(css.identifier);
-            style_string.push('{');
-            style_string.push_str(css.value);
-            style_string.push('}');
-        }
-
-        let style = Style::new(style_string);
-        document.append(style);
+        document.append(Style::new(get_stylesheet(&styles)));
 
         Ok(Some(document.to_string().replace('\n', "")))
     }
@@ -360,6 +565,19 @@ impl ViewBox {
             max_y: new_min_y + height as i16,
             width,
             height,
+        }
+    }
+
+    /// Return a viewbox, which is larger by the given padding on each side
+    #[inline]
+    fn padded(&self, padding: i16) -> Self {
+        ViewBox {
+            min_x: self.min_x - padding,
+            min_y: self.min_y - padding,
+            max_x: self.max_x + padding,
+            max_y: self.max_y + padding,
+            width: self.width + 2 * padding as u16,
+            height: self.height + 2 * padding as u16,
         }
     }
 
@@ -395,12 +613,20 @@ fn get_svg_positions(
         let position = &positions[i];
         let pos = calc_point_in_viewbox(position.x, position.y, viewbox, rotation);
 
-        svg_positions.push(
-            Use::new()
-                .set("href", format!("#{}", position.position_type.svg_use_id()))
-                .set("x", pos.x)
-                .set("y", pos.y),
-        );
+        let svg_use = Use::new().set("href", format!("#{}", position.position_type.svg_use_id()));
+        svg_positions.push(match position.position_type {
+            // The bot is rotated to show its heading
+            PositionType::Deebot => svg_use.set(
+                "transform",
+                format!(
+                    "translate({} {}) rotate({})",
+                    pos.x,
+                    pos.y,
+                    calc_heading(position.a, rotation)
+                ),
+            ),
+            PositionType::Charger => svg_use.set("x", pos.x).set("y", pos.y),
+        });
     }
     svg_positions
 }
@@ -481,13 +707,13 @@ mod tests {
     }
 
     #[rstest]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"100\" y=\"500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"300\" y=\"-300\"/>")]
-    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"-100\" y=\"500\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000}, Position{position_type:PositionType::Charger, x:50000, y:5000}], RotationAngle::Deg0, "<use href=\"#d\" x=\"-200\" y=\"-200\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg90, "<use href=\"#d\" x=\"-500\" y=\"100\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg180, "<use href=\"#d\" x=\"-100\" y=\"-500\"/>")]
-    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000}], RotationAngle::Deg270, "<use href=\"#d\" x=\"500\" y=\"-100\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000, a:0}], RotationAngle::Deg0, "<use href=\"#d\" transform=\"translate(100 500) rotate(0)\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:15000, y:15000, a:90}], RotationAngle::Deg0, "<use href=\"#d\" transform=\"translate(300 -300) rotate(270)\"/>")]
+    #[case(&[Position{position_type:PositionType::Charger, x:25000, y:55000, a:44}, Position{position_type:PositionType::Deebot, x:-5000, y:-50000, a:-92}], RotationAngle::Deg0, "<use href=\"#d\" transform=\"translate(-100 500) rotate(92)\"/><use href=\"#c\" x=\"500\" y=\"-500\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:-10000, y:10000, a:180}, Position{position_type:PositionType::Charger, x:50000, y:5000, a:0}], RotationAngle::Deg0, "<use href=\"#d\" transform=\"translate(-200 -200) rotate(180)\"/><use href=\"#c\" x=\"500\" y=\"-100\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000, a:0}], RotationAngle::Deg90, "<use href=\"#d\" transform=\"translate(-500 100) rotate(90)\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000, a:0}], RotationAngle::Deg180, "<use href=\"#d\" transform=\"translate(-100 -500) rotate(180)\"/>")]
+    #[case(&[Position{position_type:PositionType::Deebot, x:5000, y:-55000, a:0}], RotationAngle::Deg270, "<use href=\"#d\" transform=\"translate(500 -100) rotate(270)\"/>")]
     fn test_get_svg_positions(
         #[case] positions: &[Position],
         #[case] rotation: RotationAngle,
@@ -534,6 +760,180 @@ mod tests {
         };
         let result = get_svg_subset(&subset, RotationAngle::Deg0);
         assert!(result.is_err());
+    }
+
+    #[rstest]
+    // The heading of the bot is counter-clockwise, the SVG rotation is clockwise
+    #[case(0, RotationAngle::Deg0, 0)]
+    #[case(90, RotationAngle::Deg0, 270)]
+    #[case(-92, RotationAngle::Deg0, 92)]
+    #[case(0, RotationAngle::Deg90, 90)]
+    #[case(90, RotationAngle::Deg180, 90)]
+    #[case(0, RotationAngle::Deg270, 270)]
+    #[case(-450, RotationAngle::Deg0, 90)]
+    fn test_calc_heading(
+        #[case] angle: i32,
+        #[case] rotation: RotationAngle,
+        #[case] expected: i32,
+    ) {
+        assert_eq!(calc_heading(angle, rotation), expected);
+    }
+
+    #[test]
+    fn test_heading_matches_rotated_points() {
+        // A point one step ahead of the bot must be where the rotated icon points to
+        for rotation in [
+            RotationAngle::Deg0,
+            RotationAngle::Deg90,
+            RotationAngle::Deg180,
+            RotationAngle::Deg270,
+        ] {
+            for angle in [-135, -90, 0, 30, 90, 180] {
+                let rad = (angle as f32).to_radians();
+                let from = calc_point(0.0, 0.0, rotation);
+                let to = calc_point(rad.cos() * 5000.0, rad.sin() * 5000.0, rotation);
+                let expected = (to.y - from.y).atan2(to.x - from.x).to_degrees();
+                let diff = (expected - calc_heading(angle, rotation) as f32).rem_euclid(360.0);
+                assert!(
+                    diff < 0.5 || diff > 359.5,
+                    "angle {angle} rotation {rotation:?}: expected {expected}"
+                );
+            }
+        }
+    }
+
+    #[rstest]
+    #[case((-100, -100, 200, 150), 11, "-111 -111 222 172")]
+    #[case((0, 0, 1000, 1000), 0, "0 0 1000 1000")]
+    fn test_view_box_padded(
+        #[case] viewbox: (i16, i16, u16, u16),
+        #[case] padding: i16,
+        #[case] expected: &str,
+    ) {
+        let padded = tuple_2_view_box(viewbox).padded(padding);
+        assert_eq!(padded.to_svg_viewbox(), expected);
+        assert_eq!(padded.max_x - padded.min_x, padded.width as i16);
+        assert_eq!(padded.max_y - padded.min_y, padded.height as i16);
+    }
+
+    #[rstest]
+    #[case("Kitchen", vec!["Kitchen"])]
+    #[case("  Hallway  ", vec!["Hallway"])]
+    #[case("Guest bathroom", vec!["Guest", "bathroom"])]
+    #[case("Master bedroom", vec!["Master", "bedroom"])]
+    #[case("Wohnzimmer groß", vec!["Wohnzimmer", "groß"])]
+    #[case("Hauswirtschaftsraum", vec!["Hauswirtschaftsraum"])]
+    fn test_split_label(#[case] name: &str, #[case] expected: Vec<&str>) {
+        assert_eq!(split_label(name), expected);
+    }
+
+    fn room(id: u32, name: &str, center: Option<(i32, i32)>) -> Room {
+        Room {
+            id,
+            name: name.to_string(),
+            coordinates: String::new(),
+            center,
+            neighbors: Vec::new(),
+        }
+    }
+
+    #[rstest]
+    #[case("-500,1000;-500,-1000;1500,-1000;1500,1000", RotationAngle::Deg0, Some((10.0, 0.0)))]
+    #[case("-500,1000;-500,-1000;1500,-1000;1500,1000", RotationAngle::Deg90, Some((0.0, 10.0)))]
+    // Invalid entries are ignored
+    #[case("0,0;abc;1000;2000,-1000;", RotationAngle::Deg0, Some((20.0, 10.0)))]
+    #[case("", RotationAngle::Deg0, None)]
+    #[case("abc", RotationAngle::Deg0, None)]
+    fn test_calc_outline_center(
+        #[case] coordinates: &str,
+        #[case] rotation: RotationAngle,
+        #[case] expected: Option<(f32, f32)>,
+    ) {
+        assert_eq!(calc_outline_center(coordinates, rotation), expected);
+    }
+
+    #[test]
+    fn test_get_svg_room_labels_uses_outline_as_last_fallback() {
+        let rooms = vec![
+            Room {
+                coordinates: "-500,1000;-500,-1000;1500,-1000;1500,1000".to_string(),
+                ..room(3, "Bad", None)
+            },
+            // The center of the map info wins over the outline
+            Room {
+                coordinates: "-500,1000;-500,-1000;1500,-1000;1500,1000".to_string(),
+                ..room(7, "Flur", None)
+            },
+        ];
+        let room_centers = HashMap::from([(7, (30.0, 40.0))]);
+        let result = get_svg_room_labels(&rooms, &room_centers, RotationAngle::Deg0)
+            .map(|group| group.to_string().replace('\n', ""));
+        assert_eq!(
+            result.as_deref(),
+            Some(
+                "<g class=\"l\"><text x=\"10\" y=\"0\">Bad</text><text x=\"30\" y=\"40\">Flur</text></g>"
+            )
+        );
+    }
+
+    #[rstest]
+    // Position sent by the bot
+    #[case(vec![room(1, "Kitchen", Some((5000, -2500)))], RotationAngle::Deg0, Some("<g class=\"l\"><text x=\"100\" y=\"50\">Kitchen</text></g>"))]
+    #[case(vec![room(1, "Kitchen", Some((5000, -2500)))], RotationAngle::Deg90, Some("<g class=\"l\"><text x=\"-50\" y=\"100\">Kitchen</text></g>"))]
+    // Fallback to the middle of the room polygon
+    #[case(vec![room(7, "Bad", None)], RotationAngle::Deg0, Some("<g class=\"l\"><text x=\"10\" y=\"20\">Bad</text></g>"))]
+    // Long names use two lines, centered around the position
+    #[case(vec![room(1, "Guest bathroom", Some((0, 0)))], RotationAngle::Deg0, Some("<g class=\"l\"><text y=\"-2.875\"><tspan dy=\"0\" x=\"0\">Guest</tspan><tspan dy=\"5.75\" x=\"0\">bathroom</tspan></text></g>"))]
+    // Special characters must not break the document
+    #[case(vec![room(1, "A<b>&\"c", Some((0, 0)))], RotationAngle::Deg0, Some("<g class=\"l\"><text x=\"0\" y=\"0\">A&lt;b&gt;&amp;\"c</text></g>"))]
+    // No name or no position means no label
+    #[case(vec![room(1, " ", Some((0, 0))), room(2, "Flur", None)], RotationAngle::Deg0, None)]
+    fn test_get_svg_room_labels(
+        #[case] rooms: Vec<Room>,
+        #[case] rotation: RotationAngle,
+        #[case] expected: Option<&str>,
+    ) {
+        let room_centers = HashMap::from([(7, (10.0, 20.0))]);
+        let result = get_svg_room_labels(&rooms, &room_centers, rotation)
+            .map(|group| group.to_string().replace('\n', ""));
+        assert_eq!(result.as_deref(), expected);
+    }
+
+    #[rstest]
+    #[case(
+        20,
+        "-100,100,100,100,100,-100,-100,-100",
+        Some("<path class=\"ca\" d=\"M-2-2h4v4h-4z\"/>")
+    )]
+    #[case(
+        8,
+        "-100,100,100,100,100,-100,-100,-100",
+        Some("<path class=\"fi\" d=\"M-2-2h4v4h-4z\"/>")
+    )]
+    // Not enough points for an area
+    #[case(8, "-100,100,100,100", None)]
+    #[case(8, "", None)]
+    fn test_get_svg_furniture(
+        #[case] furniture_type: i32,
+        #[case] coordinates: &str,
+        #[case] expected: Option<&str>,
+    ) {
+        let item = Furniture {
+            furniture_type,
+            coordinates: coordinates.to_string(),
+        };
+        let result =
+            get_svg_furniture(&item, RotationAngle::Deg0).map(|(_, path)| path.to_string());
+        assert_eq!(result.as_deref(), expected);
+    }
+
+    #[test]
+    fn test_get_svg_subset_not_enough_points() {
+        let subset = MapSubset {
+            set_type: "vw".to_string(),
+            coordinates: "[100]".to_string(),
+        };
+        assert!(get_svg_subset(&subset, RotationAngle::Deg0).is_err());
     }
 
     #[rstest]

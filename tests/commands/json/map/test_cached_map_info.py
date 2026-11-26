@@ -6,6 +6,7 @@ import pytest
 
 from deebot_client.commands.json import (
     GetCachedMapInfo,
+    GetFurnitureInfoV2,
     GetMapInfoV2,
     GetMapSet,
 )
@@ -28,6 +29,7 @@ if TYPE_CHECKING:
         ("yna5xi", GetMapSet),
         ("kr0277", GetMapSetV2),
         ("lwmdoj", GetMapSetV2),
+        ("02qwum", GetMapSetV2),
     ],
 )
 async def test_getCachedMapInfo(
@@ -76,6 +78,8 @@ async def test_getCachedMapInfo(
     ]
     if static_device_info.capabilities.map.info:
         expected_commands.append(GetMapInfoV2(expected_mid))
+    if static_device_info.capabilities.map.furniture:
+        expected_commands.append(GetFurnitureInfoV2(expected_mid))
     await assert_command(
         GetCachedMapInfo(),
         json,

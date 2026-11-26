@@ -41,4 +41,7 @@ class GetCachedMapInfo(JsonCommandWithMessageHandling, OnCachedMapInfo):
             if map_obj.info:
                 result.requested_commands.append(map_obj.info.execute(map_id))
 
+            if map_obj.furniture:
+                result.requested_commands.append(map_obj.furniture.execute(map_id))
+
         return result
