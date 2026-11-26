@@ -29,6 +29,7 @@ if TYPE_CHECKING:
     from collections.abc import AsyncGenerator
 
     from deebot_client.authentication import RestConfiguration
+    from deebot_client.models import ApiDeviceInfo
 
 
 _ACCOUNT_ID = "test@example.com"
@@ -629,3 +630,45 @@ async def test_teardown_lets_account_credentials_be_stored(auth: Authenticator) 
     assert stored == [
         AccountCredentials(access_token="access-token", user_id="user-id")  # noqa: S106
     ]
+
+
+async def test_post_ngiot_uses_current_credentials(
+    rest_config: RestConfiguration, api_device_info: ApiDeviceInfo
+) -> None:
+    """NGIOT requests reuse cached and renewed portal credentials."""
+    api_device_info["service"] = {"mqs": "api-ngiot.dc-na.ww.ecouser.net"}
+    first = Credentials("first-token", "user-id", int(time.time()) + 3600)
+    second = Credentials("second-token", "user-id", int(time.time()) + 3600)
+    data = {"fields": ["battery"]}
+    result = {"body": {"code": 0, "data": {"battery": 90}}}
+
+    with (
+        patch("deebot_client.authentication._AuthClient", spec_set=True) as api_client,
+        patch("deebot_client.authentication.NgiotClient", spec_set=True) as ngiot,
+    ):
+        login = api_client.return_value.login
+        login.side_effect = [first, second]
+        request = ngiot.return_value.request
+        request.return_value = result
+        authenticator = Authenticator(rest_config, _ACCOUNT_ID, _PASSWORD_HASH)
+        try:
+            assert (
+                await authenticator.post_ngiot(api_device_info, "10001", data) == result
+            )
+            request.assert_awaited_once_with(first, api_device_info, "10001", data)
+            request.reset_mock()
+            assert (
+                await authenticator.post_ngiot(api_device_info, "10001", data) == result
+            )
+            request.assert_awaited_once_with(first, api_device_info, "10001", data)
+            login.assert_awaited_once()
+
+            await authenticator.authenticate(force=True)
+            request.reset_mock()
+            assert (
+                await authenticator.post_ngiot(api_device_info, "10001", data) == result
+            )
+            request.assert_awaited_once_with(second, api_device_info, "10001", data)
+            assert login.await_count == 2
+        finally:
+            await authenticator.teardown()

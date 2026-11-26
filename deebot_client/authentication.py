@@ -24,6 +24,7 @@ from .exceptions import (
 )
 from .logging_filter import get_logger
 from .models import AccountCredentials, Credentials
+from .ngiot_client import NgiotClient
 from .rs.crypto import PublicKey
 from .util import cancel, create_task, md5
 from .util.continents import get_continent_url_postfix
@@ -31,6 +32,8 @@ from .util.countries import get_ecovacs_country
 
 if TYPE_CHECKING:
     from collections.abc import Callable, Coroutine, Mapping
+
+    from .models import ApiDeviceInfo
 
 
 _LOGGER = get_logger(__name__)
@@ -494,6 +497,7 @@ class Authenticator:
             on_account_credentials=self._set_account_credentials,
         )
 
+        self._ngiot_client = NgiotClient(config.session)
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
             Callable[[Credentials], Coroutine[Any, Any, None]]
@@ -607,6 +611,17 @@ class Authenticator:
             query_params=query_params,
             headers=headers,
             credentials=await self.authenticate(),
+        )
+
+    async def post_ngiot(
+        self,
+        device: ApiDeviceInfo,
+        apn: str,
+        data: dict[str, Any] | list[Any],
+    ) -> dict[str, Any]:
+        """Post to NGIOT using the current portal credentials."""
+        return await self._ngiot_client.request(
+            await self.authenticate(), device, apn, data
         )
 
     async def teardown(self) -> None:
