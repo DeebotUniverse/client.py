@@ -494,6 +494,7 @@ class Authenticator:
             on_account_credentials=self._set_account_credentials,
         )
 
+        self._config = config
         self._lock = asyncio.Lock()
         self._on_credentials_changed: set[
             Callable[[Credentials], Coroutine[Any, Any, None]]
@@ -511,6 +512,11 @@ class Authenticator:
     def account_credentials(self) -> AccountCredentials | None:
         """Return the account credentials, if some are known."""
         return self._account_credentials
+
+    @property
+    def config(self) -> RestConfiguration:
+        """Return the rest configuration."""
+        return self._config
 
     async def authenticate(self, *, force: bool = False) -> Credentials:
         """Authenticate on ecovacs servers."""
