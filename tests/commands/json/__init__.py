@@ -8,6 +8,7 @@ import orjson
 from testfixtures import LogCapture
 
 from deebot_client.event_bus import EventBus
+from deebot_client.events import FirmwareEvent
 from deebot_client.message import HandlingResult, HandlingState
 from tests.commands import assert_command as assert_command_base
 from tests.helpers import get_message_json, get_request_json, get_success_body
@@ -17,13 +18,18 @@ if TYPE_CHECKING:
     from deebot_client.commands.json.common import (
         ExecuteCommand,
         JsonSetCommand,
+        NgiotJsonCommand,
         SetEnableCommand,
     )
     from deebot_client.events import EnableEvent, Event
+    from deebot_client.models import ApiDeviceInfo
 
 __all__ = [
     "assert_command",
     "assert_execute_command",
+    "assert_ngiot_invalid_query_data",
+    "assert_ngiot_query",
+    "assert_ngiot_write_and_read_back",
     "assert_set_command",
     "assert_set_enable_command",
 ]
@@ -123,3 +129,80 @@ async def assert_set_enable_command(
 ) -> None:
     args = {field_name: 1 if enabled else 0}
     await assert_set_command(command, args, expected_get_command_event(enabled))
+
+
+async def assert_ngiot_query(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+    command: NgiotJsonCommand,
+    field: str,
+    value: int | bool,
+    event: Event,
+    code: int | str,
+) -> None:
+    response = {
+        "header": {"fwVer": "1.2.3"},
+        "body": {"code": code, "data": {field: value}},
+    }
+    authenticator.post_ngiot.return_value = response
+
+    result = await command.execute(authenticator, api_device_info, event_bus_mock)
+
+    authenticator.post_ngiot.assert_awaited_once_with(
+        api_device_info, "10001", {"fields": [field]}
+    )
+    authenticator.post_authenticated.assert_not_called()
+    assert result.device_reached
+    assert result.raw_response == response
+    assert result.raw_response["body"]["code"] == code
+    assert event_bus_mock.notify.call_args_list == [
+        call(FirmwareEvent("1.2.3")),
+        call(event),
+    ]
+
+
+async def assert_ngiot_invalid_query_data(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+    command: NgiotJsonCommand,
+    data: dict[str, Any],
+) -> None:
+    authenticator.post_ngiot.return_value = {"body": {"code": 0, "data": data}}
+
+    result = await command.execute(authenticator, api_device_info, event_bus_mock)
+
+    assert not result.device_reached
+    event_bus_mock.notify.assert_not_called()
+
+
+async def assert_ngiot_write_and_read_back(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+    command: NgiotJsonCommand,
+    apn: str,
+    field: str,
+    requested: int | bool,
+    reported: int | bool,
+    event: Event,
+    code: int | str,
+) -> None:
+    ack = {"body": {"code": code, "msg": "ok"}}
+    authenticator.post_ngiot.side_effect = [
+        ack,
+        {"body": {"code": 0, "data": {field: reported}}},
+    ]
+
+    result = await command.execute(authenticator, api_device_info, event_bus_mock)
+
+    assert result.device_reached
+    assert result.raw_response == ack
+    assert result.raw_response["body"]["code"] == code
+    assert authenticator.post_ngiot.await_args_list == [
+        call(api_device_info, apn, {field: requested}),
+        call(api_device_info, "10001", {"fields": [field]}),
+    ]
+    authenticator.post_authenticated.assert_not_called()
+    event_bus_mock.notify.assert_called_once_with(event)
