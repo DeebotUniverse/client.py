@@ -43,6 +43,7 @@ from deebot_client.events import (
     RoomsEvent,
     SafeProtectEvent,
     StateEvent,
+    StationErrorEvent,
     StationEvent,
     StatsEvent,
     SweepModeEvent,
@@ -242,6 +243,7 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+    error: CapabilityEvent[StationErrorEvent] | None = None
 
 
 @dataclass(frozen=True, kw_only=True)
