@@ -4,12 +4,25 @@ import logging
 from typing import TYPE_CHECKING, Any
 from unittest.mock import Mock
 
+from aiohttp import ClientTimeout
 import pytest
 
-from deebot_client.commands.json import GetBattery
+from deebot_client.commands.json import (
+    COMMANDS,
+    GetBattery,
+    GetChildLock,
+    GetVolume,
+    SetChildLock,
+    SetVolume,
+)
+from deebot_client.commands.json.battery import NgiotGetBattery
+from deebot_client.commands.json.child_lock import NgiotGetChildLock, NgiotSetChildLock
+from deebot_client.commands.json.common import ExecuteCommand, NgiotJsonCommand
 from deebot_client.commands.json.map import GetCachedMapInfo
+from deebot_client.commands.json.volume import NgiotGetVolume, NgiotSetVolume
 from deebot_client.event_bus import EventBus
 from deebot_client.events import AvailabilityEvent
+from deebot_client.exceptions import ApiError, ApiTimeoutError, AuthenticationError
 
 if TYPE_CHECKING:
     from collections.abc import Callable
@@ -96,3 +109,72 @@ async def test_common_functionality(
 
     assert available.device_reached is False
     assert_func(event_bus)
+
+
+def test_ngiot_missing_apn() -> None:
+    with pytest.raises(ValueError, match="must have a APN attribute"):
+
+        class MissingApn(NgiotJsonCommand, ExecuteCommand):
+            """Invalid concrete command."""
+
+            NAME = "missingApn"
+
+
+@pytest.mark.parametrize(
+    "command", [NgiotGetBattery(), NgiotSetVolume(2), NgiotSetChildLock(True)]
+)
+@pytest.mark.parametrize("code", [1, "1"])
+async def test_ngiot_rejected_response(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+    command: NgiotJsonCommand,
+    code: int | str,
+) -> None:
+    authenticator.post_ngiot.return_value = {
+        "body": {"code": code, "data": {"battery": 42}}
+    }
+
+    result = await command.execute(authenticator, api_device_info, event_bus_mock)
+
+    assert not result.device_reached
+    authenticator.post_ngiot.assert_awaited_once()
+    event_bus_mock.notify.assert_not_called()
+
+
+@pytest.mark.parametrize(
+    "error",
+    [
+        ApiError("request failed"),
+        AuthenticationError("unauthorized"),
+        ApiTimeoutError("test", ClientTimeout(60)),
+    ],
+)
+async def test_ngiot_transport_error(
+    authenticator: Mock,
+    api_device_info: ApiDeviceInfo,
+    event_bus_mock: Mock,
+    error: Exception,
+) -> None:
+    authenticator.post_ngiot.side_effect = error
+
+    result = await NgiotGetBattery().execute(
+        authenticator, api_device_info, event_bus_mock
+    )
+
+    assert not result.device_reached
+    authenticator.post_ngiot.assert_awaited_once()
+    authenticator.post_authenticated.assert_not_called()
+    event_bus_mock.notify.assert_not_called()
+
+
+def test_ngiot_legacy_registry_unchanged() -> None:
+    for legacy, ngiot in (
+        (GetBattery, NgiotGetBattery),
+        (GetVolume, NgiotGetVolume),
+        (SetVolume, NgiotSetVolume),
+        (GetChildLock, NgiotGetChildLock),
+        (SetChildLock, NgiotSetChildLock),
+    ):
+        assert COMMANDS[legacy.NAME] is legacy
+        assert ngiot.NAME not in COMMANDS

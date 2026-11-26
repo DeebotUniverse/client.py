@@ -26,11 +26,14 @@ from deebot_client.message import (
     MessageBodyDataDict,
 )
 from deebot_client.messages.json.common import OnEnableMessage
+from deebot_client.util import verify_required_class_variables_exists
 
 from .const import CODE
 
 if TYPE_CHECKING:
+    from deebot_client.authentication import Authenticator
     from deebot_client.event_bus import EventBus
+    from deebot_client.models import ApiDeviceInfo
 
 _LOGGER = get_logger(__name__)
 
@@ -60,6 +63,46 @@ class JsonCommandWithMessageHandling(
     JsonCommand, CommandWithMessageHandling, MessageBody, ABC
 ):
     """Command, which handle response by itself."""
+
+
+class NgiotJsonCommand(JsonCommandWithMessageHandling, ABC):
+    """JSON command sent through the NGIOT endpoint-control transport."""
+
+    APN: str
+
+    def __init_subclass__(cls) -> None:
+        verify_required_class_variables_exists(cls, ("APN",))
+        super().__init_subclass__()
+
+    def _get_payload(self) -> dict[str, Any] | list[Any]:
+        # The transport builds the NGIOT header and body envelope.
+        return self._args
+
+    async def _execute_api_request(
+        self, authenticator: Authenticator, device_info: ApiDeviceInfo
+    ) -> dict[str, Any]:
+        return await authenticator.post_ngiot(
+            device_info, self.APN, self._get_payload()
+        )
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> HandlingResult:
+        # NGIOT returns the device envelope directly, without the portal's
+        # ret/resp wrapper. Reject failed replies before dispatching events.
+        body = response["body"]
+        code = body[CODE]
+        if code not in (0, "0"):
+            _LOGGER.warning(
+                'NGIOT command "%s" was not successfully executed.', self.NAME
+            )
+            return HandlingResult(HandlingState.FAILED)
+
+        if code == "0":
+            # Existing execute handlers expect an integer success code.
+            # Preserve the original response returned by Command.execute().
+            response = {**response, "body": {**body, CODE: 0}}
+        return self.handle(event_bus, response)
 
 
 class ExecuteCommand(JsonCommandWithMessageHandling, ABC):

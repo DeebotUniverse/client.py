@@ -12,6 +12,13 @@ if TYPE_CHECKING:
     from deebot_client.capabilities import Capabilities
     from deebot_client.const import DataType
 
+
+class DeviceService(TypedDict, total=False):
+    """Device service bindings returned by the API."""
+
+    mqs: str
+
+
 ApiDeviceInfo = TypedDict(
     "ApiDeviceInfo",
     {
@@ -22,6 +29,7 @@ ApiDeviceInfo = TypedDict(
         "name": Required[str],
         "nick": str,
         "resource": Required[str],
+        "service": DeviceService,
     },
     total=False,
 )

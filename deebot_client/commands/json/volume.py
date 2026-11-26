@@ -7,9 +7,9 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.command import InitParam
 from deebot_client.events import VolumeEvent
-from deebot_client.message import HandlingResult
+from deebot_client.message import HandlingResult, HandlingState
 
-from .common import JsonGetCommand, JsonSetCommand
+from .common import ExecuteCommand, JsonGetCommand, JsonSetCommand, NgiotJsonCommand
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -46,3 +46,57 @@ class SetVolume(JsonSetCommand):
 
     def __init__(self, volume: int) -> None:
         super().__init__({"volume": volume})
+
+
+# The eyfj07 app captures show discrete volume levels from zero to five.
+_NGIOT_MAX_VOLUME = 5
+
+
+class NgiotGetVolume(NgiotJsonCommand, GetVolume):
+    """Get speaker volume through NGIOT."""
+
+    NAME = "ngiotGetVolume"
+    APN = "10001"
+
+    def __init__(self) -> None:
+        super().__init__({"fields": ["volume"]})
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        volume = data.get("volume")
+        if (
+            not isinstance(volume, int)
+            or isinstance(volume, bool)
+            or not 0 <= volume <= _NGIOT_MAX_VOLUME
+        ):
+            return HandlingResult.analyse()
+
+        return super()._handle_body_data_dict(
+            event_bus, {"volume": volume, "total": _NGIOT_MAX_VOLUME}
+        )
+
+
+class NgiotSetVolume(NgiotJsonCommand, ExecuteCommand):
+    """Set speaker volume through NGIOT and request the updated state."""
+
+    NAME = "ngiotSetVolume"
+    APN = "50023"
+
+    def __init__(self, volume: int) -> None:
+        if (
+            not isinstance(volume, int)
+            or isinstance(volume, bool)
+            or not 0 <= volume <= _NGIOT_MAX_VOLUME
+        ):
+            msg = f"Volume must be an integer between 0 and {_NGIOT_MAX_VOLUME}"
+            raise ValueError(msg)
+        super().__init__({"volume": volume})
+
+    @classmethod
+    def _handle_body(cls, event_bus: EventBus, body: dict[str, Any]) -> HandlingResult:
+        result = super()._handle_body(event_bus, body)
+        if result.state == HandlingState.SUCCESS:
+            return HandlingResult(result.state, requested_commands=[NgiotGetVolume()])
+        return result
