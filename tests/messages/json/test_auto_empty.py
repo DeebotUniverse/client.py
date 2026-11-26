@@ -13,6 +13,7 @@ from tests.messages.json import assert_message
     ("frequency", "expected_freq"),
     [
         (None, None),
+        ("manual", None),
         ("10", auto_empty.Frequency.MIN_10),
         ("auto", auto_empty.Frequency.AUTO),
         ("smart", auto_empty.Frequency.SMART),
