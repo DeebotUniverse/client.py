@@ -1,5 +1,6 @@
 use aes_gcm::aead::{Aead, Nonce};
 use aes_gcm::{Aes256Gcm, Key as AesKey, KeyInit};
+use getrandom::SysRng;
 use p256::NistP256;
 use p256::ecdh::EphemeralSecret;
 use p256::elliptic_curve::Generate;
@@ -8,15 +9,14 @@ use p256::elliptic_curve::zeroize::Zeroizing;
 use p256::pkcs8::AssociatedOid;
 use pyo3::exceptions::PyValueError;
 use pyo3::prelude::*;
+use rsa::Pkcs1v15Encrypt;
 use rsa::pkcs8::spki::SubjectPublicKeyInfoRef;
 use rsa::pkcs8::spki::der::Decode;
-use rsa::rand_core::OsRng;
 use rsa::traits::PublicKeyParts;
-use rsa::{Pkcs1v15Encrypt, RsaPublicKey};
 use sha2::Sha256;
 
 enum Key {
-    Rsa(RsaPublicKey),
+    Rsa(rsa::PublicKey),
     P256(p256::PublicKey),
 }
 
@@ -26,24 +26,19 @@ impl Key {
         let spki = SubjectPublicKeyInfoRef::from_der(data).map_err(|e| e.to_string())?;
         let oid = spki.algorithm.oid;
         if oid == rsa::pkcs1::ALGORITHM_OID {
-            return RsaPublicKey::try_from(spki)
+            return rsa::PublicKey::try_from(spki)
                 .map(Self::Rsa)
                 .map_err(|e| e.to_string());
         }
-        // rsa and p256 depend on different const-oid versions, so compare the DER encoding
-        if oid.as_bytes() != p256::elliptic_curve::ALGORITHM_OID.as_bytes() {
+        if oid != p256::elliptic_curve::ALGORITHM_OID {
             return Err(format!("unsupported key algorithm {oid}"));
         }
 
         let curve = spki.algorithm.parameters_oid().map_err(|e| e.to_string())?;
-        if curve.as_bytes() != NistP256::OID.as_bytes() {
+        if curve != NistP256::OID {
             return Err(format!("unsupported elliptic curve {curve}"));
         }
-        let public_key = spki
-            .subject_public_key
-            .as_bytes()
-            .ok_or_else(|| "invalid public key bit string".to_owned())?;
-        p256::PublicKey::from_sec1_bytes(public_key)
+        p256::PublicKey::try_from(spki)
             .map(Self::P256)
             .map_err(|e| e.to_string())
     }
@@ -109,7 +104,7 @@ impl PyPublicKey {
     fn encrypt(&self, data: &[u8]) -> PyResult<Vec<u8>> {
         match &self.key {
             Key::Rsa(key) => key
-                .encrypt(&mut OsRng, Pkcs1v15Encrypt, data)
+                .encrypt(&mut SysRng, Pkcs1v15Encrypt, data)
                 .map_err(|e| e.to_string()),
             Key::P256(key) => ecies_encrypt(key, data),
         }
