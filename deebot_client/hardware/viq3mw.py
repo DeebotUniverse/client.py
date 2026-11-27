@@ -34,7 +34,7 @@ from deebot_client.commands.json.carpet import (
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.child_lock import GetChildLock, SetChildLock
-from deebot_client.commands.json.clean import CleanAreaV2, CleanV2, GetCleanInfoV2
+from deebot_client.commands.json.clean import CleanV2, FreeCleanV2, GetCleanInfoV2
 from deebot_client.commands.json.clean_count import GetCleanCount, SetCleanCount
 from deebot_client.commands.json.clean_logs import GetCleanLogs
 from deebot_client.commands.json.continuous_cleaning import (
@@ -132,7 +132,7 @@ def get_device_info() -> StaticDeviceInfo:
             battery=CapabilityEvent(BatteryEvent, [GetBattery()]),
             charge=CapabilityExecute(Charge),
             clean=CapabilityClean(
-                action=CapabilityCleanAction(command=CleanV2, area=CleanAreaV2),
+                action=CapabilityCleanAction(command=CleanV2, area=FreeCleanV2),
                 continuous=CapabilitySetEnable(
                     ContinuousCleaningEvent,
                     [GetContinuousCleaning()],
