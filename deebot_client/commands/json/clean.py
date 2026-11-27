@@ -95,13 +95,36 @@ class CleanAreaV2(CleanV2):
     """Clean area command."""
 
     def __init__(
-        self, mode: CleanMode, area: list[int | float], cleanings: int = 1
+        self,
+        mode: CleanMode,
+        area: list[int | float],
+        _: int = 1,
+        *,
+        free_clean: bool = False,
     ) -> None:
-        value = ",".join(str(i) for i in area)
-        if mode == CleanMode.FREE_CLEAN:
-            value = f"{cleanings},{value}"
+        content_type = mode.value
+        if free_clean or mode == CleanMode.FREE_CLEAN:
+            content_type = CleanMode.FREE_CLEAN.value
+            if mode == CleanMode.CUSTOM_AREA:
+                if not area or len(area) % 4:
+                    raise ValueError(
+                        "Custom area needs 4 coordinates (x1,y1,x2,y2) per rectangle."
+                    )
+                value = ";".join(
+                    "3,null," + ",".join(str(round(v)) for v in area[i : i + 4])
+                    for i in range(0, len(area), 4)
+                )
+            elif mode in (CleanMode.SPOT_AREA, CleanMode.FREE_CLEAN):
+                if not area:
+                    raise ValueError("At least one room is needed.")
+                value = ";".join(f"1,{int(i)}" for i in area)
+            else:
+                msg = f"freeClean does not support the {mode.value} mode."
+                raise ValueError(msg)
+        else:
+            value = ",".join(str(i) for i in area)
         self._additional_content = {
-            "type": mode.value,
+            "type": content_type,
             "value": value,
         }
         super().__init__(CleanAction.START)
