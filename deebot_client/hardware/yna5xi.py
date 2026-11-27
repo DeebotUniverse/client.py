@@ -1,4 +1,4 @@
-"""Deebot Ozmo 920/950 Capabilities."""
+"""DEEBOT OZMO 920 Capabilities."""
 
 from __future__ import annotations
 
@@ -123,7 +123,6 @@ def get_device_info() -> StaticDeviceInfo:
                     FanSpeedLevel.QUIET,
                     FanSpeedLevel.NORMAL,
                     FanSpeedLevel.MAX,
-                    FanSpeedLevel.MAX_PLUS,
                 ),
             ),
             life_span=CapabilityLifeSpan(
