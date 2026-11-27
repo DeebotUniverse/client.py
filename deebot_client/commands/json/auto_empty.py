@@ -23,7 +23,10 @@ class SetAutoEmpty(ExecuteCommand):
     NAME = "setAutoEmpty"
 
     def __init__(
-        self, enable: bool | None = None, frequency: Frequency | str | None = None
+        self,
+        enable: bool | None = None,
+        frequency: Frequency | str | None = None,
+        act: str | None = None,
     ) -> None:
         if frequency is not None and not isinstance(frequency, Frequency):
             frequency = get_enum(Frequency, frequency)
@@ -33,4 +36,6 @@ class SetAutoEmpty(ExecuteCommand):
             params["enable"] = int(enable)
         if frequency:
             params["frequency"] = frequency.value
+        if act:
+            params["act"] = act
         super().__init__(params)
