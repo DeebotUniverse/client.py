@@ -7,6 +7,7 @@ import re
 from deebot_client.logging_filter import get_logger
 from deebot_client.message import Message
 
+from .area_parameter import OnAreaParameter
 from .auto_empty import OnAutoEmpty
 from .battery import OnBattery
 from .border_spin import OnBorderSpin
@@ -20,6 +21,7 @@ from .work_state import OnWorkState
 _LOGGER = get_logger(__name__)
 
 __all__ = [
+    "OnAreaParameter",
     "OnBattery",
     "OnCachedMapInfo",
     "OnGpsPos",
@@ -34,6 +36,8 @@ __all__ = [
 # fmt: off
 # ordered by file asc
 _MESSAGES: list[type[Message]] = [
+    OnAreaParameter,
+
     OnAutoEmpty,
 
     OnBattery,
