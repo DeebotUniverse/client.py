@@ -9,6 +9,7 @@ from deebot_client.commands.json import GetCleanInfo
 from deebot_client.commands.json.clean import (
     Clean,
     CleanArea,
+    CleanAreaFreeCleanV2,
     CleanAreaV2,
     CleanV2,
     GetCleanInfoV2,
@@ -150,6 +151,32 @@ async def test_Clean_act(
                 "content": {"type": "freeClean", "value": "2,0"},
             },
         ),
+        (
+            CleanAreaFreeCleanV2(CleanMode.SPOT_AREA, [4]),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "1,4"},
+            },
+        ),
+        (
+            CleanAreaFreeCleanV2(CleanMode.SPOT_AREA, [5, 2], cleanings=2),
+            {
+                "act": "start",
+                "content": {"type": "freeClean", "value": "2,5,2"},
+            },
+        ),
+        (
+            CleanAreaFreeCleanV2(
+                CleanMode.CUSTOM_AREA, [1580.0, -4087.0, 3833.0, -7525.0]
+            ),
+            {
+                "act": "start",
+                "content": {
+                    "type": "customArea",
+                    "value": "1580.0,-4087.0,3833.0,-7525.0",
+                },
+            },
+        ),
     ],
     ids=[
         "Rooms",
@@ -158,9 +185,12 @@ async def test_Clean_act(
         "Coordinates V2",
         "FreeClean",
         "FreeClean single room 2x",
+        "SpotArea as FreeClean",
+        "SpotArea as FreeClean 2 rooms 2x",
+        "Coordinates FreeClean V2",
     ],
 )
 async def test_CleanArea(
-    command: CleanArea | CleanAreaV2, args: dict[str, str]
+    command: CleanArea | CleanAreaV2 | CleanAreaFreeCleanV2, args: dict[str, str]
 ) -> None:
     await assert_execute_command(command, args)
