@@ -4,7 +4,12 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-from deebot_client.events.map import MajorMapEvent, MapInfoEvent, MapSetType
+from deebot_client.events.map import (
+    MajorMapEvent,
+    MapInfoEvent,
+    MapSetType,
+    MapTraceEvent,
+)
 from deebot_client.message import HandlingResult, HandlingState, MessageBodyDataDict
 
 from .cached_map_info import OnCachedMapInfo
@@ -17,6 +22,8 @@ __all__ = [
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnMapTrace",
+    "OnMapTraceV2",
 ]
 
 
@@ -91,3 +98,50 @@ class OnMapInfoV2(MessageBodyDataDict):
         event_bus.notify(MapInfoEvent(map_id=data["mid"], info=data["info"]))
 
         return HandlingResult.success()
+
+
+class OnMapTrace(MessageBodyDataDict):
+    """On map trace message."""
+
+    NAME = "onMapTrace"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        total = int(data["totalCount"])
+        start = int(data["traceStart"])
+
+        if "traceValue" not in data:
+            # TODO verify that this is legit
+            return HandlingResult.analyse()
+
+        event_bus.notify(
+            MapTraceEvent(start=start, total=total, data=data["traceValue"])
+        )
+        return HandlingResult(HandlingState.SUCCESS, {"start": start, "total": total})
+
+
+class OnMapTraceV2(OnMapTrace):
+    """On map trace v2 message."""
+
+    NAME = "onMapTrace_V2"
+
+    @classmethod
+    def _handle_body_data_dict(
+        cls, event_bus: EventBus, data: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle message->body->data and notify the correct event subscribers.
+
+        :return: A message response
+        """
+        if "batid" in data:
+            # Batched format. It carries compressed map layers instead of trace
+            # points, which are not supported yet.
+            return HandlingResult.success()
+
+        return super()._handle_body_data_dict(event_bus, data)
