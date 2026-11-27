@@ -24,6 +24,8 @@ from .map import (
     MapSubsetEvent,
     MapTraceEvent,
     MinorMapEvent,
+    NativeMapEvent,
+    NativeTraceEvent,
     Position,
     PositionsEvent,
 )
@@ -40,6 +42,7 @@ __all__ = [
     "CachedMapInfoEvent",
     "CleanJobStatus",
     "CleanLogEntry",
+    "DoNotDisturbEvent",
     "EfficiencyMode",
     "EfficiencyModeEvent",
     "Event",
@@ -55,6 +58,8 @@ __all__ = [
     "MapSubsetEvent",
     "MapTraceEvent",
     "MinorMapEvent",
+    "NativeMapEvent",
+    "NativeTraceEvent",
     "NetworkInfoEvent",
     "Position",
     "PositionsEvent",
@@ -257,6 +262,11 @@ class AdvancedModeEvent(EnableEvent):
 @dataclass(frozen=True)
 class ContinuousCleaningEvent(EnableEvent):
     """Continuous cleaning event."""
+
+
+@dataclass(frozen=True)
+class DoNotDisturbEvent(EnableEvent):
+    """Do not disturb event."""
 
 
 @dataclass(frozen=True)
