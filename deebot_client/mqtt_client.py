@@ -16,6 +16,7 @@ from cachetools import TTLCache
 from deebot_client.const import UNDEFINED, DataType, UndefinedType
 from deebot_client.exceptions import AuthenticationError, MqttError
 
+from .command import CommandMqttP2P
 from .commands import COMMANDS_WITH_MQTT_P2P_HANDLING
 from .logging_filter import get_logger
 from .util.continents import get_continent_url_postfix
@@ -24,7 +25,6 @@ if TYPE_CHECKING:
     from collections.abc import Callable, MutableMapping
 
     from .authentication import Authenticator
-    from .command import CommandMqttP2P
     from .event_bus import EventBus
     from .models import Credentials, DeviceInfo
 
@@ -284,6 +284,24 @@ class MqttClient:
         except Exception:
             _LOGGER.exception("An exception occurred during handling atr message")
 
+    def _get_p2p_command_type(
+        self,
+        command_name: str,
+        data_type: DataType,
+        device_id: str,
+    ) -> type[CommandMqttP2P] | None:
+        """Return the P2P command configured for the device."""
+        if sub_info := self._subscriptions.get(device_id):
+            command_type = sub_info.device_info.static.capabilities.get_command(
+                command_name
+            )
+            if command_type is not None:
+                if issubclass(command_type, CommandMqttP2P):
+                    return command_type
+                return None
+
+        return COMMANDS_WITH_MQTT_P2P_HANDLING.get(data_type, {}).get(command_name)
+
     def _handle_p2p(self, topic_split: list[str], payload: bytes) -> None:
         try:
             if (data_type := DataType.get(topic_split[11])) is None:
@@ -291,17 +309,23 @@ class MqttClient:
                 return
 
             command_name = topic_split[2]
-            command_type = COMMANDS_WITH_MQTT_P2P_HANDLING.get(data_type, {}).get(
-                command_name, None
+            is_request = topic_split[9] == "q"
+            request_id = topic_split[10]
+
+            # For a request the subscribed device is the receiver.
+            # For a response the subscribed device is the sender.
+            device_id = topic_split[6] if is_request else topic_split[3]
+
+            command_type = self._get_p2p_command_type(
+                command_name,
+                data_type,
+                device_id,
             )
             if command_type is None:
                 _LOGGER.debug(
                     "Command %s does not support p2p handling (yet)", command_name
                 )
                 return
-
-            is_request = topic_split[9] == "q"
-            request_id = topic_split[10]
 
             if is_request:
                 self._received_p2p_commands[request_id] = command_type.create_from_mqtt(
