@@ -91,11 +91,11 @@ pub(super) fn points_to_svg_path(
 }
 
 /// Trace point
-#[derive(Debug, PartialEq)]
-struct TracePoint {
-    x: i16,
-    y: i16,
-    connected: bool,
+#[derive(Debug, PartialEq, Clone)]
+pub(super) struct TracePoint {
+    pub(super) x: i16,
+    pub(super) y: i16,
+    pub(super) connected: bool,
 }
 
 fn process_trace_points(trace_points: &[u8]) -> Result<Vec<TracePoint>, Box<dyn Error>> {
@@ -170,6 +170,11 @@ impl TracePoints {
 
 #[pymethods]
 impl TracePoints {
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
+    }
+
     fn add(&mut self, value: String) -> Result<(), PyErr> {
         self.trace_points
             .extend(extract_trace_points(&value).map_err(|err| {
@@ -181,6 +186,23 @@ impl TracePoints {
 
     fn clear(&mut self) {
         self.trace_points.clear();
+    }
+
+    fn set_native(
+        &mut self,
+        base64_lz4: Option<&str>,
+        capacity: usize,
+        start: usize,
+        total: usize,
+    ) -> Result<bool, PyErr> {
+        super::native_trace::apply_native_trace(
+            &mut self.trace_points,
+            base64_lz4,
+            capacity,
+            start,
+            total,
+        )
+        .map_err(|err| PyValueError::new_err(err.to_string()))
     }
 }
 
