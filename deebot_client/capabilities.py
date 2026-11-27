@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import (
     AdvancedModeEvent,
+    AutoEmptyIntensity,
+    AutoEmptyIntensityEvent,
     AvailabilityEvent,
     BatteryEvent,
     BorderSpinEvent,
@@ -22,8 +24,12 @@ from deebot_client.events import (
     CleanPreferenceEvent,
     ContinuousCleaningEvent,
     CrossMapBorderWarningEvent,
+    CustomAreaMode,
+    CustomAreaModeEvent,
     CustomCommandEvent,
     CutDirectionEvent,
+    DryingDuration,
+    DryingDurationEvent,
     ErrorEvent,
     Event,
     FanSpeedEvent,
@@ -214,6 +220,10 @@ class CapabilitySettings:
     border_spin: CapabilitySetEnable[BorderSpinEvent] | None = None
     border_switch: CapabilitySetEnable[BorderSwitchEvent] | None = None
     child_lock: CapabilitySetEnable[ChildLockEvent] | None = None
+    custom_area_mode: (
+        CapabilitySetTypes[CustomAreaModeEvent, [CustomAreaMode | str], CustomAreaMode]
+        | None
+    ) = None
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
     mop_auto_wash_frequency: (
         CapabilityNumber[mop_auto_wash_frequency.MopAutoWashFrequencyEvent, [int]]
@@ -242,6 +252,18 @@ class CapabilityStation:
         auto_empty.Frequency,
     ]
     state: CapabilityEvent[StationEvent]
+    auto_empty_intensity: (
+        CapabilitySetTypes[
+            AutoEmptyIntensityEvent,
+            [AutoEmptyIntensity | str],
+            AutoEmptyIntensity,
+        ]
+        | None
+    ) = None
+    drying_duration: (
+        CapabilitySetTypes[DryingDurationEvent, [DryingDuration | str], DryingDuration]
+        | None
+    ) = None
 
 
 @dataclass(frozen=True, kw_only=True)
