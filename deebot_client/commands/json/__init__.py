@@ -9,6 +9,7 @@ from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
+from .break_point_status import GetBreakPointStatus
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
 from .charge import Charge
 from .charge_state import GetChargeState
@@ -36,6 +37,7 @@ from .map import (
     GetMinorMap,
     SetMajorMap,
 )
+from .map_state import GetMapState
 from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
@@ -44,6 +46,7 @@ from .ota import GetOta, SetOta
 from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
+from .relocation_state import GetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
@@ -68,6 +71,7 @@ __all__ = [
     "GetBattery",
     "GetBorderSpin",
     "GetBorderSwitch",
+    "GetBreakPointStatus",
     "GetCachedMapInfo",
     "GetCarpetAutoFanBoost",
     "GetChargeState",
@@ -88,6 +92,7 @@ __all__ = [
     "GetMapInfoV2",
     "GetMapSet",
     "GetMapSetV2",
+    "GetMapState",
     "GetMapSubSet",
     "GetMapTrace",
     "GetMinorMap",
@@ -98,6 +103,7 @@ __all__ = [
     "GetNetInfoLegacy",
     "GetOta",
     "GetPos",
+    "GetRelocationState",
     "GetSafeProtect",
     "GetStats",
     "GetSweepMode",
@@ -150,6 +156,8 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetBorderSwitch,
     SetBorderSwitch,
+
+    GetBreakPointStatus,
 
     GetBattery,
 
@@ -206,6 +214,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     GetMapTrace,
     GetMinorMap,
     SetMajorMap,
+    GetMapState,
 
     GetMopAutoWashFrequency,
     SetMopAutoWashFrequency,
@@ -226,6 +235,7 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetPos,
 
+    GetRelocationState,
     SetRelocationState,
 
     GetSafeProtect,
