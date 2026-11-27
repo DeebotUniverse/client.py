@@ -74,6 +74,7 @@ _MAP_LEGACY_COMMANDS = frozenset(
 _LEGACY_USE_GET_COMMAND = _MAP_LEGACY_COMMANDS | frozenset(
     {
         "getAdvancedMode",
+        "getAutoCutDirection",
         "getBreakPoint",
         "getCarpertPressure",
         "getChargeState",

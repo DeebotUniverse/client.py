@@ -320,6 +320,11 @@ class SafeProtectEvent(EnableEvent):
 
 
 @dataclass(frozen=True)
+class AutoCutDirectionEvent(EnableEvent):
+    """Auto cut direction (change direction weekly) event."""
+
+
+@dataclass(frozen=True)
 class CutDirectionEvent(Event):
     """Cut direction event representation."""
 
