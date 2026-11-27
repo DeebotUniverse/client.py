@@ -119,6 +119,11 @@ async def test_GetWaterInfo(json: dict[str, Any], expected: tuple[Event, ...]) -
                 WaterSweepTypeEvent(SweepType.DEEP),
             ],
         ),
+        (
+            SetWaterInfo(sweep_type=SweepType.DEEP),
+            {"sweepType": 2},
+            [WaterSweepTypeEvent(SweepType.DEEP)],
+        ),
     ],
 )
 async def test_SetWaterInfo(
@@ -151,9 +156,19 @@ async def test_SetWaterInfo(
             "'INEXSTING' is not a valid SweepType member",
         ),
         (
+            {"sweep_type": WaterAmount.HIGH},
+            ValueError,
+            "is not a valid SweepType member",
+        ),
+        (
+            {"sweep_type": True},
+            ValueError,
+            "is not a valid SweepType member",
+        ),
+        (
             {},
             ValueError,
-            "Either amount or custom_amount must be provided.",
+            "Either amount, custom_amount or sweep_type must be provided.",
         ),
         (
             {"amount": WaterAmount.ULTRAHIGH, "custom_amount": "40"},
