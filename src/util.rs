@@ -52,6 +52,24 @@ fn decompress_zstd(bytes: &[u8]) -> Result<Vec<u8>, Box<dyn Error>> {
     Ok(result)
 }
 
+pub fn decompress_lz4_block(
+    compressed: &[u8],
+    expected_len: usize,
+) -> Result<Vec<u8>, Box<dyn Error>> {
+    if expected_len > 640_000 {
+        return Err("Payload exceeds maximum bounded capacity of 640000 bytes".into());
+    }
+    let mut decompressed = vec![0u8; expected_len];
+    let written = lz4_flex::decompress_into(compressed, &mut decompressed)?;
+    if written != expected_len {
+        return Err(format!(
+            "Decompressed size mismatch: expected {expected_len} bytes, got {written} bytes"
+        )
+        .into());
+    }
+    Ok(decompressed)
+}
+
 /// Decompress base64 decoded compressed string by using lzma or zstd
 #[pyfunction(name = "decompress_base64_data")]
 fn python_decompress_base64_data(value: &str) -> Result<Vec<u8>, PyErr> {

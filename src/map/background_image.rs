@@ -12,7 +12,7 @@ const NOT_INUSE_CRC32: u32 = 1295764014;
 const MAP_TRANSPARENT_INDEX: u8 = 0;
 
 // when updating palette, update MAP_IMAGE_PALETTE_LEN and MAP_IMAGE_PALETTE_TRANSPARENCY
-const MAP_IMAGE_PALETTE: &[u8] = &[
+pub(super) const MAP_IMAGE_PALETTE: &[u8] = &[
     0x00, 0x00, 0x00, // Transparent
     0xba, 0xda, 0xff, // Floor
     0x4e, 0x96, 0xe2, // Wall
@@ -30,7 +30,7 @@ const MAP_IMAGE_PALETTE_WITHOUT_ROOMS_LEN: u8 = 6;
 const MAP_IMAGE_PALETTE_ROOMS_LEN: u8 = 6;
 // 0 -> Transparent, 255 -> Fully opaque
 // (first entry is transparent, rest opaque)
-const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] =
+pub(super) const MAP_IMAGE_PALETTE_TRANSPARENCY: &[u8] =
     &[0u8, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255];
 
 const MAP_PIECE_SIZE: u16 = 100;
@@ -39,16 +39,26 @@ pub(super) const MAP_MAX_SIZE: u16 = 8 * MAP_PIECE_SIZE;
 #[pyclass]
 pub(super) struct BackgroundImage {
     map_pieces: [MapPiece; 64],
+    native_raster: Option<super::native_raster::CachedNativeRaster>,
 }
 
 impl BackgroundImage {
+    pub(super) fn is_native(&self) -> bool {
+        self.native_raster.is_some()
+    }
+
     pub(super) fn new() -> Self {
         BackgroundImage {
             map_pieces: core::array::from_fn(|_| MapPiece::new()),
+            native_raster: None,
         }
     }
 
     pub(super) fn generate(&self) -> Result<ImageGenrationType, Box<dyn std::error::Error>> {
+        if let Some(ref raster) = self.native_raster {
+            return Ok(Some((raster.png_base64.clone(), raster.view_box.clone())));
+        }
+
         let mut image = GrayImage::new(MAP_MAX_SIZE.into(), MAP_MAX_SIZE.into());
         let mut min_x = u16::MAX;
         let mut min_y = u16::MAX;
@@ -134,11 +144,17 @@ impl BackgroundImage {
 
 #[pymethods]
 impl BackgroundImage {
+    #[new]
+    fn py_new() -> Self {
+        Self::new()
+    }
+
     fn update_map_piece(&mut self, index: usize, base64_data: String) -> Result<bool, PyErr> {
         if index >= self.map_pieces.len() {
             error!("Index out of bounds; index:{index}, base64_data:{base64_data}");
             return Err(PyValueError::new_err("Index out of bounds"));
         }
+        self.native_raster = None;
         self.map_pieces[index]
             .update_points(&base64_data)
             .map_err(|err| {
@@ -159,6 +175,50 @@ impl BackgroundImage {
             return Err(PyValueError::new_err("Index out of bounds"));
         }
         Ok(self.map_pieces[index].crc32_indicates_update(crc32))
+    }
+
+    fn set_native_raster(
+        &mut self,
+        base64_lz4: &str,
+        width: u16,
+        height: u16,
+        x_min: i16,
+        y_max: i16,
+        resolution: u8,
+    ) -> PyResult<bool> {
+        super::native_raster::validate_native_extents(x_min, y_max, width, height)
+            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        let pixels =
+            super::native_raster::decode_native_raster(base64_lz4, width, height, resolution)
+                .map_err(|err| PyValueError::new_err(err.to_string()))?;
+
+        if self.native_raster.as_ref().is_some_and(|existing| {
+            existing.width == width
+                && existing.height == height
+                && existing.x_min == x_min
+                && existing.y_max == y_max
+                && existing.resolution == resolution
+                && existing.pixels == pixels
+        }) {
+            return Ok(false);
+        }
+
+        let png_base64 = super::native_raster::encode_native_png(&pixels, width, height)
+            .map_err(|err| PyValueError::new_err(err.to_string()))?;
+        let view_box = ViewBox::from_native_bounds(x_min, y_max, width, height);
+
+        self.native_raster = Some(super::native_raster::CachedNativeRaster {
+            width,
+            height,
+            x_min,
+            y_max,
+            resolution,
+            pixels,
+            png_base64,
+            view_box,
+        });
+
+        Ok(true)
     }
 }
 
