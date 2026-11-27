@@ -6,6 +6,7 @@ from typing import TYPE_CHECKING, Any
 
 from deebot_client.events import CleanJobStatus, ReportStatsEvent, StatsEvent
 from deebot_client.message import HandlingResult, MessageBodyDataDict
+from deebot_client.rs.util import parse_csv_ints_via_float
 
 if TYPE_CHECKING:
     from deebot_client.event_bus import EventBus
@@ -36,7 +37,7 @@ class ReportStats(MessageBodyDataDict):
             type=data.get("type"),
             cleaning_id=data["cid"],
             status=status,
-            content=[int(float(x)) for x in data.get("content", "").split(",") if x],
+            content=parse_csv_ints_via_float(data.get("content", "")),
         )
         event_bus.notify(stats_event)
         return HandlingResult.success()
