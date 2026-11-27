@@ -36,7 +36,11 @@ from .map import (
     GetMinorMap,
     SetMajorMap,
 )
-from .mop_auto_wash_frequency import GetMopAutoWashFrequency, SetMopAutoWashFrequency
+from .mop_auto_wash_frequency import (
+    GetMopAutoWashFrequency,
+    SetMopAutoWashFrequency,
+    SetWashInfo,
+)
 from .moveup_warning import GetMoveUpWarning, SetMoveUpWarning
 from .multimap_state import GetMultimapState, SetMultimapState
 from .network import GetNetInfo, GetNetInfoLegacy
@@ -132,6 +136,7 @@ __all__ = [
     "SetTrueDetect",
     "SetVoiceAssistantState",
     "SetVolume",
+    "SetWashInfo",
     "SetWaterInfo",
     "SetWorkMode",
 ]
@@ -208,7 +213,7 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetMajorMap,
 
     GetMopAutoWashFrequency,
-    SetMopAutoWashFrequency,
+    SetWashInfo,
 
     GetMoveUpWarning,
     SetMoveUpWarning,

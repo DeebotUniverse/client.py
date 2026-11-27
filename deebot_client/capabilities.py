@@ -54,6 +54,7 @@ from deebot_client.events import (
     WorkModeEvent,
     auto_empty,
     mop_auto_wash_frequency,
+    wash_info,
     water_info,
 )
 
@@ -217,6 +218,22 @@ class CapabilitySettings:
     cut_direction: CapabilitySet[CutDirectionEvent, [int]] | None = None
     mop_auto_wash_frequency: (
         CapabilityNumber[mop_auto_wash_frequency.MopAutoWashFrequencyEvent, [int]]
+        | None
+    ) = None
+    mop_auto_wash_mode: (
+        CapabilitySetTypes[
+            wash_info.MopAutoWashModeEvent,
+            [wash_info.MopAutoWashMode | str],
+            wash_info.MopAutoWashMode,
+        ]
+        | None
+    ) = None
+    mop_wash_mode: (
+        CapabilitySetTypes[
+            wash_info.MopWashModeEvent,
+            [wash_info.MopWashMode | str],
+            wash_info.MopWashMode,
+        ]
         | None
     ) = None
     moveup_warning: CapabilitySetEnable[MoveUpWarningEvent] | None = None
