@@ -125,6 +125,17 @@ class CachedMapInfoEvent(Event):
 
 
 @dataclass(frozen=True)
+class MapInfoChunkEvent(Event):
+    """Map info chunk event."""
+
+    map_id: str
+    batch_id: str
+    index: int
+    total: int
+    info: str
+
+
+@dataclass(frozen=True)
 class MapChangedEvent(Event):
     """Map changed event."""
 

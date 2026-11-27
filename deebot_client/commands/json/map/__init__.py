@@ -395,3 +395,23 @@ class GetMapInfoV2(JsonCommandWithMessageHandling, OnMapInfoV2):
 
     def __init__(self, map_id: str = "") -> None:
         super().__init__({"mid": map_id, "type": "0"})
+
+    def _handle_response(
+        self, event_bus: EventBus, response: dict[str, Any]
+    ) -> HandlingResult:
+        """Handle response from a command.
+
+        :return: A message response
+        """
+        result = super()._handle_response(event_bus, response)
+        if (
+            result.state == HandlingState.SUCCESS
+            and result.args
+            and (map_cap := event_bus.capabilities.map)
+        ):
+            map_id = result.args["map_id"]
+            result.requested_commands.extend(
+                [map_cap.set.execute(map_id, entry) for entry in MapSetType]
+            )
+
+        return result
