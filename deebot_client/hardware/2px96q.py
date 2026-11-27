@@ -13,6 +13,7 @@ from deebot_client.capabilities import (
     CapabilitySet,
     CapabilitySetEnable,
     CapabilitySettings,
+    CapabilitySetTypes,
     CapabilityStats,
     DeviceType,
 )
@@ -29,6 +30,7 @@ from deebot_client.commands.json import (
     SetSafeProtect,
 )
 from deebot_client.commands.json.battery import GetBattery
+from deebot_client.commands.json.border_switch import SetBorderSwitchMode
 from deebot_client.commands.json.charge import Charge
 from deebot_client.commands.json.charge_state import GetChargeState
 from deebot_client.commands.json.clean import CleanAreaV2, CleanV2, GetCleanInfoV2
@@ -57,6 +59,7 @@ from deebot_client.events import (
     StatsEvent,
     TotalStatsEvent,
 )
+from deebot_client.events.mower import BorderSwitchMode, BorderSwitchModeEvent
 from deebot_client.models import StaticDeviceInfo
 
 
@@ -96,6 +99,16 @@ def get_device_info() -> StaticDeviceInfo:
             settings=CapabilitySettings(
                 border_switch=CapabilitySetEnable(
                     BorderSwitchEvent, [GetBorderSwitch()], SetBorderSwitch
+                ),
+                border_switch_mode=CapabilitySetTypes(
+                    event=BorderSwitchModeEvent,
+                    get=[GetBorderSwitch()],
+                    set=SetBorderSwitchMode,
+                    types=(
+                        BorderSwitchMode.ALONG_BORDER,
+                        BorderSwitchMode.EDGE_MOWING,
+                        BorderSwitchMode.CROSS_BOUNDARY,
+                    ),
                 ),
                 cut_direction=CapabilitySet(
                     CutDirectionEvent, [GetCutDirection()], SetCutDirection
