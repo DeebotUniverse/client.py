@@ -7,6 +7,7 @@ from typing import TYPE_CHECKING
 from . import auto_empty, station_action, station_state
 from .advanced_mode import GetAdvancedMode, SetAdvancedMode
 from .battery import GetBattery
+from .block import GetBlock, SetBlock
 from .border_spin import GetBorderSpin, SetBorderSpin
 from .border_switch import GetBorderSwitch, SetBorderSwitch
 from .carpet import GetCarpetAutoFanBoost, SetCarpetAutoFanBoost
@@ -45,6 +46,7 @@ from .play_sound import PlaySound
 from .pos import GetPos
 from .relocation import SetRelocationState
 from .safe_protect import GetSafeProtect, SetSafeProtect
+from .sleep import GetSleep, SetSleep
 from .stats import GetStats, GetTotalStats
 from .sweep_mode import GetSweepMode, SetSweepMode
 from .true_detect import GetTrueDetect, SetTrueDetect
@@ -66,6 +68,7 @@ __all__ = [
     "ClearMap",
     "GetAdvancedMode",
     "GetBattery",
+    "GetBlock",
     "GetBorderSpin",
     "GetBorderSwitch",
     "GetCachedMapInfo",
@@ -99,6 +102,7 @@ __all__ = [
     "GetOta",
     "GetPos",
     "GetSafeProtect",
+    "GetSleep",
     "GetStats",
     "GetSweepMode",
     "GetTotalStats",
@@ -110,6 +114,7 @@ __all__ = [
     "PlaySound",
     "ResetLifeSpan",
     "SetAdvancedMode",
+    "SetBlock",
     "SetBorderSpin",
     "SetBorderSwitch",
     "SetCarpetAutoFanBoost",
@@ -128,6 +133,7 @@ __all__ = [
     "SetOta",
     "SetRelocationState",
     "SetSafeProtect",
+    "SetSleep",
     "SetSweepMode",
     "SetTrueDetect",
     "SetVoiceAssistantState",
@@ -152,6 +158,9 @@ _COMMANDS: list[type[JsonCommand]] = [
     SetBorderSwitch,
 
     GetBattery,
+
+    GetBlock,
+    SetBlock,
 
     GetCarpetAutoFanBoost,
     SetCarpetAutoFanBoost,
@@ -230,6 +239,9 @@ _COMMANDS: list[type[JsonCommand]] = [
 
     GetSafeProtect,
     SetSafeProtect,
+
+    GetSleep,
+    SetSleep,
 
     station_action.StationAction,
 
