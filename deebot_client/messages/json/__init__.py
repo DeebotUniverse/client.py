@@ -14,7 +14,7 @@ from .gps_position import OnGpsPos
 from .map import OnCachedMapInfo, OnMajorMap, OnMapInfoV2, OnMapSetV2
 from .ota import OnOta
 from .station_state import OnStationState
-from .stats import OnStats, ReportStats
+from .stats import OnCleanDataUpdateV2, OnLastTimeStats, OnStats, ReportStats
 from .work_state import OnWorkState
 
 _LOGGER = get_logger(__name__)
@@ -26,6 +26,8 @@ __all__ = [
     "OnMajorMap",
     "OnMapInfoV2",
     "OnMapSetV2",
+    "OnCleanDataUpdateV2",
+    "OnLastTimeStats",
     "OnStats",
     "OnWorkState",
     "ReportStats",
@@ -51,6 +53,10 @@ _MESSAGES: list[type[Message]] = [
 
     OnStationState,
 
+    OnCleanDataUpdateV2,
+    OnLastTimeStats,
+    OnStats,
+    ReportStats,
     OnStats,
     ReportStats,
 
