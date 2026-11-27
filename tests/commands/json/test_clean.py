@@ -10,6 +10,7 @@ from deebot_client.commands.json.clean import (
     Clean,
     CleanArea,
     CleanAreaV2,
+    CleanMower,
     CleanV2,
     GetCleanInfoV2,
 )
@@ -67,7 +68,7 @@ async def test_GetCleanInfo(
     await assert_command(command(), json, (firmware_event, expected))
 
 
-@pytest.mark.parametrize("command_type", [Clean, CleanV2])
+@pytest.mark.parametrize("command_type", [Clean, CleanV2, CleanMower])
 @pytest.mark.parametrize(
     ("action", "state", "expected"),
     [
@@ -102,8 +103,17 @@ async def test_Clean_act(
     assert isinstance(command._args, dict)
     assert command._args["act"] == expected.value
 
-    if command_type is CleanV2:
+    if command_type in (CleanV2, CleanMower):
         assert isinstance(command._args["content"], dict)
+
+
+@pytest.mark.parametrize("action", list(CleanAction))
+async def test_CleanMower(action: CleanAction) -> None:
+    command = CleanMower(action)
+    assert command.NAME == "clean"
+    await assert_execute_command(
+        command, {"act": action.value, "content": {"type": "auto"}}
+    )
 
 
 @pytest.mark.parametrize(
