@@ -316,10 +316,10 @@ fn calc_viewbox(outlines: &[MapInfoTypeDataEntry]) -> Option<ViewBox> {
     let (width, height) = ((max_x - min_x).max(1) as u16, (max_y - min_y).max(1) as u16);
 
     Some(ViewBox {
-        min_x,
-        min_y,
-        max_x,
-        max_y,
+        min_x: i32::from(min_x),
+        min_y: i32::from(min_y),
+        max_x: i32::from(max_x),
+        max_y: i32::from(max_y),
         width,
         height,
     })

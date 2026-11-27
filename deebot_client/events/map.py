@@ -29,6 +29,7 @@ class PositionsEvent(Event):
     """Position event representation."""
 
     positions: list[Position]
+    map_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -104,6 +105,7 @@ class MapSubsetEvent(Event):
     type: MapSetType
     coordinates: str
     name: str | None = None
+    map_id: str | None = None
 
 
 @dataclass(frozen=True)
@@ -129,3 +131,35 @@ class MapChangedEvent(Event):
     """Map changed event."""
 
     when: datetime
+
+
+@dataclass(frozen=True)
+class NativeMapEvent(Event):
+    """Native whole-raster map event (Y1 Pro)."""
+
+    map_id: str
+    width: int
+    height: int
+    x_min: int
+    y_max: int
+    resolution: int
+    base64_map: str
+
+
+@dataclass(frozen=True)
+class NativeTraceEvent(Event):
+    """Native trace event (Y1 Pro)."""
+
+    map_id: str
+    trace_id: int
+    start: int
+    total_count: int
+    lz4_len: int = 0
+    base64_trace: str | None = None
+
+
+@dataclass(frozen=True, eq=False)
+class NativeMapRefreshEvent(Event):
+    """One-shot request: identical edit ACKs must each trigger a refresh."""
+
+    map_id: str
