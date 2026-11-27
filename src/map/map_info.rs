@@ -22,6 +22,7 @@ struct MapInfoTypeDataEntry {
 enum MapInfoType {
     Outline,
     Room,
+    Unknown3, // Give it a better name if we know what it is
     Unknown5, // Give it a better name if we know what it is
     BlockLine,
 }
@@ -34,7 +35,8 @@ impl TryFrom<&str> for MapInfoType {
             // 0 means all entries
             "1" => Ok(MapInfoType::Outline),
             "2" => Ok(MapInfoType::Room),
-            // 3, 4 are unknown
+            "3" => Ok(MapInfoType::Unknown3),
+            // 4 is unknown
             "5" => Ok(MapInfoType::Unknown5),
             "6" => Ok(MapInfoType::BlockLine),
             _ => Err("Invalid map info type"),
@@ -69,7 +71,7 @@ impl<'de> Deserialize<'de> for MapInfoTypeEntry {
                     MapInfoType::Outline => process_map_info_outline_entries(rest),
                     MapInfoType::Room => process_map_info_room_entries(rest),
                     MapInfoType::BlockLine => process_map_info_room_entries(rest),
-                    MapInfoType::Unknown5 => Vec::new(),
+                    MapInfoType::Unknown3 | MapInfoType::Unknown5 => Vec::new(),
                 },
             ))
         } else {
@@ -351,6 +353,7 @@ mod tests {
     #[rstest]
     #[case("1", Ok(MapInfoType::Outline))]
     #[case("2", Ok(MapInfoType::Room))]
+    #[case("3", Ok(MapInfoType::Unknown3))]
     #[case("5", Ok(MapInfoType::Unknown5))]
     #[case("6", Ok(MapInfoType::BlockLine))]
     #[case("invalid", Err("Invalid map info type"))]
@@ -370,6 +373,18 @@ mod tests {
             entries.unwrap_err().to_string(),
             "Empty map info entry at line 1 column 4"
         );
+    }
+
+    #[test]
+    fn test_deserialize_ignores_unknown_layer_data() {
+        let data = r#"[["1","0;0,0,1;10,0,1;10,10,1"],["3","0;1,1;2,1;2,2"]]"#.as_bytes();
+        let entries: Vec<MapInfoTypeEntry> = serde_json::from_slice(data).unwrap();
+
+        assert_eq!(entries.len(), 2);
+        assert_eq!(entries[0].0, MapInfoType::Outline);
+        assert_eq!(entries[0].1.len(), 1);
+        assert_eq!(entries[1].0, MapInfoType::Unknown3);
+        assert!(entries[1].1.is_empty());
     }
 
     #[test]
